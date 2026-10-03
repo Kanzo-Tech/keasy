@@ -23,7 +23,7 @@ const GENERAL = [
 // Cloud accounts and AI keys: an editor's.
 const DATA = [{ href: "/settings/credentials", label: "Credentials", icon: KeyRound }];
 
-// Where job outputs land, and who belongs: an admin's.
+// Where graph outputs land, and who belongs: an admin's.
 const WORKSPACE = [
   { href: "/settings/storage", label: "Workspace storage", icon: GalleryVerticalEnd },
   { href: "/settings/members", label: "Members", icon: Users },

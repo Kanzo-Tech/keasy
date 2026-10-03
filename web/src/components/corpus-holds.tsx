@@ -9,11 +9,11 @@ import { settled } from "@/lib/api/settled";
 import { CorpusProvider, corpusQuery, useCorpus } from "@/lib/fossil/corpus";
 
 /**
- * What a completed job's corpus holds, as the corpus itself says it — opened with a read credential
- * vended for the job. Suspends while it opens; keasy keeps no copy of it.
+ * What a completed graph's corpus holds, as the corpus itself says it — opened with a read credential
+ * vended for the graph. Suspends while it opens; keasy keeps no copy of it.
  */
-export function CorpusHolds({ jobId }: { jobId: string }) {
-  const corpus = settled(useSuspenseQuery(corpusQuery(jobId)));
+export function CorpusHolds({ graphId }: { graphId: string }) {
+  const corpus = settled(useSuspenseQuery(corpusQuery(graphId)));
   return (
     <CorpusProvider value={corpus}>
       <Holds />
@@ -30,11 +30,11 @@ interface Column {
 
 /** Each table of the corpus's `fossil_tables`, its row count, and its `fossil_columns`. */
 function Holds() {
-  const { jobId } = useCorpus();
+  const { graphId } = useCorpus();
   const rows = useQueryRows<Column>(
     `SELECT t.table_name, t.rows::DOUBLE AS rows, c.column_name, c.type
-     FROM ${new TableRefNode([jobId, "fossil_tables"])} t
-     LEFT JOIN ${new TableRefNode([jobId, "fossil_columns"])} c ON c.table_name = t.table_name
+     FROM ${new TableRefNode([graphId, "fossil_tables"])} t
+     LEFT JOIN ${new TableRefNode([graphId, "fossil_columns"])} c ON c.table_name = t.table_name
      ORDER BY t.kind DESC, t.table_name, c.ordinal`,
   );
   const tables = Map.groupBy(rows, (r) => r.table_name);

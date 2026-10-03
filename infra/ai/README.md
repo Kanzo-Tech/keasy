@@ -10,7 +10,7 @@ an **alias**, never a provider or a model.
 
 | Alias | Used for | Dev (kanzo-ui's `litellm.dev.yaml`) | Prod (`litellm.prod.yaml`) |
 |-------|----------|--------------------------|----------------------------|
-| `chat` | Discovery's Ask, the job assistant | Hermes 3 8B on Docker Model Runner | Claude Sonnet |
+| `chat` | Discovery's Ask, the graph assistant | Hermes 3 8B on Docker Model Runner | Claude Sonnet |
 | `complete` | Assisted fields (ghost text, chips) | Hermes 3 3B on Docker Model Runner | Claude Haiku |
 
 ```

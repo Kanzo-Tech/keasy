@@ -132,7 +132,7 @@ pub fn storage(
 }
 
 /// The source connection `name`: what a member reads, and never writes. The
-/// sink is reached only through its jobs.
+/// sink is reached only through its graphs.
 pub fn source(conn: &rusqlite::Connection, name: &str) -> Result<ConnectionView, Refusal> {
     let connection = persistence::get(conn, name)?
         .ok_or_else(|| Refusal::not_found(ErrorCode::ConnectionNotFound, "No such connection"))?;

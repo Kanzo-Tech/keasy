@@ -5,18 +5,18 @@ vi.mock("client-only", () => ({}));
 vi.mock("./host", () => ({ host: {} }));
 vi.mock("@fossil-lang/wasm", () => ({ openProgram, providers: vi.fn() }));
 
-describe("the job program", () => {
+describe("the graph program", () => {
   beforeEach(() => openProgram.mockReset());
 
   it("is opened again after a failed open, never the cached rejection", async () => {
-    const { jobProgram } = await import("./checker");
+    const { graphProgram } = await import("./checker");
     openProgram.mockRejectedValueOnce(new Error("the wasm did not download"));
-    await expect(jobProgram()).rejects.toThrow("the wasm did not download");
+    await expect(graphProgram()).rejects.toThrow("the wasm did not download");
 
     const program = { sources: vi.fn() };
     openProgram.mockResolvedValueOnce(program);
-    await expect(jobProgram()).resolves.toBe(program);
-    await expect(jobProgram()).resolves.toBe(program);
+    await expect(graphProgram()).resolves.toBe(program);
+    await expect(graphProgram()).resolves.toBe(program);
     expect(openProgram).toHaveBeenCalledTimes(2);
   });
 });

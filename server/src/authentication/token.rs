@@ -196,7 +196,7 @@ pub struct Validator {
     http: reqwest::Client,
     keys: RwLock<Option<JwkSet>>,
     /// The gate on re-fetching, and when the last attempt was made. One lock
-    /// does both jobs: holding it is what makes a re-fetch single-flight, and
+    /// does both graphs: holding it is what makes a re-fetch single-flight, and
     /// what it holds is what makes the cooldown a floor. The read path — a `kid`
     /// already in `keys` — never touches it.
     refetch: tokio::sync::Mutex<Option<Instant>>,

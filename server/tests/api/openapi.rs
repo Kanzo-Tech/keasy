@@ -36,10 +36,10 @@ fn schema(name: &str) -> serde_json::Value {
 /// What a form checks before it sends: the spellings `parse` holds, published.
 #[test]
 fn the_spellings_are_published_with_their_rule() {
-    use keasy_server::domain::{JobFolder, ResourceName};
+    use keasy_server::domain::{GraphFolder, ResourceName};
 
     for (name, pattern, max) in [
-        ("JobFolder", JobFolder::PATTERN, JobFolder::MAX_LEN),
+        ("GraphFolder", GraphFolder::PATTERN, GraphFolder::MAX_LEN),
         ("ResourceName", ResourceName::PATTERN, ResourceName::MAX_LEN),
     ] {
         let schema = schema(name);

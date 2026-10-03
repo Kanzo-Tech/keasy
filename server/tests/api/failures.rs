@@ -38,13 +38,13 @@ async fn what_axum_refuses_before_a_handler_speaks_error_body_too() {
         ),
         (
             "a method the route does not take",
-            c.patch(url(&app, "/v1/jobs")).bearer_auth(&member),
+            c.patch(url(&app, "/v1/graphs")).bearer_auth(&member),
             StatusCode::METHOD_NOT_ALLOWED,
             "request/method-not-allowed",
         ),
         (
             "JSON that does not parse",
-            c.post(url(&app, "/v1/jobs"))
+            c.post(url(&app, "/v1/graphs"))
                 .bearer_auth(&member)
                 .header(header::CONTENT_TYPE, "application/json")
                 .body("{"),
@@ -53,7 +53,7 @@ async fn what_axum_refuses_before_a_handler_speaks_error_body_too() {
         ),
         (
             "no content type",
-            c.post(url(&app, "/v1/jobs"))
+            c.post(url(&app, "/v1/graphs"))
                 .bearer_auth(&member)
                 .body("{}"),
             StatusCode::UNSUPPORTED_MEDIA_TYPE,
@@ -61,7 +61,7 @@ async fn what_axum_refuses_before_a_handler_speaks_error_body_too() {
         ),
         (
             "a body missing a field",
-            c.post(url(&app, "/v1/jobs"))
+            c.post(url(&app, "/v1/graphs"))
                 .bearer_auth(&member)
                 .json(&json!({ "script": "x" })),
             StatusCode::UNPROCESSABLE_ENTITY,
@@ -69,7 +69,7 @@ async fn what_axum_refuses_before_a_handler_speaks_error_body_too() {
         ),
         (
             "a body over the limit",
-            c.post(url(&app, "/v1/jobs"))
+            c.post(url(&app, "/v1/graphs"))
                 .bearer_auth(&member)
                 .header(header::CONTENT_TYPE, "application/json")
                 .body(vec![b' '; 3 * 1024 * 1024]),
@@ -93,7 +93,7 @@ async fn a_rejection_keeps_axums_words_as_the_detail() {
     let member = app.token(EDITOR);
     let response = app
         .client
-        .post(url(&app, "/v1/jobs"))
+        .post(url(&app, "/v1/graphs"))
         .bearer_auth(&member)
         .json(&json!({ "script": "x" }))
         .send()
@@ -111,7 +111,7 @@ async fn each_resource_that_is_not_there_says_which() {
     let app = spawn_app().await;
     let member = app.token(EDITOR);
     for (path, code) in [
-        ("/v1/jobs/nope", "job/not-found"),
+        ("/v1/graphs/nope", "graph/not-found"),
         ("/v1/connections/nope", "connection/not-found"),
         ("/v1/secrets/nope", "secret/not-found"),
     ] {
@@ -143,14 +143,14 @@ async fn age(app: &TestApp, id: &str, column: &str, seconds: i64) {
         .write()
         .await
         .execute(
-            &format!("UPDATE jobs SET {column} = ?1 WHERE id = ?2"),
+            &format!("UPDATE graphs SET {column} = ?1 WHERE id = ?2"),
             [then.as_str(), id],
         )
         .unwrap();
 }
 
 #[tokio::test]
-async fn a_running_job_is_refused_deletion_with_its_code() {
+async fn a_running_graph_is_refused_deletion_with_its_code() {
     let app = spawn_app().await;
     let member = app.token(EDITOR);
     sink(&app).await;
@@ -158,17 +158,17 @@ async fn a_running_job_is_refused_deletion_with_its_code() {
     let (status, body) = app
         .send(
             Method::DELETE,
-            &format!("/v1/jobs/{id}"),
+            &format!("/v1/graphs/{id}"),
             &member,
             json!(null),
         )
         .await;
     assert_eq!(status, StatusCode::CONFLICT);
-    assert_eq!(body["code"], "job/still-running");
+    assert_eq!(body["code"], "graph/still-running");
 }
 
 /// A run whose tab closed ends: its heartbeat stops, the next read sweeps it
-/// to failed with `job/abandoned`, the runner can no longer report on it (`job/ended`),
+/// to failed with `graph/abandoned`, the runner can no longer report on it (`graph/ended`),
 /// and it can be deleted.
 #[tokio::test]
 async fn a_run_whose_runner_went_silent_ends_as_abandoned_and_can_be_deleted() {
@@ -176,7 +176,7 @@ async fn a_run_whose_runner_went_silent_ends_as_abandoned_and_can_be_deleted() {
     let member = app.token(EDITOR);
     sink(&app).await;
     let id = app.running(&member).await;
-    let path = format!("/v1/jobs/{id}");
+    let path = format!("/v1/graphs/{id}");
 
     let (status, running) = app
         .report(&member, &id, json!({ "status": "running" }))
@@ -198,17 +198,17 @@ async fn a_run_whose_runner_went_silent_ends_as_abandoned_and_can_be_deleted() {
     age(&app, &id, "heartbeat_at", 61).await;
 
     let (_, listed) = app
-        .send(Method::GET, "/v1/jobs", &member, json!(null))
+        .send(Method::GET, "/v1/graphs", &member, json!(null))
         .await;
-    let job = &listed[0];
-    assert_eq!(job["status"], "failed");
-    assert_eq!(job["problem"]["code"], "job/abandoned");
+    let graph = &listed[0];
+    assert_eq!(graph["status"], "failed");
+    assert_eq!(graph["problem"]["code"], "graph/abandoned");
 
     for status in ["running", "completed"] {
         let (got, body) = app.report(&member, &id, json!({ "status": status })).await;
         assert_eq!(
             (got, body["code"].as_str()),
-            (StatusCode::CONFLICT, Some("job/ended")),
+            (StatusCode::CONFLICT, Some("graph/ended")),
             "{status}"
         );
     }
@@ -219,19 +219,24 @@ async fn a_run_whose_runner_went_silent_ends_as_abandoned_and_can_be_deleted() {
     );
 }
 
-/// Only a run is swept: an idle job waits for someone to run it, however long.
+/// Only a run is swept: an idle graph waits for someone to run it, however long.
 #[tokio::test]
-async fn an_idle_job_waits_and_is_never_swept() {
+async fn an_idle_graph_waits_and_is_never_swept() {
     let app = spawn_app().await;
     let member = app.token(EDITOR);
     sink(&app).await;
     let id = app.submitted(&member).await;
     age(&app, &id, "created_at", 3600).await;
 
-    let (_, job) = app
-        .send(Method::GET, &format!("/v1/jobs/{id}"), &member, json!(null))
+    let (_, graph) = app
+        .send(
+            Method::GET,
+            &format!("/v1/graphs/{id}"),
+            &member,
+            json!(null),
+        )
         .await;
-    assert_eq!(job["status"], "idle");
+    assert_eq!(graph["status"], "idle");
 }
 
 #[tokio::test]

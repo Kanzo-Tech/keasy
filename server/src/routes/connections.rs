@@ -198,7 +198,7 @@ pub async fn update_connection(
         (status = 204, description = "Deleted"),
         (status = 403, description = "Not the caller's to delete", body = ErrorBody),
         (status = 404, description = "No such connection", body = ErrorBody),
-        (status = 409, description = "Jobs wrote their output to it; `dependents` names them", body = ErrorBody),
+        (status = 409, description = "Graphs wrote their output to it; `dependents` names them", body = ErrorBody),
     )
 )]
 pub async fn delete_connection(
@@ -258,7 +258,7 @@ pub async fn list_connection_files(
     let limit = query.limit.unwrap_or(MAX_FILES).min(MAX_FILES);
     let (url, credential) = {
         let conn = state.db.read().await;
-        // The sink is reached through its jobs, here as when a credential is vended for it.
+        // The sink is reached through its graphs, here as when a credential is vended for it.
         let source = crate::connections::source(&conn, &name)?;
         crate::connections::storage(&conn, state.db.secret_key(), &source)?
     };

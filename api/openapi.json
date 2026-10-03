@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Keasy API",
-    "description": "Keasy host: identity, connections, vended credentials and the job record",
+    "description": "Keasy host: identity, connections, vended credentials and the graph record",
     "license": {
       "name": ""
     },
@@ -339,7 +339,7 @@
             }
           },
           "409": {
-            "description": "Jobs wrote their output to it; `dependents` names them",
+            "description": "Graphs wrote their output to it; `dependents` names them",
             "content": {
               "application/json": {
                 "schema": {
@@ -610,21 +610,21 @@
         ]
       }
     },
-    "/v1/jobs": {
+    "/v1/graphs": {
       "get": {
         "tags": [
-          "Jobs"
+          "Graphs"
         ],
-        "operationId": "list_jobs",
+        "operationId": "list_graphs",
         "responses": {
           "200": {
-            "description": "Every job in the workspace",
+            "description": "Every graph in the workspace",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Job"
+                    "$ref": "#/components/schemas/Graph"
                   }
                 }
               }
@@ -641,15 +641,15 @@
       },
       "post": {
         "tags": [
-          "Jobs"
+          "Graphs"
         ],
-        "summary": "A job begins as a draft, always: what it runs, where it lands. Submitting\nit makes it a job to run; running it is asked for on its own.",
-        "operationId": "create_job",
+        "summary": "A graph begins as a draft, always: what it runs, where it lands. Submitting\nit makes it a graph to run; running it is asked for on its own.",
+        "operationId": "create_graph",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateJobRequest"
+                "$ref": "#/components/schemas/CreateGraphRequest"
               }
             }
           },
@@ -657,11 +657,11 @@
         },
         "responses": {
           "201": {
-            "description": "The draft, created; `POST /v1/jobs/{id}/submit` makes it a job to run",
+            "description": "The draft, created; `POST /v1/graphs/{id}/submit` makes it a graph to run",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Job"
+                  "$ref": "#/components/schemas/Graph"
                 }
               }
             }
@@ -686,17 +686,17 @@
         ]
       }
     },
-    "/v1/jobs/{id}": {
+    "/v1/graphs/{id}": {
       "get": {
         "tags": [
-          "Jobs"
+          "Graphs"
         ],
-        "operationId": "get_job",
+        "operationId": "get_graph",
         "parameters": [
           {
             "name": "id",
             "in": "path",
-            "description": "Job ID",
+            "description": "Graph ID",
             "required": true,
             "schema": {
               "type": "string"
@@ -705,17 +705,17 @@
         ],
         "responses": {
           "200": {
-            "description": "Job details",
+            "description": "Graph details",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Job"
+                  "$ref": "#/components/schemas/Graph"
                 }
               }
             }
           },
           "404": {
-            "description": "Job not found",
+            "description": "Graph not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -735,14 +735,14 @@
       },
       "delete": {
         "tags": [
-          "Jobs"
+          "Graphs"
         ],
-        "operationId": "delete_job",
+        "operationId": "delete_graph",
         "parameters": [
           {
             "name": "id",
             "in": "path",
-            "description": "Job ID",
+            "description": "Graph ID",
             "required": true,
             "schema": {
               "type": "string"
@@ -751,10 +751,10 @@
         ],
         "responses": {
           "204": {
-            "description": "Job deleted"
+            "description": "Graph deleted"
           },
           "404": {
-            "description": "Job not found",
+            "description": "Graph not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -764,7 +764,7 @@
             }
           },
           "409": {
-            "description": "Job is still running",
+            "description": "Graph is still running",
             "content": {
               "application/json": {
                 "schema": {
@@ -784,14 +784,14 @@
       },
       "patch": {
         "tags": [
-          "Jobs"
+          "Graphs"
         ],
         "operationId": "edit_draft",
         "parameters": [
           {
             "name": "id",
             "in": "path",
-            "description": "Job ID",
+            "description": "Graph ID",
             "required": true,
             "schema": {
               "type": "string"
@@ -814,7 +814,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Job"
+                  "$ref": "#/components/schemas/Graph"
                 }
               }
             }
@@ -830,7 +830,7 @@
             }
           },
           "404": {
-            "description": "Job not found",
+            "description": "Graph not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -840,7 +840,7 @@
             }
           },
           "409": {
-            "description": "Not a draft: `job/not-draft`",
+            "description": "Not a draft: `graph/not-draft`",
             "content": {
               "application/json": {
                 "schema": {
@@ -859,17 +859,17 @@
         ]
       }
     },
-    "/v1/jobs/{id}/dashboard": {
+    "/v1/graphs/{id}/dashboard": {
       "get": {
         "tags": [
-          "Jobs"
+          "Graphs"
         ],
         "operationId": "get_dashboard",
         "parameters": [
           {
             "name": "id",
             "in": "path",
-            "description": "Job ID",
+            "description": "Graph ID",
             "required": true,
             "schema": {
               "type": "string"
@@ -878,7 +878,7 @@
         ],
         "responses": {
           "200": {
-            "description": "The job's saved dashboard, or null when none is saved",
+            "description": "The graph's saved dashboard, or null when none is saved",
             "content": {
               "application/json": {
                 "schema": {
@@ -895,7 +895,7 @@
             }
           },
           "404": {
-            "description": "Job not found",
+            "description": "Graph not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -915,15 +915,15 @@
       },
       "put": {
         "tags": [
-          "Jobs"
+          "Graphs"
         ],
-        "summary": "The dashboard is the job's: who may change the job may save it.",
+        "summary": "The dashboard is the graph's: who may change the graph may save it.",
         "operationId": "put_dashboard",
         "parameters": [
           {
             "name": "id",
             "in": "path",
-            "description": "Job ID",
+            "description": "Graph ID",
             "required": true,
             "schema": {
               "type": "string"
@@ -962,7 +962,7 @@
             }
           },
           "404": {
-            "description": "Job not found",
+            "description": "Graph not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -991,18 +991,18 @@
         ]
       }
     },
-    "/v1/jobs/{id}/run": {
+    "/v1/graphs/{id}/run": {
       "post": {
         "tags": [
-          "Jobs"
+          "Graphs"
         ],
-        "summary": "Start a run, with the caller as its runner: of a job never run, or again —\nover the last run's output, in the same folder. One compare-and-set on the\nstored status, so of two runs asked at once one starts and the other is\n`job/already-running`. The run's lease starts now.",
-        "operationId": "run_job",
+        "summary": "Start a run, with the caller as its runner: of a graph never run, or again —\nover the last run's output, in the same folder. One compare-and-set on the\nstored status, so of two runs asked at once one starts and the other is\n`graph/already-running`. The run's lease starts now.",
+        "operationId": "run_graph",
         "parameters": [
           {
             "name": "id",
             "in": "path",
-            "description": "Job ID",
+            "description": "Graph ID",
             "required": true,
             "schema": {
               "type": "string"
@@ -1011,11 +1011,11 @@
         ],
         "responses": {
           "200": {
-            "description": "The job runs, and the caller is its runner: the browser that asked runs the program and reports on it",
+            "description": "The graph runs, and the caller is its runner: the browser that asked runs the program and reports on it",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Job"
+                  "$ref": "#/components/schemas/Graph"
                 }
               }
             }
@@ -1041,7 +1041,7 @@
             }
           },
           "404": {
-            "description": "Job not found",
+            "description": "Graph not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -1051,7 +1051,7 @@
             }
           },
           "409": {
-            "description": "It runs already (`job/already-running`)",
+            "description": "It runs already (`graph/already-running`)",
             "content": {
               "application/json": {
                 "schema": {
@@ -1070,18 +1070,18 @@
         ]
       }
     },
-    "/v1/jobs/{id}/status": {
+    "/v1/graphs/{id}/status": {
       "post": {
         "tags": [
-          "Jobs"
+          "Graphs"
         ],
-        "summary": "The runner's one report, taken from the runner alone: `running` renews the\nlease — a run no report has renewed for the lease (60 s) is swept as\n`job/abandoned`; an end records how the run ended, and dates it.\n`completed` stores the run report verbatim, unread. The answer says\nwhether someone asked the run to stop.",
+        "summary": "The runner's one report, taken from the runner alone: `running` renews the\nlease — a run no report has renewed for the lease (60 s) is swept as\n`graph/abandoned`; an end records how the run ended, and dates it.\n`completed` stores the run report verbatim, unread. The answer says\nwhether someone asked the run to stop.",
         "operationId": "report_status",
         "parameters": [
           {
             "name": "id",
             "in": "path",
-            "description": "Job ID",
+            "description": "Graph ID",
             "required": true,
             "schema": {
               "type": "string"
@@ -1092,7 +1092,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/JobStatusReport"
+                "$ref": "#/components/schemas/GraphStatusReport"
               }
             }
           },
@@ -1110,7 +1110,7 @@
             }
           },
           "400": {
-            "description": "The status is not running or an end, or the job is a draft",
+            "description": "The status is not running or an end, or the graph is a draft",
             "content": {
               "application/json": {
                 "schema": {
@@ -1120,7 +1120,7 @@
             }
           },
           "403": {
-            "description": "Not the job's runner (`rbac/forbidden`)",
+            "description": "Not the graph's runner (`rbac/forbidden`)",
             "content": {
               "application/json": {
                 "schema": {
@@ -1130,7 +1130,7 @@
             }
           },
           "404": {
-            "description": "Job not found",
+            "description": "Graph not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -1140,7 +1140,7 @@
             }
           },
           "409": {
-            "description": "Nothing runs (`job/not-running`), or the run has ended (`job/ended`): the sweep's `job/abandoned` among them",
+            "description": "Nothing runs (`graph/not-running`), or the run has ended (`graph/ended`): the sweep's `graph/abandoned` among them",
             "content": {
               "application/json": {
                 "schema": {
@@ -1159,18 +1159,18 @@
         ]
       }
     },
-    "/v1/jobs/{id}/stop": {
+    "/v1/graphs/{id}/stop": {
       "post": {
         "tags": [
-          "Jobs"
+          "Graphs"
         ],
-        "summary": "Ask a run to stop, from wherever it is watched: its runner may, and an\nadmin. Cooperative — the browser running it hears it in the answer to its\nnext report and ends the run `cancelled`; if that browser is gone, the\nsweep ends it `job/abandoned` once the lease lapses.",
-        "operationId": "stop_job",
+        "summary": "Ask a run to stop, from wherever it is watched: its runner may, and an\nadmin. Cooperative — the browser running it hears it in the answer to its\nnext report and ends the run `cancelled`; if that browser is gone, the\nsweep ends it `graph/abandoned` once the lease lapses.",
+        "operationId": "stop_graph",
         "parameters": [
           {
             "name": "id",
             "in": "path",
-            "description": "Job ID",
+            "description": "Graph ID",
             "required": true,
             "schema": {
               "type": "string"
@@ -1183,7 +1183,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Job"
+                  "$ref": "#/components/schemas/Graph"
                 }
               }
             }
@@ -1199,7 +1199,7 @@
             }
           },
           "404": {
-            "description": "Job not found",
+            "description": "Graph not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -1209,7 +1209,7 @@
             }
           },
           "409": {
-            "description": "Nothing runs (`job/not-running`), or the run has ended (`job/ended`)",
+            "description": "Nothing runs (`graph/not-running`), or the run has ended (`graph/ended`)",
             "content": {
               "application/json": {
                 "schema": {
@@ -1228,18 +1228,18 @@
         ]
       }
     },
-    "/v1/jobs/{id}/submit": {
+    "/v1/graphs/{id}/submit": {
       "post": {
         "tags": [
-          "Jobs"
+          "Graphs"
         ],
-        "summary": "A draft becomes a job to run, in place: the edits, the folder check and\nthe promotion are one write, so a refusal leaves the draft as it was and a\nsuccess leaves no draft behind. It waits `idle` until someone runs it.",
-        "operationId": "submit_job",
+        "summary": "A draft becomes a graph to run, in place: the edits, the folder check and\nthe promotion are one write, so a refusal leaves the draft as it was and a\nsuccess leaves no draft behind. It waits `idle` until someone runs it.",
+        "operationId": "submit_graph",
         "parameters": [
           {
             "name": "id",
             "in": "path",
-            "description": "Job ID",
+            "description": "Graph ID",
             "required": true,
             "schema": {
               "type": "string"
@@ -1258,11 +1258,11 @@
         },
         "responses": {
           "200": {
-            "description": "The draft is now a job to run, idle, under the same id",
+            "description": "The draft is now a graph to run, idle, under the same id",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Job"
+                  "$ref": "#/components/schemas/Graph"
                 }
               }
             }
@@ -1278,7 +1278,7 @@
             }
           },
           "404": {
-            "description": "Job not found",
+            "description": "Graph not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -1288,7 +1288,7 @@
             }
           },
           "409": {
-            "description": "Not a draft (`job/not-draft`), or another job writes to that folder already (`job/folder-taken`; the job stays a draft, unchanged)",
+            "description": "Not a draft (`graph/not-draft`), or another graph writes to that folder already (`graph/folder-taken`; the graph stays a draft, unchanged)",
             "content": {
               "application/json": {
                 "schema": {
@@ -1681,7 +1681,7 @@
         "tags": [
           "Storage"
         ],
-        "summary": "Vend a credential over `scope` for `access`. Anyone in the workspace reads a\ncompleted job's dataset. An editor reads a source connection — Unity\nCatalog's temporary path credentials over an external location — to build\na job, and writes a job's dataset while it runs, if they are its runner.",
+        "summary": "Vend a credential over `scope` for `access`. Anyone in the workspace reads a\ncompleted graph's dataset. An editor reads a source connection — Unity\nCatalog's temporary path credentials over an external location — to build\na graph, and writes a graph's dataset while it runs, if they are its runner.",
         "operationId": "vend",
         "requestBody": {
           "content": {
@@ -1715,7 +1715,7 @@
             }
           },
           "403": {
-            "description": "A source read below editor; a job written below editor, or by anyone but its runner",
+            "description": "A source read below editor; a graph written below editor, or by anyone but its runner",
             "content": {
               "application/json": {
                 "schema": {
@@ -1725,7 +1725,7 @@
             }
           },
           "404": {
-            "description": "No such connection, or no such job",
+            "description": "No such connection, or no such graph",
             "content": {
               "application/json": {
                 "schema": {
@@ -1735,7 +1735,7 @@
             }
           },
           "409": {
-            "description": "A job read before it completed (`job/not-completed`), or written before it runs (`job/not-running`) or after it ended (`job/ended`)",
+            "description": "A graph read before it completed (`graph/not-completed`), or written before it runs (`graph/not-running`) or after it ended (`graph/ended`)",
             "content": {
               "application/json": {
                 "schema": {
@@ -1988,7 +1988,7 @@
           }
         }
       },
-      "CreateJobRequest": {
+      "CreateGraphRequest": {
         "type": "object",
         "required": [
           "script",
@@ -2001,8 +2001,8 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/JobFolder",
-                "description": "The folder under the sink the output lands in. A draft may leave it\nout; it needs one, no other job's, to be submitted."
+                "$ref": "#/components/schemas/GraphFolder",
+                "description": "The folder under the sink the output lands in. A draft may leave it\nout; it needs one, no other graph's, to be submitted."
               }
             ]
           },
@@ -2070,11 +2070,11 @@
             }
           }
         ],
-        "description": "A job's saved dashboard. `spec` is the dashboard the web's BI kit\nserialises (`DashboardSpec`): keasy stores it and hands it back, and never\nreads a field of it."
+        "description": "A graph's saved dashboard. `spec` is the dashboard the web's BI kit\nserialises (`DashboardSpec`): keasy stores it and hands it back, and never\nreads a field of it."
       },
       "Direction": {
         "type": "string",
-        "description": "A source is read through `@name/…`; the one sink is where job output lands.",
+        "description": "A source is read through `@name/…`; the one sink is where graph output lands.",
         "enum": [
           "source",
           "sink"
@@ -2090,7 +2090,7 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/JobFolder",
+                "$ref": "#/components/schemas/GraphFolder",
                 "description": "The draft's folder under the sink, spelled as on create. Submitting\nneeds one, unless the draft holds one already."
               }
             ]
@@ -2155,18 +2155,18 @@
           "server/internal",
           "server/silent",
           "server/not-ready",
-          "job/not-found",
-          "job/not-draft",
-          "job/not-completed",
-          "job/not-running",
-          "job/ended",
-          "job/still-running",
-          "job/already-running",
-          "job/abandoned",
-          "job/interrupted",
-          "job/invalid-destination",
-          "job/no-destination",
-          "job/folder-taken",
+          "graph/not-found",
+          "graph/not-draft",
+          "graph/not-completed",
+          "graph/not-running",
+          "graph/ended",
+          "graph/still-running",
+          "graph/already-running",
+          "graph/abandoned",
+          "graph/interrupted",
+          "graph/invalid-destination",
+          "graph/no-destination",
+          "graph/folder-taken",
           "secret/not-found",
           "connection/not-found",
           "resource/already-exists",
@@ -2246,11 +2246,11 @@
           }
         }
       },
-      "Job": {
+      "Graph": {
         "allOf": [
           {
             "$ref": "#/components/schemas/Provenance",
-            "description": "Who created the job — with an admin, the one who may change, run or\ndelete it — and when. Taken from the token, never the body."
+            "description": "Who created the graph — with an admin, the one who may change, run or\ndelete it — and when. Taken from the token, never the body."
           },
           {
             "type": "object",
@@ -2262,7 +2262,7 @@
             "properties": {
               "can_modify": {
                 "type": "boolean",
-                "description": "Whether the caller may change, run or delete this job, worked out for\neach response: the interface draws what this says and does not\nre-derive it."
+                "description": "Whether the caller may change, run or delete this graph, worked out for\neach response: the interface draws what this says and does not\nre-derive it."
               },
               "can_stop": {
                 "type": "boolean",
@@ -2285,8 +2285,8 @@
                     "type": "null"
                   },
                   {
-                    "$ref": "#/components/schemas/JobFolder",
-                    "description": "The folder under the sink the output lands in. A draft may not have one\nyet; every other job does, and no two of them share one in a sink."
+                    "$ref": "#/components/schemas/GraphFolder",
+                    "description": "The folder under the sink the output lands in. A draft may not have one\nyet; every other graph does, and no two of them share one in a sink."
                   }
                 ]
               },
@@ -2295,7 +2295,7 @@
                   "string",
                   "null"
                 ],
-                "description": "The run's lease: taken by `run`, renewed by every `running` its runner\nreports. A running job whose lease lapses is swept as `job/abandoned`."
+                "description": "The run's lease: taken by `run`, renewed by every `running` its runner\nreports. A running graph whose lease lapses is swept as `graph/abandoned`."
               },
               "id": {
                 "type": "string"
@@ -2330,7 +2330,7 @@
                   },
                   {
                     "$ref": "#/components/schemas/Actor",
-                    "description": "Keycloak `sub` of who runs the job, or ran it last: the one caller\nwhose reports are taken, and the one vended its output to write."
+                    "description": "Keycloak `sub` of who runs the graph, or ran it last: the one caller\nwhose reports are taken, and the one vended its output to write."
                   }
                 ]
               },
@@ -2339,7 +2339,7 @@
                   "string",
                   "null"
                 ],
-                "description": "The program every run of the job runs."
+                "description": "The program every run of the graph runs."
               },
               "sink_connection": {
                 "type": "string",
@@ -2353,20 +2353,20 @@
                 "description": "When the last run started."
               },
               "status": {
-                "$ref": "#/components/schemas/JobStatus"
+                "$ref": "#/components/schemas/GraphStatus"
               }
             }
           }
         ]
       },
-      "JobFolder": {
+      "GraphFolder": {
         "type": "string",
-        "description": "The folder a job's output lands in under the sink: lowercase letters, digits and `-`, starting with a letter or digit.",
+        "description": "The folder a graph's output lands in under the sink: lowercase letters, digits and `-`, starting with a letter or digit.",
         "maxLength": 63,
         "minLength": 1,
         "pattern": "^[a-z0-9][a-z0-9-]*$"
       },
-      "JobStatus": {
+      "GraphStatus": {
         "type": "string",
         "enum": [
           "draft",
@@ -2377,9 +2377,9 @@
           "cancelled"
         ]
       },
-      "JobStatusReport": {
+      "GraphStatusReport": {
         "type": "object",
-        "description": "What the runner reports of a job's run (POST `/v1/jobs/{id}/status`): that\nit still runs, every so often to hold its lease, and how it ended. The\nbrowser runs the program (`@fossil-lang/executor`) and writes the output\nwith a credential vended for the job; keasy only records.",
+        "description": "What the runner reports of a graph's run (POST `/v1/graphs/{id}/status`): that\nit still runs, every so often to hold its lease, and how it ended. The\nbrowser runs the program (`@fossil-lang/executor`) and writes the output\nwith a credential vended for the graph; keasy only records.",
         "required": [
           "status"
         ],
@@ -2391,7 +2391,7 @@
             "description": "fossil's run report (on `completed`), stored verbatim and never read."
           },
           "status": {
-            "$ref": "#/components/schemas/JobStatus",
+            "$ref": "#/components/schemas/GraphStatus",
             "description": "`running` (renews the lease), or the end: `completed`, `failed` or\n`cancelled`."
           }
         }
@@ -2463,7 +2463,7 @@
       },
       "ResourceName": {
         "type": "string",
-        "description": "A credential's, a connection's or a job's name: no leading or trailing whitespace, and no `/`, `@`, `\\` or control character.",
+        "description": "A credential's, a connection's or a graph's name: no leading or trailing whitespace, and no `/`, `@`, `\\` or control character.",
         "maxLength": 100,
         "minLength": 1,
         "pattern": "^[^\\p{White_Space}/@\\\\\\p{Cc}](?:[^/@\\\\\\p{Cc}]*[^\\p{White_Space}/@\\\\\\p{Cc}])?$"
@@ -2506,14 +2506,14 @@
           },
           {
             "type": "object",
-            "description": "A job's dataset, by the job's id.",
+            "description": "A graph's dataset, by the graph's id. `job` on the wire: the scope is\nfossil's, passed through verbatim, and fossil calls it that.",
             "required": [
               "job"
             ],
             "properties": {
               "job": {
                 "type": "string",
-                "description": "A job's dataset, by the job's id."
+                "description": "A graph's dataset, by the graph's id. `job` on the wire: the scope is\nfossil's, passed through verbatim, and fossil calls it that."
               }
             }
           }
@@ -3023,7 +3023,7 @@
     }
   ],
   "x-keasy-bounds": {
-    "job_lease_ms": 60000,
+    "graph_lease_ms": 60000,
     "request_ms": 25000
   }
 }

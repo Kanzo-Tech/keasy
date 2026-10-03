@@ -25,16 +25,16 @@ export type TableStats = FieldStats & { name: string };
 /** Everything read off a corpus is read once, and dropped with the page. */
 export const ONCE = { staleTime: Infinity, gcTime: 0, retry: false } as const;
 
-/** The root of every cached read of a job's opened output; its own, so invalidating a job never reopens it. */
-export const corpusKey = (jobId: string) => ["corpus", jobId] as const;
+/** The root of every cached read of a graph's opened output; its own, so invalidating a graph never reopens it. */
+export const corpusKey = (graphId: string) => ["corpus", graphId] as const;
 
 /**
- * A job's corpus, attached under its id to the page's one engine by fossil's `open`, which asks
- * {@link host} for the read credential: SQL names it `"<jobId>"."<Table>"`, and what it holds is its
+ * A graph's corpus, attached under its id to the page's one engine by fossil's `open`, which asks
+ * {@link host} for the read credential: SQL names it `"<graphId>"."<Table>"`, and what it holds is its
  * `fossil_tables` and `fossil_columns`, asked through the coordinator by whoever needs to know.
  */
 export interface Corpus {
-  jobId: string;
+  graphId: string;
   /** Detaches the corpus. */
   close: Close;
 }
@@ -42,13 +42,13 @@ export interface Corpus {
 /** The corpus, and the coordinator of the engine it was attached to — the one `MosaicProvider` hands down. */
 type Opened = Corpus & { coordinator: Coordinator };
 
-export function corpusQuery(jobId: string) {
+export function corpusQuery(graphId: string) {
   return queryOptions({
-    queryKey: corpusKey(jobId),
+    queryKey: corpusKey(graphId),
     queryFn: async ({ signal }): Promise<Opened> => {
       const attachedTo = await engine({ signal });
-      const close = await open(jobId, { engine: attachedTo, host, signal });
-      return { jobId, close, coordinator: attachedTo.coordinator };
+      const close = await open(graphId, { engine: attachedTo, host, signal });
+      return { graphId, close, coordinator: attachedTo.coordinator };
     },
     ...ONCE,
   });
@@ -90,21 +90,21 @@ export function useCorpus(): Corpus {
 }
 
 /** The vertex tables, in the manifest's order. */
-export const vertexTables = (jobId: string) =>
-  Query.from(new TableRefNode([jobId, "fossil_tables"]))
+export const vertexTables = (graphId: string) =>
+  Query.from(new TableRefNode([graphId, "fossil_tables"]))
     .select("table_name")
     .where(eq(column("kind"), literal("vertex")))
     .orderby("first_id");
 
 /** Each table's columns the writer gave `role` — or any role: fossil's bookkeeping, not the program's. */
-export const roleColumns = (jobId: string, role?: "address" | "identity" | "endpoint") =>
-  Query.from(new TableRefNode([jobId, "fossil_columns"]))
+export const roleColumns = (graphId: string, role?: "address" | "identity" | "endpoint") =>
+  Query.from(new TableRefNode([graphId, "fossil_columns"]))
     .select("table_name", "column_name")
     .where(role ? eq(column("role"), literal(role)) : isNotNull(column("role")));
 
 /** The column the graph keys a vertex by — the `address` column, the same in every vertex table of one corpus. */
 export function useGraphKey(): string {
-  const [address] = useQueryRows<{ column_name: string }>(roleColumns(useCorpus().jobId, "address"));
+  const [address] = useQueryRows<{ column_name: string }>(roleColumns(useCorpus().graphId, "address"));
   if (!address) throw new Error("The corpus declares no vertex table, so nothing has a key");
   return address.column_name;
 }
@@ -116,17 +116,17 @@ export function useGraphKey(): string {
  * throws to the boundary.
  */
 export function useFieldStats(): TableStats[] {
-  const { jobId } = useCorpus();
+  const { graphId } = useCorpus();
   const { coordinator } = useMosaic();
-  const tables = useQueryRows<{ table_name: string }>(vertexTables(jobId));
-  const kept = useQueryRows<{ table_name: string; column_name: string }>(roleColumns(jobId));
+  const tables = useQueryRows<{ table_name: string }>(vertexTables(graphId));
+  const kept = useQueryRows<{ table_name: string; column_name: string }>(roleColumns(graphId));
   const stats = useSuspenseQuery({
-    queryKey: [...corpusKey(jobId), "stats"],
+    queryKey: [...corpusKey(graphId), "stats"],
     queryFn: () =>
       Promise.all(
         tables.map(async ({ table_name: name }) => ({
           name,
-          ...(await queryFieldStats(coordinator, new TableRefNode([jobId, name]), {
+          ...(await queryFieldStats(coordinator, new TableRefNode([graphId, name]), {
             exclude: kept.filter((c) => c.table_name === name).map((c) => c.column_name),
           })),
         })),

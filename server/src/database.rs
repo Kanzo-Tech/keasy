@@ -32,7 +32,7 @@ pub enum DbError {
     /// A second row of that name, or a second sink.
     #[error("{0}")]
     AlreadyExists(String),
-    /// A second job that is not a draft writing to one folder of the sink.
+    /// A second graph that is not a draft writing to one folder of the sink.
     #[error("{0}")]
     FolderTaken(String),
     /// Still referenced by `dependents`.
@@ -60,7 +60,7 @@ impl From<DbError> for Refusal {
             }
             DbError::FolderTaken(message) => Refusal::field(
                 StatusCode::CONFLICT,
-                ErrorCode::JobFolderTaken,
+                ErrorCode::GraphFolderTaken,
                 "folder",
                 message,
             ),
@@ -269,7 +269,7 @@ CREATE TABLE connections (
 -- Exactly one write sink per workspace.
 CREATE UNIQUE INDEX connections_one_sink ON connections(direction) WHERE direction = 'sink';
 
-CREATE TABLE jobs (
+CREATE TABLE graphs (
     id              TEXT PRIMARY KEY,
     name            TEXT,
     status          TEXT NOT NULL DEFAULT 'draft',
@@ -277,9 +277,9 @@ CREATE TABLE jobs (
     started_at      TEXT,
     completed_at    TEXT,
     -- The run's lease: taken by run and renewed by its runner; a running
-    -- job whose lease has lapsed is swept to failed.
+    -- graph whose lease has lapsed is swept to failed.
     heartbeat_at    TEXT,
-    -- Who runs the job, or ran it last: the only one whose reports count.
+    -- Who runs the graph, or ran it last: the only one whose reports count.
     runner          TEXT CHECK (status <> 'running' OR runner IS NOT NULL),
     runner_name     TEXT CHECK ((runner IS NULL) = (runner_name IS NULL)),
     cancel_requested INTEGER NOT NULL DEFAULT 0 CHECK (cancel_requested IN (0, 1)),
@@ -293,12 +293,12 @@ CREATE TABLE jobs (
     -- fossil's run report, opaque. What the corpus holds, the corpus says.
     report          TEXT CHECK (report IS NULL OR json_valid(report))
 );
--- A folder holds one job's output: drafts may share one, nothing else does.
-CREATE UNIQUE INDEX jobs_one_folder ON jobs(sink_connection, folder) WHERE status <> 'draft';
+-- A folder holds one graph's output: drafts may share one, nothing else does.
+CREATE UNIQUE INDEX graphs_one_folder ON graphs(sink_connection, folder) WHERE status <> 'draft';
 
--- A job's saved dashboard: opaque to keasy, gone with the job.
+-- A graph's saved dashboard: opaque to keasy, gone with the graph.
 CREATE TABLE dashboards (
-    job_id          TEXT PRIMARY KEY REFERENCES jobs (id) ON DELETE CASCADE,
+    graph_id          TEXT PRIMARY KEY REFERENCES graphs (id) ON DELETE CASCADE,
     spec            TEXT NOT NULL CHECK (json_type(spec) = 'object'),
     created_by      TEXT NOT NULL,
     created_by_name TEXT NOT NULL,
@@ -367,7 +367,7 @@ mod tests {
         let tables: i64 = conn
             .query_row(
                 "SELECT count(*) FROM sqlite_master WHERE type='table' AND name IN \
-                 ('credentials','connections','jobs','dashboards')",
+                 ('credentials','connections','graphs','dashboards')",
                 [],
                 |r| r.get(0),
             )

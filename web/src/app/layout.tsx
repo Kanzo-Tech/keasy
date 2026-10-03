@@ -27,7 +27,7 @@ const jetbrainsMono = JetBrains_Mono({
 
 export async function generateMetadata(): Promise<Metadata> {
   const { name } = await getBranding();
-  return { title: name, description: "Monitor and manage Keasy jobs" };
+  return { title: name, description: "Monitor and manage Keasy graphs" };
 }
 
 export default async function RootLayout({

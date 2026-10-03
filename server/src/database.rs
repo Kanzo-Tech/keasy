@@ -205,7 +205,11 @@ fn open_conn(path: &Path) -> Result<Connection, String> {
     Connection::open(path).map_err(|e| format!("failed to open connection: {e}"))
 }
 
-const SCHEMA: &str = "
+// The schema in pieces, so the statements an upgrade replays are the
+// schema's own, word for word: SQLite compares them as text.
+macro_rules! schema_head {
+    () => {
+        "
 -- The spec is sealed whole (AES-256-GCM, AAD = 'credential:' || name).
 CREATE TABLE credentials (
     name        TEXT PRIMARY KEY,
@@ -234,15 +238,20 @@ CREATE TABLE connections (
 -- Exactly one write sink per workspace.
 CREATE UNIQUE INDEX connections_one_sink ON connections(direction) WHERE direction = 'sink';
 
-CREATE TABLE jobs (
+"
+    };
+}
+macro_rules! jobs_table {
+    () => {
+        "CREATE TABLE jobs (
     id              TEXT PRIMARY KEY,
     name            TEXT,
     status          TEXT NOT NULL DEFAULT 'pending',
     created_at      TEXT NOT NULL,
     started_at      TEXT,
     completed_at    TEXT,
-    -- The runner's lease: refreshed while the job runs, and a running job
-    -- whose heartbeat is older than the lease is swept to failed.
+    -- The lease: taken at submit and renewed while the job runs; a job
+    -- whose lease has lapsed is swept to failed.
     heartbeat_at    TEXT,
     problem         TEXT CHECK (problem IS NULL OR json_valid(problem)),
     created_by      TEXT NOT NULL,
@@ -252,9 +261,17 @@ CREATE TABLE jobs (
     script          TEXT,
     -- fossil's run report, opaque. What the corpus holds, the corpus says.
     report          TEXT CHECK (report IS NULL OR json_valid(report))
-);
--- A folder holds one job's output: drafts may share one, nothing else does.
-CREATE UNIQUE INDEX jobs_one_folder ON jobs(sink_connection, folder) WHERE status <> 'draft';
+);"
+    };
+}
+macro_rules! jobs_index {
+    () => {
+        "CREATE UNIQUE INDEX jobs_one_folder ON jobs(sink_connection, folder) WHERE status <> 'draft';"
+    };
+}
+macro_rules! schema_tail {
+    () => {
+        "
 
 -- A job's saved dashboard: opaque to keasy, gone with the job.
 CREATE TABLE dashboards (
@@ -263,11 +280,26 @@ CREATE TABLE dashboards (
     updated_at  TEXT NOT NULL,
     updated_by  TEXT NOT NULL
 );
-";
+"
+    };
+}
 
-/// The `jobs` table of the schema before this one: a copy of the corpus's own
-/// description (`relations`), and the run report under the name `manifest`.
-const PREVIOUS_JOBS: &str = "CREATE TABLE jobs (
+const SCHEMA: &str = concat!(
+    schema_head!(),
+    jobs_table!(),
+    "
+-- A folder holds one job's output: drafts may share one, nothing else does.
+",
+    jobs_index!(),
+    schema_tail!()
+);
+
+/// The schema before this one, as a fresh database of it holds it: its `jobs`
+/// kept a copy of the corpus's own description (`relations`), and the run
+/// report under the name `manifest`.
+const PREVIOUS_SCHEMA: &str = concat!(
+    schema_head!(),
+    "CREATE TABLE jobs (
     id              TEXT PRIMARY KEY,
     name            TEXT,
     status          TEXT NOT NULL DEFAULT 'pending',
@@ -285,19 +317,13 @@ const PREVIOUS_JOBS: &str = "CREATE TABLE jobs (
     script          TEXT,
     manifest        TEXT,
     relations       TEXT
-);";
-
-/// The statement of [`SCHEMA`] that begins `start`, through its `;`.
-fn statement(start: &str) -> &'static str {
-    let from = SCHEMA.find(start).expect("the schema holds the statement");
-    let to = from + SCHEMA[from..].find(';').expect("a statement ends") + 1;
-    &SCHEMA[from..to]
-}
-
-/// The schema before this one, as a fresh database of it would hold it.
-fn previous_schema() -> String {
-    SCHEMA.replace(statement("CREATE TABLE jobs ("), PREVIOUS_JOBS)
-}
+);",
+    "
+-- A folder holds one job's output: drafts may share one, nothing else does.
+",
+    jobs_index!(),
+    schema_tail!()
+);
 
 /// From the previous schema to this one: `jobs` is rebuilt without
 /// `relations`, its `manifest` kept as `report`. The old table is moved aside
@@ -305,23 +331,29 @@ fn previous_schema() -> String {
 /// [`SCHEMA`]'s, word for word; `legacy_alter_table` keeps the move from
 /// rewriting `dashboards`' reference to `jobs`, and with foreign keys off the
 /// old table goes without taking the dashboards with it.
-const UPGRADE: &str = "
+const UPGRADE: &str = concat!(
+    "
 PRAGMA foreign_keys=OFF;
 PRAGMA legacy_alter_table=ON;
 BEGIN;
 ALTER TABLE jobs RENAME TO jobs_previous;
-{jobs}
+",
+    jobs_table!(),
+    "
 INSERT INTO jobs (id, name, status, created_at, started_at, completed_at, heartbeat_at,
                   problem, created_by, sink_connection, folder, script, report)
     SELECT id, name, status, created_at, started_at, completed_at, heartbeat_at,
            problem, created_by, sink_connection, folder, script, manifest
     FROM jobs_previous;
 DROP TABLE jobs_previous;
-{index}
+",
+    jobs_index!(),
+    "
 COMMIT;
 PRAGMA legacy_alter_table=OFF;
 PRAGMA foreign_keys=ON;
-";
+"
+);
 
 /// Every table and index a fresh database of `schema` holds.
 fn objects_of(schema: &str) -> Result<Vec<(String, String)>, String> {
@@ -344,11 +376,11 @@ pub fn apply_schema(conn: &rusqlite::Connection) -> Result<(), String> {
     }
 
     let expected = objects_of(SCHEMA)?;
-    if existing == objects_of(&previous_schema())? {
-        let upgrade = UPGRADE
-            .replace("{jobs}", statement("CREATE TABLE jobs ("))
-            .replace("{index}", statement("CREATE UNIQUE INDEX jobs_one_folder"));
-        if let Err(e) = conn.execute_batch(&upgrade) {
+    if existing == expected {
+        return Ok(());
+    }
+    if existing == objects_of(PREVIOUS_SCHEMA)? {
+        if let Err(e) = conn.execute_batch(UPGRADE) {
             // A failed statement leaves the transaction open; nothing of it is kept.
             let _ = conn
                 .execute_batch("ROLLBACK; PRAGMA legacy_alter_table=OFF; PRAGMA foreign_keys=ON;");
@@ -414,7 +446,7 @@ mod tests {
     fn a_database_of_the_previous_schema_is_upgraded_with_its_rows() {
         let conn = rusqlite::Connection::open_in_memory().unwrap();
         conn.execute_batch("PRAGMA foreign_keys=ON;").unwrap();
-        conn.execute_batch(&previous_schema()).unwrap();
+        conn.execute_batch(PREVIOUS_SCHEMA).unwrap();
         conn.execute_batch(
             r#"
             INSERT INTO credentials VALUES ('key', x'00', 'u', 't', 'u', 't', NULL);

@@ -53,7 +53,7 @@ async fn no_response_carries_a_secret() {
 }
 
 /// A credential or connection is its creator's or the owner's to change; the
-/// sink is the owner's alone, and sources and models are the members'.
+/// sink is the owner's alone, and sources are the members'.
 #[tokio::test]
 async fn only_the_creator_or_the_owner_changes_a_credential_and_only_the_owner_the_sink() {
     let app = spawn_app().await;

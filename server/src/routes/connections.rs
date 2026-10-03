@@ -99,7 +99,7 @@ fn may_change(
     }
     match current {
         None if caller.is_owner() => Err(Refusal::forbidden(
-            "the owner manages the sink; sources and models are the members'",
+            "the owner manages the sink; sources are the members'",
         )),
         None => Ok(()),
         Some(c) if caller.owns(&c.created_by) => Ok(()),
@@ -124,7 +124,7 @@ pub async fn list_connections(
     responses(
         (status = 201, description = "Validated and stored", body = ConnectionView),
         (status = 400, description = "No such credential, one of the other purpose, or a URL it does not reach", body = ErrorBody),
-        (status = 403, description = "A sink by a member, or a source or model by the owner", body = ErrorBody),
+        (status = 403, description = "A sink by a member, or a source by the owner", body = ErrorBody),
         (status = 409, description = "A connection of that name, or a second sink", body = ErrorBody),
         (status = 422, description = "The connection did not validate", body = ErrorBody),
         (status = 504, description = "The store did not answer the probe in time", body = ErrorBody),
@@ -229,7 +229,7 @@ pub async fn delete_connection(
         (status = 504, description = "The store did not answer the probe in time", body = ErrorBody),
     )
 )]
-/// LIST a source, WRITE and DELETE under the sink, list a model's provider.
+/// LIST a source, WRITE and DELETE under the sink.
 pub async fn validate_connection(
     caller: AnyRole,
     State(state): State<AppState>,

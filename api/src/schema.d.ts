@@ -172,7 +172,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** LIST a source, WRITE and DELETE under the sink, list a model's provider. */
+        /** LIST a source, WRITE and DELETE under the sink. */
         post: operations["validate_connection"];
         delete?: never;
         options?: never;
@@ -1095,7 +1095,7 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
-            /** @description A sink by a member, or a source or model by the owner */
+            /** @description A sink by a member, or a source by the owner */
             403: {
                 headers: {
                     [name: string]: unknown;

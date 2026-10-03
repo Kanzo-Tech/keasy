@@ -1,5 +1,6 @@
-//! Credentials: the capability every consumer shares — routes, connections,
-//! the bootstrap file and the LLM proxy.
+//! Credentials — `/v1/secrets` on the wire: the keys keasy reaches a store
+//! with, shared by the routes, the connections and the bootstrap file. Model
+//! calls hold none; they go through the AI gateway.
 
 pub mod persistence;
 pub mod probe;
@@ -18,8 +19,8 @@ pub async fn named(db: &Database, name: &str) -> Result<Credential, Refusal> {
         .ok_or_else(|| Refusal::not_found(ErrorCode::SecretNotFound, "No such credential"))
 }
 
-/// Parse, probe, seal and store a credential. A model credential must list
-/// its models; a storage credential must list `probe_url` when one is given.
+/// Parse, probe, seal and store a credential, LISTing `probe_url` when one is
+/// given.
 pub async fn create(
     db: &Database,
     name: &str,

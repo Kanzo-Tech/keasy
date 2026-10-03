@@ -254,7 +254,7 @@
             "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "A sink by a member, or a source or model by the owner",
+            "description": "A sink by a member, or a source by the owner",
             "content": {
               "application/json": {
                 "schema": {
@@ -626,7 +626,7 @@
         "tags": [
           "Connections"
         ],
-        "summary": "LIST a source, WRITE and DELETE under the sink, list a model's provider.",
+        "summary": "LIST a source, WRITE and DELETE under the sink.",
         "operationId": "validate_connection",
         "parameters": [
           {

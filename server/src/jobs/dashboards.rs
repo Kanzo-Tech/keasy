@@ -2,51 +2,44 @@
 
 use rusqlite::{Connection, OptionalExtension, params};
 
-use crate::database::{DbResult, json_column};
-use crate::domain::{Dashboard, now_iso8601};
+use crate::database::{DbError, DbResult, json_column, provenance_columns};
+use crate::domain::{Actor, Dashboard, now_iso8601};
 
 pub fn get(conn: &Connection, job_id: &str) -> DbResult<Option<Dashboard>> {
     Ok(conn
         .query_row(
-            "SELECT spec, updated_at, updated_by FROM dashboards WHERE job_id = ?1",
+            "SELECT spec, created_by, created_by_name, created_at,
+                    updated_by, updated_by_name, updated_at
+             FROM dashboards WHERE job_id = ?1",
             [job_id],
             |row| {
                 Ok(Dashboard {
                     spec: json_column(row, "spec")?,
-                    updated_at: row.get("updated_at")?,
-                    updated_by: row.get("updated_by")?,
+                    provenance: provenance_columns(row)?,
                 })
             },
         )
         .optional()?)
 }
 
-/// Replace the job's dashboard with `spec`.
+/// Replace the job's dashboard with `spec`: the first save creates it, every
+/// later one updates it and keeps who created it.
 pub fn put(
     conn: &Connection,
     job_id: &str,
     spec: serde_json::Map<String, serde_json::Value>,
-    by: &str,
+    by: &Actor,
 ) -> DbResult<Dashboard> {
-    let dashboard = Dashboard {
-        spec,
-        updated_at: now_iso8601(),
-        updated_by: by.to_string(),
-    };
+    let now = now_iso8601();
     conn.execute(
-        "INSERT INTO dashboards (job_id, spec, updated_at, updated_by)
-         VALUES (?1, ?2, ?3, ?4)
+        "INSERT INTO dashboards (job_id, spec, created_by, created_by_name, created_at)
+         VALUES (?1, ?2, ?3, ?4, ?5)
          ON CONFLICT (job_id) DO UPDATE SET
-             spec = excluded.spec, updated_at = excluded.updated_at,
-             updated_by = excluded.updated_by",
-        params![
-            job_id,
-            serde_json::to_string(&dashboard.spec)?,
-            dashboard.updated_at,
-            dashboard.updated_by,
-        ],
+             spec = excluded.spec, updated_by = excluded.created_by,
+             updated_by_name = excluded.created_by_name, updated_at = excluded.created_at",
+        params![job_id, serde_json::to_string(&spec)?, by.id, by.name, now],
     )?;
-    Ok(dashboard)
+    get(conn, job_id)?.ok_or_else(|| DbError::Invalid(format!("no job {job_id:?}")))
 }
 
 #[cfg(test)]
@@ -60,9 +53,23 @@ mod tests {
         conn.execute_batch("PRAGMA foreign_keys=ON;").unwrap();
         crate::database::apply_schema(&conn).unwrap();
         crate::connections::persistence::tests::seed_sink(&conn, "sink");
-        let job = Job::new(None, "sink".into(), None, "x".into(), "u-1".into());
+        let job = Job::new(None, "sink".into(), None, "x".into(), ana());
         crate::jobs::persistence::insert(&conn, &job).unwrap();
         (conn, job.id)
+    }
+
+    fn ana() -> Actor {
+        Actor {
+            id: "u-1".into(),
+            name: "Ana Duarte".into(),
+        }
+    }
+
+    fn bruno() -> Actor {
+        Actor {
+            id: "u-2".into(),
+            name: "Bruno".into(),
+        }
     }
 
     fn object(v: serde_json::Value) -> serde_json::Map<String, serde_json::Value> {
@@ -75,12 +82,14 @@ mod tests {
         let (conn, id) = conn_with_job();
         assert!(get(&conn, &id).unwrap().is_none());
 
-        put(&conn, &id, object(json!({ "cards": [1] })), "u-1").unwrap();
+        let first = put(&conn, &id, object(json!({ "cards": [1] })), &ana()).unwrap();
+        assert_eq!(first.provenance.created_by, ana());
+        assert_eq!(first.provenance.updated_by, None);
         put(
             &conn,
             &id,
             object(json!({ "cards": [2], "x": { "y": null } })),
-            "u-1",
+            &bruno(),
         )
         .unwrap();
         let saved = get(&conn, &id).unwrap().unwrap();
@@ -88,7 +97,8 @@ mod tests {
             serde_json::Value::Object(saved.spec),
             json!({ "cards": [2], "x": { "y": null } })
         );
-        assert_eq!(saved.updated_by, "u-1");
+        assert_eq!(saved.provenance.created_by, ana(), "the creator is kept");
+        assert_eq!(saved.provenance.updated_by, Some(bruno()));
 
         crate::jobs::persistence::delete(&conn, &id).unwrap();
         assert!(get(&conn, &id).unwrap().is_none());
@@ -97,6 +107,6 @@ mod tests {
     #[test]
     fn a_dashboard_needs_its_job() {
         let (conn, _) = conn_with_job();
-        assert!(put(&conn, "no-such-job", object(json!({})), "u-1").is_err());
+        assert!(put(&conn, "no-such-job", object(json!({})), &ana()).is_err());
     }
 }

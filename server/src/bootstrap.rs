@@ -12,12 +12,9 @@ use serde::Deserialize;
 use tracing::{error, info};
 
 use crate::database::Database;
+use crate::domain::Actor;
 use crate::routes::connections::CreateConnectionRequest;
 use crate::routes::secrets::CreateSecretRequest;
-
-/// Who a declared entry was created by: nobody who signs in, so only the
-/// owner may change it.
-const BY: &str = "bootstrap";
 
 #[derive(Deserialize)]
 struct Declared {
@@ -51,7 +48,7 @@ pub async fn ensure_declared(db: &Database, path: &str) {
             &request.name,
             &request.spec,
             request.probe_url.as_deref(),
-            BY,
+            &Actor::bootstrap(),
         )
         .await
         {
@@ -70,7 +67,14 @@ pub async fn ensure_declared(db: &Database, path: &str) {
                 continue;
             }
         }
-        match crate::connections::create(db, request.name, request.secret, request.target, BY).await
+        match crate::connections::create(
+            db,
+            request.name,
+            request.secret,
+            request.target,
+            &Actor::bootstrap(),
+        )
+        .await
         {
             Ok(_) => info!(%name, "declared connection ready"),
             Err(e) => error!(%name, error = ?e, "declared connection: rejected"),

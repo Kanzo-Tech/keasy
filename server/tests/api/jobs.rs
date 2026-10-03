@@ -103,7 +103,7 @@ async fn a_job_is_read_by_all_and_changed_by_its_creator_or_an_admin() {
         (StatusCode::OK, Some("renamed"))
     );
     assert_eq!(
-        edited["created_by"], "u-1",
+        edited["created_by"]["id"], "u-1",
         "an admin's edit keeps who made it"
     );
 }
@@ -287,7 +287,7 @@ async fn a_job_keeps_one_dashboard() {
         .send(Method::PUT, &path, &mine, json!({ "spec": spec }))
         .await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(saved["updated_by"], "u-1");
+    assert_eq!(saved["created_by"]["id"], "u-1");
     let (_, read) = app.send(Method::GET, &path, &mine, json!(null)).await;
     assert_eq!(read["spec"], spec);
 

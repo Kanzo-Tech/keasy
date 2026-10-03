@@ -8,6 +8,7 @@ mod health_check;
 mod helpers;
 mod jobs;
 mod openapi;
+mod provenance;
 mod secrets;
 mod telemetry;
 mod vending;

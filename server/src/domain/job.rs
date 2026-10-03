@@ -1,7 +1,7 @@
 use crate::authentication::role::Caller;
 use serde::{Deserialize, Serialize};
 
-use super::{Access, JobFolder, ResourceName, StorageLocation, now_iso8601};
+use super::{Access, Actor, JobFolder, Provenance, ResourceName, StorageLocation, now_iso8601};
 use crate::error::{ErrorCode, Refusal};
 
 #[derive(
@@ -40,7 +40,6 @@ pub struct Job {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[schema(value_type = Option<ResourceName>)]
     pub name: Option<String>,
-    pub created_at: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub started_at: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -55,10 +54,10 @@ pub struct Job {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[schema(value_type = Option<Value>)]
     pub problem: Option<serde_json::Value>,
-    /// Keycloak `sub` of who created the job: with an admin, the one who may
-    /// change, run or delete it. Everyone in the workspace reads it. Taken from
-    /// the token, never the body.
-    pub created_by: String,
+    /// Who created the job — with an admin, the one who may change, run or
+    /// delete it — and when. Taken from the token, never the body.
+    #[serde(flatten)]
+    pub provenance: Provenance,
     /// Whether the caller may change, run or delete this job, worked out for
     /// each response: the interface draws what this says and does not
     /// re-derive it.
@@ -92,18 +91,17 @@ impl Job {
         sink_connection: String,
         folder: Option<JobFolder>,
         script: String,
-        created_by: String,
+        created_by: Actor,
     ) -> Self {
         let id = uuid::Uuid::new_v4().to_string();
         Self {
             status: JobStatus::Draft,
             name: name.or_else(|| Some(id[..8].to_string())),
-            created_at: now_iso8601(),
             started_at: None,
             completed_at: None,
             heartbeat_at: None,
             problem: None,
-            created_by,
+            provenance: Provenance::created(created_by),
             sink_connection,
             folder: folder.map(JobFolder::into_inner),
             script: Some(script),
@@ -173,7 +171,7 @@ impl Job {
 
     /// The job as `caller` sees it: [`Job::can_modify`] filled in.
     pub fn seen_by(mut self, caller: &Caller) -> Self {
-        self.can_modify = caller.may_modify(&self.created_by);
+        self.can_modify = caller.may_modify(&self.provenance.created_by.id);
         self
     }
 
@@ -265,7 +263,7 @@ mod tests {
                 "sink".into(),
                 f.map(|f| JobFolder::parse(f).unwrap()),
                 "x".into(),
-                "u-1".into(),
+                Actor::bootstrap(),
             )
         };
 

@@ -4,19 +4,19 @@
 use rusqlite::{Connection, OptionalExtension, params};
 
 use super::sealing::{self, SecretKey};
-use crate::database::{DbError, DbResult, constraint, json_column_opt};
-use crate::domain::{Credential, ResourceName, SecretSpec, SecretView, ValidationReport};
+use crate::database::{DbError, DbResult, constraint, json_column_opt, provenance_columns};
+use crate::domain::{
+    Actor, Credential, Provenance, ResourceName, SecretSpec, SecretView, ValidationReport,
+};
 
-const COLUMNS: &str = "name, spec, created_by, created_at, updated_by, updated_at, validation";
+const COLUMNS: &str = "name, spec, created_by, created_by_name, created_at, \
+                       updated_by, updated_by_name, updated_at, validation";
 
 /// A row, still sealed.
 struct Row {
     name: String,
     spec: Vec<u8>,
-    created_by: String,
-    created_at: String,
-    updated_by: String,
-    updated_at: String,
+    provenance: Provenance,
     validation: Option<ValidationReport>,
 }
 
@@ -24,10 +24,7 @@ fn row(r: &rusqlite::Row<'_>) -> rusqlite::Result<Row> {
     Ok(Row {
         name: r.get("name")?,
         spec: r.get("spec")?,
-        created_by: r.get("created_by")?,
-        created_at: r.get("created_at")?,
-        updated_by: r.get("updated_by")?,
-        updated_at: r.get("updated_at")?,
+        provenance: provenance_columns(r)?,
         validation: json_column_opt(r, "validation")?,
     })
 }
@@ -37,10 +34,7 @@ impl Row {
         Ok(Credential {
             spec: sealing::open_spec(&self.name, &self.spec, key).map_err(DbError::Secret)?,
             name: self.name,
-            created_by: self.created_by,
-            created_at: self.created_at,
-            updated_by: self.updated_by,
-            updated_at: self.updated_at,
+            provenance: self.provenance,
             validation: self.validation,
         })
     }
@@ -64,16 +58,19 @@ pub fn insert(
     key: &SecretKey,
     name: &ResourceName,
     spec: &SecretSpec,
-    by: &str,
+    by: &Actor,
     validation: &ValidationReport,
 ) -> DbResult<()> {
     let sealed = sealing::seal_spec(name.as_ref(), spec, key).map_err(DbError::Secret)?;
     conn.execute(
-        &format!("INSERT INTO credentials ({COLUMNS}) VALUES (?1, ?2, ?3, ?4, ?3, ?4, ?5)"),
+        "INSERT INTO credentials
+             (name, spec, created_by, created_by_name, created_at, validation)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
         params![
             name.as_ref(),
             sealed,
-            by,
+            by.id,
+            by.name,
             crate::domain::now_iso8601(),
             serde_json::to_string(validation)?
         ],
@@ -126,19 +123,20 @@ pub fn update(
     name: &str,
     new_name: &ResourceName,
     spec: &SecretSpec,
-    by: &str,
+    by: &Actor,
     validation: Option<&ValidationReport>,
 ) -> DbResult<()> {
     let sealed = sealing::seal_spec(new_name.as_ref(), spec, key).map_err(DbError::Secret)?;
     conn.execute(
         "UPDATE credentials
-         SET name = ?1, spec = ?2, updated_by = ?3, updated_at = ?4,
-             validation = coalesce(?5, validation)
-         WHERE name = ?6",
+         SET name = ?1, spec = ?2, updated_by = ?3, updated_by_name = ?4, updated_at = ?5,
+             validation = coalesce(?6, validation)
+         WHERE name = ?7",
         params![
             new_name.as_ref(),
             sealed,
-            by,
+            by.id,
+            by.name,
             crate::domain::now_iso8601(),
             validation.map(serde_json::to_string).transpose()?,
             name
@@ -203,6 +201,13 @@ mod tests {
         conn
     }
 
+    fn user() -> Actor {
+        Actor {
+            id: "u-1".into(),
+            name: "Ana Duarte".into(),
+        }
+    }
+
     fn report() -> ValidationReport {
         ValidationReport {
             at: "now".into(),
@@ -245,7 +250,7 @@ mod tests {
             &key,
             &name("minio"),
             &s3("sh-secret"),
-            "u-1",
+            &user(),
             &report(),
         )
         .unwrap();
@@ -258,7 +263,7 @@ mod tests {
             .unwrap();
         assert!(!String::from_utf8_lossy(&blob).contains("sh-secret"));
 
-        insert(&conn, &key, &name("other"), &s3("x"), "u-1", &report()).unwrap();
+        insert(&conn, &key, &name("other"), &s3("x"), &user(), &report()).unwrap();
         conn.execute(
             "UPDATE credentials SET spec = ?1 WHERE name = 'other'",
             [&blob],
@@ -271,9 +276,9 @@ mod tests {
     fn a_rename_seals_again() {
         let conn = conn();
         let key = SecretKey::for_tests();
-        insert(&conn, &key, &name("a"), &s3("one"), "u-1", &report()).unwrap();
+        insert(&conn, &key, &name("a"), &s3("one"), &user(), &report()).unwrap();
         let spec = get(&conn, &key, "a").unwrap().unwrap().spec;
-        update(&conn, &key, "a", &name("b"), &spec, "u-1", None).unwrap();
+        update(&conn, &key, "a", &name("b"), &spec, &user(), None).unwrap();
         assert!(get(&conn, &key, "a").unwrap().is_none());
         assert_eq!(
             secret_of(&get(&conn, &key, "b").unwrap().unwrap().spec),

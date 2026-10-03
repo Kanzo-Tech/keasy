@@ -2,21 +2,20 @@
 
 use rusqlite::{Connection, OptionalExtension, params};
 
-use crate::database::{DbError, DbResult, constraint, json_column, json_column_opt};
-use crate::domain::{ConnectionView, ValidationReport};
+use crate::database::{
+    DbError, DbResult, constraint, json_column, json_column_opt, provenance_columns,
+};
+use crate::domain::{Actor, ConnectionView, ValidationReport};
 
-const COLUMNS: &str =
-    "name, credential, target, created_by, created_at, updated_by, updated_at, validation";
+const COLUMNS: &str = "name, credential, target, created_by, created_by_name, created_at, \
+                       updated_by, updated_by_name, updated_at, validation";
 
 fn row(r: &rusqlite::Row<'_>) -> rusqlite::Result<ConnectionView> {
     Ok(ConnectionView {
         name: r.get("name")?,
         secret: r.get("credential")?,
         target: json_column(r, "target")?,
-        created_by: r.get("created_by")?,
-        created_at: r.get("created_at")?,
-        updated_by: r.get("updated_by")?,
-        updated_at: r.get("updated_at")?,
+        provenance: provenance_columns(r)?,
         validation: json_column_opt(r, "validation")?,
         can_modify: false,
     })
@@ -41,18 +40,18 @@ fn refused(connection: &ConnectionView, e: rusqlite::Error) -> DbError {
     }
 }
 
-/// Store `connection` as it stands; its timestamps are the store's.
-pub fn insert(conn: &Connection, connection: &ConnectionView, by: &str) -> DbResult<()> {
+/// Store `connection` as it stands, created by `by`; its timestamps are the store's.
+pub fn insert(conn: &Connection, connection: &ConnectionView, by: &Actor) -> DbResult<()> {
     conn.execute(
-        &format!(
-            "INSERT INTO connections ({COLUMNS})
-             VALUES (?1, ?2, ?3, ?4, ?5, ?4, ?5, ?6)"
-        ),
+        "INSERT INTO connections
+             (name, credential, target, created_by, created_by_name, created_at, validation)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
         params![
             connection.name,
             connection.secret,
             serde_json::to_string(&connection.target)?,
-            by,
+            by.id,
+            by.name,
             crate::domain::now_iso8601(),
             connection
                 .validation
@@ -108,17 +107,18 @@ pub fn using(conn: &Connection, credential: &str) -> DbResult<Vec<ConnectionView
 
 /// Replace the connection `name` with `updated`. A rename cascades to the jobs
 /// that write to it.
-pub fn update(conn: &Connection, name: &str, updated: &ConnectionView, by: &str) -> DbResult<()> {
+pub fn update(conn: &Connection, name: &str, updated: &ConnectionView, by: &Actor) -> DbResult<()> {
     conn.execute(
         "UPDATE connections
          SET name = ?1, credential = ?2, target = ?3,
-             updated_by = ?4, updated_at = ?5, validation = ?6
-         WHERE name = ?7",
+             updated_by = ?4, updated_by_name = ?5, updated_at = ?6, validation = ?7
+         WHERE name = ?8",
         params![
             updated.name,
             updated.secret,
             serde_json::to_string(&updated.target)?,
-            by,
+            by.id,
+            by.name,
             crate::domain::now_iso8601(),
             updated
                 .validation
@@ -172,7 +172,7 @@ pub(crate) mod tests {
     use super::*;
     use crate::credentials::persistence as credentials;
     use crate::credentials::sealing::SecretKey;
-    use crate::domain::{ResourceName, SecretSpec, StorageTarget};
+    use crate::domain::{Provenance, ResourceName, SecretSpec, StorageTarget};
     use secrecy::SecretString;
 
     fn report() -> ValidationReport {
@@ -192,7 +192,7 @@ pub(crate) mod tests {
             &SecretKey::for_tests(),
             &ResourceName::parse(&credential).unwrap(),
             &spec,
-            "u-1",
+            &user(),
             &report(),
         )
         .unwrap();
@@ -201,7 +201,7 @@ pub(crate) mod tests {
             kind: Default::default(),
             direction: crate::domain::Direction::Sink,
         };
-        insert(conn, &connection(name, &credential, target), "u-1").unwrap();
+        insert(conn, &connection(name, &credential, target), &user()).unwrap();
     }
 
     fn connection(name: &str, credential: &str, target: StorageTarget) -> ConnectionView {
@@ -209,12 +209,16 @@ pub(crate) mod tests {
             name: name.into(),
             secret: credential.into(),
             target,
-            created_by: String::new(),
-            created_at: String::new(),
-            updated_by: String::new(),
-            updated_at: String::new(),
+            provenance: Provenance::created(user()),
             validation: None,
             can_modify: false,
+        }
+    }
+
+    pub(crate) fn user() -> Actor {
+        Actor {
+            id: "u-1".into(),
+            name: "Ana Duarte".into(),
         }
     }
 
@@ -241,7 +245,7 @@ pub(crate) mod tests {
             kind: Default::default(),
             direction: Default::default(),
         };
-        let err = insert(&conn, &connection("bucket", "minio", bucket()), "u-1").unwrap_err();
+        let err = insert(&conn, &connection("bucket", "minio", bucket()), &user()).unwrap_err();
         assert!(matches!(err, DbError::Invalid(_)), "{err}");
 
         let minio = ResourceName::parse("minio").unwrap();
@@ -250,11 +254,11 @@ pub(crate) mod tests {
             &SecretKey::for_tests(),
             &minio,
             &s3(),
-            "u-1",
+            &user(),
             &report(),
         )
         .unwrap();
-        insert(&conn, &connection("bucket", "minio", bucket()), "u-1").unwrap();
+        insert(&conn, &connection("bucket", "minio", bucket()), &user()).unwrap();
         assert!(matches!(
             credentials::delete(&conn, "minio"),
             Err(DbError::InUse { dependents, .. }) if dependents == ["bucket"]

@@ -30,6 +30,7 @@ import {
   useDataTable,
 } from "@kanzo-tech/ui/table";
 import { Link, useRouter } from "@kanzo-tech/navigation/next";
+import { CreatedBy } from "@/components/provenance";
 import { ValidationBadge } from "@/components/validation-badge";
 import { $api, invalidate } from "@/lib/api/client";
 import { type Credential, kindTitle } from "@/lib/connections";
@@ -116,6 +117,11 @@ function Credentials() {
         id: "status",
         header: "Status",
         cell: ({ row }) => <ValidationBadge report={row.original.validation} />,
+      },
+      {
+        id: "created_by",
+        header: "Created by",
+        cell: ({ row }) => <CreatedBy of={row.original} />,
       },
       actionsColumn<Credential>({
         label: (row) => `Actions for ${row.original.name}`,

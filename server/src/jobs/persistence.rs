@@ -2,12 +2,14 @@
 
 use rusqlite::{Connection, OptionalExtension, params};
 
-use crate::database::{DbError, DbResult, constraint, enum_column, json_column_opt};
+use crate::database::{
+    DbError, DbResult, constraint, created_columns, enum_column, json_column_opt,
+};
 use crate::domain::{Job, JobStatus};
 use crate::error::{ErrorBody, ErrorCode};
 
 const COLUMNS: &str = "id, name, status, created_at, started_at, completed_at, heartbeat_at, \
-                       problem, created_by, sink_connection, folder, script, report";
+                       problem, created_by, created_by_name, sink_connection, folder, script, report";
 
 /// What the schema refused about `job`, said in its terms.
 fn refused(job: &Job, e: rusqlite::Error) -> DbError {
@@ -28,13 +30,13 @@ pub fn insert(conn: &Connection, job: &Job) -> DbResult<()> {
     conn.execute(
         &format!(
             "INSERT INTO jobs ({COLUMNS})
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)"
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)"
         ),
         params![
             job.id,
             job.name,
             job.status.as_ref(),
-            job.created_at,
+            job.provenance.created_at,
             job.started_at,
             job.completed_at,
             job.heartbeat_at,
@@ -42,7 +44,8 @@ pub fn insert(conn: &Connection, job: &Job) -> DbResult<()> {
                 .as_ref()
                 .map(serde_json::to_string)
                 .transpose()?,
-            job.created_by,
+            job.provenance.created_by.id,
+            job.provenance.created_by.name,
             job.sink_connection,
             job.folder,
             job.script,
@@ -85,7 +88,7 @@ pub fn write(conn: &Connection, job: &Job) -> DbResult<()> {
             job.folder,
             job.id,
             job.heartbeat_at,
-            job.created_at,
+            job.provenance.created_at,
         ],
     )
     .map_err(|e| refused(job, e))?;
@@ -185,12 +188,11 @@ fn row_to_job(row: &rusqlite::Row<'_>) -> rusqlite::Result<Job> {
         id: row.get("id")?,
         name: row.get("name")?,
         status,
-        created_at: row.get("created_at")?,
         started_at: row.get("started_at")?,
         completed_at: row.get("completed_at")?,
         heartbeat_at: row.get("heartbeat_at")?,
         problem: json_column_opt(row, "problem")?,
-        created_by: row.get("created_by")?,
+        provenance: created_columns(row)?,
         sink_connection: row.get("sink_connection")?,
         folder: row.get("folder")?,
         script,
@@ -212,8 +214,15 @@ mod tests {
         conn
     }
 
+    fn actor(id: &str) -> crate::domain::Actor {
+        crate::domain::Actor {
+            id: id.into(),
+            name: id.into(),
+        }
+    }
+
     fn job(owner: &str) -> Job {
-        Job::new(None, "sink".into(), None, "x".into(), owner.into())
+        Job::new(None, "sink".into(), None, "x".into(), actor(owner))
     }
 
     fn filed(status: JobStatus, folder: &str) -> Job {
@@ -224,7 +233,7 @@ mod tests {
                 "sink".into(),
                 Some(JobFolder::parse(folder).unwrap()),
                 "x".into(),
-                "u-1".into(),
+                actor("u-1"),
             )
         }
     }
@@ -306,7 +315,7 @@ mod tests {
         alive.started_at = Some(ago(300));
         alive.heartbeat_at = Some(ago(10));
         let mut orphan = filed(JobStatus::Pending, "orphan");
-        orphan.created_at = ago(61);
+        orphan.provenance.created_at = ago(61);
         let fresh = filed(JobStatus::Pending, "fresh");
         let draft = job("u-1");
         for j in [&stale, &alive, &orphan, &fresh, &draft] {

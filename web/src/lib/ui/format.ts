@@ -28,6 +28,12 @@ export function formatDate(dateStr: string | null | undefined): string {
   }).format(new Date(dateStr));
 }
 
+/** A day, as a line of provenance says it: "3 Oct 2026". */
+export function formatDay(dateStr: string): string {
+  return new Intl.DateTimeFormat(undefined, { year: "numeric", month: "short", day: "numeric" }).format(
+    new Date(dateStr),
+  );
+}
 
 /** The first letters of a name's first two words, for an avatar with no picture. */
 export function initials(name: string): string {

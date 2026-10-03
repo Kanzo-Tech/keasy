@@ -119,6 +119,11 @@ function Jobs() {
         ),
       },
       {
+        id: "created_by",
+        header: "Created by",
+        cell: ({ row }) => <span className="text-muted-foreground">{row.original.created_by.name}</span>,
+      },
+      {
         id: "duration",
         header: "Duration",
         cell: ({ row }) => (

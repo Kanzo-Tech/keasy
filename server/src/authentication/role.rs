@@ -14,6 +14,7 @@ use axum::http::StatusCode;
 use axum::http::request::Parts;
 
 use super::middleware::AuthenticatedUser;
+use crate::domain::Actor;
 use crate::error::{ErrorCode, Refusal};
 
 /// A role this application declares on its Keycloak client.
@@ -111,10 +112,20 @@ impl From<RbacError> for Refusal {
 pub struct Caller {
     /// The Keycloak `sub`.
     pub user_id: String,
+    /// Their display name, kept with what they write. Never logged.
+    pub name: String,
     pub roles: Roles,
 }
 
 impl Caller {
+    /// The caller as what they write records them.
+    pub fn actor(&self) -> Actor {
+        Actor {
+            id: self.user_id.clone(),
+            name: self.name.clone(),
+        }
+    }
+
     pub fn holds(&self, role: Role) -> bool {
         self.roles.contains(role)
     }
@@ -158,6 +169,7 @@ fn admit(parts: &Parts, min: Role) -> Result<Caller, Refusal> {
     }
     let caller = Caller {
         user_id: user.user_id.clone(),
+        name: user.name.clone(),
         roles: user.roles,
     };
     caller.require(min)?;
@@ -238,6 +250,7 @@ mod tests {
                     if user {
                         request.extensions_mut().insert(AuthenticatedUser {
                             user_id: "u-1".to_string(),
+                            name: "Ana Duarte".to_string(),
                             roles: held,
                         });
                     }
@@ -303,6 +316,7 @@ mod tests {
     fn an_admin_changes_anything_and_an_editor_what_they_made() {
         let caller = |held: &[&str]| Caller {
             user_id: "u-1".into(),
+            name: "Ana Duarte".into(),
             roles: roles(held),
         };
         assert!(caller(&["admin", "editor", "reader"]).may_modify("someone-else"));

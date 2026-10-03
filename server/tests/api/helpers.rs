@@ -16,7 +16,8 @@ use keasy_server::configuration::{
 use keasy_server::credentials::sealing::SecretKey;
 use keasy_server::database::Database;
 use keasy_server::domain::{
-    ConnectionView, Direction, ResourceName, SecretSpec, StorageTarget, ValidationReport,
+    Actor, ConnectionView, Direction, Provenance, ResourceName, SecretSpec, StorageTarget,
+    ValidationReport,
 };
 use keasy_server::startup::Application;
 
@@ -112,6 +113,19 @@ impl TestApp {
 
     pub fn token_for(&self, sub: &str, roles: &[&str]) -> String {
         self.token_in(sub, ORG, roles)
+    }
+
+    /// `sub`, holding `roles` here, with the profile claims `profile` (`name`,
+    /// `preferred_username`) in place of a good token's.
+    pub fn token_profiled(&self, sub: &str, roles: &[&str], profile: serde_json::Value) -> String {
+        let mut claims = good(&self.realm);
+        claims["sub"] = json!(sub);
+        claims["organization"] = json!({ ORG: { "id": format!("{ORG}-id"), "resource_access": { CLIENT: { "roles": roles } } } });
+        let claims = claims.as_object_mut().unwrap();
+        claims.remove("name");
+        claims.remove("preferred_username");
+        claims.extend(profile.as_object().unwrap().clone());
+        mint(&self.realm, json!(claims))
     }
 
     /// `sub`, holding `roles` in organization `org` only.
@@ -250,7 +264,7 @@ impl TestApp {
             self.db.secret_key(),
             &ResourceName::parse(name).unwrap(),
             &s3(endpoint, "original-secret"),
-            by,
+            &actor(by),
             &unprobed(),
         )
         .unwrap();
@@ -267,14 +281,20 @@ impl TestApp {
             name: name.into(),
             secret: credential.into(),
             target,
-            created_by: by.into(),
-            created_at: String::new(),
-            updated_by: by.into(),
-            updated_at: String::new(),
+            provenance: Provenance::created(actor(by)),
             validation: None,
             can_modify: false,
         };
-        keasy_server::connections::persistence::insert(&*self.db.write().await, &view, by).unwrap();
+        keasy_server::connections::persistence::insert(&*self.db.write().await, &view, &actor(by))
+            .unwrap();
+    }
+}
+
+/// `sub` as a stored row records them, named after their id.
+fn actor(sub: &str) -> Actor {
+    Actor {
+        id: sub.into(),
+        name: sub.into(),
     }
 }
 
@@ -408,6 +428,8 @@ pub fn good(realm: &Realm) -> serde_json::Value {
         "azp": CLIENT,
         "exp": in_an_hour(),
         "email": "dev@keasy.local",
+        "name": "Dev User",
+        "preferred_username": "dev",
         "organization": {
             ORG: { "id": "acme-id", "resource_access": { CLIENT: { "roles": ADMIN } } },
             "globex": { "id": "globex-id", "resource_access": { CLIENT: { "roles": READER } } },

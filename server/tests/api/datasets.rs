@@ -48,30 +48,18 @@ async fn a_completed_job_is_a_dataset_the_owner_opens() {
         "{dest}"
     );
 
-    let (status, body) = vend(&app, &owner, &done).await;
+    let read = |id: &str| json!({ "job": id });
     assert_eq!(
-        (status, body["code"].as_str()),
-        (StatusCode::BAD_GATEWAY, Some("store/refused"))
+        app.vend(&owner, read(&done), "read").await,
+        (StatusCode::BAD_GATEWAY, Some("store/refused".to_owned()))
     );
-    let (status, body) = vend(&app, &owner, &running).await;
     assert_eq!(
-        (status, body["code"].as_str()),
-        (StatusCode::CONFLICT, Some("job/not-completed"))
+        app.vend(&owner, read(&running), "read").await,
+        (StatusCode::CONFLICT, Some("job/not-completed".to_owned()))
     );
     let theirs = app.token_for("u-2", &["member"]);
-    assert_eq!(vend(&app, &theirs, &done).await.0, StatusCode::NOT_FOUND);
-}
-
-async fn vend(
-    app: &crate::helpers::TestApp,
-    token: &str,
-    id: &str,
-) -> (StatusCode, serde_json::Value) {
-    app.send(
-        Method::POST,
-        "/v1/storage-credentials",
-        token,
-        json!({ "scope": { "job": id }, "access": "read" }),
-    )
-    .await
+    assert_eq!(
+        app.vend(&theirs, read(&done), "read").await.0,
+        StatusCode::NOT_FOUND
+    );
 }

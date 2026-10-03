@@ -14,25 +14,6 @@ async fn workspace() -> (TestApp, String) {
     (app, member)
 }
 
-/// One door, `POST /v1/storage-credentials`, asked what fossil's host is asked:
-/// a scope and an access. Its answer as `(status, code)`.
-async fn vend(
-    app: &TestApp,
-    token: &str,
-    scope: serde_json::Value,
-    access: &str,
-) -> (StatusCode, Option<String>) {
-    let (status, body) = app
-        .send(
-            Method::POST,
-            "/v1/storage-credentials",
-            token,
-            json!({ "scope": scope, "access": access }),
-        )
-        .await;
-    (status, body["code"].as_str().map(str::to_owned))
-}
-
 /// A job's dataset is vended to read once the job has completed and to write
 /// only while it runs; a source only to read; the sink never as a source.
 /// These are refused before any store is asked.
@@ -51,26 +32,26 @@ async fn a_credential_is_vended_only_for_what_the_state_allows() {
     let conflict = |code: &str| (StatusCode::CONFLICT, Some(code.to_owned()));
 
     assert_eq!(
-        vend(&app, &member, job.clone(), "read").await,
+        app.vend(&member, job.clone(), "read").await,
         conflict("job/not-completed")
     );
     assert_eq!(
-        vend(&app, &member, job.clone(), "write").await,
+        app.vend(&member, job.clone(), "write").await,
         conflict("job/not-running")
     );
 
     let sink = json!({ "connection": "sink" });
     let source = json!({ "connection": "source" });
     assert_eq!(
-        vend(&app, &member, sink, "read").await.0,
+        app.vend(&member, sink, "read").await.0,
         StatusCode::BAD_REQUEST
     );
     assert_eq!(
-        vend(&app, &member, source.clone(), "write").await.0,
+        app.vend(&member, source.clone(), "write").await.0,
         StatusCode::BAD_REQUEST
     );
     assert_eq!(
-        vend(&app, &member, json!({ "connection": "gone" }), "read")
+        app.vend(&member, json!({ "connection": "gone" }), "read")
             .await
             .0,
         StatusCode::NOT_FOUND
@@ -78,23 +59,23 @@ async fn a_credential_is_vended_only_for_what_the_state_allows() {
 
     let theirs = app.token_for("u-2", &["member"]);
     assert_eq!(
-        vend(&app, &theirs, job.clone(), "read").await.0,
+        app.vend(&theirs, job.clone(), "read").await.0,
         StatusCode::NOT_FOUND
     );
 
     let owner = app.token_for("u-9", &["owner"]);
     assert_eq!(
-        vend(&app, &owner, source, "read").await,
+        app.vend(&owner, source, "read").await,
         (StatusCode::FORBIDDEN, Some("rbac/forbidden".to_owned())),
         "the owner never reads a source"
     );
     assert_eq!(
-        vend(&app, &owner, job.clone(), "write").await.0,
+        app.vend(&owner, job.clone(), "write").await.0,
         StatusCode::FORBIDDEN,
         "the owner never writes a dataset"
     );
     assert_eq!(
-        vend(&app, &owner, job, "read").await,
+        app.vend(&owner, job, "read").await,
         conflict("job/not-completed"),
         "the owner reads a member's job, once it has completed"
     );
@@ -108,7 +89,7 @@ async fn an_ended_job_is_never_written() {
     app.report(&member, &id, json!({ "status": "cancelled" }))
         .await;
     assert_eq!(
-        vend(&app, &member, json!({ "job": id }), "write").await,
+        app.vend(&member, json!({ "job": id }), "write").await,
         (StatusCode::CONFLICT, Some("job/ended".to_owned()))
     );
 }

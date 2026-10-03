@@ -201,6 +201,25 @@ impl TestApp {
         (status, job)
     }
 
+    /// What fossil's host asks the one vend door: `scope`, for `access`. The
+    /// status, and the refusal's code when there is one.
+    pub async fn vend(
+        &self,
+        token: &str,
+        scope: serde_json::Value,
+        access: &str,
+    ) -> (StatusCode, Option<String>) {
+        let (status, body) = self
+            .send(
+                Method::POST,
+                "/v1/storage-credentials",
+                token,
+                json!({ "scope": scope, "access": access }),
+            )
+            .await;
+        (status, body["code"].as_str().map(str::to_owned))
+    }
+
     /// A stored S3 credential on `endpoint`, unprobed, created by `by`.
     pub async fn credential(&self, name: &str, endpoint: &str, by: &str) {
         keasy_server::credentials::persistence::insert(

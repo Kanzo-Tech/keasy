@@ -247,18 +247,9 @@ async fn a_store_that_refuses_to_vend_is_store_refused() {
     app.report(&member, &id, json!({ "status": "running" }))
         .await;
 
-    let response = app
-        .client
-        .post(url(&app, "/v1/storage-credentials"))
-        .bearer_auth(&member)
-        .json(&json!({ "scope": { "job": id }, "access": "write" }))
-        .send()
-        .await
-        .unwrap();
-    let (status, body) = refused(response).await;
     assert_eq!(
-        (status, body["code"].as_str().unwrap()),
-        (StatusCode::BAD_GATEWAY, "store/refused")
+        app.vend(&member, json!({ "job": id }), "write").await,
+        (StatusCode::BAD_GATEWAY, Some("store/refused".to_owned()))
     );
 }
 

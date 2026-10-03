@@ -1,180 +1,35 @@
 "use client";
 
-import type { Foreign, Related, Severity } from "@fossil-lang/types";
-import {
-  Button,
-  Diagnostic,
-  DiagnosticActions,
-  DiagnosticContent,
-  DiagnosticDescription,
-  DiagnosticHeader,
-  DiagnosticList,
-  DiagnosticSeverity,
-  DiagnosticSource,
-  DiagnosticTitle,
-  DiagnosticTrigger,
-  Show,
-} from "@kanzo-tech/ui";
-import { Link } from "@kanzo-tech/navigation/next";
-import { copyOf, pageOf, type Shown } from "@/lib/errors";
+import type { ReactNode } from "react";
+import { Button, DiagnosticList, Problem, type ProblemCopy } from "@kanzo-tech/ui";
+import { type ClientCode, coded, copyOf, pageOf } from "@/lib/errors";
 
-const VARIANT = { error: "destructive", warning: "warning", info: "info" } as const;
-const WORD: Record<Severity, string> = { error: "Error", warning: "Warning", info: "Note" };
-
-/** One row of the tree: a problem, a compile diagnostic it relates, or a cause fossil did not raise. */
-interface Row {
-  code?: string;
-  title: string;
-  detail?: string;
-  help?: string;
-  severity: Severity;
-  children: Row[];
-}
-
-/** A cause fossil did not raise, under the host's own code when it kept one. */
-function foreign(cause: Foreign): Row {
-  const named = cause.code === undefined
-    ? { title: cause.name }
-    : { code: cause.code, title: copyOf(cause.code)?.title ?? cause.name };
-  return { ...named, detail: cause.detail, severity: "error", children: [] };
-}
-
-const related = (r: Related): Row => ({ title: r.detail, help: r.help, severity: r.severity, children: [] });
-
-function rows(problem: Shown): Row[] {
-  const cause = problem.cause === undefined ? [] : ["name" in problem.cause ? foreign(problem.cause) : raw(problem.cause)];
-  return [...cause, ...(problem.related ?? []).map(related)];
-}
-
-/** A problem in its own words, with no copy of keasy's over it. */
-function raw(problem: Shown): Row {
-  return { ...problem, severity: problem.severity ?? "error", children: rows(problem) };
-}
-
-/**
- * A problem in keasy's words where the registry has them. A code with no entry is shown as its
- * author wrote it; one whose detail keasy rewrites keeps the original one level down, closed.
- */
-function worded(problem: Shown): Row & { link?: { label: string; href: string } } {
-  const copy = copyOf(problem.code, problem.data);
-  const own = raw(problem);
-  if (!copy) return own;
-  return {
-    ...own,
-    title: copy.title ?? problem.title,
-    detail: copy.detail ?? problem.detail,
-    link: copy.link,
-    children: copy.detail === undefined ? own.children : [{ ...own, detail: problem.detail }],
-  };
-}
-
-function Item({
-  row,
-  open,
-  actions,
-  problem,
-}: {
-  row: Row;
-  open?: boolean;
-  actions?: React.ReactNode;
-  /** The problem's own row rather than one of its causes. */
-  problem?: boolean;
-}) {
-  const page = row.code ? pageOf(row.code) : undefined;
-  const more = Boolean(row.detail || row.help || row.children.length > 0);
-  return (
-    // Its own query container, so the title's narrow layout follows the item's width in any list.
-    <Diagnostic
-      className="@container"
-      data-code={row.code}
-      data-problem={problem ? "" : undefined}
-      defaultOpen={open}
-      variant={VARIANT[row.severity]}
-    >
-      <DiagnosticHeader className="flex-nowrap items-start">
-        {/* What the row is takes the rest of the line and the actions stay at its end. In a narrow
-            container (a popover, a side panel) the title takes a line of its own under severity and
-            code instead of being squeezed to a word per line — still left of the actions. */}
-        <div className="flex min-h-6 min-w-0 flex-1 flex-wrap items-center gap-2">
-          <DiagnosticSeverity>{WORD[row.severity]}</DiagnosticSeverity>
-          <DiagnosticTitle className="@max-md:order-last @max-md:basis-full @max-md:whitespace-normal">
-            {row.title}
-          </DiagnosticTitle>
-          <Show when={row.code !== undefined}>
-            <DiagnosticSource asChild>
-              {page ? (
-                <a href={page} rel="noreferrer" target="_blank">
-                  {row.code}
-                </a>
-              ) : (
-                <span>{row.code}</span>
-              )}
-            </DiagnosticSource>
-          </Show>
-        </div>
-        <DiagnosticActions>
-          {actions}
-          <Show when={more}>
-            {/* Named by the row it opens: a list of findings is a list of these, and six
-                buttons all called "Details" cannot be told apart by ear. */}
-            <DiagnosticTrigger aria-label={`Details: ${row.title}`} />
-          </Show>
-        </DiagnosticActions>
-      </DiagnosticHeader>
-      <DiagnosticContent>
-        <Show when={Boolean(row.detail)}>
-          <DiagnosticDescription className="whitespace-pre-wrap">{row.detail}</DiagnosticDescription>
-        </Show>
-        <Show when={Boolean(row.help)}>
-          <DiagnosticDescription>{row.help}</DiagnosticDescription>
-        </Show>
-        <Show when={row.children.length > 0}>
-          <DiagnosticList>
-            {/* A coded cause is part of the explanation, so it is open; a foreign one stays folded. */}
-            {row.children.map((child, i) => (
-              <Item key={i} open={child.code !== undefined} row={child} />
-            ))}
-          </DiagnosticList>
-        </Show>
-      </DiagnosticContent>
-    </Diagnostic>
-  );
-}
+/** keasy's words for a code, and the page that explains it when fossil raised it. */
+const copy = (code: string, data: unknown): ProblemCopy => ({ ...copyOf(code, data), page: pageOf(code) });
 
 export interface ProblemItemProps {
-  problem: Shown;
+  /** What was thrown, or a problem as stored. */
+  error: unknown;
+  /** The code a failure that carries none is shown under. */
+  uncoded?: ClientCode;
   /** Beside the problem's own link and details: a retry, a "go to". */
-  actions?: React.ReactNode;
+  children?: ReactNode;
 }
 
 /**
- * One problem as one item of a `DiagnosticList` — for a list that is not only this problem, such as
- * kanzo-ui's `FindingsGroup`. `data-problem` and `data-code` sit on the item, which is what an
- * end-to-end test finds.
+ * One failure as one item of a `DiagnosticList` — kanzo-ui's `Problem` in keasy's words — for a list
+ * that is not only this failure, such as kanzo-ui's `FindingsGroup`. `data-problem` and `data-code`
+ * sit on the item, which is what an end-to-end test finds.
  */
-export function ProblemItem({ problem, actions }: ProblemItemProps) {
-  const row = worded(problem);
+export function ProblemItem({ error, uncoded, children }: ProblemItemProps) {
   return (
-    <Item
-      actions={
-        <>
-          {row.link && (
-            <Button asChild size="sm" variant="outline">
-              <Link href={row.link.href}>{row.link.label}</Link>
-            </Button>
-          )}
-          {actions}
-        </>
-      }
-      open
-      problem
-      row={row}
-    />
+    <Problem copy={copy} data-problem="" error={coded(error, uncoded)}>
+      {children}
+    </Problem>
   );
 }
 
-export interface ProblemViewProps {
-  problem: Shown;
+export interface ProblemViewProps extends Omit<ProblemItemProps, "children"> {
   /** Offered beside the problem as a retry. */
   onRetry?: () => void;
   retryLabel?: string;
@@ -182,24 +37,19 @@ export interface ProblemViewProps {
 }
 
 /**
- * The one way keasy shows a failure: a {@link Shown} — fossil's problem, the server's refusal, or
- * the browser's own — as kanzo-ui's `Diagnostic`, open at rest, with its causes and related
- * diagnostics nested below it and its code linked to the page that explains it. `data-code` carries
- * the code on the view and on every coded row of its tree, the one thing an end-to-end test asserts on.
+ * The one way keasy shows a failure: what was thrown — fossil's `FossilError`, the server's
+ * refusal, a library's coded error, the browser's own — as a list of one {@link ProblemItem}.
  */
-export function ProblemView({ problem, onRetry, retryLabel = "Try again", className }: ProblemViewProps) {
+export function ProblemView({ onRetry, retryLabel = "Try again", className, ...item }: ProblemViewProps) {
   return (
     <DiagnosticList className={className}>
-      <ProblemItem
-        actions={
-          onRetry && (
-            <Button onClick={onRetry} size="sm" variant="outline">
-              {retryLabel}
-            </Button>
-          )
-        }
-        problem={problem}
-      />
+      <ProblemItem {...item}>
+        {onRetry && (
+          <Button onClick={onRetry} size="sm" variant="outline">
+            {retryLabel}
+          </Button>
+        )}
+      </ProblemItem>
     </DiagnosticList>
   );
 }

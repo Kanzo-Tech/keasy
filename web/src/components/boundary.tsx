@@ -5,7 +5,6 @@ import { unstable_rethrow } from "next/navigation";
 import { Component, Suspense, useSyncExternalStore, type ReactNode } from "react";
 
 import { ProblemView } from "@/components/problem-view";
-import { toProblem } from "@/lib/errors";
 import { useDelayedLoading } from "@/lib/ui/use-delayed-loading";
 
 /**
@@ -15,7 +14,7 @@ import { useDelayedLoading } from "@/lib/ui/use-delayed-loading";
  */
 export function Failed({ error, retry, className }: { error: unknown; retry: () => void; className?: string }) {
   unstable_rethrow(error);
-  return <ProblemView className={className} onRetry={retry} problem={toProblem(error)} />;
+  return <ProblemView className={className} onRetry={retry} error={error} />;
 }
 
 interface CatchProps {

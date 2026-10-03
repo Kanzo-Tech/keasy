@@ -2,13 +2,13 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ScrollArea, Skeleton, ToggleGroup, ToggleGroupItem } from "@kanzo-tech/ui";
-import { Dashboard, type DashboardSpec } from "@kanzo-tech/ui/analytics";
+import { Dashboard, type DashboardSpec, useQueryRows } from "@kanzo-tech/ui/analytics";
 import { TableRefNode } from "@uwdata/mosaic-sql";
 import { $api, http } from "@/lib/api/client";
 import { settled } from "@/lib/api/settled";
 import { toastError } from "@/lib/errors";
 import { Boundary } from "@/components/boundary";
-import { roleColumns, useCorpus, useRows, vertexTables } from "./corpus";
+import { roleColumns, useCorpus, vertexTables } from "./corpus";
 
 /**
  * The Dashboard view: kanzo-ui's `Dashboard` over one vertex type at a time, on the crossfilter the
@@ -38,8 +38,8 @@ export default function DashboardView() {
 
 function SavedDashboard() {
   const { jobId } = useCorpus();
-  const types = useRows<{ table_name: string }>(vertexTables(jobId)).map((t) => t.table_name);
-  const kept = useRows<{ table_name: string; column_name: string }>(roleColumns(jobId));
+  const types = useQueryRows<{ table_name: string }>(vertexTables(jobId)).map((t) => t.table_name);
+  const kept = useQueryRows<{ table_name: string; column_name: string }>(roleColumns(jobId));
   const [type, setType] = useState(types[0] ?? "");
 
   const saved = settled($api.useSuspenseQuery("get", "/v1/jobs/{id}/dashboard", { params: { path: { id: jobId } } }));

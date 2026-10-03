@@ -51,7 +51,6 @@ import { $api } from "@/lib/api/client";
 import { ROLE_LABEL, workspaceRole, type WorkspaceRole } from "@/lib/auth/roles";
 import { Boundary } from "@/components/boundary";
 import { ProblemView } from "@/components/problem-view";
-import { toProblem } from "@/lib/errors";
 import { settled } from "@/lib/api/settled";
 import { initials } from "@/lib/ui/format";
 import { generateBreadcrumbs, getSidebarRoutes } from "@/app/(main)/_parts/route-config";
@@ -227,7 +226,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           {/* A session that could not be read is an outage, not a sign-out: say it, by its code. */}
           {status === "failed" ? (
             <ShellMain className="items-center justify-center p-4">
-              <ProblemView className="w-full max-w-xl" problem={toProblem(error)} />
+              <ProblemView className="w-full max-w-xl" error={error} />
             </ShellMain>
           ) : (
             children

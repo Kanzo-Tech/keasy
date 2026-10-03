@@ -34,7 +34,8 @@ import { $api, http, invalidate, type Schemas } from "@/lib/api/client";
 import { Boundary, Loading } from "@/components/boundary";
 import { settled } from "@/lib/api/settled";
 import { storageConnections } from "@/lib/connections";
-import { type FieldProblem, fieldProblem, type Shown, toastError, toProblem } from "@/lib/errors";
+import { type FieldProblem, fieldProblem, toastError } from "@/lib/errors";
+import { refs as referencesOf } from "@fossil-lang/wasm";
 import * as checker from "@/lib/fossil/checker";
 import { AssistantWizard } from "./assistant-wizard";
 import { ModePicker } from "./mode-picker";
@@ -101,7 +102,7 @@ function JobStudio({ draft }: { draft?: Schemas["Job"] }) {
   const [editor, setEditor] = useState<EditorApi | null>(null);
   const [diagnostics, setDiagnostics] = useState<readonly checker.CheckRow[]>([]);
   const [refs, setRefs] = useState<checker.SourceRefInfo[]>([]);
-  const [refsProblem, setRefsProblem] = useState<Shown | null>(null);
+  const [refsProblem, setRefsProblem] = useState<unknown>(undefined);
   const [saved, setSaved] = useState(true);
 
   // The draft's server id: the `?draft=` the member arrived with, or the one the
@@ -142,17 +143,16 @@ function JobStudio({ draft }: { draft?: Schemas["Job"] }) {
   useEffect(() => {
     let alive = true;
     const id = setTimeout(() => {
-      void checker
-        .refs(store.script)
+      void referencesOf(store.script)
         .then((rows) => {
           if (!alive) return;
           setRefs(rows);
-          setRefsProblem(null);
+          setRefsProblem(undefined);
         })
         .catch((err: unknown) => {
           if (!alive) return;
           setRefs([]);
-          setRefsProblem(toProblem(err));
+          setRefsProblem(err);
         });
     }, 300);
     return () => {

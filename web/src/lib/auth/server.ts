@@ -14,7 +14,6 @@ import { ticketStore, type RelyingPartyConfig, type TicketAdapter } from "@kanzo
 import { redirect } from "next/navigation";
 import { createClient } from "redis";
 
-import { race } from "@/lib/deadline";
 import { PROBLEM_PAGE } from "@/lib/routes";
 
 import { workspaceRole, type WorkspaceRole } from "./roles";
@@ -58,21 +57,20 @@ function required(name: string): string {
 const MAX_AGE = 8 * 60 * 60;
 
 /**
- * The G1 table's figures for Valkey: 5 s to connect, 30 s to answer a command. A store that is
- * down refuses at once (no offline queue), so the command figure only bounds one that hangs.
+ * The G1 table's figure for connecting to Valkey. A store that is down refuses at once (no offline
+ * queue); one that hangs is bounded by `ticketStore`, which ends every adapter call at 30 s.
  */
 const STORE_CONNECT_MS = 5_000;
-const STORE_COMMAND_MS = 30_000;
 
 /**
  * Session records live in Valkey/Redis under the opaque ticket the cookie
  * carries: with the access token in it a record no longer fits in a cookie, and
  * a ticket is what lets a sign-out end every copy of that cookie.
  *
- * Every wait on it is bounded. The client reconnects on its own after a drop;
- * while it is down, a command fails at once instead of queueing (no offline
- * queue), and the first connection is raced like any command — so a Valkey that
- * is down makes a page fail in seconds rather than hang.
+ * The adapter is the three driver calls; `ticketStore` bounds each of them. The
+ * client reconnects on its own after a drop, and while it is down a command fails
+ * at once instead of queueing (no offline queue) — so a Valkey that is down makes
+ * a page fail in seconds rather than hang.
  */
 function redisAdapter(url: string): TicketAdapter {
   const client = createClient({
@@ -88,21 +86,13 @@ function redisAdapter(url: string): TicketAdapter {
   // Started once; it settles when the store first answers, and the client's own reconnects keep it
   // answering. Not a memoized rejection: with a reconnect strategy it never rejects.
   const ready = client.connect();
-  // A store that throws is the package's `session/unavailable`, with this as its cause.
-  const bounded = <T>(work: (c: typeof client) => Promise<T>) =>
-    race(
-      ready.then((c) => work(c)),
-      STORE_COMMAND_MS,
-      () => new Error(`The session store did not answer within ${STORE_COMMAND_MS / 1000} s`),
-    );
-
   return {
-    read: (key) => bounded((c) => c.get(key)),
+    read: async (key) => (await ready).get(key),
     write: async (key, value, ttl) => {
-      await bounded((c) => c.set(key, value, { expiration: { type: "EX", value: ttl } }));
+      await (await ready).set(key, value, { expiration: { type: "EX", value: ttl } });
     },
     delete: async (key) => {
-      await bounded((c) => c.del(key));
+      await (await ready).del(key);
     },
   };
 }
@@ -118,9 +108,8 @@ let bound: Bff | undefined;
 function bff(): Bff {
   if (bound !== undefined) return bound;
 
-  const issuer = required("KEASY_OIDC_ISSUER_URL");
   const config: Omit<RelyingPartyConfig, "redirectUri"> = {
-    issuer,
+    issuer: issuer(),
     clientId: required("KEASY_OIDC_CLIENT_ID"),
     clientSecret: required("KEASY_OIDC_CLIENT_SECRET"),
     secret: required("KEASY_SESSION_SECRET"),
@@ -129,7 +118,7 @@ function bff(): Bff {
     // Where *this process* reaches Keycloak, when that is not where the browser
     // does. An origin: the issuer's own path is appended to it.
     internalOrigin: process.env.KEASY_OIDC_INTERNAL_BASE_URL?.trim() || undefined,
-    allowInsecureHttp: issuer.startsWith("http://"),
+    allowInsecureHttp: issuer().startsWith("http://"),
   };
 
   bound = {
@@ -148,20 +137,9 @@ function bff(): Bff {
   return bound;
 }
 
-/**
- * The pages of Keycloak's account console keasy links to, by the route the console (account-ui,
- * Keycloak 26) declares: personal info at its root, the password and two-factor methods, and the
- * sessions on each device.
- */
-export type AccountPage = "" | "account-security/signing-in" | "account-security/device-activity";
-
-/**
- * Keycloak's account console for this realm, where the member's password, sign-in methods and
- * sessions live: `{issuer}/account`, and one of its pages under it.
- */
-export function accountConsoleUrl(page: AccountPage = ""): string {
-  const root = `${required("KEASY_OIDC_ISSUER_URL").replace(/\/$/, "")}/account`;
-  return page ? `${root}/${page}` : root;
+/** The public issuer — the one the browser is sent to, and `accountUrl` links under. */
+export function issuer(): string {
+  return required("KEASY_OIDC_ISSUER_URL");
 }
 
 /** `/api/auth`: sign-in, callback, sign-out, session. */

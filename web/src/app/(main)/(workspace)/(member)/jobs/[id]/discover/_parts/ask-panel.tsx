@@ -3,7 +3,8 @@
 import { useMemo, useState } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Sparkles } from "lucide-react";
-import { Query, useMosaic } from "@kanzo-tech/ui/analytics";
+import { Query, useMosaic, useQueryRows } from "@kanzo-tech/ui/analytics";
+import { GraphSelect } from "@kanzo-tech/graph";
 import { TableRefNode, column, eq, literal } from "@uwdata/mosaic-sql";
 import {
   Clipboard,
@@ -18,18 +19,16 @@ import {
 } from "@kanzo-tech/ui";
 import { Chat, type ToolPart, useChat } from "@kanzo-tech/ai";
 import { DirectChatTransport } from "@kanzo-tech/llm";
-import { toProblem } from "@/lib/errors";
 import { ProblemView } from "@/components/problem-view";
 import { settled } from "@/lib/api/settled";
 import { askAgent, type QueryAnswer, type QueryOutput } from "./ask-agent";
 import { describeDataSpace } from "./data-space";
-import { corpusKey, ONCE, useCorpus, useFieldStats, useGraphKey, useRows } from "./corpus";
-import { Finding } from "./finding";
+import { corpusKey, ONCE, useCorpus, useFieldStats, useGraphKey } from "./corpus";
 import { ResultTable } from "./result-table";
 import { type Edge, generateSuggestions } from "./schema-suggestions";
 
 /**
- * The answer's vertices as something to press — the showcase's `Finding`, as the Rules panel offers —
+ * The answer's vertices as something to press — kanzo-ui's `GraphSelect`, as the Rules panel offers —
  * when the answer carries the graph's key column.
  */
 function ShowOnGraph({ output }: { output: QueryOutput }) {
@@ -37,14 +36,14 @@ function ShowOnGraph({ output }: { output: QueryOutput }) {
   if (!output.rows[0] || !(key in output.rows[0])) return null;
   const ids = [...new Set(output.rows.map((row) => Number(row[key])).filter(Number.isFinite))];
   return (
-    <Finding disabled={ids.length === 0} label={output.sql} load={async () => ids} source="ask">
+    <GraphSelect disabled={ids.length === 0} label={output.sql} load={async () => ids}>
       <span className="flex items-baseline gap-2">
         <span className="flex-1 text-xs leading-relaxed">Show these on the graph</span>
         <span className="shrink-0 font-medium text-xs tabular-nums">
           {ids.length.toLocaleString()}
         </span>
       </span>
-    </Finding>
+    </GraphSelect>
   );
 }
 
@@ -54,7 +53,7 @@ function QueryResult({ part }: { part: ToolPart }) {
   if (part.state !== "output-available") return null;
   const answer = part.output as QueryAnswer;
   // The engine refused the model's SQL: the agent reads why and tries again; the reader sees it.
-  if ("refused" in answer) return <ProblemView problem={answer.refused} />;
+  if ("refused" in answer) return <ProblemView error={answer.refused} />;
   const output = answer;
   return (
     <div className="flex flex-col gap-2">
@@ -114,7 +113,7 @@ function AskChat({ schema, starters }: { schema: string; starters: string[] }) {
   return (
     <div className="flex h-full min-h-0 flex-col">
       {/* What stopped the answer, by its code: the gateway's refusal, its silence, a broken stream. */}
-      {chat.error && <ProblemView className="m-2" problem={toProblem(failure ?? chat.error, "llm/failed")} />}
+      {chat.error && <ProblemView className="m-2" error={failure ?? chat.error} uncoded="llm/failed" />}
       <Chat
       chat={chat}
       className="p-2"
@@ -142,7 +141,7 @@ export function AskPanel() {
   const { jobId } = useCorpus();
   const { coordinator } = useMosaic();
   const tables = useFieldStats();
-  const edges = useRows<Edge>(
+  const edges = useQueryRows<Edge>(
     Query.from(new TableRefNode([jobId, "fossil_tables"]))
       .select("source", "destination")
       .where(eq(column("kind"), literal("edge"))),
@@ -156,7 +155,7 @@ export function AskPanel() {
     useSuspenseQuery({
       queryKey: [...corpusKey(jobId), "data-space"],
       queryFn: ({ signal }) =>
-        describeDataSpace((sql) => coordinator.query(sql, { type: "json", signal }), jobId),
+        describeDataSpace(async (sql) => (await coordinator.query(sql, { signal })).toArray(), jobId),
       ...ONCE,
     }),
   );

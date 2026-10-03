@@ -6,7 +6,7 @@ vi.mock("@/lib/api/client", async () => {
 });
 vi.mock("@fossil-lang/corpus", () => ({}));
 vi.mock("@/lib/fossil/host", () => ({ host: {} }));
-vi.mock("@/lib/errors", () => ({ toastError: vi.fn(), toProblem: vi.fn() }));
+vi.mock("@/lib/errors", () => ({ toastError: vi.fn(), wireOf: vi.fn() }));
 
 const { ApiError } = await import("@keasy/api");
 const { lease, LEASE_MS } = await import("./use-browser-job-runner");

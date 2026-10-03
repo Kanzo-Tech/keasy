@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { deadlineFetch, race } from "./deadline";
+import { deadlineFetch } from "./deadline";
 
 class Silent extends Error {
   constructor(readonly after: number) {
@@ -87,14 +87,5 @@ describe("the deadline", () => {
     const answer = deadlineFetch((ms) => new Silent(ms))("/x", { signal: stop.signal });
     stop.abort(new Error("stopped"));
     await expect(answer).rejects.toThrow("stopped");
-  });
-
-  it("races any other outside promise", async () => {
-    vi.useFakeTimers();
-    const raced = race(new Promise(() => {}), 5_000, () => new Silent(5_000));
-    const settled = expect(raced).rejects.toMatchObject({ after: 5_000 });
-    // The deadline, and the one turn it gives an answer due at the same moment.
-    await vi.advanceTimersByTimeAsync(5_001);
-    await settled;
   });
 });

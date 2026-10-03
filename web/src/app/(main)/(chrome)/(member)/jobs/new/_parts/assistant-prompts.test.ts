@@ -1,6 +1,6 @@
 import { createGateway } from "@kanzo-tech/llm";
 import { describe, expect, it, vi } from "vitest";
-import { toProblem } from "@/lib/errors";
+import { coded } from "@/lib/errors";
 import { describeFiles, suggestQuestions, writeProgram } from "./assistant-prompts";
 
 const relay = vi.hoisted(() => ({ body: "" }));
@@ -52,12 +52,12 @@ describe("an answer the relay ends as gateway/silent", () => {
   it("fails the suggestions with the relay's code, not as none", async () => {
     relay.body = chunk('[{"question":') + SILENT;
     const failure = await failureOf(suggestQuestions("people", [], signal));
-    expect(toProblem(failure, "llm/failed")).toMatchObject({ code: "gateway/silent" });
+    expect(coded(failure, "llm/failed")).toMatchObject({ code: "gateway/silent" });
   });
 
   it("fails a program it cut short, rather than passing the part written", async () => {
     relay.body = chunk('{"program":"type { Person } := ') + SILENT;
     const failure = await failureOf(writeProgram("people", ["Who?"], [], signal));
-    expect(toProblem(failure, "llm/failed")).toMatchObject({ code: "gateway/silent" });
+    expect(coded(failure, "llm/failed")).toMatchObject({ code: "gateway/silent" });
   });
 });

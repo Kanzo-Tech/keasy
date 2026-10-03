@@ -6,11 +6,10 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { XIcon } from "lucide-react";
 import { Button, cn, ScrollArea, Skeleton } from "@kanzo-tech/ui";
-import { numbers, useMosaic } from "@kanzo-tech/ui/analytics";
-import { useGraphContext } from "@kanzo-tech/graph";
+import { numbers, useMosaic, useQueryRows } from "@kanzo-tech/ui/analytics";
+import { GraphSelect, useGraphContext } from "@kanzo-tech/graph";
 import { TableRefNode } from "@uwdata/mosaic-sql";
-import { corpusKey, roleColumns, useCorpus, useFieldStats, useRows } from "./corpus";
-import { Finding } from "./finding";
+import { corpusKey, roleColumns, useCorpus, useFieldStats } from "./corpus";
 import { OPERATOR_META, type Rule, ruleIdsQuery, runRules } from "./rule-engine";
 import { RuleBuilder } from "./rule-fields";
 import { ProblemView } from "@/components/problem-view";
@@ -38,7 +37,7 @@ export function RulesPanel() {
   const { jobId } = useCorpus();
   const { coordinator } = useMosaic();
   const tables = useFieldStats();
-  const addresses = useRows<{ table_name: string; column_name: string }>(roleColumns(jobId, "address"));
+  const addresses = useQueryRows<{ table_name: string; column_name: string }>(roleColumns(jobId, "address"));
   const { select } = useGraphContext();
   const [useRules] = useState(() => createRulesStore(jobId));
   const { rules: current } = useRules();
@@ -51,7 +50,7 @@ export function RulesPanel() {
     queryFn: () =>
       runRules(
         rules,
-        async (q) => (await coordinator.query(q, { type: "json" })) as unknown as Record<string, unknown>[],
+        async (q) => (await coordinator.query(q)).toArray() as Record<string, unknown>[],
         (name) => new TableRefNode([jobId, name]),
       ),
     staleTime: Infinity,
@@ -103,11 +102,10 @@ export function RulesPanel() {
             return (
               <li className="flex flex-col gap-1" key={rule.id}>
                 <div className="flex items-stretch gap-1">
-                  <Finding
+                  <GraphSelect
                     disabled={pending || clean || broken}
                     label={`${rule.typeName} ${sentence(rule)}`}
                     load={() => failingIds(rule)}
-                    source="order"
                   >
                     <span className="flex items-center gap-2">
                       <span
@@ -123,7 +121,7 @@ export function RulesPanel() {
                       </span>
                     </span>
                     <span className="mt-0.5 block truncate font-mono text-[11px]">{sentence(rule)}</span>
-                  </Finding>
+                  </GraphSelect>
                   <Button
                     aria-label={`Remove ${sentence(rule)}`}
                     className="h-auto shrink-0 self-stretch text-muted-foreground"
@@ -134,7 +132,7 @@ export function RulesPanel() {
                     <XIcon className="size-3.5" />
                   </Button>
                 </div>
-                {counted[i]?.problem && <ProblemView problem={counted[i].problem} />}
+                {counted[i]?.problem !== undefined && <ProblemView error={counted[i].problem} uncoded="query/failed" />}
               </li>
             );
           })}

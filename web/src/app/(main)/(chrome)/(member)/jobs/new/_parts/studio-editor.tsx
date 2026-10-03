@@ -13,7 +13,7 @@ import {
   Show,
 } from "@kanzo-tech/ui";
 import { CodeEditor } from "@kanzo-tech/ui/editor";
-import { fossil } from "@fossil-lang/codemirror-fossil";
+import { fossil, uncheckedRow } from "@fossil-lang/codemirror-fossil";
 import { forceLinting, lintGutter } from "@codemirror/lint";
 import { EditorView } from "@codemirror/view";
 import { X } from "lucide-react";
@@ -61,7 +61,7 @@ export function StudioEditor({
         if (alive) setOpened(p);
       })
       .catch((cause: unknown) => {
-        if (alive) onDiagnostics([checker.uncheckedRow(cause)]);
+        if (alive) onDiagnostics([uncheckedRow(checker.JOB_URI, cause)]);
       });
     return () => {
       alive = false;
@@ -77,17 +77,8 @@ export function StudioEditor({
             lintGutter(),
             fossil({
               ...opened,
-              // A check that throws is drawn by the linter on the first character and never reaches
-              // `onDiagnostics`; the studio is told the same row, so nothing reads "Valid" over it.
-              check: async (text) => {
-                try {
-                  return await opened.check(text);
-                } catch (cause) {
-                  onDiagnostics([checker.uncheckedRow(cause)]);
-                  throw cause;
-                }
-              },
-              // The rows are the program's own `check` rows, coded; the editor's type is looser.
+              // The rows are the program's own `check` rows, coded — a check that threw included, as
+              // the one row the linter draws for it — so nothing reads "Valid" over a failed check.
               onDiagnostics: (rows) => onDiagnostics(rows as readonly checker.CheckRow[]),
               // One pane: a definition in a shape document is reported, not jumped to.
               onNavigate: (target) =>

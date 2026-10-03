@@ -17,7 +17,8 @@ import {
   SectionTitle,
   SectionTitleGroup,
 } from "@kanzo-tech/ui";
-import { type AccountPage, accountConsoleUrl, getSession } from "@/lib/auth/server";
+import { type AccountPage, accountUrl } from "@kanzo-tech/auth";
+import { getSession, issuer } from "@/lib/auth/server";
 import { initials } from "@/lib/ui/format";
 
 // Keasy keeps no password and no session list of its own: each row opens the page of Keycloak's
@@ -42,7 +43,7 @@ const SIGN_IN: { page: AccountPage; title: string; description: string; action: 
 function ConsoleLink({ page, children }: { page: AccountPage; children: React.ReactNode }) {
   return (
     <Button asChild size="sm" variant="outline">
-      <a href={accountConsoleUrl(page)} rel="noopener noreferrer" target="_blank">
+      <a href={accountUrl(issuer(), page)} rel="noopener noreferrer" target="_blank">
         {children}
         <ExternalLink />
       </a>

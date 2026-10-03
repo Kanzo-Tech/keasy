@@ -12,8 +12,8 @@ module "keasy" {
   # The hierarchy, declared once. Tokens carry it expanded, and the server and the web
   # ask only whether a role is present (server/src/authentication/role.rs).
   roles = {
-    reader = { description = "Reads everything in the workspace: jobs, outputs, connections." }
-    editor = { description = "Builds jobs, connections and secrets; changes what they made.", composites = ["reader"] }
+    reader = { description = "Reads everything in the workspace: graphs, outputs, connections." }
+    editor = { description = "Builds graphs, connections and secrets; changes what they made.", composites = ["reader"] }
     admin  = { description = "Configures the workspace and changes anything in it.", composites = ["editor"] }
   }
 }

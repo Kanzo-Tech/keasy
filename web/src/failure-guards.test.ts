@@ -82,12 +82,12 @@ describe("the failure guards", () => {
   it("reads data with useSuspenseQuery, but for the named exceptions", () => {
     const EXCEPTIONS = new Set([
       // One listing per selected connection; the loaded ones are shown beside the one that failed.
-      "web/src/app/(main)/(chrome)/(editor)/jobs/new/_parts/assistant-wizard.tsx",
+      "web/src/app/(main)/(chrome)/(editor)/graphs/new/_parts/assistant-wizard.tsx",
       // Follows every pause in typing; the editor shows the failure beside the program.
-      "web/src/app/(main)/(chrome)/(editor)/jobs/new/_parts/use-source-descriptors.ts",
+      "web/src/app/(main)/(chrome)/(editor)/graphs/new/_parts/use-source-descriptors.ts",
       // Follows every pause in typing; a failed question leaves the folder to Create's own answer.
-      "web/src/app/(main)/(chrome)/(editor)/jobs/new/_parts/use-folder-availability.ts",
-      // A crumb's label: the route's own name stands until the job's arrives, and the job's page shows its failure.
+      "web/src/app/(main)/(chrome)/(editor)/graphs/new/_parts/use-folder-availability.ts",
+      // A crumb's label: the route's own name stands until the graph's arrives, and the graph's page shows its failure.
       "web/src/app/(main)/_parts/trail.tsx",
     ]);
     expect(offenders(/\b(useQuery|useQueries)\(/, (_, __, path) => EXCEPTIONS.has(path))).toEqual([]);

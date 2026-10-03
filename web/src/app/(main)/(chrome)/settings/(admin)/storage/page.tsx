@@ -37,7 +37,7 @@ import { $api, invalidate } from "@/lib/api/client";
 import type { Connection, Credential } from "@/lib/connections";
 import { toastError } from "@/lib/errors";
 
-/** Workspace storage: the sink, the one storage connection where job outputs land. An admin's. */
+/** Workspace storage: the sink, the one storage connection where graph outputs land. An admin's. */
 export default function WorkspaceStoragePage() {
   return (
     <Boundary
@@ -78,7 +78,7 @@ function WorkspaceStorage() {
                 <h2>No storage credentials</h2>
               </EmptyTitle>
               <EmptyDescription>
-                Add a storage credential (Settings → Credentials) before choosing where job outputs
+                Add a storage credential (Settings → Credentials) before choosing where graph outputs
                 land.
               </EmptyDescription>
             </EmptyHeader>
@@ -119,7 +119,7 @@ function Form({ credentials, sink }: { credentials: Credential[]; sink?: Connect
       <SectionHeader>
         <SectionTitleGroup>
           <SectionTitle>Workspace storage</SectionTitle>
-          <SectionDescription>The bucket where job outputs land, for every job in this workspace.</SectionDescription>
+          <SectionDescription>The bucket where graph outputs land, for every graph in this workspace.</SectionDescription>
         </SectionTitleGroup>
       </SectionHeader>
       <SectionBody scale="page">
@@ -157,7 +157,7 @@ function Form({ credentials, sink }: { credentials: Credential[]; sink?: Connect
             <FieldRequiredIndicator />
           </FieldLabel>
           <FieldDescription>
-            Where job output is written, one folder per job (e.g. s3://my-bucket/outputs). Saving
+            Where graph output is written, one folder per graph (e.g. s3://my-bucket/outputs). Saving
             writes and deletes a test object there.
           </FieldDescription>
           <Input

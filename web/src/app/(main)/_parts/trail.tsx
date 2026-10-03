@@ -21,19 +21,19 @@ import { useSearchParams } from "next/navigation";
 import { $api } from "@/lib/api/client";
 import { type Crumb, generateBreadcrumbs } from "@/app/(main)/_parts/route-config";
 
-/** A crumb's name: its label resolved (a job's own name), else the route's. */
+/** A crumb's name: its label resolved (a graph's own name), else the route's. */
 function useCrumbName(crumb: Crumb): string {
-  const jobId = crumb.label?.kind === "job" ? crumb.label.id : "";
+  const graphId = crumb.label?.kind === "graph" ? crumb.label.id : "";
   // The named exception to "useSuspenseQuery only" (fossil docs/design/failure, G2.4): the header
-  // must not suspend or fail on a label. The route's name stands until the job's arrives, and the
-  // page below the header reads the same job and shows its failure.
-  const { data: job } = $api.useQuery(
+  // must not suspend or fail on a label. The route's name stands until the graph's arrives, and the
+  // page below the header reads the same graph and shows its failure.
+  const { data: graph } = $api.useQuery(
     "get",
-    "/v1/jobs/{id}",
-    { params: { path: { id: jobId } } },
-    { enabled: !!jobId },
+    "/v1/graphs/{id}",
+    { params: { path: { id: graphId } } },
+    { enabled: !!graphId },
   );
-  return (jobId && job?.name) || crumb.name;
+  return (graphId && graph?.name) || crumb.name;
 }
 
 function CrumbLink({ crumb }: { crumb: Crumb }) {

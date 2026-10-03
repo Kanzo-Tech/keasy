@@ -6,7 +6,7 @@ test.describe("a reader", () => {
   test.use({ storageState: ".auth/reader.json" });
 
   test("sees the shared graphs but is offered no New graph", async ({ page }) => {
-    await page.goto("/jobs");
+    await page.goto("/graphs");
     await expect(page.getByPlaceholder("Search graphs...").or(page.getByRole("heading", { name: "No graphs yet" }))).toBeVisible();
     await expect(page.getByRole("link", { name: "New graph" })).toHaveCount(0);
   });

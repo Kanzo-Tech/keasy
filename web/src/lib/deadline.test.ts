@@ -26,7 +26,7 @@ describe("the deadline", () => {
   it("names who did not answer when the headers never come", async () => {
     vi.useFakeTimers();
     vi.stubGlobal("fetch", silentFetch());
-    const answer = deadlineFetch((ms) => new Silent(ms), 30_000)("/api/v1/jobs");
+    const answer = deadlineFetch((ms) => new Silent(ms), 30_000)("/api/v1/graphs");
     const settled = expect(answer).rejects.toMatchObject({ after: 30_000 });
     await vi.advanceTimersByTimeAsync(30_000);
     await settled;
@@ -47,7 +47,7 @@ describe("the deadline", () => {
         return new Response(body);
       }),
     );
-    const response = await deadlineFetch((ms) => new Silent(ms), 1_000)("/api/v1/jobs/7/events");
+    const response = await deadlineFetch((ms) => new Silent(ms), 1_000)("/api/v1/graphs/7/events");
     const reader = response.body!.getReader();
 
     for (let i = 0; i < 3; i++) {

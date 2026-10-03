@@ -48,7 +48,7 @@ async fn the_request_log_names_the_authenticated_caller() {
     let app = spawn_app().await;
     let token = app.token_for("u-logged", EDITOR);
     assert_eq!(
-        app.call(Method::GET, "/v1/jobs", Some(&token)).await,
+        app.call(Method::GET, "/v1/graphs", Some(&token)).await,
         StatusCode::OK
     );
 
@@ -56,7 +56,7 @@ async fn the_request_log_names_the_authenticated_caller() {
     assert!(
         out.lines()
             .any(|l| l.contains("finished processing request")
-                && l.contains("/v1/jobs")
+                && l.contains("/v1/graphs")
                 && l.contains(r#""user_id":"u-logged""#)),
         "no response line naming the caller in:\n{out}"
     );

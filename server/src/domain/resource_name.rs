@@ -1,5 +1,5 @@
 /// A credential's or a connection's name: its primary key, a URL path segment,
-/// and — for a connection — what a program writes after `@`. A job's name is
+/// and — for a connection — what a program writes after `@`. A graph's name is
 /// spelled by the same rule: one name rule across keasy.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ResourceName(String);
@@ -39,7 +39,7 @@ impl utoipa::PartialSchema for ResourceName {
         ObjectBuilder::new()
             .schema_type(Type::String)
             .description(Some(
-                "A credential's, a connection's or a job's name: no leading or trailing \
+                "A credential's, a connection's or a graph's name: no leading or trailing \
                  whitespace, and no `/`, `@`, `\\` or control character.",
             ))
             .pattern(Some(Self::PATTERN))

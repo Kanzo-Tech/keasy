@@ -37,8 +37,8 @@ the user is in, which `provision` maps onto keasy's roles (`infra/auth/dev-roles
 | User | acme (this instance) | globex | What it shows |
 |------|----------------------|--------|---------------|
 | `ana` | admin (*Admins*) | reader (*Readers*) | everything; the switcher between two organizations |
-| `bruno` | editor (*Data team*) | — | builds jobs, connections and secrets; changes what he made |
-| `eva` | reader (*Analysts*) | — | reads jobs, outputs and connections; creates nothing |
+| `bruno` | editor (*Data team*) | — | builds graphs, connections and secrets; changes what he made |
+| `eva` | reader (*Analysts*) | — | reads graphs, outputs and connections; creates nothing |
 | `fede` | member, no group | — | signed in, no role here: the forbidden page |
 | `carla` | — | admin (*Platform*) | a member of another organization only: no role here |
 | `dan` | — | — | no organization at all |
@@ -111,9 +111,9 @@ realm's JWKS (`iss`, `aud`, `exp`, `azp`, signature) and holds no client secret,
 no session and no cookie. It is reached only through the web's `/api/v1`.
 
 Mappings run in the browser (DuckDB-WASM + `@fossil-lang/*`), and so does source
-introspection; the server hosts connections, vends credentials scoped to one prefix, jobs and the catalog,
-and never reads a data file. Every job names a sink as its destination. The work
-is shared: everyone in the workspace reads every job, and its creator or an admin
+introspection; the server hosts connections, vends credentials scoped to one prefix, graphs and the catalog,
+and never reads a data file. Every graph names a sink as its destination. The work
+is shared: everyone in the workspace reads every graph, and its creator or an admin
 changes it (roles `reader ⊂ editor ⊂ admin`, from the Keycloak organization the
 instance serves).
 
@@ -191,7 +191,7 @@ server/             Rust API (Dockerfile = release, Dockerfile.dev = cargo-watch
   src/startup.rs    Application, AppState, the router and the spec it publishes
   src/routes/       one file per resource: handlers with their bodies
   src/domain/       the records and parse-don't-validate types
-  src/{credentials,connections,jobs}/  persistence and shared behaviour
+  src/{credentials,connections,graphs}/  persistence and shared behaviour
   tests/api/        black-box HTTP tests through spawn_app, and the spec golden
 web/                Next.js app and BFF (Dockerfile = release, Dockerfile.dev = HMR)
 ```

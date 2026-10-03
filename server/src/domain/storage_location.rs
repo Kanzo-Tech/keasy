@@ -266,12 +266,12 @@ mod tests {
     #[test]
     fn a_dot_segment_is_refused_however_it_is_spelt() {
         for bad in [
-            "s3://b/vocab/../output/job/x.parquet",
-            "s3://b/vocab/%2e%2e/output/job/x.parquet",
-            "s3://b/vocab/.%2e/output/job/x.parquet",
-            "s3://b/vocab/%2E%2E/output/job/x.parquet",
-            "s3://b/./output/job/x.parquet",
-            "s3://b/%2e/output/job/x.parquet",
+            "s3://b/vocab/../output/graph/x.parquet",
+            "s3://b/vocab/%2e%2e/output/graph/x.parquet",
+            "s3://b/vocab/.%2e/output/graph/x.parquet",
+            "s3://b/vocab/%2E%2E/output/graph/x.parquet",
+            "s3://b/./output/graph/x.parquet",
+            "s3://b/%2e/output/graph/x.parquet",
             "s3://b/a//b",
         ] {
             assert!(StorageLocation::parse(bad).is_err(), "{bad}");
@@ -285,8 +285,8 @@ mod tests {
         assert!(data.contains(&loc("s3://b/data")));
         assert!(!data.contains(&loc("s3://b/data-private/x.csv")));
         assert!(!data.contains(&loc("s3://other/data/x.csv")));
-        assert!(loc("s3://b/").contains(&loc("s3a://b/output/job/x")));
-        assert!(loc("s3://b/output/").overlaps(&loc("s3://b/output/job")));
+        assert!(loc("s3://b/").contains(&loc("s3a://b/output/graph/x")));
+        assert!(loc("s3://b/output/").overlaps(&loc("s3://b/output/graph")));
         assert!(!loc("s3://b/data/").overlaps(&loc("s3://b/output/")));
     }
 

@@ -177,7 +177,7 @@ pub struct OidcSettings {
     /// The **public** OIDC issuer, exactly as it appears in a token's `iss`.
     /// Read from KEASY_OIDC_ISSUER_URL. Example: https://auth.example/auth/realms/keasy
     pub issuer_url: String,
-    /// This workspace's Keycloak client. Two jobs: the expected `azp` on every
+    /// This workspace's Keycloak client. Two graphs: the expected `azp` on every
     /// token, and the key into `resource_access` that carries the roles.
     /// Read from KEASY_OIDC_CLIENT_ID. Example: keasy-ws-dev
     pub client_id: String,

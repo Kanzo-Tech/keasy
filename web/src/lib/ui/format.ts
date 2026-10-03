@@ -11,10 +11,10 @@ function formatDuration(startIso: string, endIso: string): string {
   return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
 }
 
-export function formatJobDuration(job: Schemas["Job"]): string {
-  if (!job.started_at) return "";
-  const end = job.completed_at ?? new Date().toISOString();
-  return formatDuration(job.started_at, end);
+export function formatGraphDuration(graph: Schemas["Graph"]): string {
+  if (!graph.started_at) return "";
+  const end = graph.completed_at ?? new Date().toISOString();
+  return formatDuration(graph.started_at, end);
 }
 
 export function formatDate(dateStr: string | null | undefined): string {

@@ -4,8 +4,8 @@
  * `coverage.spec.ts` holds every one to a test named `NN …`.
  */
 export const SCENARIOS: Record<number, string> = {
-  1: "missing job in discover",
-  2: "job not completed in discover",
+  1: "missing graph in discover",
+  2: "graph not completed in discover",
   3: "vending that never answers",
   4: "store that refuses to vend",
   5: "API down",
@@ -25,7 +25,7 @@ export const SCENARIOS: Record<number, string> = {
   17: "a rule that fails",
   18: "run too large",
   19: "tab closed mid-run",
-  20: "deleting a running job",
+  20: "deleting a running graph",
   21: "file listing that fails",
   22: "missing draft",
   23: "routes and bodies axum refuses",

@@ -185,7 +185,7 @@ impl TestApp {
         (status, code)
     }
 
-    /// A job to run on the sink `sink`: a draft, submitted with a folder of
+    /// A graph to run on the sink `sink`: a draft, submitted with a folder of
     /// its own, idle. Its id.
     pub async fn submitted(&self, token: &str) -> String {
         static FOLDERS: AtomicUsize = AtomicUsize::new(0);
@@ -193,46 +193,46 @@ impl TestApp {
         let (status, draft) = self
             .send(
                 Method::POST,
-                "/v1/jobs",
+                "/v1/graphs",
                 token,
                 json!({ "script": "x", "sink_connection": "sink" }),
             )
             .await;
         assert_eq!(status, StatusCode::CREATED, "{draft}");
         let id = draft["id"].as_str().unwrap();
-        let (status, job) = self
+        let (status, graph) = self
             .send(
                 Method::POST,
-                &format!("/v1/jobs/{id}/submit"),
+                &format!("/v1/graphs/{id}/submit"),
                 token,
                 json!({ "folder": folder }),
             )
             .await;
-        assert_eq!(status, StatusCode::OK, "{job}");
+        assert_eq!(status, StatusCode::OK, "{graph}");
         id.to_string()
     }
 
-    /// A job submitted and run by `token`'s caller, who is its runner. Its id.
+    /// A graph submitted and run by `token`'s caller, who is its runner. Its id.
     pub async fn running(&self, token: &str) -> String {
         let id = self.submitted(token).await;
-        let (status, job) = self.run(token, &id).await;
-        assert_eq!(status, StatusCode::OK, "{job}");
+        let (status, graph) = self.run(token, &id).await;
+        assert_eq!(status, StatusCode::OK, "{graph}");
         id
     }
 
-    /// `POST /v1/jobs/{id}/run`: the status, and the job or the refusal.
+    /// `POST /v1/graphs/{id}/run`: the status, and the graph or the refusal.
     pub async fn run(&self, token: &str, id: &str) -> (StatusCode, serde_json::Value) {
         self.send(
             Method::POST,
-            &format!("/v1/jobs/{id}/run"),
+            &format!("/v1/graphs/{id}/run"),
             token,
             json!(null),
         )
         .await
     }
 
-    /// What the runner reports of job `id`: `POST /v1/jobs/{id}/status`. The
-    /// status, and the job as the report left it — read back, since a report
+    /// What the runner reports of graph `id`: `POST /v1/graphs/{id}/status`. The
+    /// status, and the graph as the report left it — read back, since a report
     /// answers only whether to stop — or the refusal's body.
     pub async fn report(
         &self,
@@ -243,7 +243,7 @@ impl TestApp {
         let (status, body) = self
             .send(
                 Method::POST,
-                &format!("/v1/jobs/{id}/status"),
+                &format!("/v1/graphs/{id}/status"),
                 token,
                 report,
             )
@@ -251,10 +251,10 @@ impl TestApp {
         if status != StatusCode::OK {
             return (status, body);
         }
-        let (_, job) = self
-            .send(Method::GET, &format!("/v1/jobs/{id}"), token, json!(null))
+        let (_, graph) = self
+            .send(Method::GET, &format!("/v1/graphs/{id}"), token, json!(null))
             .await;
-        (status, job)
+        (status, graph)
     }
 
     /// What fossil's host asks the one vend door: `scope`, for `access`. The

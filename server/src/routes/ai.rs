@@ -112,7 +112,7 @@ fn error_event(body: &ErrorBody) -> Bytes {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, utoipa::ToSchema)]
 #[serde(rename_all = "kebab-case")]
 pub enum Alias {
-    /// Conversations and generation: the Ask panel, the job assistant.
+    /// Conversations and generation: the Ask panel, the graph assistant.
     Chat,
     /// Assisted fields: short, fast, often the same question twice.
     Complete,
@@ -275,7 +275,7 @@ mod tests {
     fn the_deadline_leaves_exactly_the_relayed_routes() {
         assert!(relays("/v1/ai/chat/completions"));
         assert!(!relays("/v1/ai"));
-        assert!(!relays("/v1/jobs"));
+        assert!(!relays("/v1/graphs"));
     }
 
     #[tokio::test]

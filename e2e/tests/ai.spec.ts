@@ -8,11 +8,11 @@ import { expectProblem } from "../support/problem";
 const stream = (route: Route, body: string) =>
   route.fulfill({ status: 200, contentType: "text/event-stream", body });
 
-test("11 an AI gateway that is down is gateway/unreachable in Ask", async ({ page, corpusJob }) => {
+test("11 an AI gateway that is down is gateway/unreachable in Ask", async ({ page, corpusGraph }) => {
   test.setTimeout(180_000);
   stop("ai-gateway");
   try {
-    await openPanel(page, corpusJob, "Ask");
+    await openPanel(page, corpusGraph, "Ask");
     await ask(page, "How many people are there?");
     await expectProblem(page, "gateway/unreachable", { within: 20_000 });
   } finally {
@@ -20,7 +20,7 @@ test("11 an AI gateway that is down is gateway/unreachable in Ask", async ({ pag
   }
 });
 
-test("12 a provider refusal the gateway relays is shown, not an empty answer", async ({ page, corpusJob }) => {
+test("12 a provider refusal the gateway relays is shown, not an empty answer", async ({ page, corpusGraph }) => {
   // The gateway answers a spent budget in the protocol's error format, with its status; the
   // provider's words are the detail of the one view.
   await page.route(AI, (route) =>
@@ -30,17 +30,17 @@ test("12 a provider refusal the gateway relays is shown, not an empty answer", a
       body: JSON.stringify({ error: { message: "You exceeded your current quota", type: "insufficient_quota" } }),
     }),
   );
-  await openPanel(page, corpusJob, "Ask");
+  await openPanel(page, corpusGraph, "Ask");
   await ask(page, "How many people are there?");
   await expectProblem(page, "llm/failed", { within: 15_000 });
 });
 
-test("13 an AI gateway that accepts and never answers is gateway/silent", async ({ page, corpusJob }) => {
+test("13 an AI gateway that accepts and never answers is gateway/silent", async ({ page, corpusGraph }) => {
   test.setTimeout(240_000);
   stop("ai-gateway");
   up("ai-gateway-silent");
   try {
-    await openPanel(page, corpusJob, "Ask");
+    await openPanel(page, corpusGraph, "Ask");
     await ask(page, "How many people are there?");
     // The relay gives the gateway 25 s, under the browser's 30 s.
     await expectProblem(page, "gateway/silent", { within: 45_000 });
@@ -50,11 +50,11 @@ test("13 an AI gateway that accepts and never answers is gateway/silent", async 
   }
 });
 
-test("14 an error event mid-stream is a failure, not a short answer", async ({ page, corpusJob }) => {
+test("14 an error event mid-stream is a failure, not a short answer", async ({ page, corpusGraph }) => {
   await page.route(AI, (route) =>
     stream(route, sse(text("There are"), { error: { message: "The server is overloaded", type: "server_error" } })),
   );
-  await openPanel(page, corpusJob, "Ask");
+  await openPanel(page, corpusGraph, "Ask");
   await ask(page, "How many people are there?");
   await expectProblem(page, "llm/failed", { within: 15_000 });
 });
@@ -62,7 +62,7 @@ test("14 an error event mid-stream is a failure, not a short answer", async ({ p
 test("15 a structured answer that does not parse fails the assistant's step, not as no suggestions", async ({ page }) => {
   // Suggesting requirements asks for JSON; prose instead fails the call, and says so.
   await page.route(AI, (route) => stream(route, sse(text("You should look at the people table."), text("", "stop"))));
-  await page.goto("/jobs/new");
+  await page.goto("/graphs/new");
   await page.getByText("Assistant", { exact: true }).click();
   // Ark draws the checkbox's control over its input.
   await page.getByRole("checkbox", { name: `Select ${SOURCE}` }).check({ force: true });
@@ -73,7 +73,7 @@ test("15 a structured answer that does not parse fails the assistant's step, not
   await expectProblem(page, "llm/failed", { within: 20_000 });
 });
 
-test("16 SQL the engine refuses reaches the tool's frame as query/failed with the engine's words", async ({ page, corpusJob }) => {
+test("16 SQL the engine refuses reaches the tool's frame as query/failed with the engine's words", async ({ page, corpusGraph }) => {
   let calls = 0;
   // What the model is handed back after the refusal: the engine's own words.
   let readBack = "";
@@ -104,7 +104,7 @@ test("16 SQL the engine refuses reaches the tool's frame as query/failed with th
     const done = { ...call, choices: [{ index: 0, delta: {}, finish_reason: "tool_calls" }] };
     return stream(route, sse(call, done));
   });
-  await openPanel(page, corpusJob, "Ask");
+  await openPanel(page, corpusGraph, "Ask");
   await ask(page, "How many people are there?");
   // DuckDB's refusal, uncoded, is the tool's: its code is keasy's, its words the engine's.
   await expectProblem(page, "query/failed", { within: 20_000 });

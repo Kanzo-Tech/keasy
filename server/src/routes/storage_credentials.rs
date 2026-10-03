@@ -1,6 +1,6 @@
 //! The one door a credential is vended through: fossil's `Host.credentials`
 //! — a scope, an access — as an HTTP call. A scope is a source connection's
-//! prefix or a job's dataset, `{sink}/{folder}/`; the store holds the
+//! prefix or a graph's dataset, `{sink}/{folder}/`; the store holds the
 //! boundary, so the credential opens nothing else.
 
 use axum::Json;
@@ -23,8 +23,10 @@ use crate::storage_client;
 pub enum Scope {
     /// A source connection's prefix, by the connection's name.
     Connection(String),
-    /// A job's dataset, by the job's id.
-    Job(String),
+    /// A graph's dataset, by the graph's id. `job` on the wire: the scope is
+    /// fossil's, passed through verbatim, and fossil calls it that.
+    #[serde(rename = "job")]
+    Graph(String),
 }
 
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
@@ -38,26 +40,26 @@ pub struct StorageCredentialsRequest {
     responses(
         (status = 200, description = "A credential that opens the scope's prefix, and only it, for an hour", body = VendedCredentials),
         (status = 400, description = "Not a storage source, or an access the scope does not give", body = ErrorBody),
-        (status = 403, description = "A source read below editor; a job written below editor, or by anyone but its runner", body = ErrorBody),
-        (status = 404, description = "No such connection, or no such job", body = ErrorBody),
-        (status = 409, description = "A job read before it completed (`job/not-completed`), or written before it runs (`job/not-running`) or after it ended (`job/ended`)", body = ErrorBody),
+        (status = 403, description = "A source read below editor; a graph written below editor, or by anyone but its runner", body = ErrorBody),
+        (status = 404, description = "No such connection, or no such graph", body = ErrorBody),
+        (status = 409, description = "A graph read before it completed (`graph/not-completed`), or written before it runs (`graph/not-running`) or after it ended (`graph/ended`)", body = ErrorBody),
         (status = 502, description = "The store refused to vend", body = ErrorBody),
         (status = 504, description = "The store, or the identity service before it, did not answer in time", body = ErrorBody),
     )
 )]
 /// Vend a credential over `scope` for `access`. Anyone in the workspace reads a
-/// completed job's dataset. An editor reads a source connection — Unity
+/// completed graph's dataset. An editor reads a source connection — Unity
 /// Catalog's temporary path credentials over an external location — to build
-/// a job, and writes a job's dataset while it runs, if they are its runner.
+/// a graph, and writes a graph's dataset while it runs, if they are its runner.
 pub async fn vend(
     caller: Reader,
     State(state): State<AppState>,
     Json(req): Json<StorageCredentialsRequest>,
 ) -> Result<Response, Refusal> {
     let access = req.access;
-    // Whether a job still runs is what the sweep decides: a write asks it.
-    if matches!(req.scope, Scope::Job(_)) && access == Access::Write {
-        crate::jobs::sweep(&state.db).await?;
+    // Whether a graph still runs is what the sweep decides: a write asks it.
+    if matches!(req.scope, Scope::Graph(_)) && access == Access::Write {
+        crate::graphs::sweep(&state.db).await?;
     }
     // What the scope is and the secret that reaches it, read at once; the
     // store is asked after, with no database held.
@@ -73,13 +75,13 @@ pub async fn vend(
                 let source = crate::connections::source(&conn, &name)?;
                 crate::connections::storage(&conn, key, &source)?
             }
-            Scope::Job(id) => {
+            Scope::Graph(id) => {
                 if access == Access::Write {
                     caller.require(Role::Editor)?;
                 }
-                let job = crate::jobs::any(&conn, &id)?;
-                job.may(access, &caller)?;
-                crate::jobs::output(&conn, key, &job)?
+                let graph = crate::graphs::any(&conn, &id)?;
+                graph.may(access, &caller)?;
+                crate::graphs::output(&conn, key, &graph)?
             }
         }
     };

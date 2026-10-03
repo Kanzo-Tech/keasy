@@ -103,7 +103,7 @@ describe("a library's coded failure", () => {
 describe("a host failure fossil wrapped", () => {
   it("keeps keasy's code and data under fossil's", () => {
     const silent = new ApiError({ code: "store/silent", title: "The store did not answer in time", detail: "STS", data: { after: 10_000 } }, 504);
-    const wrapped = FossilError.of("storage/host-refused", { scope: "job x" }, { cause: silent });
+    const wrapped = FossilError.of("storage/host-refused", { scope: "graph x" }, { cause: silent });
     expect(wireOf(wrapped)).toMatchObject({
       code: "storage/host-refused",
       cause: { name: "ApiError", code: "store/silent", data: { after: 10_000 } },
@@ -111,20 +111,20 @@ describe("a host failure fossil wrapped", () => {
   });
 
   it("keeps keasy's code in a stored problem, a level further down", () => {
-    const missing = new ApiError({ code: "job/not-found", title: "Job not found", detail: "No such job", data: {} }, 404);
-    const refused = FossilError.of("storage/host-refused", { scope: "job x" }, { cause: missing });
+    const missing = new ApiError({ code: "graph/not-found", title: "Graph not found", detail: "No such graph", data: {} }, 404);
+    const refused = FossilError.of("storage/host-refused", { scope: "graph x" }, { cause: missing });
     const unread = FossilError.of("document/unread", { documents: ["people.csv"] }, { cause: refused.problem });
     const stored = JSON.parse(JSON.stringify(unread.problem)) as typeof unread.problem;
     expect(wireOf(FossilError.from(stored))).toMatchObject({
       code: "document/unread",
-      cause: { code: "storage/host-refused", cause: { code: "job/not-found" } },
+      cause: { code: "storage/host-refused", cause: { code: "graph/not-found" } },
     });
   });
 });
 
 describe("a refusal about one field", () => {
   it("names the field and says it in keasy's words", () => {
-    const taken = new ApiError({ code: "job/folder-taken", title: "Folder taken", detail: "people is held", data: { field: "folder" } }, 409);
+    const taken = new ApiError({ code: "graph/folder-taken", title: "Folder taken", detail: "people is held", data: { field: "folder" } }, 409);
     expect(fieldProblem(taken)).toEqual({ field: "folder", message: "Another graph writes to this folder already." });
   });
 

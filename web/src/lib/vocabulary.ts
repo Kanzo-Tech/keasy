@@ -1,8 +1,8 @@
 /**
  * The interface's one vocabulary: Graph · Recipe · Run · Output · Explore · Workspace storage.
  *
- * The API still calls the entity a job (`/v1/jobs`, `Job`); what a person reads calls it this. Copy
- * builds its sentences from these words, so renaming the entity is an edit here, not a hunt.
+ * The API names the entity the same (`/v1/graphs`, `Graph`). Copy builds its sentences from these
+ * words, so renaming what a person reads is an edit here, not a hunt.
  */
 export const WORDS = {
   graph: "Graph",

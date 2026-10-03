@@ -204,7 +204,7 @@ least_role!(
     Role::Reader
 );
 least_role!(
-    /// Admits an editor or an admin: who builds jobs, connections and secrets.
+    /// Admits an editor or an admin: who builds graphs, connections and secrets.
     Editor,
     Role::Editor
 );

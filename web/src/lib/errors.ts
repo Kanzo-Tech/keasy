@@ -94,19 +94,19 @@ const registry: Partial<Record<ErrorCode | NoBodyCode | ClientCode | Code | Kanz
   },
   "resource/in-use": { title: "It is still in use." },
   "secret/not-found": { title: "No such credential." },
-  "job/folder-taken": { title: `Another ${lower(WORDS.graph)} writes to this folder already.` },
-  "job/still-running": { title: `The ${lower(WORDS.graph)} is running; it can be deleted once the run ends.` },
-  "job/not-running": { title: `The ${lower(WORDS.graph)} is not running.` },
-  "job/already-running": { title: `The ${lower(WORDS.graph)} is running already.` },
+  "graph/folder-taken": { title: `Another ${lower(WORDS.graph)} writes to this folder already.` },
+  "graph/still-running": { title: `The ${lower(WORDS.graph)} is running; it can be deleted once the run ends.` },
+  "graph/not-running": { title: `The ${lower(WORDS.graph)} is not running.` },
+  "graph/already-running": { title: `The ${lower(WORDS.graph)} is running already.` },
   "rbac/no-membership": { title: "You have no role in this workspace." },
   "rbac/insufficient-role": { title: "Your role in this workspace does not allow this." },
   "rbac/forbidden": { title: "Only its creator or an admin can change this." },
-  "job/ended": { title: "The run has already ended." },
-  "job/abandoned": {
+  "graph/ended": { title: "The run has already ended." },
+  "graph/abandoned": {
     title: "The run was abandoned",
     detail: `The tab running this ${lower(WORDS.graph)} closed or lost its connection, so the run was ended. ${WORDS.run} it again.`,
   },
-  "job/interrupted": {
+  "graph/interrupted": {
     title: "The run was interrupted",
     detail: `The tab running this ${lower(WORDS.graph)} reloaded or closed before it finished.`,
   },
@@ -200,7 +200,7 @@ function messageOf(err: unknown): string | undefined {
   return typeof message === "string" ? message : undefined;
 }
 
-/** A failure as JSON keeps it: what a failed run stores on its job, and what a refused query hands the model. */
+/** A failure as JSON keeps it: what a failed run stores on its graph, and what a refused query hands the model. */
 export interface Wire {
   code: string;
   title: string;

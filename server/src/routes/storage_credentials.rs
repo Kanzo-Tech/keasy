@@ -13,7 +13,7 @@ use utoipa_axum::routes;
 
 use crate::authentication::role::{AnyRole, RbacError};
 use crate::domain::{
-    Access, Direction, JobStatus, StorageCredentialInput, StorageLocation, VendedCredentials,
+    Access, Direction, StorageCredentialInput, StorageLocation, VendedCredentials,
 };
 use crate::error::{ErrorBody, ErrorCode, Refusal};
 use crate::startup::AppState;
@@ -102,6 +102,10 @@ async fn dataset(
     id: &str,
     access: Access,
 ) -> Result<(StorageLocation, StorageCredentialInput), Refusal> {
+    // Whether a job still runs is what the sweep decides: a write asks it.
+    if access == Access::Write {
+        crate::jobs::sweep(&state.db).await?;
+    }
     let job = if caller.is_owner() {
         if access != Access::Read {
             return Err(Refusal::forbidden(
@@ -112,16 +116,7 @@ async fn dataset(
     } else {
         crate::jobs::owned(&state.db, &caller.user_id, id).await?
     };
-    match (access, &job.status) {
-        (Access::Read, JobStatus::Completed) | (Access::Write, JobStatus::Running) => {}
-        (Access::Read, _) => {
-            return Err(Refusal::conflict(
-                ErrorCode::JobNotCompleted,
-                "The job has not completed, so it has no output to read",
-            ));
-        }
-        (Access::Write, status) => return Err(super::jobs::not_running(status)),
-    }
+    job.may(access)?;
     let sink = crate::connections::persistence::get(&*state.db.read().await, &job.sink_connection)?
         .ok_or_else(|| {
             Refusal::new(

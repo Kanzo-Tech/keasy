@@ -592,7 +592,10 @@ export interface components {
              */
             created_by: string;
             folder?: null | components["schemas"]["JobFolder"];
-            /** @description The runner's last heartbeat while the job runs: its lease. */
+            /**
+             * @description The job's lease: taken when it is submitted, renewed by every
+             *     `running` its runner reports. A job whose lease lapses is swept.
+             */
             heartbeat_at?: string | null;
             id: string;
             name?: null | components["schemas"]["ResourceName"];
@@ -1758,14 +1761,12 @@ export interface operations {
             };
         };
         responses: {
-            /** @description The job, as the report leaves it */
-            200: {
+            /** @description Recorded: the run started, its lease renewed, or its end */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["Job"];
-                };
+                content?: never;
             };
             /** @description The job is a draft, which is never run, or the status is not running or an end */
             400: {

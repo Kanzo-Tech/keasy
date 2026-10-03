@@ -27,7 +27,7 @@ async fn a_completed_job_is_a_dataset_the_owner_opens() {
             json!({ "status": "completed", "report": report }),
         )
         .await;
-    assert_eq!(status, StatusCode::OK);
+    assert_eq!(status, StatusCode::NO_CONTENT);
     assert_eq!(job["report"], report, "the run report is kept verbatim");
     let running = app.submitted(&member).await;
     app.report(&member, &running, json!({ "status": "running" }))

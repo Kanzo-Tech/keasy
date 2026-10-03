@@ -43,7 +43,7 @@ pub async fn list_datasets(
     // The sink a job wrote to, by name: one per workspace, read once.
     let mut sinks = HashMap::new();
     let mut datasets = Vec::new();
-    for job in persistence::list(&conn)? {
+    for job in persistence::completed(&conn)? {
         if job.status != JobStatus::Completed {
             continue;
         }

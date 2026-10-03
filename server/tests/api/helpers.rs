@@ -176,20 +176,30 @@ impl TestApp {
         id.to_string()
     }
 
-    /// What the runner reports of job `id`: `POST /v1/jobs/{id}/status`.
+    /// What the runner reports of job `id`: `POST /v1/jobs/{id}/status`. The
+    /// status, and the job as the report left it — read back, since a report
+    /// answers 204 — or the refusal's body.
     pub async fn report(
         &self,
         token: &str,
         id: &str,
         report: serde_json::Value,
     ) -> (StatusCode, serde_json::Value) {
-        self.send(
-            Method::POST,
-            &format!("/v1/jobs/{id}/status"),
-            token,
-            report,
-        )
-        .await
+        let (status, body) = self
+            .send(
+                Method::POST,
+                &format!("/v1/jobs/{id}/status"),
+                token,
+                report,
+            )
+            .await;
+        if status != StatusCode::NO_CONTENT {
+            return (status, body);
+        }
+        let (_, job) = self
+            .send(Method::GET, &format!("/v1/jobs/{id}"), token, json!(null))
+            .await;
+        (status, job)
     }
 
     /// A stored S3 credential on `endpoint`, unprobed, created by `by`.

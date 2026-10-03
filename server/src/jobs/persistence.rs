@@ -98,15 +98,14 @@ pub fn write(conn: &Connection, job: &Job) -> DbResult<()> {
 /// it, so one lost request is not an abandoned run.
 pub const LEASE: std::time::Duration = std::time::Duration::from_secs(60);
 
-/// End every job no runner is holding: `running` with a heartbeat (or, before
-/// the first one, a start) older than [`LEASE`], and `pending` created longer
-/// ago than it. Each becomes `failed` with the problem `job/abandoned`.
+/// End every job no runner is holding: `pending` or `running` with a lease —
+/// taken at submit, renewed by each `running` — older than [`LEASE`]. Each
+/// becomes `failed` with the problem `job/abandoned`. A row from before the
+/// lease was taken at submit falls back to its start, then its creation.
 ///
 /// Run before every read of jobs rather than on a schedule: a tab that closed
 /// cannot say so, and the next person to look is the only one who can notice.
 pub fn sweep(conn: &Connection, now: jiff::Timestamp) -> DbResult<usize> {
-    let spell = |t: jiff::Timestamp| t.strftime("%Y-%m-%dT%H:%M:%SZ").to_string();
-    let cutoff = spell(now - jiff::SignedDuration::try_from(LEASE).expect("a lease fits"));
     let problem = serde_json::to_string(&ErrorBody::new(
         ErrorCode::JobAbandoned,
         format!(
@@ -118,27 +117,55 @@ pub fn sweep(conn: &Connection, now: jiff::Timestamp) -> DbResult<usize> {
     ))?;
     Ok(conn.execute(
         "UPDATE jobs SET status = 'failed', completed_at = ?1, problem = ?2
-         WHERE (status = 'running' AND COALESCE(heartbeat_at, started_at, created_at) < ?3)
-            OR (status = 'pending' AND created_at < ?3)",
-        params![spell(now), problem, cutoff],
+         WHERE status IN ('pending', 'running')
+           AND COALESCE(heartbeat_at, started_at, created_at) < ?3",
+        params![spell(now), problem, lapsed(now)],
     )?)
 }
 
-/// Every job in the workspace (the owner's datasets view).
-pub fn list(conn: &Connection) -> DbResult<Vec<Job>> {
-    select(conn, "", None)
+/// A timestamp as the table stores it.
+fn spell(t: jiff::Timestamp) -> String {
+    t.strftime("%Y-%m-%dT%H:%M:%SZ").to_string()
 }
 
-/// The jobs `user_id` created.
+/// A lease taken before this has lapsed.
+fn lapsed(now: jiff::Timestamp) -> String {
+    spell(now - jiff::SignedDuration::try_from(LEASE).expect("a lease fits"))
+}
+
+/// Renew the lease of `id`, `user_id`'s and running, if it has not lapsed:
+/// the runner's beat, one statement. False when there was nothing to renew,
+/// and the caller reads the row to say why.
+pub fn renew(conn: &Connection, id: &str, user_id: &str, now: jiff::Timestamp) -> DbResult<bool> {
+    Ok(conn.execute(
+        "UPDATE jobs SET heartbeat_at = ?1
+         WHERE id = ?2 AND created_by = ?3 AND status = 'running'
+           AND COALESCE(heartbeat_at, started_at, created_at) >= ?4",
+        params![spell(now), id, user_id, lapsed(now)],
+    )? == 1)
+}
+
+/// Every completed job in the workspace, the latest first: the owner's datasets.
+pub fn completed(conn: &Connection) -> DbResult<Vec<Job>> {
+    select(
+        conn,
+        "WHERE status = 'completed' ORDER BY completed_at DESC",
+        None,
+    )
+}
+
+/// The jobs `user_id` created, the newest first.
 pub fn list_of(conn: &Connection, user_id: &str) -> DbResult<Vec<Job>> {
-    select(conn, "WHERE created_by = ?1", Some(user_id))
+    select(
+        conn,
+        "WHERE created_by = ?1 ORDER BY created_at DESC",
+        Some(user_id),
+    )
 }
 
-fn select(conn: &Connection, filter: &str, param: Option<&str>) -> DbResult<Vec<Job>> {
+fn select(conn: &Connection, clause: &str, param: Option<&str>) -> DbResult<Vec<Job>> {
     let jobs = conn
-        .prepare(&format!(
-            "SELECT {COLUMNS} FROM jobs {filter} ORDER BY created_at DESC"
-        ))?
+        .prepare(&format!("SELECT {COLUMNS} FROM jobs {clause}"))?
         .query_map(rusqlite::params_from_iter(param), row_to_job)?
         .collect::<rusqlite::Result<_>>()?;
     Ok(jobs)
@@ -161,9 +188,10 @@ fn row_to_job(row: &rusqlite::Row<'_>) -> rusqlite::Result<Job> {
     let status: JobStatus = enum_column(row, "status")?;
     // The browser reads the program to run a `Pending` job (and to re-run a
     // `Running` one); a finished job exposes only its report.
-    let script = match status {
-        JobStatus::Draft | JobStatus::Pending | JobStatus::Running => row.get("script")?,
-        JobStatus::Completed | JobStatus::Failed | JobStatus::Cancelled => None,
+    let script = if status.has_ended() {
+        None
+    } else {
+        row.get("script")?
     };
     Ok(Job {
         id: row.get("id")?,
@@ -260,7 +288,7 @@ mod tests {
             .unwrap();
 
         assert!(get(&conn, &stored.id).is_err());
-        assert!(list(&conn).is_err());
+        assert!(list_of(&conn, "u-1").is_err());
 
         assert!(
             conn.execute("UPDATE jobs SET status = 'draft', report = 'not json'", [])

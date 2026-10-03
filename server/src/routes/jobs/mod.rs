@@ -11,7 +11,7 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
 use crate::authentication::role::Member;
-use crate::domain::{Job, JobFolder, JobStatus, ResourceName, now_iso8601};
+use crate::domain::{Job, JobFolder, JobStatus, ResourceName};
 use crate::error::{ErrorBody, ErrorCode, Refusal};
 use crate::jobs::{owned, persistence};
 use crate::startup::AppState;
@@ -161,6 +161,7 @@ pub async fn get_job(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, Refusal> {
+    crate::jobs::sweep(&state.db).await?;
     Ok(Json(owned(&state.db, &member.user_id, &id).await?))
 }
 
@@ -180,7 +181,8 @@ pub async fn edit_draft(
     Path(id): Path<String>,
     Json(edits): Json<DraftEdits>,
 ) -> Result<impl IntoResponse, Refusal> {
-    let mut job = draft(&state, &member, &id).await?;
+    let mut job = owned(&state.db, &member.user_id, &id).await?;
+    job.edit()?;
     edits.apply(&mut job)?;
     persistence::write(&*state.db.write().await, &job)?;
     Ok(Json(job))
@@ -205,40 +207,20 @@ pub async fn submit_job(
     Path(id): Path<String>,
     Json(edits): Json<DraftEdits>,
 ) -> Result<impl IntoResponse, Refusal> {
-    let mut job = draft(&state, &member, &id).await?;
+    let mut job = owned(&state.db, &member.user_id, &id).await?;
+    job.edit()?;
     edits.apply(&mut job)?;
-    if job.folder.is_none() {
-        return Err(Refusal::invalid_field(
-            "folder",
-            "A job to run needs a folder for its output",
-        ));
-    }
-    job.status = JobStatus::Pending;
-    // The sweep fails a `pending` job older than the lease by `created_at`: a
-    // draft's would sweep it the moment it is submitted.
-    job.created_at = now_iso8601();
+    job.submit()?;
     persistence::write(&*state.db.write().await, &job)?;
 
     Ok((StatusCode::ACCEPTED, Json(job)))
-}
-
-/// The caller's job, if it is still a draft.
-async fn draft(state: &AppState, member: &Member, id: &str) -> Result<Job, Refusal> {
-    let job = owned(&state.db, &member.user_id, id).await?;
-    if job.status != JobStatus::Draft {
-        return Err(Refusal::conflict(
-            ErrorCode::JobNotDraft,
-            "Only a draft is edited or submitted",
-        ));
-    }
-    Ok(job)
 }
 
 #[utoipa::path(post, path = "/v1/jobs/{id}/status", tag = "Jobs",
     params(("id" = String, Path, description = "Job ID")),
     request_body = JobStatusReport,
     responses(
-        (status = 200, description = "The job, as the report leaves it", body = Job),
+        (status = 204, description = "Recorded: the run started, its lease renewed, or its end"),
         (status = 400, description = "The job is a draft, which is never run, or the status is not running or an end", body = ErrorBody),
         (status = 404, description = "Job not found", body = ErrorBody),
         (status = 409, description = "The job has already ended (`job/ended`): the sweep's `job/abandoned` among them", body = ErrorBody),
@@ -253,55 +235,20 @@ pub async fn report_status(
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(payload): Json<JobStatusReport>,
-) -> Result<impl IntoResponse, Refusal> {
-    let JobStatusReport {
-        status,
-        report,
-        problem,
-    } = payload;
-    // A run moves forward only: to running, or to an end. Never back to a
-    // draft or to pending.
-    if matches!(status, JobStatus::Draft | JobStatus::Pending) {
-        return Err(Refusal::invalid(
-            "A run reports running, completed, failed or cancelled",
-        ));
+) -> Result<StatusCode, Refusal> {
+    // The beat, every 15 s of every run: one statement. Anything else — a
+    // start, an end, a lease that lapsed — reads the job and moves it.
+    let now = jiff::Timestamp::now();
+    if payload.status == JobStatus::Running
+        && persistence::renew(&*state.db.write().await, &id, &member.user_id, now)?
+    {
+        return Ok(StatusCode::NO_CONTENT);
     }
-    // Only a submitted job is run: a draft never is, and an ended one — the
-    // sweep's `job/abandoned` among them — stays ended.
+    crate::jobs::sweep(&state.db).await?;
     let mut job = owned(&state.db, &member.user_id, &id).await?;
-    match job.status {
-        JobStatus::Pending | JobStatus::Running => {}
-        JobStatus::Draft => {
-            return Err(Refusal::invalid("A draft is never run: submit it first"));
-        }
-        JobStatus::Completed | JobStatus::Failed | JobStatus::Cancelled => {
-            return Err(Refusal::conflict(
-                ErrorCode::JobEnded,
-                "The job has already ended, so it has no run to report",
-            ));
-        }
-    }
-
-    let now = now_iso8601();
-    // A cancelled job may have been stopped before it ever started.
-    if status != JobStatus::Cancelled {
-        job.started_at.get_or_insert_with(|| now.clone());
-    }
-    match &status {
-        JobStatus::Running => job.heartbeat_at = Some(now.clone()),
-        JobStatus::Completed => {
-            job.report = report;
-            job.problem = None;
-        }
-        JobStatus::Failed => job.problem = problem,
-        _ => {}
-    }
-    if status != JobStatus::Running {
-        job.completed_at = Some(now);
-    }
-    job.status = status;
+    job.report(payload.status, payload.report, payload.problem)?;
     persistence::write(&*state.db.write().await, &job)?;
-    Ok(Json(job))
+    Ok(StatusCode::NO_CONTENT)
 }
 
 #[utoipa::path(delete, path = "/v1/jobs/{id}", tag = "Jobs",
@@ -317,26 +264,11 @@ pub async fn delete_job(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, Refusal> {
-    let job = owned(&state.db, &member.user_id, &id).await?;
-    if matches!(job.status, JobStatus::Pending | JobStatus::Running) {
-        return Err(Refusal::conflict(
-            ErrorCode::JobStillRunning,
-            "Cannot delete a job that is still running",
-        ));
-    }
+    crate::jobs::sweep(&state.db).await?;
+    owned(&state.db, &member.user_id, &id).await?.delete()?;
 
     persistence::delete(&*state.db.write().await, &id)?;
     Ok(StatusCode::NO_CONTENT)
-}
-
-/// Why a job that is not running cannot be written or reported on: it has
-/// ended, or it has not begun.
-pub(crate) fn not_running(status: &JobStatus) -> Refusal {
-    if status.has_ended() {
-        Refusal::conflict(ErrorCode::JobEnded, "The job has ended")
-    } else {
-        Refusal::conflict(ErrorCode::JobNotRunning, "The job is not running yet")
-    }
 }
 
 /// The routes this module serves.

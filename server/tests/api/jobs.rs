@@ -115,7 +115,7 @@ async fn a_failed_run_keeps_its_problem_whole() {
             json!({ "status": "failed", "problem": problem }),
         )
         .await;
-    assert_eq!(status, StatusCode::OK);
+    assert_eq!(status, StatusCode::NO_CONTENT);
     assert_eq!(failed["problem"], problem);
     let (_, read) = app.send(Method::GET, &path, &member, json!(null)).await;
     assert_eq!(read["problem"], problem);
@@ -461,7 +461,14 @@ async fn submitting_a_draft_makes_it_the_job_in_place() {
         (job["script"].as_str(), job["name"].as_str()),
         (Some("y"), Some("People"))
     );
-    assert_ne!(job["created_at"], hour_ago);
+    assert_eq!(
+        job["created_at"], hour_ago,
+        "a job is dated when it was made"
+    );
+    assert!(
+        job["heartbeat_at"].as_str() > Some(hour_ago),
+        "its lease starts at submit, so a draft written an hour ago is not swept"
+    );
 
     let (_, listed) = app
         .send(Method::GET, "/v1/jobs", &member, json!(null))
@@ -543,7 +550,7 @@ async fn a_run_reports_forward_and_every_end_is_dated() {
         let (status, running) = report("running").await;
         assert_eq!(
             (status, running["status"].as_str()),
-            (StatusCode::OK, Some("running"))
+            (StatusCode::NO_CONTENT, Some("running"))
         );
         assert!(running.get("completed_at").is_none());
 
@@ -557,7 +564,7 @@ async fn a_run_reports_forward_and_every_end_is_dated() {
                 assert_eq!(read["status"], "running", "running → {target}");
             }
             ended => {
-                assert_eq!(status, StatusCode::OK, "running → {ended}");
+                assert_eq!(status, StatusCode::NO_CONTENT, "running → {ended}");
                 assert_eq!(body["status"], ended);
                 assert!(body["completed_at"].is_string(), "{ended} is dated");
             }

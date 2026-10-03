@@ -181,14 +181,18 @@ async fn a_run_whose_runner_went_silent_ends_as_abandoned_and_can_be_deleted() {
     let (status, running) = app
         .report(&member, &id, json!({ "status": "running" }))
         .await;
-    assert_eq!(status, StatusCode::OK);
+    assert_eq!(status, StatusCode::NO_CONTENT);
     let started = running["heartbeat_at"].clone();
     assert!(started.is_string());
     age(&app, &id, "heartbeat_at", 30).await;
     let (status, renewed) = app
         .report(&member, &id, json!({ "status": "running" }))
         .await;
-    assert_eq!(status, StatusCode::OK, "running again renews the lease");
+    assert_eq!(
+        status,
+        StatusCode::NO_CONTENT,
+        "running again renews the lease"
+    );
     assert!(
         renewed["heartbeat_at"].as_str() >= started.as_str(),
         "the lease aged 30 s is renewed to now"
@@ -225,7 +229,7 @@ async fn a_pending_job_no_runner_picked_up_ends_as_abandoned() {
     let member = app.token(&["member"]);
     sink(&app).await;
     let id = app.submitted(&member).await;
-    age(&app, &id, "created_at", 61).await;
+    age(&app, &id, "heartbeat_at", 61).await;
 
     let (_, job) = app
         .send(Method::GET, &format!("/v1/jobs/{id}"), &member, json!(null))

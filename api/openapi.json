@@ -1199,15 +1199,8 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "The job, as the report leaves it",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Job"
-                }
-              }
-            }
+          "204": {
+            "description": "Recorded: the run started, its lease renewed, or its end"
           },
           "400": {
             "description": "The job is a draft, which is never run, or the status is not running or an end",
@@ -2414,7 +2407,7 @@
               "string",
               "null"
             ],
-            "description": "The runner's last heartbeat while the job runs: its lease."
+            "description": "The job's lease: taken when it is submitted, renewed by every\n`running` its runner reports. A job whose lease lapses is swept."
           },
           "id": {
             "type": "string"

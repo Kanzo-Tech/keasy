@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-use super::{JobFolder, ResourceName, StorageLocation, now_iso8601};
+use super::{Access, JobFolder, ResourceName, StorageLocation, now_iso8601};
+use crate::error::{ErrorCode, Refusal};
 
 #[derive(
     Debug,
@@ -43,7 +44,8 @@ pub struct Job {
     pub started_at: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub completed_at: Option<String>,
-    /// The runner's last heartbeat while the job runs: its lease.
+    /// The job's lease: taken when it is submitted, renewed by every
+    /// `running` its runner reports. A job whose lease lapses is swept.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub heartbeat_at: Option<String>,
     /// Why a `Failed` run failed, as the browser that ran it reported it: a
@@ -103,6 +105,83 @@ impl Job {
         }
     }
 
+    /// The draft becomes the job to run: it needs a folder, and its lease
+    /// starts now — a runner has the lease to pick it up.
+    pub fn submit(&mut self) -> Result<(), Transition> {
+        self.edit()?;
+        if self.folder.is_none() {
+            return Err(Transition::NoFolder);
+        }
+        self.status = JobStatus::Pending;
+        self.heartbeat_at = Some(now_iso8601());
+        Ok(())
+    }
+
+    /// Whether the job may be edited: only a draft is.
+    pub fn edit(&self) -> Result<(), Transition> {
+        match self.status {
+            JobStatus::Draft => Ok(()),
+            _ => Err(Transition::NotDraft),
+        }
+    }
+
+    /// What its runner reports: `running` starts the run, or renews its
+    /// lease; an end records how it ended, and dates it. A run moves forward
+    /// only, and only a submitted job is run.
+    pub fn report(
+        &mut self,
+        status: JobStatus,
+        report: Option<serde_json::Value>,
+        problem: Option<serde_json::Value>,
+    ) -> Result<(), Transition> {
+        if matches!(status, JobStatus::Draft | JobStatus::Pending) {
+            return Err(Transition::Backwards);
+        }
+        match self.status {
+            JobStatus::Draft => return Err(Transition::NeverRun),
+            ref ended if ended.has_ended() => return Err(Transition::Ended),
+            _ => {}
+        }
+        let now = now_iso8601();
+        // A cancelled job may have been stopped before it ever started.
+        if status != JobStatus::Cancelled {
+            self.started_at.get_or_insert_with(|| now.clone());
+        }
+        match &status {
+            JobStatus::Running => self.heartbeat_at = Some(now.clone()),
+            JobStatus::Completed => {
+                self.report = report;
+                self.problem = None;
+            }
+            JobStatus::Failed => self.problem = problem,
+            _ => {}
+        }
+        if status.has_ended() {
+            self.completed_at = Some(now);
+        }
+        self.status = status;
+        Ok(())
+    }
+
+    /// Whether its dataset may be opened for `access`: read once it has
+    /// completed, written only while it runs.
+    pub fn may(&self, access: Access) -> Result<(), Transition> {
+        match (access, &self.status) {
+            (Access::Read, JobStatus::Completed) | (Access::Write, JobStatus::Running) => Ok(()),
+            (Access::Read, _) => Err(Transition::NotCompleted),
+            (Access::Write, status) if status.has_ended() => Err(Transition::Ended),
+            (Access::Write, _) => Err(Transition::NotRunning),
+        }
+    }
+
+    /// Whether it may be deleted: not while it is to run or running.
+    pub fn delete(&self) -> Result<(), Transition> {
+        match self.status {
+            JobStatus::Pending | JobStatus::Running => Err(Transition::StillRunning),
+            _ => Ok(()),
+        }
+    }
+
     /// Where the output lives: the sink, plus the folder the member chose;
     /// `None` for a draft that has none yet. **This is the one place keasy
     /// composes an output path**, and it is keasy's to compose — a job's home
@@ -110,6 +189,52 @@ impl Job {
     /// (table names, file names) belongs to fossil, and the corpus says it.
     pub fn output_under(&self, sink: &StorageLocation) -> Option<StorageLocation> {
         self.folder.as_deref().map(|folder| sink.child(folder))
+    }
+}
+
+/// Why a job's state does not allow what was asked: the one table of a job's
+/// moves, said on the wire through [`Refusal`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Transition {
+    NotDraft,
+    NoFolder,
+    /// A status a run never moves to: back to a draft, or to pending.
+    Backwards,
+    /// A draft is never run: it is submitted first.
+    NeverRun,
+    Ended,
+    NotRunning,
+    NotCompleted,
+    StillRunning,
+}
+
+impl From<Transition> for Refusal {
+    fn from(t: Transition) -> Self {
+        match t {
+            Transition::NotDraft => Refusal::conflict(
+                ErrorCode::JobNotDraft,
+                "Only a draft is edited or submitted",
+            ),
+            Transition::NoFolder => {
+                Refusal::invalid_field("folder", "A job to run needs a folder for its output")
+            }
+            Transition::Backwards => {
+                Refusal::invalid("A run reports running, completed, failed or cancelled")
+            }
+            Transition::NeverRun => Refusal::invalid("A draft is never run: submit it first"),
+            Transition::Ended => Refusal::conflict(ErrorCode::JobEnded, "The job has ended"),
+            Transition::NotRunning => {
+                Refusal::conflict(ErrorCode::JobNotRunning, "The job is not running yet")
+            }
+            Transition::NotCompleted => Refusal::conflict(
+                ErrorCode::JobNotCompleted,
+                "The job has not completed, so it has no output to read",
+            ),
+            Transition::StillRunning => Refusal::conflict(
+                ErrorCode::JobStillRunning,
+                "Cannot delete a job that is still running",
+            ),
+        }
     }
 }
 

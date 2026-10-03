@@ -33,9 +33,9 @@ pub async fn claim_declared(
 }
 
 /// The job, whoever created it: for the owner, who reads every completed job
-/// of the workspace and changes none.
+/// of the workspace and changes none. Not swept: a caller whose answer turns
+/// on whether a run is still held sweeps first.
 pub async fn any(db: &Database, id: &str) -> Result<Job, Refusal> {
-    sweep(db).await?;
     persistence::get(&*db.read().await, id)?
         .ok_or_else(|| Refusal::not_found(ErrorCode::JobNotFound, "No such job"))
 }
@@ -43,8 +43,9 @@ pub async fn any(db: &Database, id: &str) -> Result<Job, Refusal> {
 /// The job, if it exists and `user_id` created it. Anyone else's job is not
 /// found: a job is its creator's alone.
 pub async fn owned(db: &Database, user_id: &str, id: &str) -> Result<Job, Refusal> {
-    sweep(db).await?;
-    persistence::get(&*db.read().await, id)?
-        .filter(|job| job.created_by == user_id)
-        .ok_or_else(|| Refusal::not_found(ErrorCode::JobNotFound, "No such job"))
+    let job = any(db, id).await?;
+    if job.created_by != user_id {
+        return Err(Refusal::not_found(ErrorCode::JobNotFound, "No such job"));
+    }
+    Ok(job)
 }

@@ -49,7 +49,7 @@ restart-%: ## Restart one service (e.g., make restart-web)
 	docker compose restart $*
 
 clean: ## Nuclear reset: remove containers, volumes, images
-	docker compose down -v --rmi local
+	docker compose down -v --rmi local --remove-orphans
 
 shell-%: ## Open shell in container (e.g., make shell-server)
 	docker compose exec $* sh

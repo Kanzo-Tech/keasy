@@ -78,7 +78,7 @@ pub async fn create_secret(
         &request.name,
         &request.spec,
         request.probe_url.as_deref(),
-        &caller.user_id,
+        &caller.actor(),
     )
     .await?;
     Ok((StatusCode::CREATED, Json(view.seen_by(&caller))))
@@ -122,7 +122,7 @@ pub async fn update_secret(
 ) -> Result<impl IntoResponse, Refusal> {
     let db = &state.db;
     let current = named(db, &name).await?;
-    caller.ensure_may_modify(&current.created_by, "secret")?;
+    caller.ensure_may_modify(&current.provenance.created_by.id, "secret")?;
     let new_name = ResourceName::parse(request.name.as_deref().unwrap_or(&name))
         .map_err(|e| Refusal::invalid_field("name", e))?;
 
@@ -148,7 +148,7 @@ pub async fn update_secret(
         &name,
         &new_name,
         &spec,
-        &caller.user_id,
+        &caller.actor(),
         report.as_ref(),
     )?;
     let stored = persistence::get(&conn, db.secret_key(), new_name.as_ref())?
@@ -172,7 +172,7 @@ pub async fn delete_secret(
     Path(name): Path<String>,
 ) -> Result<impl IntoResponse, Refusal> {
     let current = named(&state.db, &name).await?;
-    caller.ensure_may_modify(&current.created_by, "secret")?;
+    caller.ensure_may_modify(&current.provenance.created_by.id, "secret")?;
     persistence::delete(&*state.db.write().await, &name)?;
     Ok(StatusCode::NO_CONTENT)
 }
@@ -195,7 +195,7 @@ pub async fn validate_secret(
     let db = &state.db;
     let credential = named(db, &name).await?;
     // Validating stores the report on the secret: a change, guarded as one.
-    caller.ensure_may_modify(&credential.created_by, "secret")?;
+    caller.ensure_may_modify(&credential.provenance.created_by.id, "secret")?;
     let dependents = connections::using(&*db.read().await, &name)?;
     let (report, _) = probe::credential(&credential.spec, None, &dependents).await?;
     persistence::set_validation(&*db.write().await, &name, &report)?;

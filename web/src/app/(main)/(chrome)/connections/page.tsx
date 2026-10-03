@@ -35,6 +35,7 @@ import {
 } from "@kanzo-tech/ui/table";
 import { Link, useRouter } from "@kanzo-tech/navigation/next";
 import { useRole } from "@/lib/auth/use-role";
+import { CreatedBy } from "@/components/provenance";
 import { ValidationBadge } from "@/components/validation-badge";
 import { $api, invalidate } from "@/lib/api/client";
 import type { Connection } from "@/lib/connections";
@@ -133,6 +134,11 @@ function Connections({ tab }: { tab: Tab }) {
         id: "status",
         header: "Status",
         cell: ({ row }) => <ValidationBadge report={row.original.validation} />,
+      },
+      {
+        id: "created_by",
+        header: "Created by",
+        cell: ({ row }) => <CreatedBy of={row.original} />,
       },
       actionsColumn<Connection>({
         label: (row) => `Actions for ${row.original.name}`,

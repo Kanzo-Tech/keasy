@@ -15,6 +15,11 @@ use crate::startup::AppState;
 pub struct AuthenticatedUser {
     /// The Keycloak `sub`.
     pub user_id: String,
+    /// What to call them where their work is shown ([`Claims::display_name`]).
+    /// Personal data: stored with what they write, never logged.
+    ///
+    /// [`Claims::display_name`]: super::token::Claims::display_name
+    pub name: String,
     pub roles: Roles,
 }
 
@@ -38,6 +43,7 @@ pub async fn bearer_required(
     span.record("roles", roles.to_string().as_str());
 
     request.extensions_mut().insert(AuthenticatedUser {
+        name: claims.display_name(),
         user_id: claims.sub,
         roles,
     });

@@ -363,6 +363,13 @@ export interface components {
          * @enum {string}
          */
         Access: "read" | "write";
+        /** @description Someone who wrote a resource. */
+        Actor: {
+            /** @description The Keycloak `sub`: what authorization compares. */
+            id: string;
+            /** @description Their display name when they wrote it: for people to read, never to authorize on. */
+            name: string;
+        };
         /**
          * @description A model, by what it is for. Which upstream answers is the gateway's
          *     configuration (`infra/ai/`), so nothing here names a provider.
@@ -417,19 +424,15 @@ export interface components {
         };
         /** @enum {string} */
         ConnectionKind: "data" | "vocab";
-        ConnectionView: {
+        ConnectionView: components["schemas"]["Provenance"] & {
             /**
              * @description Whether the caller may change or delete it: the sink is an admin's,
              *     any other connection its creator's or an admin's.
              */
             can_modify?: boolean;
-            created_at: string;
-            created_by: string;
             name: string;
             secret: string;
             target: components["schemas"]["StorageTarget"];
-            updated_at: string;
-            updated_by: string;
             validation?: null | components["schemas"]["ValidationReport"];
         };
         CreateConnectionRequest: {
@@ -462,13 +465,10 @@ export interface components {
          *     serialises (`DashboardSpec`): keasy stores it and hands it back, and never
          *     reads a field of it.
          */
-        Dashboard: {
+        Dashboard: components["schemas"]["Provenance"] & {
             spec: {
                 [key: string]: unknown;
             };
-            updated_at: string;
-            /** @description Keycloak `sub` of the member who saved it last. */
-            updated_by: string;
         };
         /**
          * @description A completed job's output: where its corpus is, and when it was written.
@@ -555,7 +555,7 @@ export interface components {
             /** @description More objects lie under the prefix than were listed. */
             truncated: boolean;
         };
-        Job: {
+        Job: components["schemas"]["Provenance"] & {
             /**
              * @description Whether the caller may change, run or delete this job, worked out for
              *     each response: the interface draws what this says and does not
@@ -563,13 +563,6 @@ export interface components {
              */
             can_modify?: boolean;
             completed_at?: string | null;
-            created_at: string;
-            /**
-             * @description Keycloak `sub` of who created the job: with an admin, the one who may
-             *     change, run or delete it. Everyone in the workspace reads it. Taken from
-             *     the token, never the body.
-             */
-            created_by: string;
             folder?: null | components["schemas"]["JobFolder"];
             /**
              * @description The job's lease: taken when it is submitted, renewed by every
@@ -633,6 +626,16 @@ export interface components {
         Operation: "list" | "write" | "delete";
         /** @enum {string} */
         Outcome: "pass" | "fail" | "skip";
+        /**
+         * @description Who created a resource and when, and who changed it last and when — absent
+         *     until someone has.
+         */
+        Provenance: {
+            created_at: string;
+            created_by: components["schemas"]["Actor"];
+            updated_at?: string | null;
+            updated_by?: null | components["schemas"]["Actor"];
+        };
         PutDashboardRequest: {
             /** @description The dashboard, as the web serialises it: any JSON object. */
             spec: {
@@ -715,18 +718,14 @@ export interface components {
             kind: "azure_service_principal";
             tenant_id: string;
         };
-        SecretView: {
+        SecretView: components["schemas"]["Provenance"] & {
             /**
              * @description Whether the caller may change or delete it: its creator or an admin.
              *     Any editor may use it in a connection; its value is never returned.
              */
             can_modify?: boolean;
-            created_at: string;
-            created_by: string;
             name: string;
             spec: components["schemas"]["SecretSpecView"];
-            updated_at: string;
-            updated_by: string;
             /** @description The connections that use this secret. */
             used_by: string[];
             validation?: null | components["schemas"]["ValidationReport"];

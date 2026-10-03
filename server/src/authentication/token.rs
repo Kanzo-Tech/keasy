@@ -63,6 +63,12 @@ pub struct Claims {
     /// The client the token was issued to — this application's, or the request is refused.
     #[serde(default)]
     pub azp: Option<String>,
+    /// The person's full name (`profile` scope), when they have one.
+    #[serde(default)]
+    pub name: Option<String>,
+    /// Their username (`profile` scope).
+    #[serde(default)]
+    pub preferred_username: Option<String>,
     /// Every organization the person belongs to, by alias (the `organization:*`
     /// scope), each with what they hold there. The top-level `resource_access`
     /// is never read: a role is held in an organization, and one held in
@@ -86,6 +92,19 @@ pub struct RoleSet {
 }
 
 impl Claims {
+    /// What to call the person where their work is shown: their name, else
+    /// their username, else a placeholder. Personal data: kept with what they
+    /// write, never logged.
+    pub fn display_name(&self) -> String {
+        [&self.name, &self.preferred_username]
+            .into_iter()
+            .flatten()
+            .map(|n| n.trim())
+            .find(|n| !n.is_empty())
+            .unwrap_or("Unknown user")
+            .to_string()
+    }
+
     /// The roles this person holds in organization `alias`, in application
     /// `client_id` — `None` when they do not belong to it. Another
     /// organization's roles, or another application's, authorize nothing here.
@@ -550,5 +569,27 @@ mod tests {
 
         headers.insert("authorization", HeaderValue::from_static("Bearer t-1"));
         assert_eq!(bearer(&headers), Some("t-1"));
+    }
+
+    #[test]
+    fn the_display_name_is_the_name_then_the_username_then_a_placeholder() {
+        let claims =
+            |claims: serde_json::Value| -> Claims { serde_json::from_value(claims).unwrap() };
+        assert_eq!(
+            claims(
+                serde_json::json!({ "sub": "u", "name": "Ana Duarte", "preferred_username": "ana" })
+            )
+            .display_name(),
+            "Ana Duarte"
+        );
+        assert_eq!(
+            claims(serde_json::json!({ "sub": "u", "name": " ", "preferred_username": "ana" }))
+                .display_name(),
+            "ana"
+        );
+        assert_eq!(
+            claims(serde_json::json!({ "sub": "u" })).display_name(),
+            "Unknown user"
+        );
     }
 }

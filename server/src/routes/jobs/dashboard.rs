@@ -76,7 +76,7 @@ pub async fn put_dashboard(
         &*state.db.write().await,
         &id,
         spec,
-        &caller.user_id,
+        &caller.actor(),
     )?))
 }
 

@@ -5,7 +5,8 @@ pub mod persistence;
 use crate::credentials::sealing::SecretKey;
 use crate::database::Database;
 use crate::domain::{
-    ConnectionView, Credential, Direction, ResourceName, SecretSpec, StorageLocation, StorageTarget,
+    Actor, ConnectionView, Credential, Direction, Provenance, ResourceName, SecretSpec,
+    StorageLocation, StorageTarget,
 };
 use crate::error::{ErrorCode, Refusal};
 
@@ -72,7 +73,7 @@ pub async fn save(
     db: &Database,
     name: Option<&str>,
     mut connection: ConnectionView,
-    by: &str,
+    by: &Actor,
 ) -> Result<ConnectionView, Refusal> {
     ResourceName::parse(&connection.name).map_err(|e| Refusal::invalid_field("name", e))?;
     let credential = crate::credentials::persistence::get(
@@ -103,16 +104,13 @@ pub async fn create(
     name: String,
     secret: String,
     target: StorageTarget,
-    by: &str,
+    by: &Actor,
 ) -> Result<ConnectionView, Refusal> {
     let connection = ConnectionView {
         name,
         secret,
         target,
-        created_by: by.into(),
-        created_at: String::new(),
-        updated_by: by.into(),
-        updated_at: String::new(),
+        provenance: Provenance::created(by.clone()),
         validation: None,
         can_modify: false,
     };

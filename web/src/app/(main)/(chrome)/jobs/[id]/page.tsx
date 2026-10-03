@@ -17,6 +17,7 @@ import {
 import { Link } from "@kanzo-tech/navigation/next";
 import { $api, type Schemas } from "@/lib/api/client";
 import { useBrowserJobRunner } from "./_parts/use-browser-job-runner";
+import { Provenance } from "@/components/provenance";
 import { formatDate, formatJobDuration } from "@/lib/ui/format";
 import { isRunning, pollWhile, runProblem } from "@/lib/jobs";
 import { ProblemView } from "@/components/problem-view";
@@ -110,6 +111,7 @@ function JobView({ id }: { id: string }) {
             </DataListItemValue>
           </DataListItem>
         </DataList>
+        <Provenance className="mt-4" of={job} />
 
         {problem && <ProblemView error={problem} />}
       </SectionBody>

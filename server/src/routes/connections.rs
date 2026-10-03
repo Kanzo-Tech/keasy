@@ -89,7 +89,7 @@ fn may_change(
     }
     match current {
         None => Ok(()),
-        Some(c) => caller.ensure_may_modify(&c.created_by, "connection"),
+        Some(c) => caller.ensure_may_modify(&c.provenance.created_by.id, "connection"),
     }
 }
 
@@ -131,7 +131,7 @@ pub async fn create_connection(
         request.name,
         request.secret,
         request.target,
-        &caller.user_id,
+        &caller.actor(),
     )
     .await?;
     Ok((StatusCode::CREATED, Json(view.seen_by(&caller))))
@@ -186,7 +186,7 @@ pub async fn update_connection(
         current.target.is_sink() || updated.target.is_sink(),
     )?;
     Ok(Json(
-        crate::connections::save(&state.db, Some(&name), updated, &caller.user_id)
+        crate::connections::save(&state.db, Some(&name), updated, &caller.actor())
             .await?
             .seen_by(&caller),
     ))

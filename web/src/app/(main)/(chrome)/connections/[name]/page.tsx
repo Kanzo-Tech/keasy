@@ -29,6 +29,7 @@ import {
   TableRow,
   toast,
 } from "@kanzo-tech/ui";
+import { Provenance } from "@/components/provenance";
 import { ValidationBadge } from "@/components/validation-badge";
 import { $api, invalidate } from "@/lib/api/client";
 import { providersQuery } from "@/lib/fossil/checker";
@@ -96,6 +97,7 @@ function ConnectionView({ name }: { name: string }) {
             </DataListItemValue>
           </DataListItem>
         </DataList>
+        <Provenance className="mt-4" of={connection} />
 
         {(
           <SectionRoot className="gap-2" fill={false}>

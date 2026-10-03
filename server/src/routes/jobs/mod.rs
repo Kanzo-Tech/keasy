@@ -143,7 +143,7 @@ pub async fn create_job(
         payload.sink_connection,
         folder(payload.folder.as_deref())?,
         payload.script,
-        caller.user_id.clone(),
+        caller.actor(),
     );
     persistence::insert(&*state.db.write().await, &job)?;
 

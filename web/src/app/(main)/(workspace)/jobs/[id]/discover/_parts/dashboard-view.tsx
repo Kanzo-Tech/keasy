@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ScrollArea, Skeleton, ToggleGroup, ToggleGroupItem } from "@kanzo-tech/ui";
 import { Dashboard, type DashboardSpec, useQueryRows } from "@kanzo-tech/ui/analytics";
+import { SavedBy } from "@/components/provenance";
 import { TableRefNode } from "@uwdata/mosaic-sql";
 import { $api, http } from "@/lib/api/client";
 import { settled } from "@/lib/api/settled";
@@ -91,6 +92,7 @@ function SavedDashboard() {
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
+        {saved && <SavedBy className="ms-auto shrink-0" of={saved} />}
       </div>
       <ScrollArea className="min-h-0 flex-1">
         <Dashboard

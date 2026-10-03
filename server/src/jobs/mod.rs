@@ -32,7 +32,7 @@ pub fn any(conn: &Connection, id: &str) -> Result<Job, Refusal> {
 /// a job everyone can see exists.
 pub fn changeable(conn: &Connection, caller: &Caller, id: &str) -> Result<Job, Refusal> {
     let job = any(conn, id)?;
-    caller.ensure_may_modify(&job.created_by, "job")?;
+    caller.ensure_may_modify(&job.provenance.created_by.id, "job")?;
     Ok(job)
 }
 

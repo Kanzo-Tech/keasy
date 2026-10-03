@@ -5,7 +5,7 @@ use crate::authentication::role::{Caller, Role};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use super::ValidationReport;
+use super::{Provenance, ValidationReport};
 
 #[derive(
     Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq, ToSchema, strum::AsRefStr,
@@ -54,10 +54,8 @@ pub struct ConnectionView {
     pub name: String,
     pub secret: String,
     pub target: StorageTarget,
-    pub created_by: String,
-    pub created_at: String,
-    pub updated_by: String,
-    pub updated_at: String,
+    #[serde(flatten)]
+    pub provenance: Provenance,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub validation: Option<ValidationReport>,
     /// Whether the caller may change or delete it: the sink is an admin's,
@@ -73,7 +71,7 @@ impl ConnectionView {
         if self.target.is_sink() {
             caller.holds(Role::Admin)
         } else {
-            caller.may_modify(&self.created_by)
+            caller.may_modify(&self.provenance.created_by.id)
         }
     }
 

@@ -12,7 +12,7 @@ use secrecy::SecretString;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use super::ValidationReport;
+use super::{Provenance, ValidationReport};
 
 fn us_east_1() -> String {
     "us-east-1".into()
@@ -126,10 +126,8 @@ pub struct SecretView {
     pub spec: SecretSpecView,
     /// The connections that use this secret.
     pub used_by: Vec<String>,
-    pub created_by: String,
-    pub created_at: String,
-    pub updated_by: String,
-    pub updated_at: String,
+    #[serde(flatten)]
+    pub provenance: Provenance,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub validation: Option<ValidationReport>,
     /// Whether the caller may change or delete it: its creator or an admin.
@@ -141,7 +139,7 @@ pub struct SecretView {
 impl SecretView {
     /// The secret as `caller` sees it: [`Self::can_modify`] filled in.
     pub fn seen_by(mut self, caller: &Caller) -> Self {
-        self.can_modify = caller.may_modify(&self.created_by);
+        self.can_modify = caller.may_modify(&self.provenance.created_by.id);
         self
     }
 }
@@ -150,10 +148,7 @@ impl SecretView {
 pub struct Credential {
     pub name: String,
     pub spec: SecretSpec,
-    pub created_by: String,
-    pub created_at: String,
-    pub updated_by: String,
-    pub updated_at: String,
+    pub provenance: Provenance,
     pub validation: Option<ValidationReport>,
 }
 
@@ -163,10 +158,7 @@ impl Credential {
             name: self.name.clone(),
             spec: self.spec.view(),
             used_by,
-            created_by: self.created_by.clone(),
-            created_at: self.created_at.clone(),
-            updated_by: self.updated_by.clone(),
-            updated_at: self.updated_at.clone(),
+            provenance: self.provenance.clone(),
             validation: self.validation.clone(),
             can_modify: false,
         }

@@ -11,9 +11,7 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
 use crate::authentication::role::Member;
-use crate::domain::{
-    Job, JobFolder, JobStatus, OutputRelation, RelativePath, ResourceName, now_iso8601,
-};
+use crate::domain::{Job, JobFolder, JobStatus, ResourceName, now_iso8601};
 use crate::error::{ErrorBody, ErrorCode, Refusal};
 use crate::jobs::{owned, persistence};
 use crate::startup::AppState;
@@ -101,16 +99,6 @@ pub struct JobStatusReport {
     #[serde(default)]
     #[schema(value_type = Option<Value>)]
     pub problem: Option<serde_json::Value>,
-}
-
-/// What the corpus reader enumerated for a finished job (PUT
-/// `/v1/jobs/{id}/relations`). It arrives after completion because naming a
-/// relation is the corpus's answer, not the report's: only a reader with the
-/// manifests in hand can say what the dataset is called and which files carry
-/// it.
-#[derive(Debug, Deserialize, utoipa::ToSchema)]
-pub struct PublishRelationsRequest {
-    pub relations: Vec<OutputRelation>,
 }
 
 #[utoipa::path(get, path = "/v1/jobs", tag = "Jobs",
@@ -340,7 +328,7 @@ pub async fn report_status(
     match &status {
         JobStatus::Running => job.heartbeat_at = Some(now.clone()),
         JobStatus::Completed => {
-            job.manifest = report;
+            job.report = report;
             job.problem = None;
         }
         JobStatus::Failed => job.problem = problem,
@@ -352,43 +340,6 @@ pub async fn report_status(
     job.status = status;
     persistence::write(&*state.db.write().await, &job)?;
     Ok(Json(job))
-}
-
-#[utoipa::path(put, path = "/v1/jobs/{id}/relations", tag = "Jobs",
-    params(("id" = String, Path, description = "Job ID")),
-    request_body = PublishRelationsRequest,
-    responses(
-        (status = 200, description = "Relations stored", body = Job),
-        (status = 400, description = "A file path outside the dataset", body = ErrorBody),
-        (status = 404, description = "Job not found", body = ErrorBody),
-    )
-)]
-/// What the corpus reader found: the relations a finished job's output holds,
-/// their names and the files that carry them, as `@fossil-lang/corpus`
-/// enumerated them in the browser.
-///
-/// It is a second call and not a field of the completion because naming a
-/// relation is an answer only a reader holding the manifests can give, and the
-/// run report is not that reader. keasy stores the answer verbatim; it is what
-/// the owner's datasets view lists.
-pub async fn publish_relations(
-    member: Member,
-    State(state): State<AppState>,
-    Path(id): Path<String>,
-    Json(payload): Json<PublishRelationsRequest>,
-) -> Result<impl IntoResponse, Refusal> {
-    owned(&state.db, &member.user_id, &id).await?;
-
-    let relations = payload.relations;
-    for file in relations.iter().flat_map(|r| &r.files) {
-        RelativePath::parse(file)
-            .map_err(|e| Refusal::new(StatusCode::BAD_REQUEST, ErrorCode::RequestMalformed, e))?;
-    }
-    persistence::update(&*state.db.write().await, &id, move |job| {
-        job.relations = relations
-    })?
-    .map(Json)
-    .ok_or_else(|| Refusal::not_found(ErrorCode::JobNotFound, "No such job"))
 }
 
 #[utoipa::path(delete, path = "/v1/jobs/{id}", tag = "Jobs",
@@ -433,6 +384,5 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(get_job, edit_draft, delete_job))
         .routes(routes!(submit_job))
         .routes(routes!(report_status))
-        .routes(routes!(publish_relations))
         .routes(routes!(folder_availability))
 }

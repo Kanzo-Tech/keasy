@@ -1161,13 +1161,13 @@
     "/v1/datasets": {
       "get": {
         "tags": [
-          "Jobs"
+          "Datasets"
         ],
-        "summary": "Every dataset the workspace produced, as the corpus reader named it: the\nowner's index over the whole workspace. It carries metadata only; the\nmember reaches the bytes through the job that made them.",
+        "summary": "Every dataset the workspace produced: the owner's index over the whole\nworkspace. The owner opens one by reading its job's corpus.",
         "operationId": "list_datasets",
         "responses": {
           "200": {
-            "description": "Every completed job's output",
+            "description": "Every completed job's output, newest first",
             "content": {
               "application/json": {
                 "schema": {
@@ -1613,84 +1613,6 @@
           },
           "413": {
             "description": "The spec is larger than a dashboard may be",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
-          "503": {
-            "$ref": "#/components/responses/KeysUnavailable"
-          }
-        }
-      }
-    },
-    "/v1/jobs/{id}/relations": {
-      "put": {
-        "tags": [
-          "Jobs"
-        ],
-        "summary": "What the corpus reader found: the relations a finished job's output holds,\ntheir names and the files that carry them, as `@fossil-lang/corpus`\nenumerated them in the browser.",
-        "description": "It is a second call and not a field of the completion because naming a\nrelation is an answer only a reader holding the manifests can give, and the\nrun report is not that reader. keasy stores the answer verbatim; it is what\nthe owner's datasets view lists.",
-        "operationId": "publish_relations",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Job ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PublishRelationsRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Relations stored",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Job"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "A file path outside the dataset",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "description": "Job not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -2343,32 +2265,29 @@
       },
       "Dataset": {
         "type": "object",
-        "description": "A completed job's output, as the owner's datasets view lists it.",
+        "description": "A completed job's output: where its corpus is, and when it was written.\nWhat the corpus holds is the corpus's own to say — a reader opens it (with\na credential vended for the job) and asks its `fossil_tables` and\n`fossil_columns`; keasy keeps no copy of it.",
         "required": [
-          "job_id",
-          "relations"
+          "id",
+          "dest",
+          "completed_at"
         ],
         "properties": {
           "completed_at": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "job_id": {
             "type": "string"
+          },
+          "dest": {
+            "type": "string",
+            "description": "The corpus's root, `{sink}/{folder}/`."
+          },
+          "id": {
+            "type": "string",
+            "description": "The job that wrote it, which is the scope its read credential is asked for."
           },
           "name": {
             "type": [
               "string",
               "null"
             ]
-          },
-          "relations": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/OutputRelation"
-            }
           }
         }
       },
@@ -2586,9 +2505,6 @@
           "id": {
             "type": "string"
           },
-          "manifest": {
-            "description": "What the run reported, verbatim and **opaque**: fossil's own run report\n(`RunReport`, `{dest, dropped}`) — not the manifest, which is the\ncorpus's own `fossil.json`. keasy stores it, hands it back and never\nreads a field of it — the last time a host re-typed this struct, it\nended up asking for `vertex/<Type>.parquet`, a file the layout pass\ndeletes. Its presence is the one thing keasy asks of it: \"this job\nproduced output\"."
-          },
           "name": {
             "oneOf": [
               {
@@ -2602,12 +2518,8 @@
           "problem": {
             "description": "Why a `Failed` run failed, as the browser that ran it reported it: a\nproblem (`{ code, title, detail, data, … }`), stored verbatim and\n**opaque** — the web branches on its `code`, the server never does."
           },
-          "relations": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/OutputRelation"
-            },
-            "description": "What the corpus holds and what it is called, as the corpus reader\nenumerated it (`@fossil-lang/corpus`). fossil names every relation and\nevery file; keasy joins them to the destination it owns, which a\ncredential vended over the job's folder reads."
+          "report": {
+            "description": "What the run reported, verbatim and **opaque**: fossil's run report\n(`RunReport`, `{dest, dropped}`). keasy stores it, hands it back and\nnever reads a field of it — the last time a host re-typed this struct,\nit ended up asking for `vertex/<Type>.parquet`, a file the layout pass\ndeletes. What the corpus holds is the corpus's to say: a reader opens\nit and asks its `fossil_tables` and `fossil_columns`."
           },
           "script": {
             "type": [
@@ -2684,52 +2596,6 @@
           "skip"
         ]
       },
-      "OutputRelation": {
-        "type": "object",
-        "description": "One addressable relation of a job's output, named by fossil.\n\n`name` is the relation the corpus registers and queries by (`Person`,\n`Person_knows_Person`) — **keasy does not compose it**; it is what the\ncorpus reader answered. `files` are the dataset-relative payload files the\ncorpus addressing enumerated, `rows` the count it reported and `columns`\nwhat a row carries.",
-        "required": [
-          "name"
-        ],
-        "properties": {
-          "columns": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/RelationColumn"
-            }
-          },
-          "files": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "name": {
-            "type": "string"
-          },
-          "rows": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int64"
-          }
-        }
-      },
-      "PublishRelationsRequest": {
-        "type": "object",
-        "description": "What the corpus reader enumerated for a finished job (PUT\n`/v1/jobs/{id}/relations`). It arrives after completion because naming a\nrelation is the corpus's answer, not the report's: only a reader with the\nmanifests in hand can say what the dataset is called and which files carry\nit.",
-        "required": [
-          "relations"
-        ],
-        "properties": {
-          "relations": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/OutputRelation"
-            }
-          }
-        }
-      },
       "PutDashboardRequest": {
         "type": "object",
         "required": [
@@ -2743,22 +2609,6 @@
             "propertyNames": {
               "type": "string"
             }
-          }
-        }
-      },
-      "RelationColumn": {
-        "type": "object",
-        "required": [
-          "name",
-          "data_type"
-        ],
-        "properties": {
-          "data_type": {
-            "type": "string",
-            "description": "The engine's spelling of the Parquet type (`VARCHAR`, `BIGINT`, …)."
-          },
-          "name": {
-            "type": "string"
           }
         }
       },

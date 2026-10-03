@@ -79,11 +79,6 @@ async fn a_job_is_its_creators_alone() {
             "/v1/storage-credentials".into(),
             json!({ "scope": { "job": id }, "access": "read" }),
         ),
-        (
-            Method::PUT,
-            format!("{path}/relations"),
-            json!({ "relations": [] }),
-        ),
     ] {
         let (status, _) = app.send(verb.clone(), &route, &theirs, body).await;
         assert_eq!(status, StatusCode::NOT_FOUND, "{verb} {route}");

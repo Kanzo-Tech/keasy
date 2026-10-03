@@ -262,9 +262,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Every dataset the workspace produced, as the corpus reader named it: the
-         *     owner's index over the whole workspace. It carries metadata only; the
-         *     member reaches the bytes through the job that made them.
+         * Every dataset the workspace produced: the owner's index over the whole
+         *     workspace. The owner opens one by reading its job's corpus.
          */
         get: operations["list_datasets"];
         put?: never;
@@ -320,31 +319,6 @@ export interface paths {
         };
         get: operations["get_dashboard"];
         put: operations["put_dashboard"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/jobs/{id}/relations": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /**
-         * What the corpus reader found: the relations a finished job's output holds,
-         *     their names and the files that carry them, as `@fossil-lang/corpus`
-         *     enumerated them in the browser.
-         * @description It is a second call and not a field of the completion because naming a
-         *     relation is an answer only a reader holding the manifests can give, and the
-         *     run report is not that reader. keasy stores the answer verbatim; it is what
-         *     the owner's datasets view lists.
-         */
-        put: operations["publish_relations"];
         post?: never;
         delete?: never;
         options?: never;
@@ -551,12 +525,19 @@ export interface components {
             /** @description Keycloak `sub` of the member who saved it last. */
             updated_by: string;
         };
-        /** @description A completed job's output, as the owner's datasets view lists it. */
+        /**
+         * @description A completed job's output: where its corpus is, and when it was written.
+         *     What the corpus holds is the corpus's own to say — a reader opens it (with
+         *     a credential vended for the job) and asks its `fossil_tables` and
+         *     `fossil_columns`; keasy keeps no copy of it.
+         */
         Dataset: {
-            completed_at?: string | null;
-            job_id: string;
+            completed_at: string;
+            /** @description The corpus's root, `{sink}/{folder}/`. */
+            dest: string;
+            /** @description The job that wrote it, which is the scope its read credential is asked for. */
+            id: string;
             name?: string | null;
-            relations: components["schemas"]["OutputRelation"][];
         };
         /**
          * @description A source is read through `@name/…`; the one sink is where job output lands.
@@ -640,16 +621,6 @@ export interface components {
             /** @description The runner's last heartbeat while the job runs: its lease. */
             heartbeat_at?: string | null;
             id: string;
-            /**
-             * @description What the run reported, verbatim and **opaque**: fossil's own run report
-             *     (`RunReport`, `{dest, dropped}`) — not the manifest, which is the
-             *     corpus's own `fossil.json`. keasy stores it, hands it back and never
-             *     reads a field of it — the last time a host re-typed this struct, it
-             *     ended up asking for `vertex/<Type>.parquet`, a file the layout pass
-             *     deletes. Its presence is the one thing keasy asks of it: "this job
-             *     produced output".
-             */
-            manifest?: unknown;
             name?: null | components["schemas"]["ResourceName"];
             /**
              * @description Why a `Failed` run failed, as the browser that ran it reported it: a
@@ -658,12 +629,14 @@ export interface components {
              */
             problem?: unknown;
             /**
-             * @description What the corpus holds and what it is called, as the corpus reader
-             *     enumerated it (`@fossil-lang/corpus`). fossil names every relation and
-             *     every file; keasy joins them to the destination it owns, which a
-             *     credential vended over the job's folder reads.
+             * @description What the run reported, verbatim and **opaque**: fossil's run report
+             *     (`RunReport`, `{dest, dropped}`). keasy stores it, hands it back and
+             *     never reads a field of it — the last time a host re-typed this struct,
+             *     it ended up asking for `vertex/<Type>.parquet`, a file the layout pass
+             *     deletes. What the corpus holds is the corpus's to say: a reader opens
+             *     it and asks its `fossil_tables` and `fossil_columns`.
              */
-            relations?: components["schemas"]["OutputRelation"][];
+            report?: unknown;
             script?: string | null;
             /**
              * @description The sink connection the output lands in, under `{sink.url}/{folder}`,
@@ -704,42 +677,11 @@ export interface components {
         Operation: "list" | "write" | "delete";
         /** @enum {string} */
         Outcome: "pass" | "fail" | "skip";
-        /**
-         * @description One addressable relation of a job's output, named by fossil.
-         *
-         *     `name` is the relation the corpus registers and queries by (`Person`,
-         *     `Person_knows_Person`) — **keasy does not compose it**; it is what the
-         *     corpus reader answered. `files` are the dataset-relative payload files the
-         *     corpus addressing enumerated, `rows` the count it reported and `columns`
-         *     what a row carries.
-         */
-        OutputRelation: {
-            columns?: components["schemas"]["RelationColumn"][];
-            files?: string[];
-            name: string;
-            /** Format: int64 */
-            rows?: number | null;
-        };
-        /**
-         * @description What the corpus reader enumerated for a finished job (PUT
-         *     `/v1/jobs/{id}/relations`). It arrives after completion because naming a
-         *     relation is the corpus's answer, not the report's: only a reader with the
-         *     manifests in hand can say what the dataset is called and which files carry
-         *     it.
-         */
-        PublishRelationsRequest: {
-            relations: components["schemas"]["OutputRelation"][];
-        };
         PutDashboardRequest: {
             /** @description The dashboard, as the web serialises it: any JSON object. */
             spec: {
                 [key: string]: unknown;
             };
-        };
-        RelationColumn: {
-            /** @description The engine's spelling of the Parquet type (`VARCHAR`, `BIGINT`, …). */
-            data_type: string;
-            name: string;
         };
         /** @description A credential's, a connection's or a job's name: no leading or trailing whitespace, and no `/`, `@`, `\` or control character. */
         ResourceName: string;
@@ -1828,7 +1770,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Every completed job's output */
+            /** @description Every completed job's output, newest first */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -2131,56 +2073,6 @@ export interface operations {
             };
             /** @description The spec is larger than a dashboard may be */
             413: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            429: components["responses"]["RateLimited"];
-            500: components["responses"]["InternalError"];
-            503: components["responses"]["KeysUnavailable"];
-        };
-    };
-    publish_relations: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Job ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PublishRelationsRequest"];
-            };
-        };
-        responses: {
-            /** @description Relations stored */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Job"];
-                };
-            };
-            /** @description A file path outside the dataset */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            /** @description Job not found */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };

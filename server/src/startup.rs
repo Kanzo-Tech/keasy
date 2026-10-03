@@ -224,7 +224,7 @@ const DEV_RATE: Rate = Rate {
 };
 
 /// The largest request body: a credential, a connection, a job's script and
-/// manifest — never data, which goes to the store, not through here.
+/// run report — never data, which goes to the store, not through here.
 const BODY_LIMIT: usize = 2 * 1024 * 1024;
 
 /// What every request passes through, outermost last: a body limit, the

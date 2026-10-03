@@ -65,22 +65,15 @@ pub struct Job {
     pub folder: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub script: Option<String>,
-    /// What the run reported, verbatim and **opaque**: fossil's own run report
-    /// (`RunReport`, `{dest, dropped}`) — not the manifest, which is the
-    /// corpus's own `fossil.json`. keasy stores it, hands it back and never
-    /// reads a field of it — the last time a host re-typed this struct, it
-    /// ended up asking for `vertex/<Type>.parquet`, a file the layout pass
-    /// deletes. Its presence is the one thing keasy asks of it: "this job
-    /// produced output".
+    /// What the run reported, verbatim and **opaque**: fossil's run report
+    /// (`RunReport`, `{dest, dropped}`). keasy stores it, hands it back and
+    /// never reads a field of it — the last time a host re-typed this struct,
+    /// it ended up asking for `vertex/<Type>.parquet`, a file the layout pass
+    /// deletes. What the corpus holds is the corpus's to say: a reader opens
+    /// it and asks its `fossil_tables` and `fossil_columns`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[schema(value_type = Option<Value>)]
-    pub manifest: Option<serde_json::Value>,
-    /// What the corpus holds and what it is called, as the corpus reader
-    /// enumerated it (`@fossil-lang/corpus`). fossil names every relation and
-    /// every file; keasy joins them to the destination it owns, which a
-    /// credential vended over the job's folder reads.
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub relations: Vec<OutputRelation>,
+    pub report: Option<serde_json::Value>,
 }
 
 impl Job {
@@ -105,8 +98,7 @@ impl Job {
             sink_connection,
             folder: folder.map(JobFolder::into_inner),
             script: Some(script),
-            manifest: None,
-            relations: Vec::new(),
+            report: None,
             id,
         }
     }
@@ -115,36 +107,10 @@ impl Job {
     /// `None` for a draft that has none yet. **This is the one place keasy
     /// composes an output path**, and it is keasy's to compose — a job's home
     /// is the host's decision, not the language's. Everything below it
-    /// (relation names, file names, tile names) belongs to fossil and travels
-    /// from fossil.
+    /// (table names, file names) belongs to fossil, and the corpus says it.
     pub fn output_under(&self, sink: &StorageLocation) -> Option<StorageLocation> {
         self.folder.as_deref().map(|folder| sink.child(folder))
     }
-}
-
-/// One addressable relation of a job's output, named by fossil.
-///
-/// `name` is the relation the corpus registers and queries by (`Person`,
-/// `Person_knows_Person`) — **keasy does not compose it**; it is what the
-/// corpus reader answered. `files` are the dataset-relative payload files the
-/// corpus addressing enumerated, `rows` the count it reported and `columns`
-/// what a row carries.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, utoipa::ToSchema)]
-pub struct OutputRelation {
-    pub name: String,
-    #[serde(default)]
-    pub files: Vec<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub rows: Option<i64>,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub columns: Vec<RelationColumn>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, utoipa::ToSchema)]
-pub struct RelationColumn {
-    pub name: String,
-    /// The engine's spelling of the Parquet type (`VARCHAR`, `BIGINT`, …).
-    pub data_type: String,
 }
 
 #[cfg(test)]

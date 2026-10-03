@@ -70,7 +70,7 @@ function JobView({ id }: { id: string }) {
           </SectionActions>
         </SectionHeader>
       )}
-      {job.status === "completed" && !!job.manifest && (
+      {job.status === "completed" && !!job.report && (
         <SectionHeader scale="page">
           <SectionActions>
             <Button asChild size="sm" variant="outline">

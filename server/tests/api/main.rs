@@ -3,6 +3,7 @@ mod authentication;
 mod authorization;
 mod connections;
 mod credentials;
+mod datasets;
 mod failures;
 mod health_check;
 mod helpers;

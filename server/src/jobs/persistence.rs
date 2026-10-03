@@ -7,7 +7,7 @@ use crate::domain::{Job, JobStatus};
 use crate::error::{ErrorBody, ErrorCode};
 
 const COLUMNS: &str = "id, name, status, created_at, started_at, completed_at, heartbeat_at, \
-                       problem, created_by, sink_connection, folder, script, manifest, relations";
+                       problem, created_by, sink_connection, folder, script, report";
 
 /// What the schema refused about `job`, said in its terms.
 fn refused(job: &Job, e: rusqlite::Error) -> DbError {
@@ -28,7 +28,7 @@ pub fn insert(conn: &Connection, job: &Job) -> DbResult<()> {
     conn.execute(
         &format!(
             "INSERT INTO jobs ({COLUMNS})
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)"
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)"
         ),
         params![
             job.id,
@@ -46,11 +46,7 @@ pub fn insert(conn: &Connection, job: &Job) -> DbResult<()> {
             job.sink_connection,
             job.folder,
             job.script,
-            job.manifest
-                .as_ref()
-                .map(serde_json::to_string)
-                .transpose()?,
-            serde_json::to_string(&job.relations)?,
+            job.report.as_ref().map(serde_json::to_string).transpose()?,
         ],
     )
     .map_err(|e| refused(job, e))?;
@@ -67,24 +63,14 @@ pub fn get(conn: &Connection, id: &str) -> DbResult<Option<Job>> {
         .optional()?)
 }
 
-/// Apply `f` to the stored job and write it back; `None` if there is none.
-pub fn update(conn: &Connection, id: &str, f: impl FnOnce(&mut Job)) -> DbResult<Option<Job>> {
-    let Some(mut job) = get(conn, id)? else {
-        return Ok(None);
-    };
-    f(&mut job);
-    write(conn, &job)?;
-    Ok(Some(job))
-}
-
 /// Store `job` over the row of its id. Refused whole: a refused write leaves
 /// the row as it was.
 pub fn write(conn: &Connection, job: &Job) -> DbResult<()> {
     conn.execute(
         "UPDATE jobs SET name = ?1, status = ?2, started_at = ?3, completed_at = ?4, problem = ?5,
-                         script = ?6, manifest = ?7, relations = ?8, folder = ?9, heartbeat_at = ?11,
-                         created_at = ?12
-         WHERE id = ?10",
+                         script = ?6, report = ?7, folder = ?8, heartbeat_at = ?10,
+                         created_at = ?11
+         WHERE id = ?9",
         params![
             job.name,
             job.status.as_ref(),
@@ -95,11 +81,7 @@ pub fn write(conn: &Connection, job: &Job) -> DbResult<()> {
                 .map(serde_json::to_string)
                 .transpose()?,
             job.script,
-            job.manifest
-                .as_ref()
-                .map(serde_json::to_string)
-                .transpose()?,
-            serde_json::to_string(&job.relations)?,
+            job.report.as_ref().map(serde_json::to_string).transpose()?,
             job.folder,
             job.id,
             job.heartbeat_at,
@@ -188,7 +170,7 @@ pub fn delete(conn: &Connection, id: &str) -> DbResult<()> {
 fn row_to_job(row: &rusqlite::Row<'_>) -> rusqlite::Result<Job> {
     let status: JobStatus = enum_column(row, "status")?;
     // The browser reads the program to run a `Pending` job (and to re-run a
-    // `Running` one); a finished job exposes only its manifest.
+    // `Running` one); a finished job exposes only its report.
     let script = match status {
         JobStatus::Draft | JobStatus::Pending | JobStatus::Running => row.get("script")?,
         JobStatus::Completed | JobStatus::Failed | JobStatus::Cancelled => None,
@@ -206,8 +188,7 @@ fn row_to_job(row: &rusqlite::Row<'_>) -> rusqlite::Result<Job> {
         sink_connection: row.get("sink_connection")?,
         folder: row.get("folder")?,
         script,
-        manifest: json_column_opt(row, "manifest")?,
-        relations: json_column_opt(row, "relations")?.unwrap_or_default(),
+        report: json_column_opt(row, "report")?,
     })
 }
 
@@ -272,8 +253,11 @@ mod tests {
 
         let draft = job("u-1");
         insert(&conn, &draft).unwrap();
-        let promoted = update(&conn, &draft.id, |j| j.status = JobStatus::Running);
-        assert!(matches!(promoted, Err(DbError::Invalid(_))));
+        let promoted = Job {
+            status: JobStatus::Running,
+            ..draft
+        };
+        assert!(matches!(write(&conn, &promoted), Err(DbError::Invalid(_))));
     }
 
     /// A row that does not decode is an error, not a job with defaults filled in.
@@ -288,12 +272,11 @@ mod tests {
         assert!(get(&conn, &stored.id).is_err());
         assert!(list(&conn).is_err());
 
-        conn.execute(
-            "UPDATE jobs SET status = 'draft', relations = 'not json'",
-            [],
-        )
-        .unwrap();
-        assert!(get(&conn, &stored.id).is_err());
+        assert!(
+            conn.execute("UPDATE jobs SET status = 'draft', report = 'not json'", [])
+                .is_err(),
+            "a report that is not JSON is never stored"
+        );
     }
 
     fn at(job: &Job, conn: &Connection) -> Job {

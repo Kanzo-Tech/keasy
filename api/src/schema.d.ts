@@ -2152,7 +2152,7 @@ export interface operations {
                     "application/json": components["schemas"]["Job"];
                 };
             };
-            /** @description The job is a draft, which is never run */
+            /** @description The job is a draft, which is never run, or the status is not running or an end */
             400: {
                 headers: {
                     [name: string]: unknown;

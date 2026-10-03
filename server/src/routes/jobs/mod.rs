@@ -325,7 +325,7 @@ pub async fn folder_availability(
     request_body = CompleteJobRequest,
     responses(
         (status = 200, description = "Job status updated from the browser run", body = Job),
-        (status = 400, description = "The job is a draft, which is never run", body = ErrorBody),
+        (status = 400, description = "The job is a draft, which is never run, or the status is not running or an end", body = ErrorBody),
         (status = 404, description = "Job not found", body = ErrorBody),
         (status = 409, description = "The job has already ended", body = ErrorBody),
     )
@@ -353,31 +353,36 @@ pub async fn complete_job(
             ));
         }
     }
-    let now = now_iso8601();
     let CompleteJobRequest {
         status,
         manifest,
         problem,
     } = payload;
+    // A run moves forward only: to running, or to an end. Never back to a
+    // draft or to pending.
+    if matches!(status, JobStatus::Draft | JobStatus::Pending) {
+        return Err(Refusal::invalid(
+            "A run reports running, completed, failed or cancelled",
+        ));
+    }
+    let now = now_iso8601();
 
     persistence::update(&*state.db.write().await, &id, move |job| {
+        // A cancelled job may have been stopped before it ever started.
+        if status != JobStatus::Cancelled {
+            job.started_at.get_or_insert_with(|| now.clone());
+        }
         match &status {
+            JobStatus::Running => job.heartbeat_at = Some(now.clone()),
             JobStatus::Completed => {
-                job.started_at.get_or_insert_with(|| now.clone());
-                job.completed_at = Some(now);
                 job.manifest = manifest;
                 job.problem = None;
             }
-            JobStatus::Failed => {
-                job.started_at.get_or_insert_with(|| now.clone());
-                job.completed_at = Some(now);
-                job.problem = problem;
-            }
-            JobStatus::Running => {
-                job.started_at.get_or_insert_with(|| now.clone());
-                job.heartbeat_at = Some(now);
-            }
+            JobStatus::Failed => job.problem = problem,
             _ => {}
+        }
+        if status != JobStatus::Running {
+            job.completed_at = Some(now);
         }
         job.status = status;
     })?

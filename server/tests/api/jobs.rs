@@ -567,3 +567,50 @@ async fn a_folder_is_available_until_a_job_to_run_holds_it() {
         (StatusCode::NOT_FOUND, Some("connection/not-found"))
     );
 }
+
+/// A run moves forward only: from running it reports running again, or one of
+/// its ends, and every end is dated. Never back to a draft or to pending.
+#[tokio::test]
+async fn a_run_reports_forward_and_every_end_is_dated() {
+    let app = spawn_app().await;
+    let member = app.token(&["member"]);
+    app.credential("key", DEAD, "u-1").await;
+    app.connection("sink", "key", Direction::Sink, "u-1").await;
+
+    for (n, target) in ["completed", "failed", "cancelled", "draft", "pending"]
+        .into_iter()
+        .enumerate()
+    {
+        let (_, job) = app
+            .send(
+                Method::POST,
+                "/v1/jobs",
+                &member,
+                json!({ "script": "x", "sink_connection": "sink", "folder": format!("out-{n}") }),
+            )
+            .await;
+        let path = format!("/v1/jobs/{}", job["id"].as_str().unwrap());
+        let report =
+            |status: &str| app.send(Method::PATCH, &path, &member, json!({ "status": status }));
+        let (status, running) = report("running").await;
+        assert_eq!(
+            (status, running["status"].as_str()),
+            (StatusCode::OK, Some("running"))
+        );
+        assert!(running.get("completed_at").is_none());
+
+        let (status, body) = report(target).await;
+        match target {
+            "draft" | "pending" => {
+                assert_eq!(status, StatusCode::BAD_REQUEST, "running → {target}");
+                let (_, read) = app.send(Method::GET, &path, &member, json!(null)).await;
+                assert_eq!(read["status"], "running", "running → {target}");
+            }
+            ended => {
+                assert_eq!(status, StatusCode::OK, "running → {ended}");
+                assert_eq!(body["status"], ended);
+                assert!(body["completed_at"].is_string(), "{ended} is dated");
+            }
+        }
+    }
+}

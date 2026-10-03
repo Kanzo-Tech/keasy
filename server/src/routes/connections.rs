@@ -224,17 +224,20 @@ pub async fn delete_connection(
     params(("name" = String, Path, description = "Connection name")),
     responses(
         (status = 200, description = "The probe's report, stored with the connection", body = ValidationReport),
+        (status = 403, description = "Not the caller's to change", body = ErrorBody),
         (status = 404, description = "No such connection", body = ErrorBody),
         (status = 504, description = "The store did not answer the probe in time", body = ErrorBody),
     )
 )]
 /// LIST a source, WRITE and DELETE under the sink, list a model's provider.
 pub async fn validate_connection(
-    _: AnyRole,
+    caller: AnyRole,
     State(state): State<AppState>,
     Path(name): Path<String>,
 ) -> Result<impl IntoResponse, Refusal> {
     let connection = named(&state.db, &name).await?;
+    // Validating stores the report on the connection: a change, guarded as one.
+    may_change(&caller, Some(&connection), connection.target.is_sink())?;
     let credential = crate::credentials::named(&state.db, &connection.credential).await?;
     let report =
         crate::credentials::probe::connection(&credential.spec, &connection.target).await?;

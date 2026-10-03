@@ -304,6 +304,10 @@ export interface paths {
         };
         get: operations["list_secrets"];
         put?: never;
+        /**
+         * Any role may create one: a member for their sources, the owner for the
+         *     sink — and either may change or delete what they made.
+         */
         post: operations["create_secret"];
         delete?: never;
         options?: never;
@@ -1382,7 +1386,15 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
+            /** @description Not the caller's to change */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
             /** @description No such connection */
             404: {
                 headers: {
@@ -2120,7 +2132,15 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
+            /** @description Neither its creator nor the owner */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
             /** @description No such credential */
             404: {
                 headers: {

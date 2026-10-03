@@ -7,7 +7,7 @@ use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use crate::authentication::role::{AnyRole, Member};
+use crate::authentication::role::AnyRole;
 use crate::connections::persistence as connections;
 use crate::credentials::{named, persistence, probe};
 use crate::domain::{ResourceName, SecretView, StorageCredentialInput, ValidationReport};
@@ -78,8 +78,10 @@ pub async fn list_secrets(
         (status = 504, description = "The store did not answer the probe in time", body = ErrorBody),
     )
 )]
+/// Any role may create one: a member for their sources, the owner for the
+/// sink — and either may change or delete what they made.
 pub async fn create_secret(
-    member: Member,
+    caller: AnyRole,
     State(state): State<AppState>,
     Json(request): Json<CreateSecretRequest>,
 ) -> Result<impl IntoResponse, Refusal> {
@@ -88,7 +90,7 @@ pub async fn create_secret(
         &request.name,
         &request.spec,
         request.probe_url.as_deref(),
-        &member.user_id,
+        &caller.user_id,
     )
     .await?;
     Ok((StatusCode::CREATED, Json(view)))
@@ -192,19 +194,22 @@ pub async fn delete_secret(
     request_body = ValidateSecretRequest,
     responses(
         (status = 200, description = "The probe's report, stored with the credential", body = ValidationReport),
+        (status = 403, description = "Neither its creator nor the owner", body = ErrorBody),
         (status = 404, description = "No such credential", body = ErrorBody),
         (status = 504, description = "The store did not answer the probe in time", body = ErrorBody),
     )
 )]
 /// Probe the credential through every connection that uses it, and at `url`.
 pub async fn validate_secret(
-    _: AnyRole,
+    caller: AnyRole,
     State(state): State<AppState>,
     Path(name): Path<String>,
     Json(request): Json<ValidateSecretRequest>,
 ) -> Result<impl IntoResponse, Refusal> {
     let db = &state.db;
     let credential = named(db, &name).await?;
+    // Validating stores the report on the secret: a change, guarded as one.
+    may_change(&caller, &credential.created_by)?;
     let dependents = connections::using(&*db.read().await, &name)?;
     let (report, _) =
         probe::credential(&credential.spec, request.url.as_deref(), &dependents).await?;

@@ -86,6 +86,28 @@ async fn only_the_creator_or_the_owner_changes_a_credential_and_only_the_owner_t
             .0,
         StatusCode::FORBIDDEN
     );
+    for validate in ["/v1/secrets/key/validate", "/v1/connections/data/validate"] {
+        assert_eq!(
+            app.send(Method::POST, validate, &other, json!({})).await.0,
+            StatusCode::FORBIDDEN,
+            "validating stores a report: {validate} is a change"
+        );
+    }
+    let spec =
+        json!({ "kind": "s3", "access_key_id": "AK", "secret_access_key": "s", "endpoint": DEAD });
+    let (status, made) = app
+        .send(
+            Method::POST,
+            "/v1/secrets",
+            &owner,
+            json!({ "name": "owners", "spec": spec }),
+        )
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::CREATED,
+        "the owner makes a secret: {made}"
+    );
 
     let (status, renamed) = app
         .send(Method::PATCH, "/v1/secrets/key", &creator, rename)

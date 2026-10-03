@@ -654,7 +654,14 @@
             "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "$ref": "#/components/responses/Forbidden"
+            "description": "Not the caller's to change",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           },
           "404": {
             "description": "No such connection",
@@ -1378,6 +1385,7 @@
         "tags": [
           "Secrets"
         ],
+        "summary": "Any role may create one: a member for their sources, the owner for the\nsink — and either may change or delete what they made.",
         "operationId": "create_secret",
         "requestBody": {
           "content": {
@@ -1713,7 +1721,14 @@
             "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "$ref": "#/components/responses/Forbidden"
+            "description": "Neither its creator nor the owner",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           },
           "404": {
             "description": "No such credential",

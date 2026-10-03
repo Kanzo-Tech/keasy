@@ -25,7 +25,7 @@ const ROUTES: &[(&str, &str, Admits)] = &[
     ("PUT", "/v1/jobs/x/dashboard", Admits::Member),
     ("POST", "/v1/ai/chat/completions", Admits::Member),
     ("GET", "/v1/secrets", Admits::AnyRole),
-    ("POST", "/v1/secrets", Admits::Member),
+    ("POST", "/v1/secrets", Admits::AnyRole),
     ("GET", "/v1/secrets/x", Admits::AnyRole),
     ("PATCH", "/v1/secrets/x", Admits::AnyRole),
     ("DELETE", "/v1/secrets/x", Admits::AnyRole),

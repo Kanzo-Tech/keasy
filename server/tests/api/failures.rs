@@ -256,15 +256,16 @@ async fn a_burst_over_the_rate_is_refused_as_request_rate_limited() {
     let member = app.token(EDITOR);
     let answers = futures::future::join_all((0..1200).map(|_| {
         app.client
-            .get(url(&app, "/v1/auth/workspaces"))
+            .get(url(&app, "/v1/connections"))
             .bearer_auth(&member)
             .send()
     }))
     .await;
+    // The first answer that is not a listing has to be the limiter's: a 404 fails here too.
     let over = answers
         .into_iter()
         .flatten()
-        .find(|answer| answer.status() == StatusCode::TOO_MANY_REQUESTS)
+        .find(|answer| answer.status() != StatusCode::OK)
         .expect("some of the burst was refused");
     let (status, body) = refused(over).await;
     assert_eq!(

@@ -74,13 +74,15 @@ test("15 a structured answer that does not parse fails the assistant's step, not
 });
 
 test("16 SQL the engine refuses reaches the answer card, and the model reads the engine's words", async ({ page, corpusGraph }) => {
-  let calls = 0;
   // What the model is handed back after the refusal: the engine's own words.
   let readBack = "";
   await page.route(AI, (route) => {
-    calls++;
-    if (calls > 1) {
-      readBack = route.request().postData() ?? "";
+    const body = route.request().postData() ?? "";
+    // The suggested questions are a call of their own, with no tools: the panel offers none here.
+    if (!body.includes('"tools"')) return stream(route, sse(text("[]"), text("", "stop")));
+    // The agent's second step carries the tool's result back.
+    if (body.includes('"role":"tool"')) {
+      readBack = body;
       return stream(route, sse(text("The query did not run."), text("", "stop")));
     }
     const call = {

@@ -8,7 +8,7 @@ import { ProblemView } from "@/components/problem-view";
 import { useDelayedLoading } from "@/lib/ui/use-delayed-loading";
 
 /**
- * A failure where the data would have been, a resource that is not there included: `job/not-found`
+ * A failure where the data would have been, a resource that is not there included: `graph/not-found`
  * is shown by its code like any other, because Next's not-found page cannot say which resource or
  * why. Next's own control flow (a redirect, a `notFound()` thrown below) passes through untouched.
  */

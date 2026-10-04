@@ -105,7 +105,7 @@ pub fn using(conn: &Connection, credential: &str) -> DbResult<Vec<ConnectionView
     Ok(connections)
 }
 
-/// Replace the connection `name` with `updated`. A rename cascades to the jobs
+/// Replace the connection `name` with `updated`. A rename cascades to the graphs
 /// that write to it.
 pub fn update(conn: &Connection, name: &str, updated: &ConnectionView, by: &Actor) -> DbResult<()> {
     conn.execute(
@@ -140,20 +140,20 @@ pub fn set_validation(conn: &Connection, name: &str, report: &ValidationReport) 
     Ok(())
 }
 
-/// Delete a connection no job writes to. The sink of existing jobs is refused,
-/// naming the jobs; the foreign key refuses it too.
+/// Delete a connection no graph writes to. The sink of existing graphs is refused,
+/// naming the graphs; the foreign key refuses it too.
 pub fn delete(conn: &Connection, name: &str) -> DbResult<()> {
-    let jobs: Vec<String> = conn
-        .prepare("SELECT id FROM jobs WHERE sink_connection = ?1 ORDER BY created_at")?
+    let graphs: Vec<String> = conn
+        .prepare("SELECT id FROM graphs WHERE sink_connection = ?1 ORDER BY created_at")?
         .query_map([name], |r| r.get(0))?
         .collect::<rusqlite::Result<_>>()?;
-    if !jobs.is_empty() {
+    if !graphs.is_empty() {
         return Err(DbError::InUse {
             message: format!(
-                "{} job(s) wrote their output to {name:?}; delete them first",
-                jobs.len()
+                "{} graph(s) wrote their output to {name:?}; delete them first",
+                graphs.len()
             ),
-            dependents: jobs,
+            dependents: graphs,
         });
     }
     conn.execute("DELETE FROM connections WHERE name = ?1", [name])

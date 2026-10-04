@@ -22,7 +22,7 @@ type RouteDef = {
 type RouteEntry = RouteDef & { path: string };
 
 /** What a dynamic segment's crumb names, looked up when it renders. */
-export type CrumbLabel = { kind: "job"; id: string };
+export type CrumbLabel = { kind: "graph"; id: string };
 
 export type Crumb = RouteEntry & { label?: CrumbLabel };
 
@@ -34,8 +34,8 @@ export type Crumb = RouteEntry & { label?: CrumbLabel };
  */
 const ROUTES: Record<string, RouteDef> = {
   "/":                            { name: "Dashboard", icon: Home, sidebar: true },
-  "/jobs":                        { name: WORDS.graphs, icon: Workflow, sidebar: true },
-  "/jobs/new":                    { name: `New ${lower(WORDS.graph)}` },
+  "/graphs":                        { name: WORDS.graphs, icon: Workflow, sidebar: true },
+  "/graphs/new":                    { name: `New ${lower(WORDS.graph)}` },
   "/connections":                 { name: "Connections", icon: Database, sidebar: true },
   // Settings (not in main sidebar — reached via the user menu)
   "/settings":                    { name: "Settings", icon: Settings2 },
@@ -49,12 +49,12 @@ const ROUTES: Record<string, RouteDef> = {
 
 /**
  * Routes with a dynamic segment: the name shown until the label resolves, and
- * what to resolve it from. Static routes win, so `/jobs/new` is not a job.
+ * what to resolve it from. Static routes win, so `/graphs/new` is not a graph.
  */
 const DYNAMIC: { pattern: RegExp; name: string; label?: (id: string) => CrumbLabel }[] = [
-  { pattern: /^\/jobs\/([^/]+)$/, name: WORDS.graph, label: (id) => ({ kind: "job", id }) },
-  { pattern: /^\/jobs\/[^/]+\/recipe$/, name: WORDS.recipe },
-  { pattern: /^\/jobs\/[^/]+\/discover$/, name: WORDS.explore },
+  { pattern: /^\/graphs\/([^/]+)$/, name: WORDS.graph, label: (id) => ({ kind: "graph", id }) },
+  { pattern: /^\/graphs\/[^/]+\/recipe$/, name: WORDS.recipe },
+  { pattern: /^\/graphs\/[^/]+\/discover$/, name: WORDS.explore },
 ];
 
 // ── Derived ──────────────────────────────────────────────────────────────────
@@ -71,17 +71,17 @@ function findRoute(path: string): Crumb | undefined {
 
 /**
  * The trail to `path`. `search` is the query it was opened with: the studio opened on a draft
- * (`/jobs/new?draft=…`) edits that graph's recipe, and says so.
+ * (`/graphs/new?draft=…`) edits that graph's recipe, and says so.
  */
 export function generateBreadcrumbs(path: string, search?: URLSearchParams): Crumb[] {
   const crumbs: Crumb[] = [{ path: "/", name: "Dashboard" }];
-  const draft = path === "/jobs/new" ? search?.get("draft") : null;
+  const draft = path === "/graphs/new" ? search?.get("draft") : null;
   if (draft) {
     return [
       ...crumbs,
-      { ...ROUTES["/jobs"], path: "/jobs" },
-      { path: `/jobs/${draft}`, name: WORDS.graph, label: { kind: "job", id: draft } },
-      { path: `/jobs/new?draft=${draft}`, name: `Edit ${lower(WORDS.recipe)}` },
+      { ...ROUTES["/graphs"], path: "/graphs" },
+      { path: `/graphs/${draft}`, name: WORDS.graph, label: { kind: "graph", id: draft } },
+      { path: `/graphs/new?draft=${draft}`, name: `Edit ${lower(WORDS.recipe)}` },
     ];
   }
 

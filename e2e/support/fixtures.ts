@@ -1,12 +1,12 @@
 import { type BrowserContext, expect, test as base, type Page } from "@playwright/test";
 
-import { createJob } from "./api";
+import { createGraph } from "./api";
 import { signIn } from "./sign-in";
 
-/** A job the browser has run to completion, so its corpus opens in Discovery. */
+/** A graph the browser has run to completion, so its corpus opens in Discovery. */
 async function runToCompletion(page: Page): Promise<string> {
-  const id = await createJob(page, { name: "e2e corpus" });
-  await page.goto(`/jobs/${id}`);
+  const id = await createGraph(page, { name: "e2e corpus" });
+  await page.goto(`/graphs/${id}`);
   // Opening the page runs nothing: the run is asked for.
   await page.getByRole("button", { name: "Run", exact: true }).click();
   await expect(page.getByRole("button", { name: "Explore" })).toBeEnabled({ timeout: 180_000 });
@@ -26,9 +26,9 @@ export function text(content: string, finish: string | null = null) {
   return { id: "e2e", object: "chat.completion.chunk", created: 0, model: "chat", choices: [{ index: 0, delta: { content }, finish_reason: finish }] };
 }
 
-/** Open a job's Discovery on the dock panel `panel` (Info · Ask · Rules · Settings). */
-export async function openPanel(page: Page, jobId: string, panel: "Ask" | "Rules") {
-  await page.goto(`/jobs/${jobId}/discover`);
+/** Open a graph's Discovery on the dock panel `panel` (Info · Ask · Rules · Settings). */
+export async function openPanel(page: Page, graphId: string, panel: "Ask" | "Rules") {
+  await page.goto(`/graphs/${graphId}/discover`);
   await page.getByRole("button", { name: panel, exact: true }).or(page.getByRole("radio", { name: panel })).first().click();
 }
 
@@ -51,7 +51,7 @@ async function keepSession(context: BrowserContext, path: string) {
   if ((await context.cookies()).some((cookie) => cookie.name === SESSION)) await context.storageState({ path });
 }
 
-export const test = base.extend<{ session: void }, { corpusJob: string }>({
+export const test = base.extend<{ session: void }, { corpusGraph: string }>({
   session: [
     async ({ context, storageState }, use) => {
       await use();
@@ -59,7 +59,7 @@ export const test = base.extend<{ session: void }, { corpusJob: string }>({
     },
     { auto: true },
   ],
-  corpusJob: [
+  corpusGraph: [
     async ({ browser }, use) => {
       // A session of its own: a refresh here would rotate the ticket the test's context holds.
       const context = await browser.newContext({

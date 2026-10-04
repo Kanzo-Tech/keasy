@@ -4,7 +4,7 @@
 //! requirement (`security(("bearer" = ["editor"]))`), so the table is the
 //! contract itself and a route added without one fails here, not in review.
 //! What depends on the request rather than the route — the sink is an admin's,
-//! a job is changed by its creator or an admin — is `ownership.rs`.
+//! a graph is changed by its creator or an admin — is `ownership.rs`.
 
 use axum::http::{Method, StatusCode};
 

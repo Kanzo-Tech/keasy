@@ -20,7 +20,7 @@ pub enum ConnectionKind {
     Vocab,
 }
 
-/// A source is read through `@name/…`; the one sink is where job output lands.
+/// A source is read through `@name/…`; the one sink is where graph output lands.
 #[derive(
     Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq, ToSchema, strum::AsRefStr,
 )]

@@ -14,30 +14,30 @@ async fn workspace() -> (TestApp, String) {
     (app, member)
 }
 
-/// A job's dataset is vended to read once the job has completed and to write
+/// A graph's dataset is vended to read once the graph has completed and to write
 /// only while it runs; a source only to read; the sink never as a source.
 /// These are refused before any store is asked.
 #[tokio::test]
 async fn a_credential_is_vended_only_for_what_the_state_allows() {
     let (app, member) = workspace().await;
-    let (_, job) = app
+    let (_, graph) = app
         .send(
             Method::POST,
-            "/v1/jobs",
+            "/v1/graphs",
             &member,
             json!({ "script": "x", "sink_connection": "sink" }),
         )
         .await;
-    let job = json!({ "job": job["id"] });
+    let graph = json!({ "job": graph["id"] });
     let conflict = |code: &str| (StatusCode::CONFLICT, Some(code.to_owned()));
 
     assert_eq!(
-        app.vend(&member, job.clone(), "read").await,
-        conflict("job/not-completed")
+        app.vend(&member, graph.clone(), "read").await,
+        conflict("graph/not-completed")
     );
     assert_eq!(
-        app.vend(&member, job.clone(), "write").await,
-        conflict("job/not-running")
+        app.vend(&member, graph.clone(), "write").await,
+        conflict("graph/not-running")
     );
 
     let sink = json!({ "connection": "sink" });
@@ -57,16 +57,16 @@ async fn a_credential_is_vended_only_for_what_the_state_allows() {
         StatusCode::NOT_FOUND
     );
 
-    // Reading is everyone's, so another editor meets the job's state like its
+    // Reading is everyone's, so another editor meets the graph's state like its
     // creator does; writing is the runner's, and nothing runs it.
     let theirs = app.token_for("u-2", EDITOR);
     assert_eq!(
-        app.vend(&theirs, job.clone(), "read").await.0,
+        app.vend(&theirs, graph.clone(), "read").await.0,
         StatusCode::CONFLICT
     );
     assert_eq!(
-        app.vend(&theirs, job.clone(), "write").await,
-        conflict("job/not-running")
+        app.vend(&theirs, graph.clone(), "write").await,
+        conflict("graph/not-running")
     );
 
     // A reader explores outputs; building from a source is an editor's.
@@ -79,12 +79,12 @@ async fn a_credential_is_vended_only_for_what_the_state_allows() {
         )
     );
     assert_eq!(
-        app.vend(&reader, job.clone(), "read").await,
-        conflict("job/not-completed"),
-        "a reader reads any job, once it has completed"
+        app.vend(&reader, graph.clone(), "read").await,
+        conflict("graph/not-completed"),
+        "a reader reads any graph, once it has completed"
     );
 
-    // An admin is an editor too, and may change anyone's job.
+    // An admin is an editor too, and may change anyone's graph.
     let admin = app.token_for("u-9", ADMIN);
     assert_eq!(
         app.vend(&admin, source, "read").await.0,
@@ -92,20 +92,20 @@ async fn a_credential_is_vended_only_for_what_the_state_allows() {
         "refused by the store, never by role"
     );
     assert_eq!(
-        app.vend(&admin, job, "write").await,
-        conflict("job/not-running")
+        app.vend(&admin, graph, "write").await,
+        conflict("graph/not-running")
     );
 }
 
-/// A job that ended has nothing left to write: `job/ended`, not "not yet".
+/// A graph that ended has nothing left to write: `graph/ended`, not "not yet".
 #[tokio::test]
-async fn an_ended_job_is_never_written() {
+async fn an_ended_graph_is_never_written() {
     let (app, member) = workspace().await;
     let id = app.running(&member).await;
     app.report(&member, &id, json!({ "status": "cancelled" }))
         .await;
     assert_eq!(
         app.vend(&member, json!({ "job": id }), "write").await,
-        (StatusCode::CONFLICT, Some("job/ended".to_owned()))
+        (StatusCode::CONFLICT, Some("graph/ended".to_owned()))
     );
 }

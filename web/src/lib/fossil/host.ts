@@ -6,7 +6,7 @@ import { http } from "@/lib/api/client";
 import { queryClient } from "@/lib/api/query-client";
 
 /**
- * keasy as fossil's `Host` — the editor's, a job run's and a corpus's alike.
+ * keasy as fossil's `Host` — the editor's, a graph run's and a corpus's alike.
  * Fossil decides what a program reads and expands every `@name/…` into a
  * locator; keasy hands over the source connections' prefixes and, for a scope,
  * a credential scoped to its prefix for an hour. Fossil reaches the store with

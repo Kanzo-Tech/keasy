@@ -158,9 +158,9 @@ fn routes() -> (OpenApiRouter<AppState>, OpenApiRouter<AppState>) {
         .merge(routes::health_check::router())
         .merge(routes::branding::router());
     let protected = OpenApiRouter::new()
-        .merge(routes::jobs::router())
+        .merge(routes::graphs::router())
         .merge(routes::storage_credentials::router())
-        .merge(routes::jobs::dashboard::router())
+        .merge(routes::graphs::dashboard::router())
         .merge(routes::secrets::router())
         .merge(routes::connections::router())
         .merge(routes::ai::router());
@@ -220,7 +220,7 @@ const DEV_RATE: Rate = Rate {
     burst: 500,
 };
 
-/// The largest request body: a credential, a connection, a job's script and
+/// The largest request body: a credential, a connection, a graph's script and
 /// run report — never data, which goes to the store, not through here.
 const BODY_LIMIT: usize = 2 * 1024 * 1024;
 
@@ -288,7 +288,7 @@ pub async fn within(deadline: Duration, request: Request<Body>, next: Next) -> R
 /// Keyed by who is calling, not from where. Every request reaches this server
 /// from the web's BFF, so the peer address is one address for the whole
 /// workspace; the verified token's subject is the only per-caller identity at
-/// this layer. Shedding anonymous floods by client address is the ingress's job,
+/// this layer. Shedding anonymous floods by client address is the ingress's graph,
 /// where that address is still known.
 #[derive(Clone)]
 struct Subject;
@@ -324,7 +324,7 @@ fn over_rate(error: GovernorError) -> Response {
     info(
         title = "Keasy API",
         version = "1.0.0",
-        description = "Keasy host: identity, connections, vended credentials and the job record",
+        description = "Keasy host: identity, connections, vended credentials and the graph record",
     ),
     components(schemas(ErrorBody, ErrorCode, ErrorData, Role)),
     modifiers(&Bearer, &Unattributed, &Bounds),
@@ -364,7 +364,7 @@ impl Modify for Unattributed {
 }
 
 /// The figures a client keeps in step with, published beside the routes as
-/// `x-keasy-bounds`: the request deadline its own must exceed, and the job
+/// `x-keasy-bounds`: the request deadline its own must exceed, and the graph
 /// lease its runner's heartbeat divides.
 struct Bounds;
 
@@ -379,7 +379,7 @@ impl Modify for Bounds {
                         "x-keasy-bounds",
                         serde_json::json!({
                             "request_ms": REQUEST_DEADLINE.as_millis() as u64,
-                            "job_lease_ms": crate::jobs::persistence::LEASE.as_millis() as u64,
+                            "graph_lease_ms": crate::graphs::persistence::LEASE.as_millis() as u64,
                         }),
                     )
                     .build(),

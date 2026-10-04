@@ -4,7 +4,7 @@ use serde_json::json;
 use crate::helpers::{ADMIN, DEAD, EDITOR, spawn_app};
 use keasy_server::domain::Direction;
 
-/// The credential a connection uses cannot be deleted, nor the sink a job wrote
+/// The credential a connection uses cannot be deleted, nor the sink a graph wrote
 /// to; the refusal names what is in the way.
 #[tokio::test]
 async fn what_is_in_use_is_not_deleted() {
@@ -23,10 +23,10 @@ async fn what_is_in_use_is_not_deleted() {
     assert_eq!(body["code"], "resource/in-use");
     assert_eq!(body["data"]["dependents"], json!(["data", "sink"]));
 
-    let (_, job) = app
+    let (_, graph) = app
         .send(
             Method::POST,
-            "/v1/jobs",
+            "/v1/graphs",
             &member,
             json!({ "script": "x", "sink_connection": "sink" }),
         )
@@ -35,7 +35,7 @@ async fn what_is_in_use_is_not_deleted() {
         .send(Method::DELETE, "/v1/connections/sink", &owner, json!(null))
         .await;
     assert_eq!(status, StatusCode::CONFLICT);
-    assert_eq!(body["data"]["dependents"], json!([job["id"]]));
+    assert_eq!(body["data"]["dependents"], json!([graph["id"]]));
 
     assert_eq!(
         app.send(Method::DELETE, "/v1/connections/data", &member, json!(null))
@@ -61,7 +61,7 @@ async fn a_storage_location_never_overlaps_another() {
     for (url, collides) in [
         ("s3://b/", vec!["data", "sink"]),
         ("s3a://b/sink/", vec!["sink"]),
-        ("s3://b/sink/job-1/", vec!["sink"]),
+        ("s3://b/sink/graph-1/", vec!["sink"]),
         ("s3://b/data/nested", vec!["data"]),
     ] {
         let (status, body) = app
@@ -183,7 +183,7 @@ async fn a_listing_stays_under_its_prefix_and_says_when_it_was_cut() {
     assert_eq!(
         status,
         StatusCode::BAD_REQUEST,
-        "the sink is reached through its jobs"
+        "the sink is reached through its graphs"
     );
     for prefix in ["..", "a/../b", "a//b"] {
         let (status, body) = app

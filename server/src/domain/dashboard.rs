@@ -2,7 +2,7 @@ use serde::Serialize;
 
 use super::Provenance;
 
-/// A job's saved dashboard. `spec` is the dashboard the web's BI kit
+/// A graph's saved dashboard. `spec` is the dashboard the web's BI kit
 /// serialises (`DashboardSpec`): keasy stores it and hands it back, and never
 /// reads a field of it.
 #[derive(Debug, Clone, Serialize, utoipa::ToSchema)]

@@ -1,17 +1,17 @@
 import { expect, test } from "../support/fixtures";
 
-import { api, createJob, SOURCE } from "../support/api";
+import { api, createGraph, SOURCE } from "../support/api";
 import { stop, up, without } from "../support/compose";
 import { expectProblem } from "../support/problem";
 import { signIn } from "../support/sign-in";
 
 test("03 a store that accepts and never answers ends the run as store/silent", async ({ page }) => {
   test.setTimeout(300_000);
-  const id = await createJob(page, { name: "e2e silent store" });
+  const id = await createGraph(page, { name: "e2e silent store" });
   stop("s3");
   up("s3-silent");
   try {
-    await page.goto(`/jobs/${id}`);
+    await page.goto(`/graphs/${id}`);
     await page.getByRole("button", { name: "Run", exact: true }).click();
     // STS is given 10 s; the run reports the failure it got.
     await expectProblem(page, "store/silent", { within: 40_000 });
@@ -23,9 +23,9 @@ test("03 a store that accepts and never answers ends the run as store/silent", a
 
 test("04 a store that refuses to vend ends the run as store/refused", async ({ page }) => {
   test.setTimeout(300_000);
-  const id = await createJob(page, { name: "e2e refused store" });
+  const id = await createGraph(page, { name: "e2e refused store" });
   await without(["s3"], async () => {
-    await page.goto(`/jobs/${id}`);
+    await page.goto(`/graphs/${id}`);
     await page.getByRole("button", { name: "Run", exact: true }).click();
     await expectProblem(page, "store/refused", { within: 30_000 });
   });
@@ -34,7 +34,7 @@ test("04 a store that refuses to vend ends the run as store/refused", async ({ p
 test("05 with the API down every list shows a problem, not an empty state", async ({ page, browser, baseURL }) => {
   test.setTimeout(600_000);
   await without(["server"], async () => {
-    for (const path of ["/jobs", "/connections", "/settings/credentials", "/"]) {
+    for (const path of ["/graphs", "/connections", "/settings/credentials", "/"]) {
       await page.goto(path);
       await expectProblem(page, "bff/failed", { within: 35_000 });
     }

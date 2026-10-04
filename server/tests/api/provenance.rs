@@ -87,10 +87,10 @@ async fn a_secret_and_a_connection_name_who_created_and_who_updated_them() {
     assert_eq!(listed[0]["updated_by"]["name"], "Bruno", "{listed}");
 }
 
-/// A job names its creator; without a name in the token, their username; and
+/// A graph names its creator; without a name in the token, their username; and
 /// without either, a placeholder rather than the `sub`.
 #[tokio::test]
-async fn a_job_names_its_creator_by_name_then_username_then_a_placeholder() {
+async fn a_graph_names_its_creator_by_name_then_username_then_a_placeholder() {
     let app = spawn_app().await;
     app.credential("key", DEAD, "u-1").await;
     app.connection("sink", "key", Direction::Sink, "u-1").await;
@@ -104,21 +104,21 @@ async fn a_job_names_its_creator_by_name_then_username_then_a_placeholder() {
         (json!({}), "Unknown user"),
     ] {
         let token = app.token_profiled("u-ana", EDITOR, profile);
-        let (status, job) = app
+        let (status, graph) = app
             .send(
                 Method::POST,
-                "/v1/jobs",
+                "/v1/graphs",
                 &token,
                 json!({ "script": "x", "sink_connection": "sink" }),
             )
             .await;
-        assert_eq!(status, StatusCode::CREATED, "{job}");
+        assert_eq!(status, StatusCode::CREATED, "{graph}");
         assert_eq!(
-            job["created_by"],
+            graph["created_by"],
             json!({ "id": "u-ana", "name": expected })
         );
-        assert!(job["created_at"].is_string());
-        assert!(job.get("updated_by").is_none(), "{job}");
+        assert!(graph["created_at"].is_string());
+        assert!(graph.get("updated_by").is_none(), "{graph}");
     }
 }
 
@@ -132,15 +132,15 @@ async fn the_name_is_kept_from_when_it_was_written() {
     let before = app.token_profiled("u-ana", EDITOR, json!({ "name": "Ana Duarte" }));
     let after = app.token_profiled("u-ana", EDITOR, json!({ "name": "Ana D. Silva" }));
 
-    let (_, job) = app
+    let (_, graph) = app
         .send(
             Method::POST,
-            "/v1/jobs",
+            "/v1/graphs",
             &before,
             json!({ "script": "x", "sink_connection": "sink" }),
         )
         .await;
-    let path = format!("/v1/jobs/{}", job["id"].as_str().unwrap());
+    let path = format!("/v1/graphs/{}", graph["id"].as_str().unwrap());
     let (_, read) = app.send(Method::GET, &path, &after, json!(null)).await;
     assert_eq!(read["created_by"]["name"], "Ana Duarte");
 }
@@ -153,15 +153,15 @@ async fn a_dashboard_names_who_saved_it_first_and_last() {
     app.connection("sink", "key", Direction::Sink, "u-1").await;
     let ana = app.token_profiled("u-ana", EDITOR, json!({ "name": "Ana Duarte" }));
     let bruno = app.token_profiled("u-bruno", ADMIN, json!({ "name": "Bruno" }));
-    let (_, job) = app
+    let (_, graph) = app
         .send(
             Method::POST,
-            "/v1/jobs",
+            "/v1/graphs",
             &ana,
             json!({ "script": "x", "sink_connection": "sink" }),
         )
         .await;
-    let path = format!("/v1/jobs/{}/dashboard", job["id"].as_str().unwrap());
+    let path = format!("/v1/graphs/{}/dashboard", graph["id"].as_str().unwrap());
 
     let (status, first) = app
         .send(Method::PUT, &path, &ana, json!({ "spec": { "cards": [] } }))

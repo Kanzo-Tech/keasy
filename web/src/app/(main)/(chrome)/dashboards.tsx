@@ -27,7 +27,7 @@ import {
 } from "@kanzo-tech/ui";
 import { Link } from "@kanzo-tech/navigation/next";
 import { $api, type Schemas } from "@/lib/api/client";
-import { hasRunningJobs, pollWhile, STATUS } from "@/lib/jobs";
+import { hasRunningGraphs, pollWhile, STATUS } from "@/lib/graphs";
 import { formatDate } from "@/lib/ui/format";
 import { lower, WORDS } from "@/lib/vocabulary";
 import { Boundary } from "@/components/boundary";
@@ -77,7 +77,7 @@ const connectionsTile = (n?: number): Tile => ({
 });
 
 const outputsTile = (n?: number): Tile => ({
-  href: "/jobs",
+  href: "/graphs",
   icon: FileText,
   title: `${WORDS.output}s`,
   value: n === undefined ? undefined : String(n),
@@ -155,21 +155,21 @@ function ConnectionsTile() {
 }
 
 function OutputsTile() {
-  const outputs = useJobs().filter((j) => j.status === "completed" && j.report).length;
+  const outputs = useGraphs().filter((j) => j.status === "completed" && j.report).length;
   return <TileView tile={outputsTile(outputs)} />;
 }
 
-function useJobs() {
-  return settled($api.useSuspenseQuery("get", "/v1/jobs", {}, { refetchInterval: pollWhile(hasRunningJobs) }));
+function useGraphs() {
+  return settled($api.useSuspenseQuery("get", "/v1/graphs", {}, { refetchInterval: pollWhile(hasRunningGraphs) }));
 }
 
 function RecentActivity() {
-  const jobs = useJobs();
-  const count = (status: Schemas["JobStatus"][]) => jobs.filter((j) => status.includes(j.status)).length;
+  const graphs = useGraphs();
+  const count = (status: Schemas["GraphStatus"][]) => graphs.filter((j) => status.includes(j.status)).length;
   return (
     <Activity
       stats={[
-        { label: `Total ${lower(WORDS.graphs)}`, value: jobs.length },
+        { label: `Total ${lower(WORDS.graphs)}`, value: graphs.length },
         { label: "Completed", value: count(["completed"]) },
         { label: "Failed", value: count(["failed"]) },
         { label: "Running", value: count(["running"]) },
@@ -184,14 +184,14 @@ const RECENT = 5;
 
 /** The newest graphs, each a way into its page. */
 function RecentGraphs() {
-  const recent = useJobs().slice(0, RECENT);
+  const recent = useGraphs().slice(0, RECENT);
   if (recent.length === 0) {
     return (
       <EmptyRoot>
         <EmptyHeader>
           <EmptyTitle>No {lower(WORDS.graphs)} yet</EmptyTitle>
           <EmptyDescription>
-            <Link href="/jobs">Go to {WORDS.graphs}</Link>
+            <Link href="/graphs">Go to {WORDS.graphs}</Link>
           </EmptyDescription>
         </EmptyHeader>
       </EmptyRoot>
@@ -200,15 +200,15 @@ function RecentGraphs() {
   return (
     <SectionBody>
       <ItemGroup>
-        {recent.map((job) => (
-          <Item asChild key={job.id} variant="outline">
-            <Link href={`/jobs/${job.id}`}>
+        {recent.map((graph) => (
+          <Item asChild key={graph.id} variant="outline">
+            <Link href={`/graphs/${graph.id}`}>
               <ItemContent>
-                <ItemTitle>{job.name ?? job.id.slice(0, 8)}</ItemTitle>
-                <ItemDescription>{formatDate(job.created_at)}</ItemDescription>
+                <ItemTitle>{graph.name ?? graph.id.slice(0, 8)}</ItemTitle>
+                <ItemDescription>{formatDate(graph.created_at)}</ItemDescription>
               </ItemContent>
               <ItemActions>
-                <Badge variant={STATUS[job.status].variant}>{STATUS[job.status].label}</Badge>
+                <Badge variant={STATUS[graph.status].variant}>{STATUS[graph.status].label}</Badge>
               </ItemActions>
             </Link>
           </Item>
@@ -225,7 +225,7 @@ function Activity({ stats }: { stats?: { label: string; value: number }[] }) {
       {(stats ?? ACTIVITY.map((label) => ({ label, value: 0 }))).map((stat) => (
         // Every figure is a way into the graphs it counts.
         <StatRoot asChild key={stat.label}>
-          <Link href="/jobs">
+          <Link href="/graphs">
             <StatLabel>{stat.label}</StatLabel>
             <StatValue loading={!stats}>
               <FormatNumber value={stat.value} />

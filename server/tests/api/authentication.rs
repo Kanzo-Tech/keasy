@@ -301,7 +301,7 @@ async fn a_role_counts_only_inside_this_instances_organization() {
     let app = crate::helpers::spawn_app().await;
     let globex_admin = app.token_in("u-1", "globex", crate::helpers::ADMIN);
     assert_eq!(
-        app.answer(axum::http::Method::GET, "/v1/jobs", Some(&globex_admin))
+        app.answer(axum::http::Method::GET, "/v1/graphs", Some(&globex_admin))
             .await,
         (
             axum::http::StatusCode::FORBIDDEN,
@@ -315,7 +315,7 @@ async fn a_role_counts_only_inside_this_instances_organization() {
         json!({ CLIENT: { "roles": ["admin", "editor", "reader"] } });
     let token = mint(&app.realm, top_level_only);
     assert_eq!(
-        app.answer(axum::http::Method::GET, "/v1/jobs", Some(&token))
+        app.answer(axum::http::Method::GET, "/v1/graphs", Some(&token))
             .await
             .1
             .as_deref(),

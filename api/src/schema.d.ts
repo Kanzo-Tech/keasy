@@ -159,43 +159,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/jobs": {
+    "/v1/graphs": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["list_jobs"];
+        get: operations["list_graphs"];
         put?: never;
         /**
-         * A job begins as a draft, always: what it runs, where it lands. Submitting
-         *     it makes it a job to run; running it is asked for on its own.
+         * A graph begins as a draft, always: what it runs, where it lands. Submitting
+         *     it makes it a graph to run; running it is asked for on its own.
          */
-        post: operations["create_job"];
+        post: operations["create_graph"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/jobs/{id}": {
+    "/v1/graphs/{id}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["get_job"];
+        get: operations["get_graph"];
         put?: never;
         post?: never;
-        delete: operations["delete_job"];
+        delete: operations["delete_graph"];
         options?: never;
         head?: never;
         patch: operations["edit_draft"];
         trace?: never;
     };
-    "/v1/jobs/{id}/dashboard": {
+    "/v1/graphs/{id}/dashboard": {
         parameters: {
             query?: never;
             header?: never;
@@ -203,7 +203,7 @@ export interface paths {
             cookie?: never;
         };
         get: operations["get_dashboard"];
-        /** The dashboard is the job's: who may change the job may save it. */
+        /** The dashboard is the graph's: who may change the graph may save it. */
         put: operations["put_dashboard"];
         post?: never;
         delete?: never;
@@ -212,7 +212,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/jobs/{id}/run": {
+    "/v1/graphs/{id}/run": {
         parameters: {
             query?: never;
             header?: never;
@@ -222,19 +222,19 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Start a run, with the caller as its runner: of a job never run, or again —
+         * Start a run, with the caller as its runner: of a graph never run, or again —
          *     over the last run's output, in the same folder. One compare-and-set on the
          *     stored status, so of two runs asked at once one starts and the other is
-         *     `job/already-running`. The run's lease starts now.
+         *     `graph/already-running`. The run's lease starts now.
          */
-        post: operations["run_job"];
+        post: operations["run_graph"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/jobs/{id}/status": {
+    "/v1/graphs/{id}/status": {
         parameters: {
             query?: never;
             header?: never;
@@ -246,7 +246,7 @@ export interface paths {
         /**
          * The runner's one report, taken from the runner alone: `running` renews the
          *     lease — a run no report has renewed for the lease (60 s) is swept as
-         *     `job/abandoned`; an end records how the run ended, and dates it.
+         *     `graph/abandoned`; an end records how the run ended, and dates it.
          *     `completed` stores the run report verbatim, unread. The answer says
          *     whether someone asked the run to stop.
          */
@@ -257,7 +257,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/jobs/{id}/stop": {
+    "/v1/graphs/{id}/stop": {
         parameters: {
             query?: never;
             header?: never;
@@ -270,16 +270,16 @@ export interface paths {
          * Ask a run to stop, from wherever it is watched: its runner may, and an
          *     admin. Cooperative — the browser running it hears it in the answer to its
          *     next report and ends the run `cancelled`; if that browser is gone, the
-         *     sweep ends it `job/abandoned` once the lease lapses.
+         *     sweep ends it `graph/abandoned` once the lease lapses.
          */
-        post: operations["stop_job"];
+        post: operations["stop_graph"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/jobs/{id}/submit": {
+    "/v1/graphs/{id}/submit": {
         parameters: {
             query?: never;
             header?: never;
@@ -289,11 +289,11 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * A draft becomes a job to run, in place: the edits, the folder check and
+         * A draft becomes a graph to run, in place: the edits, the folder check and
          *     the promotion are one write, so a refusal leaves the draft as it was and a
          *     success leaves no draft behind. It waits `idle` until someone runs it.
          */
-        post: operations["submit_job"];
+        post: operations["submit_graph"];
         delete?: never;
         options?: never;
         head?: never;
@@ -368,9 +368,9 @@ export interface paths {
         put?: never;
         /**
          * Vend a credential over `scope` for `access`. Anyone in the workspace reads a
-         *     completed job's dataset. An editor reads a source connection — Unity
+         *     completed graph's dataset. An editor reads a source connection — Unity
          *     Catalog's temporary path credentials over an external location — to build
-         *     a job, and writes a job's dataset while it runs, if they are its runner.
+         *     a graph, and writes a graph's dataset while it runs, if they are its runner.
          */
         post: operations["vend"];
         delete?: never;
@@ -467,8 +467,8 @@ export interface components {
             secret: string;
             target: components["schemas"]["StorageTarget"];
         };
-        CreateJobRequest: {
-            folder?: null | components["schemas"]["JobFolder"];
+        CreateGraphRequest: {
+            folder?: null | components["schemas"]["GraphFolder"];
             name?: null | components["schemas"]["ResourceName"];
             script: string;
             /** @description Where the output lands: the sink connection's name. */
@@ -486,7 +486,7 @@ export interface components {
             spec: components["schemas"]["SecretSpec"];
         };
         /**
-         * @description A job's saved dashboard. `spec` is the dashboard the web's BI kit
+         * @description A graph's saved dashboard. `spec` is the dashboard the web's BI kit
          *     serialises (`DashboardSpec`): keasy stores it and hands it back, and never
          *     reads a field of it.
          */
@@ -496,13 +496,13 @@ export interface components {
             };
         };
         /**
-         * @description A source is read through `@name/…`; the one sink is where job output lands.
+         * @description A source is read through `@name/…`; the one sink is where graph output lands.
          * @enum {string}
          */
         Direction: "source" | "sink";
         /** @description Edits to a draft: as it is written (PATCH), and as it is submitted. */
         DraftEdits: {
-            folder?: null | components["schemas"]["JobFolder"];
+            folder?: null | components["schemas"]["GraphFolder"];
             name?: null | components["schemas"]["ResourceName"];
             script?: string | null;
         };
@@ -534,7 +534,7 @@ export interface components {
          *     are `gateway/*` bodies like any other.
          * @enum {string}
          */
-        ErrorCode: "auth/session-required" | "auth/keys-unavailable" | "rbac/no-membership" | "rbac/insufficient-role" | "rbac/forbidden" | "request/rate-limited" | "request/invalid" | "request/malformed" | "request/method-not-allowed" | "request/too-large" | "route/not-found" | "server/internal" | "server/silent" | "server/not-ready" | "job/not-found" | "job/not-draft" | "job/not-completed" | "job/not-running" | "job/ended" | "job/still-running" | "job/already-running" | "job/abandoned" | "job/interrupted" | "job/invalid-destination" | "job/no-destination" | "job/folder-taken" | "secret/not-found" | "connection/not-found" | "resource/already-exists" | "resource/in-use" | "connection/overlaps" | "probe/failed" | "store/refused" | "store/silent" | "gateway/unreachable" | "gateway/silent";
+        ErrorCode: "auth/session-required" | "auth/keys-unavailable" | "rbac/no-membership" | "rbac/insufficient-role" | "rbac/forbidden" | "request/rate-limited" | "request/invalid" | "request/malformed" | "request/method-not-allowed" | "request/too-large" | "route/not-found" | "server/internal" | "server/silent" | "server/not-ready" | "graph/not-found" | "graph/not-draft" | "graph/not-completed" | "graph/not-running" | "graph/ended" | "graph/still-running" | "graph/already-running" | "graph/abandoned" | "graph/interrupted" | "graph/invalid-destination" | "graph/no-destination" | "graph/folder-taken" | "secret/not-found" | "connection/not-found" | "resource/already-exists" | "resource/in-use" | "connection/overlaps" | "probe/failed" | "store/refused" | "store/silent" | "gateway/unreachable" | "gateway/silent";
         /** @description What a refusal carries beside its words. */
         ErrorData: {
             /**
@@ -566,9 +566,9 @@ export interface components {
             /** @description More objects lie under the prefix than were listed. */
             truncated: boolean;
         };
-        Job: components["schemas"]["Provenance"] & {
+        Graph: components["schemas"]["Provenance"] & {
             /**
-             * @description Whether the caller may change, run or delete this job, worked out for
+             * @description Whether the caller may change, run or delete this graph, worked out for
              *     each response: the interface draws what this says and does not
              *     re-derive it.
              */
@@ -585,10 +585,10 @@ export interface components {
             cancel_requested?: boolean;
             /** @description When the last run ended; unset while it runs. */
             completed_at?: string | null;
-            folder?: null | components["schemas"]["JobFolder"];
+            folder?: null | components["schemas"]["GraphFolder"];
             /**
              * @description The run's lease: taken by `run`, renewed by every `running` its runner
-             *     reports. A running job whose lease lapses is swept as `job/abandoned`.
+             *     reports. A running graph whose lease lapses is swept as `graph/abandoned`.
              */
             heartbeat_at?: string | null;
             id: string;
@@ -614,7 +614,7 @@ export interface components {
              */
             report?: unknown;
             runner?: null | components["schemas"]["Actor"];
-            /** @description The program every run of the job runs. */
+            /** @description The program every run of the graph runs. */
             script?: string | null;
             /**
              * @description The sink connection the output lands in, under `{sink.url}/{folder}`,
@@ -623,19 +623,19 @@ export interface components {
             sink_connection: string;
             /** @description When the last run started. */
             started_at?: string | null;
-            status: components["schemas"]["JobStatus"];
+            status: components["schemas"]["GraphStatus"];
         };
-        /** @description The folder a job's output lands in under the sink: lowercase letters, digits and `-`, starting with a letter or digit. */
-        JobFolder: string;
+        /** @description The folder a graph's output lands in under the sink: lowercase letters, digits and `-`, starting with a letter or digit. */
+        GraphFolder: string;
         /** @enum {string} */
-        JobStatus: "draft" | "idle" | "running" | "completed" | "failed" | "cancelled";
+        GraphStatus: "draft" | "idle" | "running" | "completed" | "failed" | "cancelled";
         /**
-         * @description What the runner reports of a job's run (POST `/v1/jobs/{id}/status`): that
+         * @description What the runner reports of a graph's run (POST `/v1/graphs/{id}/status`): that
          *     it still runs, every so often to hold its lease, and how it ended. The
          *     browser runs the program (`@fossil-lang/executor`) and writes the output
-         *     with a credential vended for the job; keasy only records.
+         *     with a credential vended for the graph; keasy only records.
          */
-        JobStatusReport: {
+        GraphStatusReport: {
             /**
              * @description Why the run failed (on `failed`): the run's problem, stored verbatim
              *     and opaque.
@@ -647,7 +647,7 @@ export interface components {
              * @description `running` (renews the lease), or the end: `completed`, `failed` or
              *     `cancelled`.
              */
-            status: components["schemas"]["JobStatus"];
+            status: components["schemas"]["GraphStatus"];
         };
         /**
          * @description What a probe tried.
@@ -672,7 +672,7 @@ export interface components {
                 [key: string]: unknown;
             };
         };
-        /** @description A credential's, a connection's or a job's name: no leading or trailing whitespace, and no `/`, `@`, `\` or control character. */
+        /** @description A credential's, a connection's or a graph's name: no leading or trailing whitespace, and no `/`, `@`, `\` or control character. */
         ResourceName: string;
         /**
          * @description A role this application declares on its Keycloak client.
@@ -691,7 +691,10 @@ export interface components {
             /** @description A source connection's prefix, by the connection's name. */
             connection: string;
         } | {
-            /** @description A job's dataset, by the job's id. */
+            /**
+             * @description A graph's dataset, by the graph's id. `job` on the wire: the scope is
+             *     fossil's, passed through verbatim, and fossil calls it that.
+             */
             job: string;
         };
         /** @description A secret's spec as a request states it, its values included. */
@@ -1156,7 +1159,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            /** @description Jobs wrote their output to it; `dependents` names them */
+            /** @description Graphs wrote their output to it; `dependents` names them */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -1347,7 +1350,7 @@ export interface operations {
             };
         };
     };
-    list_jobs: {
+    list_graphs: {
         parameters: {
             query?: never;
             header?: never;
@@ -1356,18 +1359,18 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Every job in the workspace */
+            /** @description Every graph in the workspace */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Job"][];
+                    "application/json": components["schemas"]["Graph"][];
                 };
             };
         };
     };
-    create_job: {
+    create_graph: {
         parameters: {
             query?: never;
             header?: never;
@@ -1376,17 +1379,17 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CreateJobRequest"];
+                "application/json": components["schemas"]["CreateGraphRequest"];
             };
         };
         responses: {
-            /** @description The draft, created; `POST /v1/jobs/{id}/submit` makes it a job to run */
+            /** @description The draft, created; `POST /v1/graphs/{id}/submit` makes it a graph to run */
             201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Job"];
+                    "application/json": components["schemas"]["Graph"];
                 };
             };
             /** @description The destination is not a sink, or the name or folder is misspelled (`data.field`) */
@@ -1400,28 +1403,28 @@ export interface operations {
             };
         };
     };
-    get_job: {
+    get_graph: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Job ID */
+                /** @description Graph ID */
                 id: string;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Job details */
+            /** @description Graph details */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Job"];
+                    "application/json": components["schemas"]["Graph"];
                 };
             };
-            /** @description Job not found */
+            /** @description Graph not found */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -1432,26 +1435,26 @@ export interface operations {
             };
         };
     };
-    delete_job: {
+    delete_graph: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Job ID */
+                /** @description Graph ID */
                 id: string;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Job deleted */
+            /** @description Graph deleted */
             204: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
             };
-            /** @description Job not found */
+            /** @description Graph not found */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -1460,7 +1463,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            /** @description Job is still running */
+            /** @description Graph is still running */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -1476,7 +1479,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Job ID */
+                /** @description Graph ID */
                 id: string;
             };
             cookie?: never;
@@ -1493,7 +1496,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Job"];
+                    "application/json": components["schemas"]["Graph"];
                 };
             };
             /** @description The name or folder is misspelled (`data.field`) */
@@ -1505,7 +1508,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            /** @description Job not found */
+            /** @description Graph not found */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -1514,7 +1517,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            /** @description Not a draft: `job/not-draft` */
+            /** @description Not a draft: `graph/not-draft` */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -1530,14 +1533,14 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Job ID */
+                /** @description Graph ID */
                 id: string;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description The job's saved dashboard, or null when none is saved */
+            /** @description The graph's saved dashboard, or null when none is saved */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -1546,7 +1549,7 @@ export interface operations {
                     "application/json": null | components["schemas"]["Dashboard"];
                 };
             };
-            /** @description Job not found */
+            /** @description Graph not found */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -1562,7 +1565,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Job ID */
+                /** @description Graph ID */
                 id: string;
             };
             cookie?: never;
@@ -1591,7 +1594,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            /** @description Job not found */
+            /** @description Graph not found */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -1611,25 +1614,25 @@ export interface operations {
             };
         };
     };
-    run_job: {
+    run_graph: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Job ID */
+                /** @description Graph ID */
                 id: string;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description The job runs, and the caller is its runner: the browser that asked runs the program and reports on it */
+            /** @description The graph runs, and the caller is its runner: the browser that asked runs the program and reports on it */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Job"];
+                    "application/json": components["schemas"]["Graph"];
                 };
             };
             /** @description A draft, which is submitted before it runs */
@@ -1650,7 +1653,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            /** @description Job not found */
+            /** @description Graph not found */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -1659,7 +1662,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            /** @description It runs already (`job/already-running`) */
+            /** @description It runs already (`graph/already-running`) */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -1675,14 +1678,14 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Job ID */
+                /** @description Graph ID */
                 id: string;
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["JobStatusReport"];
+                "application/json": components["schemas"]["GraphStatusReport"];
             };
         };
         responses: {
@@ -1695,7 +1698,7 @@ export interface operations {
                     "application/json": components["schemas"]["RunSignal"];
                 };
             };
-            /** @description The status is not running or an end, or the job is a draft */
+            /** @description The status is not running or an end, or the graph is a draft */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -1704,7 +1707,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            /** @description Not the job's runner (`rbac/forbidden`) */
+            /** @description Not the graph's runner (`rbac/forbidden`) */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -1713,7 +1716,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            /** @description Job not found */
+            /** @description Graph not found */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -1722,7 +1725,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            /** @description Nothing runs (`job/not-running`), or the run has ended (`job/ended`): the sweep's `job/abandoned` among them */
+            /** @description Nothing runs (`graph/not-running`), or the run has ended (`graph/ended`): the sweep's `graph/abandoned` among them */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -1733,12 +1736,12 @@ export interface operations {
             };
         };
     };
-    stop_job: {
+    stop_graph: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Job ID */
+                /** @description Graph ID */
                 id: string;
             };
             cookie?: never;
@@ -1751,7 +1754,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Job"];
+                    "application/json": components["schemas"]["Graph"];
                 };
             };
             /** @description Neither its runner nor an admin (`rbac/forbidden`) */
@@ -1763,7 +1766,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            /** @description Job not found */
+            /** @description Graph not found */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -1772,7 +1775,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            /** @description Nothing runs (`job/not-running`), or the run has ended (`job/ended`) */
+            /** @description Nothing runs (`graph/not-running`), or the run has ended (`graph/ended`) */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -1783,12 +1786,12 @@ export interface operations {
             };
         };
     };
-    submit_job: {
+    submit_graph: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Job ID */
+                /** @description Graph ID */
                 id: string;
             };
             cookie?: never;
@@ -1799,13 +1802,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description The draft is now a job to run, idle, under the same id */
+            /** @description The draft is now a graph to run, idle, under the same id */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Job"];
+                    "application/json": components["schemas"]["Graph"];
                 };
             };
             /** @description The name or folder is missing or misspelled (`data.field`) */
@@ -1817,7 +1820,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            /** @description Job not found */
+            /** @description Graph not found */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -1826,7 +1829,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            /** @description Not a draft (`job/not-draft`), or another job writes to that folder already (`job/folder-taken`; the job stays a draft, unchanged) */
+            /** @description Not a draft (`graph/not-draft`), or another graph writes to that folder already (`graph/folder-taken`; the graph stays a draft, unchanged) */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -2141,7 +2144,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            /** @description A source read below editor; a job written below editor, or by anyone but its runner */
+            /** @description A source read below editor; a graph written below editor, or by anyone but its runner */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -2150,7 +2153,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            /** @description No such connection, or no such job */
+            /** @description No such connection, or no such graph */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -2159,7 +2162,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            /** @description A job read before it completed (`job/not-completed`), or written before it runs (`job/not-running`) or after it ended (`job/ended`) */
+            /** @description A graph read before it completed (`graph/not-completed`), or written before it runs (`graph/not-running`) or after it ended (`graph/ended`) */
             409: {
                 headers: {
                     [name: string]: unknown;

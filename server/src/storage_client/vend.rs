@@ -555,20 +555,20 @@ mod tests {
     fn the_session_policy_opens_one_prefix_and_never_its_siblings() {
         let read: serde_json::Value = serde_json::from_str(&s3_policy(
             "b",
-            &key_prefix(&loc("s3://b/output/job-1")),
+            &key_prefix(&loc("s3://b/output/graph-1")),
             Access::Read,
         ))
         .unwrap();
         assert_eq!(
             read["Statement"][0]["Resource"][0],
-            "arn:aws:s3:::b/output/job-1/*"
+            "arn:aws:s3:::b/output/graph-1/*"
         );
         assert_eq!(
             read["Statement"][1]["Condition"]["StringLike"]["s3:prefix"][0],
-            "output/job-1/*"
+            "output/graph-1/*"
         );
         let write: serde_json::Value =
-            serde_json::from_str(&s3_policy("b", "output/job-1/", Access::Write)).unwrap();
+            serde_json::from_str(&s3_policy("b", "output/graph-1/", Access::Write)).unwrap();
         let actions = write["Statement"][0]["Action"].to_string();
         assert!(actions.contains("s3:PutObject") && !actions.contains("Delete"));
         assert!(!actions.contains("GetObject"));
@@ -577,11 +577,11 @@ mod tests {
 
     #[test]
     fn a_sas_names_the_directory_it_opens() {
-        let dir = loc("abfss://c@acct.dfs.core.windows.net/output/job-1");
+        let dir = loc("abfss://c@acct.dfs.core.windows.net/output/graph-1");
         assert_eq!(sas_resource(&dir), ("d", Some(2)));
         assert_eq!(
             canonical_resource("acct", &dir),
-            "/blob/acct/c/output/job-1"
+            "/blob/acct/c/output/graph-1"
         );
         let root = loc("az://c");
         assert_eq!(sas_resource(&root), ("c", None));

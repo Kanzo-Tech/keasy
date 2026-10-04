@@ -58,44 +58,44 @@ pub enum ErrorCode {
     /// The server is up but cannot serve: its database did not answer.
     #[serde(rename = "server/not-ready")]
     ServerNotReady,
-    #[serde(rename = "job/not-found")]
-    JobNotFound,
+    #[serde(rename = "graph/not-found")]
+    GraphNotFound,
     /// Only a draft is edited or submitted.
-    #[serde(rename = "job/not-draft")]
-    JobNotDraft,
-    /// A job's output is read once the job has completed.
-    #[serde(rename = "job/not-completed")]
-    JobNotCompleted,
-    /// Not running yet: a job's output is written, and its run reported, only
+    #[serde(rename = "graph/not-draft")]
+    GraphNotDraft,
+    /// A graph's output is read once the graph has completed.
+    #[serde(rename = "graph/not-completed")]
+    GraphNotCompleted,
+    /// Not running yet: a graph's output is written, and its run reported, only
     /// once it runs.
-    #[serde(rename = "job/not-running")]
-    JobNotRunning,
-    /// The job has ended — completed, failed, cancelled or swept — so it has
+    #[serde(rename = "graph/not-running")]
+    GraphNotRunning,
+    /// The graph has ended — completed, failed, cancelled or swept — so it has
     /// no run left to report or write.
-    #[serde(rename = "job/ended")]
-    JobEnded,
-    #[serde(rename = "job/still-running")]
-    JobStillRunning,
-    /// A run is under way already: a job runs once at a time.
-    #[serde(rename = "job/already-running")]
-    JobAlreadyRunning,
+    #[serde(rename = "graph/ended")]
+    GraphEnded,
+    #[serde(rename = "graph/still-running")]
+    GraphStillRunning,
+    /// A run is under way already: a graph runs once at a time.
+    #[serde(rename = "graph/already-running")]
+    GraphAlreadyRunning,
     /// The runner went silent: no heartbeat within the lease. Stored as the
-    /// job's problem by the sweep.
-    #[serde(rename = "job/abandoned")]
-    JobAbandoned,
+    /// graph's problem by the sweep.
+    #[serde(rename = "graph/abandoned")]
+    GraphAbandoned,
     /// The runner's own tab lost the run (it reloaded, or closed and came
-    /// back) and its runner ended it, to run it again. Stored as the job's
+    /// back) and its runner ended it, to run it again. Stored as the graph's
     /// problem; reported by the runner, never raised by the server.
-    #[serde(rename = "job/interrupted")]
-    JobInterrupted,
-    #[serde(rename = "job/invalid-destination")]
-    JobInvalidDestination,
-    #[serde(rename = "job/no-destination")]
-    JobNoDestination,
-    /// Another job that is not a draft writes to that folder of the sink;
+    #[serde(rename = "graph/interrupted")]
+    GraphInterrupted,
+    #[serde(rename = "graph/invalid-destination")]
+    GraphInvalidDestination,
+    #[serde(rename = "graph/no-destination")]
+    GraphNoDestination,
+    /// Another graph that is not a draft writes to that folder of the sink;
     /// `field` is `folder`.
-    #[serde(rename = "job/folder-taken")]
-    JobFolderTaken,
+    #[serde(rename = "graph/folder-taken")]
+    GraphFolderTaken,
     #[serde(rename = "secret/not-found")]
     SecretNotFound,
     #[serde(rename = "connection/not-found")]
@@ -150,18 +150,18 @@ impl ErrorCode {
             Self::ServerInternal => "The server failed",
             Self::ServerSilent => "The server did not answer in time",
             Self::ServerNotReady => "The server is not ready",
-            Self::JobNotFound => "Job not found",
-            Self::JobNotDraft => "Not a draft",
-            Self::JobNotCompleted => "The job has not completed",
-            Self::JobNotRunning => "The job is not running",
-            Self::JobEnded => "The job has ended",
-            Self::JobStillRunning => "The job is still running",
-            Self::JobAlreadyRunning => "The job is running already",
-            Self::JobAbandoned => "The run was abandoned",
-            Self::JobInterrupted => "The run was interrupted",
-            Self::JobInvalidDestination => "Not a valid destination",
-            Self::JobNoDestination => "No destination",
-            Self::JobFolderTaken => "Another job writes to that folder",
+            Self::GraphNotFound => "Graph not found",
+            Self::GraphNotDraft => "Not a draft",
+            Self::GraphNotCompleted => "The graph has not completed",
+            Self::GraphNotRunning => "The graph is not running",
+            Self::GraphEnded => "The graph has ended",
+            Self::GraphStillRunning => "The graph is still running",
+            Self::GraphAlreadyRunning => "The graph is running already",
+            Self::GraphAbandoned => "The run was abandoned",
+            Self::GraphInterrupted => "The run was interrupted",
+            Self::GraphInvalidDestination => "Not a valid destination",
+            Self::GraphNoDestination => "No destination",
+            Self::GraphFolderTaken => "Another graph writes to that folder",
             Self::SecretNotFound => "Secret not found",
             Self::ConnectionNotFound => "Connection not found",
             Self::ResourceAlreadyExists => "It exists already",
@@ -270,7 +270,7 @@ impl Refusal {
         }
     }
 
-    /// `code` is the resource's own `*/not-found`, so the web can tell a job
+    /// `code` is the resource's own `*/not-found`, so the web can tell a graph
     /// that is not there from a route that is not.
     pub fn not_found(code: ErrorCode, detail: impl Into<String>) -> Self {
         Self::new(StatusCode::NOT_FOUND, code, detail)

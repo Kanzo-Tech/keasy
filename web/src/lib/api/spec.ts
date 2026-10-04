@@ -53,7 +53,7 @@ export function stringProblem(rule: StringRule, value: string, spelling: string)
 
 /**
  * The figures the server publishes for its clients to keep in step with (`x-keasy-bounds`): its
- * request deadline, which the browser's own must exceed, and a job's lease, which a runner's
+ * request deadline, which the browser's own must exceed, and a graph's lease, which a runner's
  * heartbeat divides.
  */
 export const bounds = spec["x-keasy-bounds"];

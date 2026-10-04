@@ -1,0 +1,4 @@
+# `make seed` derives the OpenFlights subset here. Never committed; NOTICE is.
+*
+!.gitignore
+!NOTICE

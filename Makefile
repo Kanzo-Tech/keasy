@@ -30,7 +30,7 @@ deps: ## Check out kanzo-ui's services at $(KANZO_UI_REF) into .deps/kanzo-ui
 dev: deps ## Start/rebuild dev env (only needed for dep/Dockerfile changes — code hot-reloads)
 	docker compose up --build -d
 
-seed: ## Fetch the dev graph (LDBC SNB SF0.1, ~17 MB, checksummed) for the next `make dev` to upload
+seed: ## Fetch the dev graphs (LDBC SNB SF0.1, ~17 MB; OpenFlights, ~3.5 MB; checksummed) for the next `make dev` to upload
 	sh infra/dev/seed.sh
 
 down: ## Stop all services

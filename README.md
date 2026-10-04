@@ -65,20 +65,34 @@ at scale factor 0.1 — the official Interactive v1 `CsvCompositeMergeForeign` a
 not in git; fetch it once, before `make dev`:
 
 ```bash
-make seed   # downloads, checks the SHA-256, unpacks into infra/dev/seed/ldbc/
+make seed   # downloads, checks the SHA-256s, unpacks into infra/dev/seed/ldbc/ and geo/
 ```
 
-Without it the bucket holds the shapes alone and `s3-init` says to run `make seed`.
+The same `make seed` fetches a second, geographic graph: [OpenFlights](https://openflights.org/data)
+airports and routes, pinned to one upstream commit and its SHA-256s, and cut down to the 3,218
+airports some direct route touches and the 36,906 directed routes between them (700 KB of CSV, needs
+`python3`). Every airport carries numeric `lat` and `lon` in WGS 84 degrees, so Discover's Map
+placement (x = `lon`, y = `lat`) draws it as a map. The data is © OpenFlights under the
+[ODbL](https://opendatacommons.org/licenses/odbl/1-0/) — `infra/dev/seed/geo/NOTICE` is the
+attribution, and it travels to the bucket with the files. It is derived on your machine and not
+committed: the subset's own digest is pinned, so every machine derives the same bytes.
+
+Without them the bucket holds the shapes alone and `s3-init` says to run `make seed`.
 The end-to-end suite does not need it: `s3-init` also mirrors the suite's own
 fixtures (`e2e/fixtures/`, a small shop: people, orders and `shop.shex`) to `e2e/`,
 and the suite declares its connections over them (**E2E source**, **E2E shapes**) as
 it signs in.
 
-At boot the instance declares, over that bucket, the **LDBC SNB** source connection
-(`ldbc/`), the **Dev shapes** vocabulary connection (`vocab/`, holding
-`snb.shex`) and the sink (`output/`). Access is proved before each connection row is
-written, and an existing sink is never overwritten. `infra/dev/snb.fossil` is a
-program over them: paste it into the studio to map SF0.1 into `output/`.
+At boot the instance declares, over that bucket, the **LDBC SNB** and **OpenFlights**
+source connections (`ldbc/`, `geo/`), the **Dev shapes** vocabulary connection (`vocab/`,
+holding `snb.shex` and `geo.shex`) and the sink (`output/`). Access is proved before each
+connection row is written, and an existing sink is never overwritten. Two programs run over
+them; paste one into the studio to map its graph into `output/`:
+
+| Program | Graph |
+|---------|-------|
+| `infra/dev/snb.fossil` | LDBC SNB SF0.1 onto `snb.shex` |
+| `infra/dev/geo.fossil` | OpenFlights onto `geo.shex`: 3,218 `Airport` vertices with `lat`/`lon`, 36,906 `routeTo` edges |
 
 `s3.localhost` is load-bearing: Docker's DNS answers it inside the compose network
 and `*.localhost` is loopback on the host, so the endpoint a vended credential names

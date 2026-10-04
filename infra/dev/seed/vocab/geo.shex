@@ -1,0 +1,30 @@
+# OpenFlights airports and the direct routes between them, as shapes: the
+# input vocabulary of geo.fossil, over the subset `make seed` derives
+# (infra/dev/seed/geo/; ODbL, see its NOTICE).
+#
+# Standard terms where one exists: schema.org's Airport with its name and its
+# IATA and ICAO codes, and the W3C WGS 84 Basic Geo vocabulary for position —
+# decimal degrees, the two terms every geodata RDF uses. geo:long's short name
+# is `long`; geo.fossil renames it `lon` (`@rename`) in the program, not here,
+# because the vocabulary is not ours. The rest has no standard term and is the
+# dataset's own, under `of:` — a `.example` namespace (RFC 2606), as OpenFlights
+# publishes none. `altitude` is in feet, as OpenFlights has it, which is why it
+# is not geo:alt (metres).
+
+PREFIX schema: <https://schema.org/>
+PREFIX geo:    <http://www.w3.org/2003/01/geo/wgs84_pos#>
+PREFIX of:     <https://openflights.example/vocab#>
+PREFIX xsd:    <http://www.w3.org/2001/XMLSchema#>
+
+schema:Airport {
+  schema:name     xsd:string ;
+  schema:iataCode xsd:string ? ;
+  schema:icaoCode xsd:string ;
+  geo:lat         xsd:double ;
+  geo:long        xsd:double ;
+  of:altitude     xsd:integer ;
+  of:city         xsd:string ;
+  of:country      xsd:string ;
+  of:timezone     xsd:string ? ;
+  of:routeTo      @schema:Airport *
+}

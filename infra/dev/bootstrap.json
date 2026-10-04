@@ -18,6 +18,11 @@
       "target": { "url": "s3://keasy-dev/ldbc/", "kind": "data", "direction": "source" }
     },
     {
+      "name": "OpenFlights",
+      "secret": "Dev S3",
+      "target": { "url": "s3://keasy-dev/geo/", "kind": "data", "direction": "source" }
+    },
+    {
       "name": "Dev shapes",
       "secret": "Dev S3",
       "target": { "url": "s3://keasy-dev/vocab/", "kind": "vocab", "direction": "source" }

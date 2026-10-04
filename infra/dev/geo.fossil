@@ -1,0 +1,41 @@
+// OpenFlights airports and the direct routes between them (`make seed`: the
+// 3,218 airports some direct route touches and the 36,906 directed routes
+// between them; ODbL, infra/dev/seed/geo/NOTICE), mapped onto geo.shex.
+//
+// A dev graph with a position on every vertex: `lon` and `lat` are WGS 84
+// decimal degrees, numeric, for Discover's Map placement (x = lon, y = lat).
+// `country` is a column to cluster or colour by.
+
+@rename(Airport, "http://www.w3.org/2003/01/geo/wgs84_pos#long" as lon)
+type { Airport } := io.shex("@Dev shapes/geo.shex")
+
+AirportRow := io.csv("@OpenFlights/airports.csv")
+RouteRow   := io.csv("@OpenFlights/routes.csv")
+
+Airports : Airport from AirportRow
+    @subject = "https://openflights.example/airport/{AirportRow.id}"
+    name     = AirportRow.name
+    iataCode = AirportRow.iata
+    icaoCode = AirportRow.icao
+    lat      = AirportRow.lat
+    lon      = AirportRow.lon
+    altitude = AirportRow.altitude
+    city     = AirportRow.city
+    country  = AirportRow.country
+    timezone = AirportRow.timezone
+
+// A route is one more mapping of the airport it leaves from, joined to
+// routes.csv, so it writes what the type requires again; an airport with no
+// route out is in the graph because `Airports` is.
+Routes : Airport from AirportRow.join(RouteRow, on = AirportRow.id == RouteRow.src)
+    @subject = "https://openflights.example/airport/{AirportRow.id}"
+    name     = AirportRow.name
+    iataCode = AirportRow.iata
+    icaoCode = AirportRow.icao
+    lat      = AirportRow.lat
+    lon      = AirportRow.lon
+    altitude = AirportRow.altitude
+    city     = AirportRow.city
+    country  = AirportRow.country
+    timezone = AirportRow.timezone
+    routeTo  = Airport(RouteRow.dst)

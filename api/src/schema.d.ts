@@ -212,6 +212,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/graphs/{id}/rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_rules"];
+        /** The rules are the graph's: who may change the graph may save them. */
+        put: operations["put_rules"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/graphs/{id}/run": {
         parameters: {
             query?: never;
@@ -672,6 +689,13 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        PutRulesRequest: {
+            /**
+             * @description The shapes graph, `text/turtle`, stored as sent. keasy does not parse
+             *     it: rudof does, where the rules run.
+             */
+            shapes: string;
+        };
         /** @description A credential's, a connection's or a graph's name: no leading or trailing whitespace, and no `/`, `@`, `\` or control character. */
         ResourceName: string;
         /**
@@ -679,6 +703,15 @@ export interface components {
          * @enum {string}
          */
         Role: "reader" | "editor" | "admin";
+        /**
+         * @description A graph's rules: one SHACL shapes graph, the Turtle document the web's
+         *     rules editor writes. keasy stores it and hands it back, and never parses
+         *     it: rudof reads it where the rules run, in the browser.
+         */
+        Rules: components["schemas"]["Provenance"] & {
+            /** @description The shapes graph, `text/turtle`. */
+            shapes: string;
+        };
         /**
          * @description What a report is answered with: whether the run is asked to stop. A runner
          *     told so aborts and reports `cancelled`.
@@ -1604,6 +1637,83 @@ export interface operations {
                 };
             };
             /** @description The spec is larger than a dashboard may be */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    get_rules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Graph ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The graph's rules, or null when none are saved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": null | components["schemas"]["Rules"];
+                };
+            };
+            /** @description Graph not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    put_rules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Graph ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PutRulesRequest"];
+            };
+        };
+        responses: {
+            /** @description Rules saved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Rules"];
+                };
+            };
+            /** @description Graph not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description The shapes graph is larger than a graph's rules may be */
             413: {
                 headers: {
                     [name: string]: unknown;

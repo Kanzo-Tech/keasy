@@ -1,5 +1,6 @@
 pub mod dashboards;
 pub mod persistence;
+pub mod rules;
 
 use axum::http::StatusCode;
 use rusqlite::Connection;

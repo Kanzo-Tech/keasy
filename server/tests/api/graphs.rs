@@ -305,6 +305,78 @@ async fn a_graph_keeps_one_dashboard() {
     );
 }
 
+/// A graph's rules: none until saved, a Turtle string no larger than the cap,
+/// stored as sent, and its owner's alone.
+#[tokio::test]
+async fn a_graph_keeps_one_shapes_graph_of_rules() {
+    let app = spawn_app().await;
+    let mine = app.token_for("u-1", EDITOR);
+    let theirs = app.token_for("u-2", EDITOR);
+    app.credential("key", DEAD, "u-1").await;
+    app.connection("sink", "key", Direction::Sink, "u-1").await;
+    let (_, graph) = app
+        .send(
+            Method::POST,
+            "/v1/graphs",
+            &mine,
+            json!({ "script": "x", "sink_connection": "sink" }),
+        )
+        .await;
+    let path = format!("/v1/graphs/{}/rules", graph["id"].as_str().unwrap());
+
+    let (status, body) = app.send(Method::GET, &path, &mine, json!(null)).await;
+    assert_eq!((status, body), (StatusCode::OK, json!(null)));
+    let (status, _) = app
+        .send(
+            Method::GET,
+            "/v1/graphs/no-such-graph/rules",
+            &mine,
+            json!(null),
+        )
+        .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+
+    for body in [
+        json!({ "shapes": { "a": 1 } }),
+        json!({ "shapes": null }),
+        json!({}),
+    ] {
+        let (status, _) = app.send(Method::PUT, &path, &mine, body.clone()).await;
+        assert!(status.is_client_error(), "{body}: {status}");
+        assert_ne!(status, StatusCode::FORBIDDEN, "{body}");
+    }
+    let huge = "#".repeat(keasy_server::routes::graphs::rules::MAX_SHAPES_BYTES + 1);
+    let (status, _) = app
+        .send(Method::PUT, &path, &mine, json!({ "shapes": huge }))
+        .await;
+    assert_eq!(status, StatusCode::PAYLOAD_TOO_LARGE);
+
+    let shapes = "@prefix sh: <http://www.w3.org/ns/shacl#> .\n\n\
+                  <#Person> a sh:NodeShape ;\n  sh:property [ sh:path <#age> ; sh:minCount 1 ] .\n";
+    let (status, saved) = app
+        .send(Method::PUT, &path, &mine, json!({ "shapes": shapes }))
+        .await;
+    assert_eq!(status, StatusCode::OK, "{saved}");
+    assert_eq!(saved["created_by"]["id"], "u-1");
+    let (_, read) = app.send(Method::GET, &path, &mine, json!(null)).await;
+    assert_eq!(read["shapes"], shapes, "stored as sent");
+
+    let (status, read) = app.send(Method::GET, &path, &theirs, json!(null)).await;
+    assert_eq!(
+        (status, read["shapes"].as_str()),
+        (StatusCode::OK, Some(shapes)),
+        "everyone reads them"
+    );
+    let (status, body) = app
+        .send(Method::PUT, &path, &theirs, json!({ "shapes": "" }))
+        .await;
+    assert_eq!(
+        (status, body["code"].as_str()),
+        (StatusCode::FORBIDDEN, Some("rbac/forbidden")),
+        "only who may change the graph saves its rules"
+    );
+}
+
 /// A graph's name is spelled as a connection's: a misspelled one is refused on
 /// the field that holds it, on create and on edit.
 #[tokio::test]

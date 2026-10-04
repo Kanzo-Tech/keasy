@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "@kanzo-tech/ui/tailwind.css";
 @import "@kanzo-tech/ai/tailwind.css";
+@import "@kanzo-tech/metadata-form/tailwind.css";
 
 @layer base {
   /* Keasy reads as an IDE: code is a size below the surrounding prose. */

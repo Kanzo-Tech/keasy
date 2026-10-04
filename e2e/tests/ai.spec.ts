@@ -73,14 +73,16 @@ test("15 a structured answer that does not parse fails the assistant's step, not
   await expectProblem(page, "llm/failed", { within: 20_000 });
 });
 
-test("16 SQL the engine refuses reaches the tool's frame as query/failed with the engine's words", async ({ page, corpusGraph }) => {
-  let calls = 0;
+test("16 SQL the engine refuses reaches the answer card, and the model reads the engine's words", async ({ page, corpusGraph }) => {
   // What the model is handed back after the refusal: the engine's own words.
   let readBack = "";
   await page.route(AI, (route) => {
-    calls++;
-    if (calls > 1) {
-      readBack = route.request().postData() ?? "";
+    const body = route.request().postData() ?? "";
+    // The suggested questions are a call of their own, with no tools: the panel offers none here.
+    if (!body.includes('"tools"')) return stream(route, sse(text("[]"), text("", "stop")));
+    // The agent's second step carries the tool's result back.
+    if (body.includes('"role":"tool"')) {
+      readBack = body;
       return stream(route, sse(text("The query did not run."), text("", "stop")));
     }
     const call = {
@@ -106,7 +108,7 @@ test("16 SQL the engine refuses reaches the tool's frame as query/failed with th
   });
   await openPanel(page, corpusGraph, "Ask");
   await ask(page, "How many people are there?");
-  // DuckDB's refusal, uncoded, is the tool's: its code is keasy's, its words the engine's.
-  await expectProblem(page, "query/failed", { within: 20_000 });
+  // The statement gate's refusal is the tool's answer, drawn in its card; the model reads DuckDB's words.
+  await expect(page.locator('[data-slot="query-result"]').getByRole("alert")).toBeVisible({ timeout: 20_000 });
   await expect.poll(() => readBack).toMatch(/syntax error/i);
 });

@@ -1,26 +1,24 @@
 "use client";
 
-import { createContext, use, type ReactNode } from "react";
+import { createContext, use, useMemo, type ReactNode } from "react";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
-import { TableRefNode, column, eq, isNotNull, literal } from "@uwdata/mosaic-sql";
-import { open, type Close } from "@fossil-lang/corpus";
+import { TableRefNode, column, eq, literal } from "@uwdata/mosaic-sql";
+import { mapping, open, type Close } from "@fossil-lang/corpus";
+import { mount } from "@fossil-lang/storage";
+import { readJoinGraph } from "@kanzo-tech/graph";
 import {
   MosaicProvider,
   Query,
   engine,
-  queryFieldStats,
   useMosaic,
   useQueryRows,
   type Coordinator,
-  type FieldStats,
+  type JoinGraph,
 } from "@kanzo-tech/ui/analytics";
 import { queryClient } from "@/lib/api/query-client";
 import { settled } from "@/lib/api/settled";
 import { toastError } from "@/lib/errors";
 import { host } from "@/lib/fossil/host";
-
-/** A vertex table's `SUMMARIZE`: its fields a chart or a suggestion may name, and every column a rule may check. */
-export type TableStats = FieldStats & { name: string };
 
 /** Everything read off a corpus is read once, and dropped with the page. */
 export const ONCE = { staleTime: Infinity, gcTime: 0, retry: false } as const;
@@ -89,18 +87,11 @@ export function useCorpus(): Corpus {
   return corpus;
 }
 
-/** The vertex tables, in the manifest's order. */
-export const vertexTables = (graphId: string) =>
-  Query.from(new TableRefNode([graphId, "fossil_tables"]))
-    .select("table_name")
-    .where(eq(column("kind"), literal("vertex")))
-    .orderby("first_id");
-
-/** Each table's columns the writer gave `role` — or any role: fossil's bookkeeping, not the program's. */
-export const roleColumns = (graphId: string, role?: "address" | "identity" | "endpoint") =>
+/** Each table's columns the writer gave `role`: fossil's bookkeeping, not the program's. */
+const roleColumns = (graphId: string, role: "address" | "identity") =>
   Query.from(new TableRefNode([graphId, "fossil_columns"]))
     .select("table_name", "column_name")
-    .where(role ? eq(column("role"), literal(role)) : isNotNull(column("role")));
+    .where(eq(column("role"), literal(role)));
 
 /** The column the graph keys a vertex by — the `address` column, the same in every vertex table of one corpus. */
 export function useGraphKey(): string {
@@ -110,28 +101,89 @@ export function useGraphKey(): string {
 }
 
 /**
- * Every vertex table's column statistics, one `SUMMARIZE` each — kanzo-ui's own statement on the
- * page's coordinator, so the dashboard asking the same of a table is answered from its cache. The
- * columns fossil gave a `role` are its bookkeeping, not fields. Suspends until they land; a failure
- * throws to the boundary.
+ * Every vertex of the corpus as one relation — its key, its `subject` (the `identity` column, the
+ * IRI the corpus's RDF mapping makes of it) and its `type` — one `SELECT` per vertex table, unioned.
+ * It is what a selection on the graph filters whatever the type, so it is the relation a panel scopes
+ * by: the Ask agent's `scope`, and the rules' focus nodes read back as vertices.
  */
-export function useFieldStats(): TableStats[] {
+export function useVertices(): Query {
+  const { graphId } = useCorpus();
+  const key = useGraphKey();
+  const subjects = useQueryRows<{ table_name: string; column_name: string }>(roleColumns(graphId, "identity"));
+  return useMemo(
+    () =>
+      Query.unionAll(
+        ...subjects.map(({ table_name, column_name }) =>
+          Query.from(new TableRefNode([graphId, table_name])).select({
+            [key]: column(key),
+            subject: column(column_name),
+            type: literal(table_name),
+          }),
+        ),
+      ),
+    [graphId, key, subjects],
+  );
+}
+
+/**
+ * The IRIs the corpus's RDF reading is written in, as its manifest declares them: the classes of its
+ * vertex types, and the predicates of its columns and relations — what a rule may target and check.
+ */
+export function useVocabulary(): { classes: string[]; properties: string[] } {
+  const { graphId } = useCorpus();
+  const tables = new TableRefNode([graphId, "fossil_tables"]);
+  const columns = new TableRefNode([graphId, "fossil_columns"]);
+  const rows = useQueryRows<{ term: "class" | "property"; iri: string }>(
+    `SELECT DISTINCT CASE kind WHEN 'vertex' THEN 'class' ELSE 'property' END AS term, iri FROM ${tables} WHERE iri IS NOT NULL
+     UNION SELECT 'property' AS term, iri FROM ${columns} WHERE iri IS NOT NULL AND role IS NULL
+     ORDER BY iri`,
+  );
+  return useMemo(
+    () => ({
+      classes: rows.filter((r) => r.term === "class").map((r) => r.iri),
+      properties: rows.filter((r) => r.term === "property").map((r) => r.iri),
+    }),
+    [rows],
+  );
+}
+
+/** The corpus's join graph — its types and the edges between them — read once from its catalog. */
+export function useJoinGraph(): JoinGraph {
   const { graphId } = useCorpus();
   const { coordinator } = useMosaic();
-  const tables = useQueryRows<{ table_name: string }>(vertexTables(graphId));
-  const kept = useQueryRows<{ table_name: string; column_name: string }>(roleColumns(graphId));
-  const stats = useSuspenseQuery({
-    queryKey: [...corpusKey(graphId), "stats"],
-    queryFn: () =>
-      Promise.all(
-        tables.map(async ({ table_name: name }) => ({
-          name,
-          ...(await queryFieldStats(coordinator, new TableRefNode([graphId, name]), {
-            exclude: kept.filter((c) => c.table_name === name).map((c) => c.column_name),
-          })),
-        })),
-      ),
-    ...ONCE,
-  });
-  return settled(stats);
+  return settled(
+    useSuspenseQuery({
+      queryKey: [...corpusKey(graphId), "join-graph"],
+      queryFn: () => readJoinGraph(coordinator, graphId),
+      ...ONCE,
+    }),
+  );
 }
+
+/**
+ * The corpus's RDF meaning, as fossil's RML mapping of its `fossil.json`. The manifest is read under
+ * the same read credential `open` mounted, through the page's engine.
+ */
+export function useCorpusMapping(): string {
+  const { graphId } = useCorpus();
+  return settled(
+    useSuspenseQuery({
+      queryKey: [...corpusKey(graphId), "mapping"],
+      queryFn: async ({ signal }) => {
+        const attachedTo = await engine({ signal });
+        const mounted = await mount(attachedTo, host, { job: graphId }, "read", { signal });
+        try {
+          const [manifest] = await mounted.files(mounted.prefixes.map((prefix) => `${prefix}${MANIFEST}`));
+          const text = await attachedTo.query(`SELECT content FROM read_text(${literal(manifest)})`, { signal });
+          return mapping(String(text.getChild("content")?.get(0)));
+        } finally {
+          await mounted.close();
+        }
+      },
+      ...ONCE,
+    }),
+  );
+}
+
+/** The file a corpus is described by. */
+const MANIFEST = "fossil.json";

@@ -12,7 +12,7 @@ import { lower, WORDS } from "@/lib/vocabulary";
  * Failures the browser names itself, in the same `area/kind` grammar as fossil's and the server's: a
  * query the engine refused, a model call that failed uncoded, and anything uncoded.
  */
-export type ClientCode = "query/failed" | "llm/failed" | "web/unknown";
+export type ClientCode = "query/failed" | "llm/failed" | "rules/refused" | "web/unknown";
 
 /** A failure the browser raises itself, coded so it reaches the screen by the same path as the others. */
 export class ClientError extends Error {
@@ -77,6 +77,10 @@ const registry: Partial<Record<ErrorCode | NoBodyCode | ClientCode | Code | Kanz
   "llm/failed": { title: "The model call failed. Please try again." },
   "query/failed": {
     title: "Query execution failed. The AI may have generated invalid SQL. Try rephrasing your question.",
+  },
+  "rules/refused": {
+    title: "The rules could not be read",
+    detail: "rudof refused the rules document. Edit or switch off the rule it names.",
   },
   "graph/no-webgl": {
     title: "This browser cannot draw the graph",

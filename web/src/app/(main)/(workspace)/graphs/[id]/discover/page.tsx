@@ -22,7 +22,7 @@ import {
   useGraphPrefs,
   useGraphState,
 } from "@kanzo-tech/graph";
-import { useCrossfilter, useMosaic } from "@kanzo-tech/ui/analytics";
+import { FilterChips, useCrossfilter, useMosaic } from "@kanzo-tech/ui/analytics";
 import {
   Button,
   Resizable,
@@ -33,6 +33,7 @@ import {
   ShellFooter,
   ShellMain,
   Show,
+  SidebarIntent,
   Skeleton,
   Spinner,
   ToggleGroup,
@@ -42,8 +43,7 @@ import { HeaderEnd } from "@/app/(main)/_parts/header-end";
 import { AskPanel } from "./_parts/ask-panel";
 import { CorpusProvider, corpusQuery, useCorpus } from "@/lib/fossil/corpus";
 import { GraphInfo } from "./_parts/graph-info";
-import { GraphSettings } from "./_parts/graph-settings";
-import { channelsOf, PlacementContext, type Placement } from "./_parts/graph-placement";
+import { GraphSettings, PlacementContext, type Placement } from "./_parts/graph-settings";
 import { RulesPanel } from "./_parts/rules-panel";
 import { Boundary } from "@/components/boundary";
 import { ProblemView } from "@/components/problem-view";
@@ -92,16 +92,21 @@ export default function DiscoverPage({ params }: { params: Promise<{ id: string 
   // Opening the corpus is the one door: a missing graph (404), one that has not completed (409) and an
   // unreadable output all fail it, and the boundary shows that failure in place of the workspace.
   return (
-    <Boundary
-      fallback={
-        <ShellMain className="items-center justify-center">
-          <Spinner className="text-muted-foreground" />
-        </ShellMain>
-      }
-      frame={(failure) => <ShellMain className="p-4">{failure}</ShellMain>}
-    >
-      <Opened id={id} />
-    </Boundary>
+    <>
+      {/* Discovery is judged at full width: the sidebar collapses while it is shown, and the
+          person's own preference returns when they leave. */}
+      <SidebarIntent collapsed />
+      <Boundary
+        fallback={
+          <ShellMain className="items-center justify-center">
+            <Spinner className="text-muted-foreground" />
+          </ShellMain>
+        }
+        frame={(failure) => <ShellMain className="p-4">{failure}</ShellMain>}
+      >
+        <Opened id={id} />
+      </Boundary>
+    </>
   );
 }
 
@@ -185,7 +190,7 @@ function Workspace() {
         setFailure(error);
         toastError(error, "The graph could not do that");
       }}
-      {...channelsOf(placement[0])}
+      {...placement[0]}
     >
       <HeaderEnd>
         {/* Switching to the dashboard closes the dock: a dashboard is judged at full width. Reopen it
@@ -232,9 +237,11 @@ function Workspace() {
                 className="size-full min-h-0 border-s-0 bg-card"
                 side="end"
               >
-                <div className="flex h-9 shrink-0 items-center gap-2 border-b border-border px-3">
-                  <span className="font-medium text-sm">{activeLabel}</span>
-                  <div className="ms-auto flex items-center gap-1">
+                <div className="flex min-h-9 shrink-0 items-center gap-2 border-b border-border px-3 py-1">
+                  <span className="shrink-0 font-medium text-sm">{activeLabel}</span>
+                  {/* The page's scope: what every panel, tile and the canvas are filtered by. */}
+                  <FilterChips className="min-w-0 flex-1" />
+                  <div className="ms-auto flex shrink-0 items-center gap-1">
                     <Button
                       aria-label="Close panel"
                       className="-me-1"

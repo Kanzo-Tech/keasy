@@ -89,6 +89,10 @@ describe("the failure guards", () => {
       "web/src/app/(main)/(chrome)/(editor)/graphs/new/_parts/use-folder-availability.ts",
       // A crumb's label: the route's own name stands until the graph's arrives, and the graph's page shows its failure.
       "web/src/app/(main)/_parts/trail.tsx",
+      // Suggested questions: a failure leaves no pills, and the chat works the same (`@kanzo-tech/ai/data`).
+      "web/src/app/(main)/(workspace)/graphs/[id]/discover/_parts/ask-panel.tsx",
+      // Follows every edit of the rules; a refused shape is shown beside the editor that can fix it.
+      "web/src/app/(main)/(workspace)/graphs/[id]/discover/_parts/rules-validation.ts",
     ]);
     expect(offenders(/\b(useQuery|useQueries)\(/, (_, __, path) => EXCEPTIONS.has(path))).toEqual([]);
   });

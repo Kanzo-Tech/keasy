@@ -1,32 +1,34 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { ScrollArea, Skeleton, ToggleGroup, ToggleGroupItem } from "@kanzo-tech/ui";
-import { Dashboard, type DashboardSpec, useQueryRows } from "@kanzo-tech/ui/analytics";
+import { useMemo, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { ScrollArea, Skeleton, useDebouncedCommit } from "@kanzo-tech/ui";
+import {
+  Dashboard,
+  type Dashboards,
+  migrateDashboards,
+  type Relation,
+  RelationPicker,
+  relationIdentities,
+  relationKey,
+  relationQuery,
+  semiJoinOf,
+} from "@kanzo-tech/ui/analytics";
 import { SavedBy } from "@/components/provenance";
-import { TableRefNode } from "@uwdata/mosaic-sql";
 import { $api, http } from "@/lib/api/client";
+import { queryClient } from "@/lib/api/query-client";
 import { settled } from "@/lib/api/settled";
 import { toastError } from "@/lib/errors";
 import { Boundary } from "@/components/boundary";
-import { roleColumns, useCorpus, vertexTables } from "@/lib/fossil/corpus";
+import { useCorpus, useJoinGraph } from "@/lib/fossil/corpus";
 
 /**
- * The Dashboard view: kanzo-ui's `Dashboard` over one vertex type at a time, on the crossfilter the
- * graph reads, so a lasso on the canvas filters it and a pick here dims the canvas. One type at a
- * time because a crossfilter predicate names columns, and another type's table lacks them.
- *
- * The graph keeps one saved document, a spec per type; a type nobody has edited draws the automatic one.
+ * The Dashboard view: kanzo-ui's `Dashboard` over a relation of the graph — a type, or a type and the
+ * hops a `RelationPicker` takes from it — on the crossfilter the graph reads. A lasso on the canvas
+ * filters it, and its tiles publish to the page as one semi-join on the root's key, so a brush here
+ * greys out the canvas. The graph keeps one saved document, a spec per relation; a relation nobody
+ * has edited draws the automatic one.
  */
-
-/** What `PUT /v1/graphs/{id}/dashboard` stores for this view. */
-type SavedDashboards = {
-  version: 1;
-  byType: Record<string, DashboardSpec>;
-};
-
-const SAVE_MS = 800;
-
 export default function DashboardView() {
   // The saved document is read once; a failed read is shown in place of the dashboard, not
   // replaced by the automatic one an edit would then overwrite.
@@ -37,72 +39,55 @@ export default function DashboardView() {
   );
 }
 
+/** Saved after a pause, not per edit: dragging a slider is many edits and one decision. */
+const SAVE_MS = 800;
+
 function SavedDashboard() {
   const { graphId } = useCorpus();
-  const types = useQueryRows<{ table_name: string }>(vertexTables(graphId)).map((t) => t.table_name);
-  const kept = useQueryRows<{ table_name: string; column_name: string }>(roleColumns(graphId));
-  const [type, setType] = useState(types[0] ?? "");
+  const graph = useJoinGraph();
+  const [relation, setRelation] = useState<Relation>(() => ({ root: graph.types[0]?.name ?? "", path: [] }));
 
-  const saved = settled($api.useSuspenseQuery("get", "/v1/graphs/{id}/dashboard", { params: { path: { id: graphId } } }));
+  const init = { params: { path: { id: graphId } } };
+  const read = $api.queryOptions("get", "/v1/graphs/{id}/dashboard", init);
+  const saved = settled($api.useSuspenseQuery("get", "/v1/graphs/{id}/dashboard", init));
   // Everyone reads the dashboard; only whoever may change the graph edits and saves it.
-  const { can_modify } = settled($api.useSuspenseQuery("get", "/v1/graphs/{id}", { params: { path: { id: graphId } } }));
-  // What the server holds, with this session's edits over it.
-  const [edited, setEdited] = useState<Record<string, DashboardSpec>>({});
-  const byType = useMemo(() => {
-    const stored = (saved?.spec as SavedDashboards | undefined)?.byType ?? {};
-    return { ...stored, ...edited };
-  }, [saved, edited]);
+  const { can_modify } = settled($api.useSuspenseQuery("get", "/v1/graphs/{id}", init));
 
-  // Saved after a pause, not per edit: dragging a slider is many edits and one decision.
-  const pending = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const change = (spec: DashboardSpec) => {
-    const next = { ...byType, [type]: spec };
-    setEdited((prev) => ({ ...prev, [type]: spec }));
-    if (pending.current) clearTimeout(pending.current);
-    pending.current = setTimeout(() => {
-      const body: SavedDashboards = { version: 1, byType: next };
-      void http
-        .PUT("/v1/graphs/{id}/dashboard", { params: { path: { id: graphId } }, body: { spec: body } })
-        .catch((err: unknown) => toastError(err, "Failed to save the dashboard"));
-    }, SAVE_MS);
-  };
-  useEffect(() => () => void (pending.current && clearTimeout(pending.current)), []);
+  // Whatever the server held, as the current document: a document per type reads as one per relation.
+  const stored = useMemo(() => migrateDashboards(saved?.spec), [saved]);
+  const save = useMutation({
+    mutationFn: async (spec: Dashboards) => (await http.PUT("/v1/graphs/{id}/dashboard", { ...init, body: { spec: { ...spec } } })).data,
+    onSuccess: (written) => queryClient.setQueryData(read.queryKey, written),
+    onError: (err) => toastError(err, "Failed to save the dashboard"),
+  });
+  const { draft, change } = useDebouncedCommit(stored, (spec) => save.mutate(spec), SAVE_MS);
+  // What is on screen: the edit being typed, else — while it is being written — what was written,
+  // else what the server holds.
+  const current = draft !== stored ? draft : save.isPending ? save.variables : draft;
 
-  // fossil's bookkeeping is not a field to chart.
-  const exclude = useMemo(() => kept.filter((c) => c.table_name === type).map((c) => c.column_name), [kept, type]);
-
-  if (!types.includes(type)) return <Skeleton className="h-full w-full" />;
+  const key = relationKey(graph, relation);
+  const table = useMemo(() => relationQuery(graph, relation), [graph, relation]);
+  const identities = useMemo(() => relationIdentities(graph, relation), [graph, relation]);
+  const publish = useMemo(() => semiJoinOf(identities[0].column, table, { label: key }), [identities, table, key]);
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex h-10 shrink-0 items-center gap-2 border-b px-3">
-        <span className="text-muted-foreground text-xs">Type</span>
-        <ToggleGroup
-          aria-label="Vertex type"
-          className="min-w-0 overflow-x-auto"
-          multiple={false}
-          onValueChange={(d) => d.value[0] && setType(d.value[0])}
-          size="sm"
-          spacing={2}
-          value={[type]}
-        >
-          {types.map((t) => (
-            <ToggleGroupItem key={t} value={t}>
-              {t}
-            </ToggleGroupItem>
-          ))}
-        </ToggleGroup>
+      <div className="flex min-h-10 shrink-0 items-center gap-2 border-b px-3 py-1">
+        <RelationPicker className="min-w-0" graph={graph} onValueChange={setRelation} value={relation} />
         {saved && <SavedBy className="ms-auto shrink-0" of={saved} />}
       </div>
       <ScrollArea className="min-h-0 flex-1">
         <Dashboard
           className="p-4"
-          exclude={exclude}
-          key={type}
-          onChange={can_modify ? change : undefined}
-          rowNoun={type}
-          table={new TableRefNode([graphId, type])}
-          value={byType[type]}
+          exclude={identities.map((i) => i.column)}
+          key={key}
+          onChange={
+            can_modify ? (spec) => change({ version: 2, byRelation: { ...current.byRelation, [key]: spec } }) : undefined
+          }
+          publish={publish}
+          rowNoun={relation.path.length ? "paths" : relation.root}
+          table={table}
+          value={current.byRelation[key]}
         />
       </ScrollArea>
     </div>

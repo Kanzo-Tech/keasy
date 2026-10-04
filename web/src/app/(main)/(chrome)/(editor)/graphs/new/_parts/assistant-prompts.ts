@@ -1,14 +1,12 @@
 import type { InferredDescriptor } from "@fossil-lang/introspect";
 import { FOSSIL_PROMPT } from "@fossil-lang/prompt";
 
+import { suggest, type SuggestedQuestion } from "@kanzo-tech/ai";
 import { jsonSchema, Output, streamText } from "@kanzo-tech/llm";
 import { gateway } from "@/lib/ai";
 
-export interface CompetencyQuestion {
-  id: string;
-  question: string;
-  rationale: string;
-}
+/** A suggested question, as the wizard's table keeps it. */
+export type CompetencyQuestion = SuggestedQuestion & { id: string };
 
 const SUGGEST_PROMPT = `You are an expert in knowledge graph ontology design and competency questions.
 
@@ -44,27 +42,17 @@ export function describeFiles(sources: readonly InferredDescriptor[]): string {
     .join("");
 }
 
-const QUESTION = jsonSchema<{ question: string; rationale: string }>({
-  type: "object",
-  properties: { question: { type: "string" }, rationale: { type: "string" } },
-  required: ["question", "rationale"],
-  additionalProperties: false,
-});
-
-/** Competency questions for the data, each arriving as soon as it is whole. */
+/**
+ * Competency questions for the data, each arriving as soon as it is whole — `@kanzo-tech/ai`'s
+ * `suggest()`, the one door to suggested questions, with the wizard's own instructions and material.
+ */
 export function suggestQuestions(domain: string, schemas: readonly InferredDescriptor[], signal: AbortSignal) {
-  return failing(
-    (onError) =>
-      streamText({
-        model: gateway("chat"),
-        maxRetries: 0,
-        system: SUGGEST_PROMPT,
-        prompt: `Domain: ${domain}\n\n${describeFiles(schemas)}`,
-        output: Output.array({ element: QUESTION }),
-        abortSignal: signal,
-        onError,
-      }).elementStream,
-  );
+  return suggest({
+    model: gateway("chat"),
+    instructions: SUGGEST_PROMPT,
+    prompt: `Domain: ${domain}\n\n${describeFiles(schemas)}`,
+    abortSignal: signal,
+  });
 }
 
 const PROGRAM = jsonSchema<{ program: string }>({

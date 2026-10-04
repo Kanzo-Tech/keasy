@@ -1,5 +1,6 @@
+import { cookies } from "next/headers";
 import { forbidden, redirect } from "next/navigation";
-import { SidebarProvider } from "@kanzo-tech/ui";
+import { parseSidebarCookie, SIDEBAR_COOKIE_NAME, SidebarProvider } from "@kanzo-tech/ui";
 import { AuthError } from "@kanzo-tech/auth";
 import { currentOrganization, getSession } from "@/lib/auth/server";
 import { holds } from "@/lib/auth/roles";
@@ -23,8 +24,11 @@ export default async function MainLayout({
   if (!session) redirect("/api/auth/signin");
   if (!holds(session, await currentOrganization(), "reader")) forbidden();
 
+  // The person's own choice, read back on the server so a reload starts where they left it.
+  const defaultOpen = parseSidebarCookie((await cookies()).get(SIDEBAR_COOKIE_NAME)?.value);
+
   return (
-    <SidebarProvider className="h-dvh min-h-0 overflow-hidden">
+    <SidebarProvider className="h-dvh min-h-0 overflow-hidden" defaultOpen={defaultOpen}>
       <Shell>{children}</Shell>
     </SidebarProvider>
   );

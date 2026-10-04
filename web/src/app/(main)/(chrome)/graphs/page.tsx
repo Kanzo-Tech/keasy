@@ -139,7 +139,16 @@ function Graphs() {
     ],
     [],
   );
-  const table = useDataTable({ columns, data: graphs });
+  // TanStack's page reset is queued as a microtask from inside render, so a reset that lands before
+  // this component first commits is a state update React refuses (the facet filter's row model is
+  // what reaches it), and every poll that changes a row sent the reader back to page one. The page
+  // resets where it should: when the reader filters.
+  const table = useDataTable({
+    columns,
+    data: graphs,
+    autoResetPageIndex: false,
+    onColumnFiltersChange: () => table.setPageIndex(0),
+  });
 
   return graphs.length === 0 ? (
     <EmptyRoot>

@@ -151,7 +151,8 @@ offered. Example: `infra/dev/branding.example.yml`; in prod, a tenant's `brandin
 Stored credentials are sealed with `KEASY_SECRET_KEY`: 32 random bytes in base64
 (`openssl rand -base64 32`). The server refuses to start without one, and refuses
 a database whose schema is not the one it ships — there are no migrations; wipe
-the volume (`make clean`) instead.
+the volume (`make clean`) instead. The latest such change is the `rules` table (a
+graph's SHACL rules): a stack started before it needs `docker compose down -v`.
 
 ## Deployment
 

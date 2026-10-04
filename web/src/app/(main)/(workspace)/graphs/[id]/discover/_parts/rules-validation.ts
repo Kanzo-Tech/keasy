@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { column, literal, Query, sql, verbatim, type FilterExpr } from "@uwdata/mosaic-sql";
+import { column, literal, Query, sql, TableRefNode, verbatim, type FilterExpr } from "@uwdata/mosaic-sql";
 import { useChartQuery } from "@kanzo-tech/ui/analytics";
 import type { LangString, NodeShapeIR, ShapeModelJson, TermValue } from "@kanzo-tech/metadata-form/rudof";
 import type { Session } from "@kanzo-tech/rudof-wasm";
@@ -31,9 +31,18 @@ function rudof() {
 }
 
 /** `Session.compileSql`'s plan: the columns every check answers, and the checks in report order. */
-interface SqlPlan {
+export interface SqlPlan {
   columns: string[];
   checks: { sql: string }[];
+}
+
+/**
+ * `shapes`' plan over the corpus `mapping` describes, attached as `catalog`. rudof parses the schema
+ * as a SQL object name, and a graph's catalog is its UUID, which is one only when delimited: it is
+ * written as every other reference to the catalog on the page is, by mosaic-sql.
+ */
+export function compilePlan(session: Session, mapping: string, catalog: string): SqlPlan {
+  return session.compileSql(mapping, String(new TableRefNode(catalog)), "duckdb") as SqlPlan;
 }
 
 /** One `sh:ValidationResult`, as `Session.reportFromRows` words it. */
@@ -73,7 +82,7 @@ export function useCompiledRules(shapes: string) {
       const { Session } = await rudof();
       const session = new Session();
       const model = session.loadShapes(shapes, "text/turtle") as ShapeModelJson;
-      const plan = session.compileSql(mapping, graphId, "duckdb") as SqlPlan;
+      const plan = compilePlan(session, mapping, graphId);
       return { session, shapes: model.nodeShapes, plan };
     },
     placeholderData: keepPreviousData,

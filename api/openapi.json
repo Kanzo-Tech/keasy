@@ -991,6 +991,128 @@
         ]
       }
     },
+    "/v1/graphs/{id}/rules": {
+      "get": {
+        "tags": [
+          "Graphs"
+        ],
+        "operationId": "get_rules",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Graph ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The graph's rules, or null when none are saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Rules"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Graph not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": [
+              "reader"
+            ]
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Graphs"
+        ],
+        "summary": "The rules are the graph's: who may change the graph may save them.",
+        "operationId": "put_rules",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Graph ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PutRulesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Rules saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Rules"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Graph not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The shapes graph is larger than a graph's rules may be",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": [
+              "editor"
+            ]
+          }
+        ]
+      }
+    },
     "/v1/graphs/{id}/run": {
       "post": {
         "tags": [
@@ -2461,6 +2583,18 @@
           }
         }
       },
+      "PutRulesRequest": {
+        "type": "object",
+        "required": [
+          "shapes"
+        ],
+        "properties": {
+          "shapes": {
+            "type": "string",
+            "description": "The shapes graph, `text/turtle`, stored as sent. keasy does not parse\nit: rudof does, where the rules run."
+          }
+        }
+      },
       "ResourceName": {
         "type": "string",
         "description": "A credential's, a connection's or a graph's name: no leading or trailing whitespace, and no `/`, `@`, `\\` or control character.",
@@ -2476,6 +2610,27 @@
           "editor",
           "admin"
         ]
+      },
+      "Rules": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Provenance",
+            "description": "Who saved it first and when, and who saved it last."
+          },
+          {
+            "type": "object",
+            "required": [
+              "shapes"
+            ],
+            "properties": {
+              "shapes": {
+                "type": "string",
+                "description": "The shapes graph, `text/turtle`."
+              }
+            }
+          }
+        ],
+        "description": "A graph's rules: one SHACL shapes graph, the Turtle document the web's\nrules editor writes. keasy stores it and hands it back, and never parses\nit: rudof reads it where the rules run, in the browser."
       },
       "RunSignal": {
         "type": "object",

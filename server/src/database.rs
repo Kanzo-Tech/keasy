@@ -307,6 +307,19 @@ CREATE TABLE dashboards (
     updated_by_name TEXT,
     updated_at      TEXT
 );
+
+-- A graph's rules: one SHACL shapes graph, Turtle, opaque to keasy (rudof
+-- reads it in the browser), gone with the graph.
+CREATE TABLE rules (
+    graph_id        TEXT PRIMARY KEY REFERENCES graphs (id) ON DELETE CASCADE,
+    shapes          TEXT NOT NULL,
+    created_by      TEXT NOT NULL,
+    created_by_name TEXT NOT NULL,
+    created_at      TEXT NOT NULL,
+    updated_by      TEXT,
+    updated_by_name TEXT,
+    updated_at      TEXT
+);
 ";
 
 /// Every table and index a fresh database of `schema` holds.
@@ -367,12 +380,12 @@ mod tests {
         let tables: i64 = conn
             .query_row(
                 "SELECT count(*) FROM sqlite_master WHERE type='table' AND name IN \
-                 ('credentials','connections','graphs','dashboards')",
+                 ('credentials','connections','graphs','dashboards','rules')",
                 [],
                 |r| r.get(0),
             )
             .unwrap();
-        assert_eq!(tables, 4);
+        assert_eq!(tables, 5);
     }
 
     #[test]

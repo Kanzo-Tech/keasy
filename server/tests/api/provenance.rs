@@ -191,6 +191,47 @@ async fn a_dashboard_names_who_saved_it_first_and_last() {
     assert_eq!(read["updated_by"]["name"], "Bruno");
 }
 
+/// A graph's rules name who saved them first and who saved them last.
+#[tokio::test]
+async fn rules_name_who_saved_them_first_and_last() {
+    let app = spawn_app().await;
+    app.credential("key", DEAD, "u-1").await;
+    app.connection("sink", "key", Direction::Sink, "u-1").await;
+    let ana = app.token_profiled("u-ana", EDITOR, json!({ "name": "Ana Duarte" }));
+    let bruno = app.token_profiled("u-bruno", ADMIN, json!({ "name": "Bruno" }));
+    let (_, graph) = app
+        .send(
+            Method::POST,
+            "/v1/graphs",
+            &ana,
+            json!({ "script": "x", "sink_connection": "sink" }),
+        )
+        .await;
+    let path = format!("/v1/graphs/{}/rules", graph["id"].as_str().unwrap());
+
+    let (status, first) = app
+        .send(Method::PUT, &path, &ana, json!({ "shapes": "" }))
+        .await;
+    assert_eq!(status, StatusCode::OK, "{first}");
+    assert_eq!(
+        first["created_by"],
+        json!({ "id": "u-ana", "name": "Ana Duarte" })
+    );
+    assert!(first.get("updated_by").is_none(), "{first}");
+
+    let (status, second) = app
+        .send(Method::PUT, &path, &bruno, json!({ "shapes": "# admin" }))
+        .await;
+    assert_eq!(status, StatusCode::OK, "{second}");
+    assert_eq!(second["created_by"]["name"], "Ana Duarte");
+    assert_eq!(
+        second["updated_by"],
+        json!({ "id": "u-bruno", "name": "Bruno" })
+    );
+    let (_, read) = app.send(Method::GET, &path, &ana, json!(null)).await;
+    assert_eq!(read["updated_by"]["name"], "Bruno");
+}
+
 /// What an instance declares at boot is the bootstrap's: nobody who signs in.
 #[tokio::test]
 async fn a_declared_secret_is_the_bootstraps() {

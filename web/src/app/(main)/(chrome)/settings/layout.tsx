@@ -13,7 +13,7 @@ import {
   SidebarMenuItem,
 } from "@kanzo-tech/ui";
 import { Link } from "@kanzo-tech/navigation/next";
-import { useRole } from "@/lib/auth/use-role";
+import { useSession } from "@kanzo-tech/auth";
 
 const GENERAL = [
   { href: "/settings/preferences", label: "Preferences", icon: Paintbrush },
@@ -31,11 +31,11 @@ const WORKSPACE = [
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { holds } = useRole();
+  const { can } = useSession();
   const groups = [
     { heading: "General", items: GENERAL },
-    ...(holds("editor") ? [{ heading: "Data", items: DATA }] : []),
-    ...(holds("admin") ? [{ heading: "Workspace", items: WORKSPACE }] : []),
+    ...(can("editor") ? [{ heading: "Data", items: DATA }] : []),
+    ...(can("admin") ? [{ heading: "Workspace", items: WORKSPACE }] : []),
   ];
 
   return (

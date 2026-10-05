@@ -2,22 +2,16 @@ import "server-only";
 
 import { readFileSync } from "node:fs";
 
-import {
-  authProxy,
-  authRoutes,
-  authSession,
-  type AuthProxyHandlers,
-  type AuthRouteHandlers,
-} from "@kanzo-tech/auth/next";
-import type { Session } from "@kanzo-tech/auth";
-import { ticketStore, type RelyingPartyConfig, type TicketAdapter } from "@kanzo-tech/auth/server";
+import { can } from "@kanzo-tech/auth";
+import { kanzoAuth } from "@kanzo-tech/auth/next";
+import { ticketStore, type TicketAdapter } from "@kanzo-tech/auth/server";
 import { redirect } from "next/navigation";
 import { createClient } from "redis";
 
 import { getBranding } from "@/lib/branding";
 import { PROBLEM_PAGE } from "@/lib/routes";
 
-import { holds, type Role } from "./roles";
+import type { Role } from "./roles";
 
 /**
  * The relying party, in one place.
@@ -68,7 +62,7 @@ const STORE_CONNECT_MS = 5_000;
  * carries: with the access token in it a record no longer fits in a cookie, and
  * a ticket is what lets a sign-out end every copy of that cookie.
  *
- * The adapter is the three driver calls; `ticketStore` bounds each of them. The
+ * The adapter is the driver calls; `ticketStore` bounds each of them. The
  * client reconnects on its own after a drop, and while it is down a command fails
  * at once instead of queueing (no offline queue) — so a Valkey that is down makes
  * a page fail in seconds rather than hang.
@@ -92,52 +86,17 @@ function redisAdapter(url: string): TicketAdapter {
     write: async (key, value, ttl) => {
       await (await ready).set(key, value, { expiration: { type: "EX", value: ttl } });
     },
+    // `XX`: only a row that still exists, so a renewal never brings back a session a back-channel
+    // logout ended while the renewal was in flight.
+    replace: async (key, value, ttl) =>
+      (await (await ready).set(key, value, { expiration: { type: "EX", value: ttl }, condition: "XX" })) === "OK",
     delete: async (key) => {
       await (await ready).del(key);
     },
+    async *keys(prefix) {
+      for await (const batch of (await ready).scanIterator({ MATCH: `${prefix}*` })) yield* batch;
+    },
   };
-}
-
-interface Bff {
-  readonly routes: AuthRouteHandlers;
-  readonly read: () => Promise<Session | null>;
-  readonly proxy: AuthProxyHandlers;
-}
-
-let bound: Bff | undefined;
-
-function bff(): Bff {
-  if (bound !== undefined) return bound;
-
-  const config: Omit<RelyingPartyConfig, "redirectUri"> = {
-    issuer: issuer(),
-    clientId: required("KEASY_OIDC_CLIENT_ID"),
-    clientSecret: required("KEASY_OIDC_CLIENT_SECRET"),
-    secret: required("KEASY_SESSION_SECRET"),
-    store: ticketStore(redisAdapter(required("KEASY_SESSION_STORE_URL")), { ttl: MAX_AGE }),
-    maxAge: MAX_AGE,
-    // `organization:*` puts every membership, with the roles held in it, into the token.
-    scope: "openid profile email organization:*",
-    // Where *this process* reaches Keycloak, when that is not where the browser
-    // does. An origin: the issuer's own path is appended to it.
-    internalOrigin: process.env.KEASY_OIDC_INTERNAL_BASE_URL?.trim() || undefined,
-    allowInsecureHttp: issuer().startsWith("http://"),
-  };
-
-  bound = {
-    // `redirectUri` is derived from the incoming request — its origin, this
-    // route's path and `/callback` — which lets one image serve every host. A
-    // forged `Host` yields a `redirect_uri` Keycloak has not registered.
-    routes: authRoutes({ ...config, problemPage: PROBLEM_PAGE }),
-    read: authSession(config),
-    // The spec's paths already start with `/v1`, so the proxy strips `/api` only.
-    proxy: authProxy({
-      ...config,
-      target: required("KEASY_API_URL").replace(/\/$/, ""),
-      basePath: "/api",
-    }),
-  };
-  return bound;
 }
 
 /** The public issuer — the one the browser is sent to, and `accountUrl` links under. */
@@ -145,31 +104,33 @@ export function issuer(): string {
   return required("KEASY_OIDC_ISSUER_URL");
 }
 
-/** `/api/auth`: sign-in, callback, sign-out, session. */
-export function authHandlers(): AuthRouteHandlers {
-  return bff().routes;
-}
-
-/** The session a server component reads, memoised per request by the package. */
-export function getSession(): Promise<Session | null> {
-  return bff().read();
-}
-
-/** The Keycloak Organization this instance serves, by alias. */
-export async function currentOrganization(): Promise<string> {
-  return (await getBranding()).organization;
-}
+/**
+ * The relying party: proxy, routes, the API forward and the session, over one configuration that
+ * is read on the first request — the image is built without secrets.
+ *
+ * A keasy instance serves one Keycloak Organization, so the current tenant is the branding's. The
+ * session still carries every membership, which is what the workspace switcher lists.
+ */
+export const auth = kanzoAuth(async () => ({
+  issuer: issuer(),
+  clientId: required("KEASY_OIDC_CLIENT_ID"),
+  clientSecret: required("KEASY_OIDC_CLIENT_SECRET"),
+  secret: required("KEASY_SESSION_SECRET"),
+  store: ticketStore(redisAdapter(required("KEASY_SESSION_STORE_URL")), { ttl: MAX_AGE }),
+  maxAge: MAX_AGE,
+  // Where *this process* reaches Keycloak, when that is not where the browser does.
+  internalOrigin: process.env.KEASY_OIDC_INTERNAL_BASE_URL?.trim() || undefined,
+  allowInsecureHttp: issuer().startsWith("http://"),
+  organization: async () => (await getBranding()).organization,
+  problemPage: PROBLEM_PAGE,
+  // The spec's paths already start with `/v1`, so the forward strips `/api` only.
+  api: { mount: "/api", target: required("KEASY_API_URL") },
+}));
 
 /**
  * A layout's guard for one role. A session holding no role here never gets this far —
  * `(main)/layout.tsx` has already refused it — so what is left is a narrower role, sent `elsewhere`.
  */
 export async function requireRole(role: Role, elsewhere: string): Promise<void> {
-  const [session, organization] = await Promise.all([getSession(), currentOrganization()]);
-  if (!holds(session, organization, role)) redirect(elsewhere);
-}
-
-/** `/api/v1`: the browser's API call, forwarded to the resource server with the access token. */
-export function apiHandlers(): AuthProxyHandlers {
-  return bff().proxy;
+  if (!can(await auth.session({ required: true }), role)) redirect(elsewhere);
 }

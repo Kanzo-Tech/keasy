@@ -32,7 +32,7 @@ import { formatDate } from "@/lib/ui/format";
 import { lower, WORDS } from "@/lib/vocabulary";
 import { Boundary } from "@/components/boundary";
 import { settled } from "@/lib/api/settled";
-import { useRole } from "@/lib/auth/use-role";
+import { useSession } from "@kanzo-tech/auth";
 
 interface Tile {
   href: string;
@@ -86,7 +86,7 @@ const outputsTile = (n?: number): Tile => ({
 
 /** One dashboard for every role: each tile is drawn for the roles that can read its figure. */
 export function Dashboard() {
-  const { holds } = useRole();
+  const { can } = useSession();
   return (
     <>
       <SectionRoot className="gap-3" fill={false}>
@@ -96,12 +96,12 @@ export function Dashboard() {
           </SectionTitleGroup>
         </SectionHeader>
         <SectionBody className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {holds("admin") && (
+          {can("admin") && (
             <Boundary fallback={<TileView tile={storageTile()} />}>
               <StorageTile />
             </Boundary>
           )}
-          {holds("editor") && (
+          {can("editor") && (
             <Boundary fallback={<TileView tile={credentialsTile()} />}>
               <CredentialsTile />
             </Boundary>

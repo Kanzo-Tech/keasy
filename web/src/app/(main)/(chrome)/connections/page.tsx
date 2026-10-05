@@ -34,7 +34,7 @@ import {
   useDataTable,
 } from "@kanzo-tech/ui/table";
 import { Link, useRouter } from "@kanzo-tech/navigation/next";
-import { useRole } from "@/lib/auth/use-role";
+import { useSession } from "@kanzo-tech/auth";
 import { CreatedBy } from "@/components/provenance";
 import { ValidationBadge } from "@/components/validation-badge";
 import { $api, invalidate } from "@/lib/api/client";
@@ -86,7 +86,7 @@ export default function ConnectionsPage({
 function Connections({ tab }: { tab: Tab }) {
   const router = useRouter();
   const noun = { data: "data", vocab: "vocabulary" }[tab];
-  const editor = useRole().holds("editor");
+  const editor = useSession().can("editor");
   const all = settled($api.useSuspenseQuery("get", "/v1/connections"));
   // The sink is the admin's, on Workspace storage.
   const connections = useMemo(

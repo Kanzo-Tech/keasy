@@ -1,4 +1,4 @@
-import { type BrowserContext, expect, test as base, type Page } from "@playwright/test";
+import { expect, test as base, type Page } from "@playwright/test";
 
 import { createGraph } from "./api";
 import { signIn } from "./sign-in";
@@ -39,29 +39,10 @@ export async function ask(page: Page, question: string) {
   await box.press("Enter");
 }
 
-/** The BFF's session cookie, as `@kanzo-tech/auth` names it. */
-const SESSION = "__Host-kanzo-session";
-
-/**
- * A token refresh rotates the session's ticket and drops the old one, so a context that refreshed
- * leaves its state file naming a dead ticket, and the next context opened from it starts signed out.
- * Write the live session back, unless the context lost it on purpose (10 clears the cookies).
- */
-async function keepSession(context: BrowserContext, path: string) {
-  if ((await context.cookies()).some((cookie) => cookie.name === SESSION)) await context.storageState({ path });
-}
-
-export const test = base.extend<{ session: void }, { corpusGraph: string }>({
-  session: [
-    async ({ context, storageState }, use) => {
-      await use();
-      if (typeof storageState === "string") await keepSession(context, storageState);
-    },
-    { auto: true },
-  ],
+export const test = base.extend<object, { corpusGraph: string }>({
   corpusGraph: [
     async ({ browser }, use) => {
-      // A session of its own: a refresh here would rotate the ticket the test's context holds.
+      // Worker-scoped, so it signs in on a context of its own rather than a test's.
       const context = await browser.newContext({
         storageState: { cookies: [], origins: [] },
         baseURL: process.env.KEASY_URL ?? "http://localhost:3000",

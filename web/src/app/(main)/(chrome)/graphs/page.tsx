@@ -45,7 +45,7 @@ import { copyOf, toastError } from "@/lib/errors";
 import { lower, WORDS } from "@/lib/vocabulary";
 import { Boundary, Loading } from "@/components/boundary";
 import { settled } from "@/lib/api/settled";
-import { useRole } from "@/lib/auth/use-role";
+import { useSession } from "@kanzo-tech/auth";
 
 type Graph = Schemas["Graph"];
 type GraphStatus = Schemas["GraphStatus"];
@@ -72,7 +72,7 @@ export default function GraphsPage() {
 
 function Graphs() {
   const router = useRouter();
-  const editor = useRole().holds("editor");
+  const editor = useSession().can("editor");
   const [deleting, setDeleting] = useState<Graph | null>(null);
 
   const graphs = settled(

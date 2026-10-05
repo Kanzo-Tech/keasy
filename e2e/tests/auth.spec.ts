@@ -1,9 +1,9 @@
 import { expect, test } from "../support/fixtures";
 
 import { SOURCE } from "../support/api";
-import { stop, up } from "../support/compose";
+import { stop, tickets, up, valkey } from "../support/compose";
 import { expectProblem } from "../support/problem";
-import { enterPassword, enterUsername } from "../support/sign-in";
+import { enterPassword, enterUsername, signIn } from "../support/sign-in";
 
 test.describe("signed out", () => {
   test.use({ storageState: { cookies: [], origins: [] } });
@@ -46,4 +46,28 @@ test("10 a session that expired mid-way sends a mutation back to sign in", async
   await page.context().clearCookies();
   await page.getByRole("button", { name: "Test" }).click();
   await expect(page).toHaveURL(/localhost:8080/, { timeout: 15_000 });
+});
+
+test.describe("a session that ends while the page is away", () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+
+  /**
+   * The cookie outlives the session behind it — the realm's idle timeout, a sign-out elsewhere, a
+   * store that lost the row. The proxy finds no session behind the cookie and sends the navigation
+   * to sign in carrying the page it asked for; Keycloak's own session is still alive, so signing in
+   * needs no form and lands back on that page.
+   */
+  test("a deep link whose session is gone comes back to the same page after signing in", async ({ page }) => {
+    const before = tickets();
+    await signIn(page, "bruno");
+    const mine = [...tickets()].filter((ticket) => !before.has(ticket));
+    expect(mine, "one new ticket for this sign-in").toHaveLength(1);
+
+    valkey("DEL", ...mine);
+
+    const deep = `/connections/${encodeURIComponent(SOURCE)}?from=e2e`;
+    await page.goto(deep);
+    await expect(page).toHaveURL((url) => `${url.pathname}${url.search}` === deep, { timeout: 30_000 });
+    await page.getByRole("button", { name: "Test" }).waitFor();
+  });
 });

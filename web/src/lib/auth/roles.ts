@@ -19,13 +19,9 @@ export const ROLE_LABEL: Record<Role, string> = { reader: "Reader", editor: "Edi
 /** Most to least: the first held is the one a badge names. */
 const BY_REACH: readonly Role[] = ["admin", "editor", "reader"];
 
-export function holds(session: Session | null | undefined, organization: string, role: Role): boolean {
-  return can(session, role, organization);
-}
-
-/** The widest role held in `organization`, for a label only — never for a decision. */
-export function displayRole(session: Session | null | undefined, organization: string): Role | null {
-  return BY_REACH.find((role) => holds(session, organization, role)) ?? null;
+/** The widest role held in the current workspace, for a label only — never for a decision. */
+export function displayRole(session: Session | null | undefined): Role | null {
+  return BY_REACH.find((role) => can(session, role)) ?? null;
 }
 
 /** The organizations this person holds a role in: the workspaces they can switch to. */

@@ -18,7 +18,7 @@ import {
   SectionTitleGroup,
 } from "@kanzo-tech/ui";
 import { type AccountPage, accountUrl } from "@kanzo-tech/auth";
-import { getSession, issuer } from "@/lib/auth/server";
+import { auth, issuer } from "@/lib/auth/server";
 import { initials } from "@/lib/ui/format";
 
 // Keasy keeps no password and no session list of its own: each row opens the page of Keycloak's
@@ -52,7 +52,7 @@ function ConsoleLink({ page, children }: { page: AccountPage; children: React.Re
 }
 
 export default async function SecuritySettingsPage() {
-  const user = (await getSession())?.user;
+  const user = (await auth.session())?.user;
   const name = user?.name ?? user?.username ?? user?.email ?? "";
 
   return (

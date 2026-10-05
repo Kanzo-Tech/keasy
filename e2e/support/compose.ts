@@ -13,6 +13,19 @@ function compose(...args: string[]) {
   execFileSync("docker", ["compose", ...FILES, ...args], { cwd: ROOT, stdio: "inherit" });
 }
 
+/** `valkey-cli` against the stack's session store, and what it printed. */
+export function valkey(...args: string[]): string {
+  return execFileSync("docker", ["compose", ...FILES, "exec", "-T", "valkey", "valkey-cli", ...args], {
+    cwd: ROOT,
+    encoding: "utf8",
+  });
+}
+
+/** Every session ticket the store holds now. */
+export function tickets(): Set<string> {
+  return new Set(valkey("--scan").split("\n").filter(Boolean));
+}
+
 /** Stop `services`. Paired with {@link up} in a `finally`, so a failed scenario leaves the stack whole. */
 export function stop(...services: string[]) {
   compose("stop", ...services);

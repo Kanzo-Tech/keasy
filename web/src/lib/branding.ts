@@ -4,7 +4,6 @@ import type { Schemas } from "@keasy/api";
 
 import { deadlineFetch } from "@/lib/deadline";
 import { headers } from "next/headers";
-import { notFound } from "next/navigation";
 
 import { serverOf, tenantOf } from "@/lib/tenant";
 
@@ -35,9 +34,12 @@ export function getBranding(tenant: string): Promise<Branding> {
   return read;
 }
 
-/** The look of the organization this request addresses; a host that addresses none has no page. */
+/**
+ * The look of the organization this request addresses. A page on a host that addresses none never
+ * renders — `proxy.ts` answers it 404 first — so reaching here without one is a routing fault.
+ */
 export async function currentBranding(): Promise<Branding> {
   const tenant = tenantOf((await headers()).get("host"));
-  if (tenant === undefined) notFound();
+  if (tenant === undefined) throw new Error("a page rendered on a host that addresses no organization");
   return getBranding(tenant);
 }

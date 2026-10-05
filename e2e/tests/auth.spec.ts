@@ -63,6 +63,9 @@ test.describe("a session that ends while the page is away", () => {
     const mine = [...tickets()].filter((ticket) => !before.has(ticket));
     expect(mine, "one new ticket for this sign-in").toHaveLength(1);
 
+    // Off the app first: a page left open would find the session gone through its own polling and
+    // sign in from there — correctly, but racing the navigation this test is about.
+    await page.goto("about:blank");
     valkey("DEL", ...mine);
 
     const deep = `/connections/${encodeURIComponent(SOURCE)}?from=e2e`;

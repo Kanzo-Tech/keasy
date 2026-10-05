@@ -27,10 +27,14 @@ import { Provenance } from "@/components/provenance";
 import { Boundary, Loading } from "@/components/boundary";
 import { CorpusHolds } from "@/components/corpus-holds";
 import { runnerName } from "./_parts/graph-header";
+import { Recipe } from "./_parts/recipe";
 import { useGraph } from "./_parts/use-graph";
 
-/** The graph's overview: its last run, where its output lands, and what that output holds. */
-export default function GraphOverview({ params }: { params: Promise<{ id: string }> }) {
+/**
+ * The graph's one page: its last run, where its output lands, what that output holds, and the recipe
+ * every run runs. Explore is the header's action, the one way in.
+ */
+export default function GraphPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const graph = useGraph(id);
   const problem = runProblem(graph);
@@ -69,6 +73,9 @@ export default function GraphOverview({ params }: { params: Promise<{ id: string
             Nothing yet: what the {lower(WORDS.output)} holds shows once a {lower(WORDS.run)} completes.
           </p>
         )}
+      </Part>
+      <Part title={WORDS.recipe}>
+        <Recipe program={graph.script ?? ""} />
       </Part>
     </div>
   );

@@ -7,7 +7,7 @@ import { GraphHeader } from "./_parts/graph-header";
 
 /**
  * A graph's one home: a header that is always there — its name, its status, one primary action and
- * the rest in a menu — over routed tabs (Overview · Recipe · Explore).
+ * the rest in a menu — over the graph's page.
  */
 export default function GraphLayout({ children }: { children: React.ReactNode }) {
   const { id } = useParams<{ id: string }>();

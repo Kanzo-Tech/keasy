@@ -3,11 +3,14 @@ module "keasy" {
 
   realm_id      = var.realm
   client_id     = "keasy"
-  description   = "keasy: a Backend-For-Frontend. Confidential; the browser never holds a token."
+  description   = "keasy: a Backend-For-Frontend for every organization. Confidential; the browser never holds a token."
   access_type   = "CONFIDENTIAL"
   client_secret = var.client_secret
   redirect_uris = var.redirect_uris
-  audience      = "keasy-api"
+  # The one web that serves every organization, as Keycloak reaches it: a sign-out at Keycloak
+  # ends the BFF's sessions too, whichever organization they were opened in.
+  backchannel_logout_url = var.backchannel_logout_url
+  audience               = "keasy-api"
 
   # The hierarchy, declared once. Tokens carry it expanded, and the server and the web
   # ask only whether a role is present (server/src/authentication/role.rs).

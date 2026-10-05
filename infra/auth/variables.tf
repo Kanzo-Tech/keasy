@@ -19,7 +19,7 @@ variable "realm" {
 }
 
 variable "redirect_uris" {
-  description = "Every instance's callback: one client serves them all, one origin per organization."
+  description = "The web's callback at every organization's origin: one client serves them all."
   type        = list(string)
 }
 
@@ -28,4 +28,10 @@ variable "client_secret" {
   type        = string
   default     = null
   sensitive   = true
+}
+
+variable "backchannel_logout_url" {
+  description = "The web's /api/auth/backchannel-logout as Keycloak reaches it. Null leaves back-channel logout off."
+  type        = string
+  default     = null
 }

@@ -18,7 +18,7 @@ export default defineConfig({
   expect: { timeout: 10_000 },
   reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : [["list"]],
   use: {
-    baseURL: process.env.KEASY_URL ?? "http://localhost:3000",
+    baseURL: process.env.KEASY_URL ?? "http://acme.localhost:3000",
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     ...devices["Desktop Chrome"],

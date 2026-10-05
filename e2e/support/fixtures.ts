@@ -45,7 +45,7 @@ export const test = base.extend<object, { corpusGraph: string }>({
       // Worker-scoped, so it signs in on a context of its own rather than a test's.
       const context = await browser.newContext({
         storageState: { cookies: [], origins: [] },
-        baseURL: process.env.KEASY_URL ?? "http://localhost:3000",
+        baseURL: process.env.KEASY_URL ?? "http://acme.localhost:3000",
       });
       const page = await context.newPage();
       await signIn(page, "bruno");

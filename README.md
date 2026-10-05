@@ -11,7 +11,7 @@ make dev
 ```
 
 `make dev` first runs `make deps` (kanzo-ui's platform services, identity and the AI
-gateway, checked out into `.deps/kanzo-ui`). Open [http://localhost:3000](http://localhost:3000)
+gateway, checked out into `.deps/kanzo-ui`). Open [http://acme.localhost:3000](http://acme.localhost:3000)
 and log in at Keycloak. The first
 `up` compiles the server's dependencies once; later ones reuse the cached volumes.
 Every dev value is a literal in `docker-compose.yml`; a local `.env` overrides the
@@ -19,7 +19,7 @@ included services' variables (e.g. `KC_ADMIN_PASSWORD`), and `provision` follows
 
 | What | Where |
 |------|-------|
-| App (web BFF, `/api/v1`) | [http://localhost:3000](http://localhost:3000) |
+| App (web BFF, `/api/v1`) | [http://acme.localhost:3000](http://acme.localhost:3000) — one web, each organization at its subdomain |
 | Keycloak | [http://localhost:8080](http://localhost:8080) (admin `admin` / `admin`) |
 | API, for curl | `http://localhost:8081` |
 | AI gateway console | [http://localhost:4000/ui](http://localhost:4000/ui) (`admin` / `sk-dev-master-key`) |
@@ -122,11 +122,15 @@ client, keeps the tokens in Valkey (`KEASY_SESSION_STORE_URL`), and gives the
 browser a sealed cookie carrying only the ticket to them. Its proxy is the session's
 authority on every page: it renews the tokens in place before they lapse, ends a session
 Keycloak refused, and sends a navigation without one to sign in and back to the page it
-asked for. The current workspace is the branding's organization; the session still
-carries every membership, which is what the workspace switcher lists.
-The **server** is a resource server: it validates the bearer token against the
-realm's JWKS (`iss`, `aud`, `exp`, `azp`, signature) and holds no client secret,
-no session and no cookie. It is reached only through the web's `/api/v1`.
+asked for. **One web serves every organization** — Keycloak's Organizations model, one
+`keasy` client for all of them: the organization is the host's subdomain
+(`<alias>.<KEASY_BASE_DOMAIN>`), the session carries every membership (which is what the
+workspace switcher lists), and a sign-out at Keycloak reaches the web through one
+back-channel logout URL. The **server** is per organization, and so is its data: it is a
+resource server that validates the bearer token against the realm's JWKS (`iss`, `aud`,
+`exp`, `azp`, signature) and holds no client secret, no session and no cookie. The web
+forwards `/api/v1` to the server of the organization the request addresses
+(`KEASY_API_URL`, with `{tenant}` standing for its alias).
 
 Mappings run in the browser (DuckDB-WASM + `@fossil-lang/*`), and so does source
 introspection; the server hosts connections, vends credentials scoped to one prefix, graphs and the catalog,

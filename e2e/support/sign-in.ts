@@ -8,7 +8,7 @@ export async function signIn(page: Page, username: string) {
   await page.goto("/");
   await enterUsername(page, username);
   await enterPassword(page);
-  await expect(page).toHaveURL(/localhost:3000\/?$/, { timeout: 30_000 });
+  await expect(page).toHaveURL(/acme\.localhost:3000\/?$/, { timeout: 30_000 });
 }
 
 /** Keycloak 26's form asks in two steps: the username (or email) first… */

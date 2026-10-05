@@ -119,7 +119,11 @@ graph TD
 Authentication is a Backend For Frontend. The **web** is the OIDC relying party
 (`@kanzo-tech/auth/next`, mounted at `/api/auth`): it holds the confidential
 client, keeps the tokens in Valkey (`KEASY_SESSION_STORE_URL`), and gives the
-browser a sealed cookie carrying only the ticket to them.
+browser a sealed cookie carrying only the ticket to them. Its proxy is the session's
+authority on every page: it renews the tokens in place before they lapse, ends a session
+Keycloak refused, and sends a navigation without one to sign in and back to the page it
+asked for. The current workspace is the branding's organization; the session still
+carries every membership, which is what the workspace switcher lists.
 The **server** is a resource server: it validates the bearer token against the
 realm's JWKS (`iss`, `aud`, `exp`, `azp`, signature) and holds no client secret,
 no session and no cookie. It is reached only through the web's `/api/v1`.

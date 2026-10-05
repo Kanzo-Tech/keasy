@@ -60,7 +60,11 @@ const registry: Partial<Record<ErrorCode | NoBodyCode | ClientCode | Code | Kanz
   "callback/nonce-mismatch": { title: "This sign-in could not be completed.", link: signIn },
   "token/exchange-failed": { title: "The identity provider refused the sign-in.", link: signIn },
   "session/absent": { title: "You are signed out.", link: signIn },
-  "organization/not-a-member": { title: "You are not a member of this workspace." },
+  "token/refused": {
+    title: "Your session has ended.",
+    detail: "The identity provider ended it, after a while away or a sign-out elsewhere. Sign in again.",
+    link: signIn,
+  },
   "organization/invalid": { title: "No such workspace." },
   "claims/no-subject": { title: "The identity provider sent an incomplete identity." },
   "session/unavailable": {

@@ -3,8 +3,6 @@ import "client-only";
 import { ApiError } from "@keasy/api";
 import { MutationCache, QueryCache, QueryClient } from "@tanstack/react-query";
 
-import { auth } from "./session";
-
 let redirected = false;
 
 /**
@@ -32,13 +30,13 @@ export const queryClient = new QueryClient({
   },
 });
 
-/** A refused session signs in again; a workspace the person holds no role in any more sends them home. */
+/**
+ * A workspace the person holds no role in any more sends them home. A refused session is not
+ * handled here: the BFF's own fetch signs in again when a renewal is refused.
+ */
 function handleAuthError(error: unknown) {
   if (redirected || !(error instanceof ApiError)) return;
-  if (error.status === 401) {
-    redirected = true;
-    void auth.signIn();
-  } else if (error.code === "rbac/no-membership") {
+  if (error.code === "rbac/no-membership") {
     redirected = true;
     window.location.href = "/";
   }

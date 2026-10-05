@@ -12,21 +12,10 @@ const NAVIGATION = [
   },
 ];
 
-// Roles are asked inside this workspace's organization, and only roles.ts knows how.
-const ROLES = {
-  name: "@kanzo-tech/auth",
-  importNames: ["can"],
-  message: "Use holds (lib/auth/roles) or useRole (lib/auth/use-role): a role is asked inside this workspace's organization.",
-};
-
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
   {
-    rules: { "no-restricted-imports": ["error", { paths: [...NAVIGATION, ROLES] }] },
-  },
-  {
-    files: ["src/lib/auth/roles.ts"],
     rules: { "no-restricted-imports": ["error", { paths: NAVIGATION }] },
   },
   // Override default ignores of eslint-config-next.

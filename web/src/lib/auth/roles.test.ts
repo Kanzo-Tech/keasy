@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Organization, Session } from "@kanzo-tech/auth";
 import { schemaOf } from "@/lib/api/spec";
-import { displayRole, holds, ROLE_LABEL, switchable } from "./roles";
+import { displayRole, ROLE_LABEL, switchable } from "./roles";
 
 /** A session holding these organization roles, with the expanded composites the token carries. */
 function session(...organizations: Organization[]): Session {
@@ -9,33 +9,25 @@ function session(...organizations: Organization[]): Session {
     user: { id: "u-1", email: "dev@keasy.local" } as Session["user"],
     roles: ["admin"],
     organizations,
+    organization: "acme",
     expiresAt: Date.now() + 60_000,
   };
 }
 
 const acme = (...roles: string[]): Organization => ({ alias: "acme", roles });
 
-describe("holds", () => {
-  it("asks inside the organization, never the realm roles", () => {
-    expect(holds(session(), "acme", "admin")).toBe(false);
-    expect(holds(session(acme("reader")), "acme", "reader")).toBe(true);
-    expect(holds(session(acme("reader")), "acme", "editor")).toBe(false);
-    expect(holds(session({ alias: "other", roles: ["admin"] }), "acme", "reader")).toBe(false);
-    expect(holds(null, "acme", "reader")).toBe(false);
-  });
-});
-
 describe("displayRole", () => {
-  it("names the widest role held", () => {
-    expect(displayRole(session(acme("admin", "editor", "reader")), "acme")).toBe("admin");
-    expect(displayRole(session(acme("editor", "reader")), "acme")).toBe("editor");
-    expect(displayRole(session(acme("reader")), "acme")).toBe("reader");
+  it("names the widest role held in the current workspace", () => {
+    expect(displayRole(session(acme("admin", "editor", "reader")))).toBe("admin");
+    expect(displayRole(session(acme("editor", "reader")))).toBe("editor");
+    expect(displayRole(session(acme("reader")))).toBe("reader");
   });
 
-  it("is null without a role in this organization", () => {
-    expect(displayRole(session(acme()), "acme")).toBeNull();
-    expect(displayRole(session(acme("uma_authorization")), "acme")).toBeNull();
-    expect(displayRole(undefined, "acme")).toBeNull();
+  it("is null without a role in this workspace, whatever the realm or another organization grants", () => {
+    expect(displayRole(session(acme()))).toBeNull();
+    expect(displayRole(session(acme("uma_authorization")))).toBeNull();
+    expect(displayRole(session({ alias: "other", roles: ["admin"] }))).toBeNull();
+    expect(displayRole(undefined)).toBeNull();
   });
 });
 

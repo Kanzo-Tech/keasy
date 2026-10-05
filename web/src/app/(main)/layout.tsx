@@ -1,9 +1,8 @@
 import { cookies } from "next/headers";
 import { forbidden, redirect } from "next/navigation";
 import { parseSidebarCookie, SIDEBAR_COOKIE_NAME, SidebarProvider } from "@kanzo-tech/ui";
-import { AuthError } from "@kanzo-tech/auth";
-import { currentOrganization, getSession } from "@/lib/auth/server";
-import { holds } from "@/lib/auth/roles";
+import { AuthError, can } from "@kanzo-tech/auth";
+import { auth } from "@/lib/auth/server";
 import { PROBLEM_PAGE } from "@/lib/routes";
 import { Shell } from "./shell";
 
@@ -20,9 +19,7 @@ export default async function MainLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const session = await readSession();
-  if (!session) redirect("/api/auth/signin");
-  if (!holds(session, await currentOrganization(), "reader")) forbidden();
+  if (!can(await readSession(), "reader")) forbidden();
 
   // The person's own choice, read back on the server so a reload starts where they left it.
   const defaultOpen = parseSidebarCookie((await cookies()).get(SIDEBAR_COOKIE_NAME)?.value);
@@ -40,7 +37,7 @@ export default async function MainLayout({
  */
 async function readSession() {
   try {
-    return await getSession();
+    return await auth.session({ required: true });
   } catch (err) {
     // The store, or the IdP, did not answer: a coded failure, which the problem page renders.
     if (err instanceof AuthError) redirect(`${PROBLEM_PAGE}?code=${encodeURIComponent(err.code)}`);

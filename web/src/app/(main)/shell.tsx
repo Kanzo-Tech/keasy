@@ -47,8 +47,7 @@ import {
 
 import { Link } from "@kanzo-tech/navigation/next";
 import { useBranding } from "@/lib/branding-context";
-import { ROLE_LABEL, switchable, type Role } from "@/lib/auth/roles";
-import { useRole } from "@/lib/auth/use-role";
+import { displayRole, ROLE_LABEL, switchable, type Role } from "@/lib/auth/roles";
 import { ProblemView } from "@/components/problem-view";
 import { initials } from "@/lib/ui/format";
 import { generateBreadcrumbs, getSidebarRoutes } from "@/app/(main)/_parts/route-config";
@@ -79,7 +78,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const [loggingOut, setLoggingOut] = useState(false);
   const [headerEnd, setHeaderEnd] = useState<HTMLElement | null>(null);
 
-  const { role } = useRole();
+  const role = displayRole(session);
   const routes = getSidebarRoutes();
   const crumbs = generateBreadcrumbs(pathname);
   const collapsed = state === "collapsed" && !isMobile;

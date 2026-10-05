@@ -1,5 +1,5 @@
 module "keasy" {
-  source = "git::https://github.com/Kanzo-Tech/ui.git//services/auth/modules/app?ref=v0.28.0"
+  source = "git::https://github.com/Kanzo-Tech/ui.git//services/auth/modules/app?ref=v0.30.0"
 
   realm_id      = var.realm
   client_id     = "keasy"

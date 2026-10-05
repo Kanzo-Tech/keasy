@@ -15,7 +15,7 @@ import {
   SectionTitleGroup,
 } from "@kanzo-tech/ui";
 import { organizationOf } from "@kanzo-tech/auth";
-import { currentOrganization, getSession, issuer } from "@/lib/auth/server";
+import { auth, issuer } from "@/lib/auth/server";
 
 /**
  * The organization's console, from `KEASY_ORG_ADMIN_URL` with `{issuer_origin}`, `{alias}` and
@@ -24,7 +24,8 @@ import { currentOrganization, getSession, issuer } from "@/lib/auth/server";
 async function consoleUrl(): Promise<string | undefined> {
   const template = process.env.KEASY_ORG_ADMIN_URL?.trim();
   if (!template) return undefined;
-  const [session, alias] = await Promise.all([getSession(), currentOrganization()]);
+  const session = await auth.session({ required: true });
+  const alias = session.organization ?? "";
   const values: Record<string, string> = {
     issuer_origin: new URL(issuer()).origin,
     alias: encodeURIComponent(alias),

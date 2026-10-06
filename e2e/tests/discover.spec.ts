@@ -6,7 +6,9 @@ import { expectProblem } from "../support/problem";
 
 test("01 a graph that does not exist opens in discover as graph/not-found", async ({ page }) => {
   await page.goto(`/graphs/${MISSING}/discover`);
-  await expectProblem(page, "graph/not-found", { within: 5_000 });
+  // The suite's first visit to discover: the dev server builds the page's client chunks after load,
+  // so this gets 02's budget rather than a cached page's.
+  await expectProblem(page, "graph/not-found", { within: 10_000 });
 });
 
 test("02 a graph that has not completed opens in discover as graph/not-completed", async ({ page }) => {

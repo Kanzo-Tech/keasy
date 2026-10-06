@@ -8,7 +8,7 @@ import { ticketStore, type TicketAdapter } from "@kanzo-tech/auth/server";
 import { redirect } from "next/navigation";
 import { createClient } from "redis";
 
-import { getBranding } from "@/lib/branding";
+import { serverOf, tenantOf } from "@/lib/tenant";
 import { PROBLEM_PAGE } from "@/lib/routes";
 
 import type { Role } from "./roles";
@@ -108,8 +108,9 @@ export function issuer(): string {
  * The relying party: proxy, routes, the API forward and the session, over one configuration that
  * is read on the first request — the image is built without secrets.
  *
- * A keasy instance serves one Keycloak Organization, so the current tenant is the branding's. The
- * session still carries every membership, which is what the workspace switcher lists.
+ * One web serves every organization, Keycloak's Organizations model: one client, the tenant read
+ * from the host, and each organization's data behind its own server. The session carries every
+ * membership, which is what the workspace switcher lists.
  */
 export const auth = kanzoAuth(async () => ({
   issuer: issuer(),
@@ -121,10 +122,11 @@ export const auth = kanzoAuth(async () => ({
   // Where *this process* reaches Keycloak, when that is not where the browser does.
   internalOrigin: process.env.KEASY_OIDC_INTERNAL_BASE_URL?.trim() || undefined,
   allowInsecureHttp: issuer().startsWith("http://"),
-  organization: async () => (await getBranding()).organization,
+  organization: (request) => tenantOf(request.url.hostname),
   problemPage: PROBLEM_PAGE,
-  // The spec's paths already start with `/v1`, so the forward strips `/api` only.
-  api: { mount: "/api", target: required("KEASY_API_URL") },
+  // Each organization's own server. The spec's paths already start with `/v1`, so the forward
+  // strips `/api` only; a host that addresses no organization reaches none (404).
+  api: { mount: "/api", target: (organization) => organization && serverOf(organization) },
 }));
 
 /**

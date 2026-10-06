@@ -100,6 +100,9 @@ services:
       - ./api:/app/api
       - /app/api/node_modules
     environment:
+      # One web for every organization, read from the host: acme.localhost:3000. Dev runs one
+      # organization's server, so the template has no `{tenant}` to fill.
+      KEASY_BASE_DOMAIN: localhost
       KEASY_API_URL: http://server:8080
       KEASY_OIDC_ISSUER_URL: http://localhost:8080/realms/kanzo
       KEASY_OIDC_INTERNAL_BASE_URL: http://keycloak:8080

@@ -1,11 +1,14 @@
-# Per-tenant Swarm stack. One server + web docker_service per organization. Every
-# instance is the same `keasy` client of the `kanzo` realm; what tells them apart is
-# KEASY_ORG_ALIAS — a token's roles count only inside that organization.
+# The fleet on Swarm: one server per organization, and one web for all of them —
+# Keycloak's Organizations model, one `keasy` client shared by every organization.
 #
-# The relying party lives in the **web** service: it holds the client secret and the
-# cookie-sealing secret, and it is what the browser reaches. The **server** holds
-# neither — it validates a bearer token against the realm's JWKS and needs only the
-# issuer, its own client id and the audience to check.
+# The **server** is per organization, and so is its data: KEASY_ORG_ALIAS says which, and a
+# token's roles count only inside it. It holds no client secret and no session — it
+# validates a bearer token against the realm's JWKS.
+#
+# The **web** is the relying party for every organization: it holds the client secret and
+# the cookie-sealing secret, reads the organization from the host (<alias>.<base_domain>),
+# and forwards /api/v1 to that organization's server. One web means one session store and
+# one back-channel logout URL, which is all Keycloak calls per client.
 
 locals {
   server_image = "ghcr.io/kanzo-tech/keasy-server:${var.release_version}"
@@ -13,9 +16,8 @@ locals {
 }
 
 resource "random_password" "session" {
-  for_each = var.tenants
-  length   = 48
-  special  = false
+  length  = 48
+  special = false
 }
 # The AEAD key for stored credentials: 32 random bytes, handed over in base64.
 resource "random_bytes" "secret_key" {
@@ -23,7 +25,7 @@ resource "random_bytes" "secret_key" {
   length   = 32
 }
 
-# One client for the whole fleet, so one secret every web mounts.
+# One client for the whole fleet, and one web that mounts its secret.
 resource "docker_secret" "oidc" {
   name = "keasy-oidc"
   data = base64encode(var.oidc_client_secret)
@@ -34,9 +36,8 @@ resource "docker_secret" "ai_key" {
   data     = base64encode(var.ai_keys[each.key])
 }
 resource "docker_secret" "session" {
-  for_each = var.tenants
-  name     = "keasy-ws-${each.key}-session"
-  data     = base64encode(random_password.session[each.key].result)
+  name = "keasy-session"
+  data = base64encode(random_password.session.result)
 }
 resource "docker_secret" "secret_key" {
   for_each = var.tenants
@@ -170,11 +171,11 @@ resource "docker_service" "server" {
   }
 }
 
-# The web's session store: tokens behind the cookie's ticket. Unrouted, on the
+# The web's session store: tokens behind the cookie's ticket, for every organization (a
+# cookie is per host, so each organization's sessions are its own tickets). Unrouted, on the
 # overlay only. No volume — losing it signs people out, nothing more.
 resource "docker_service" "sessions" {
-  for_each = var.tenants
-  name     = "keasy-ws-${each.key}-sessions"
+  name = "keasy-sessions"
 
   task_spec {
     container_spec {
@@ -201,14 +202,13 @@ resource "docker_service" "sessions" {
   }
 
   labels {
-    label = "com.keasy.workspace"
-    value = "keasy-ws-${each.key}"
+    label = "com.keasy.component"
+    value = "sessions"
   }
 }
 
 resource "docker_service" "web" {
-  for_each = var.tenants
-  name     = "keasy-ws-${each.key}-web"
+  name = "keasy-web"
 
   task_spec {
     container_spec {
@@ -219,12 +219,14 @@ resource "docker_service" "web" {
         KEASY_OIDC_CLIENT_ID          = "keasy"
         KEASY_OIDC_CLIENT_SECRET_FILE = "/run/secrets/oidc"
         KEASY_OIDC_INTERNAL_BASE_URL  = var.oidc_internal_base_url
-        KEASY_ORG_ALIAS               = each.key
+        # The organization is the host's subdomain: <alias>.<base_domain>.
+        KEASY_BASE_DOMAIN = var.base_domain
         # Seals the session cookie, which carries only a ticket into Valkey.
         KEASY_SESSION_SECRET_FILE = "/run/secrets/session"
-        KEASY_SESSION_STORE_URL   = "redis://keasy-ws-${each.key}-sessions:6379"
-        # Where the BFF forwards `/api/v1` once it has attached the bearer token.
-        KEASY_API_URL = "http://keasy-ws-${each.key}-server:8080"
+        KEASY_SESSION_STORE_URL   = "redis://keasy-sessions:6379"
+        # Where the BFF forwards `/api/v1` once it has attached the bearer token: the server
+        # of the organization the request addresses.
+        KEASY_API_URL = "http://keasy-ws-{tenant}-server:8080"
       }
 
       secrets {
@@ -233,8 +235,8 @@ resource "docker_service" "web" {
         file_name   = "/run/secrets/oidc"
       }
       secrets {
-        secret_id   = docker_secret.session[each.key].id
-        secret_name = docker_secret.session[each.key].name
+        secret_id   = docker_secret.session.id
+        secret_name = docker_secret.session.name
         file_name   = "/run/secrets/session"
       }
     }
@@ -266,14 +268,14 @@ resource "docker_service" "web" {
 
   dynamic "labels" {
     for_each = {
-      "com.keasy.workspace"                                            = "keasy-ws-${each.key}"
-      "traefik.enable"                                                 = "true"
-      "traefik.docker.network"                                         = var.network_name
-      "traefik.http.routers.${each.key}-web.rule"                      = "Host(`${each.key}.${var.base_domain}`)"
-      "traefik.http.routers.${each.key}-web.entrypoints"               = "websecure"
-      "traefik.http.routers.${each.key}-web.tls.certresolver"          = "le"
-      "traefik.http.routers.${each.key}-web.service"                   = "${each.key}-web"
-      "traefik.http.services.${each.key}-web.loadbalancer.server.port" = "3000"
+      "com.keasy.component"                                      = "web"
+      "traefik.enable"                                           = "true"
+      "traefik.docker.network"                                   = var.network_name
+      "traefik.http.routers.keasy-web.rule"                      = join(" || ", [for alias in keys(var.tenants) : "Host(`${alias}.${var.base_domain}`)"])
+      "traefik.http.routers.keasy-web.entrypoints"               = "websecure"
+      "traefik.http.routers.keasy-web.tls.certresolver"          = "le"
+      "traefik.http.routers.keasy-web.service"                   = "keasy-web"
+      "traefik.http.services.keasy-web.loadbalancer.server.port" = "3000"
     }
     content {
       label = labels.key

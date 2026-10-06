@@ -81,7 +81,8 @@ e2e: deps ## Run the e2e suite against the compose stack (main checkout only: Ke
 # instances/terraform.tfvars, then deploy-auth, deploy-ai-teams, deploy-instances.
 #
 # The tfvars and the state of the auth/ai roots are operator-local, in $(DEPLOY_DIR)
-# (gitignored): realm.tfvars (organizations), auth.tfvars (redirect_uris), ai.tfvars (ai_url,
+# (gitignored): realm.tfvars (organizations), auth.tfvars (redirect_uris — each organization's
+# origin — and backchannel_logout_url = "http://keasy-web:3000/api/auth/backchannel-logout"), ai.tfvars (ai_url,
 # tenants). platform and instances keep theirs beside them (terraform.tfvars, gitignored).
 DEPLOY_DIR ?= $(CURDIR)/infra/terraform/.operator
 TF_PLATFORM = terraform -chdir=infra/terraform/platform

@@ -67,6 +67,8 @@ function contentSecurityPolicy(): string {
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  // Dev serves every organization at its own subdomain (acme.localhost:3000), as prod does.
+  allowedDevOrigins: ["*.localhost"],
   // The workspace contract package ships TypeScript source.
   transpilePackages: ["@keasy/api"],
   experimental: {

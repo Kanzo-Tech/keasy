@@ -1,17 +1,13 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Badge, Item, ItemContent, ItemGroup, ItemTitle, ItemDescription } from "@kanzo-tech/ui";
 import { CodeEditor } from "@kanzo-tech/ui/editor";
 import { refs as referencesOf, type SourceRefInfo } from "@fossil-lang/wasm";
 import { lower, WORDS } from "@/lib/vocabulary";
-import { useGraph } from "../_parts/use-graph";
 
 /** The graph's recipe, read-only: the program every run runs, and the sources it reads. */
-export default function GraphRecipe({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
-  const graph = useGraph(id);
-  const program = graph.script ?? "";
+export function Recipe({ program }: { program: string }) {
   return (
     <div className="flex flex-col gap-6">
       <Sources program={program} />

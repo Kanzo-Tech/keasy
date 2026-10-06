@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
 import { Compass, Copy, Ellipsis, Pencil, Play, RotateCcw, Square, Trash2 } from "lucide-react";
 import {
   AlertDialog,
@@ -23,16 +22,13 @@ import {
   SectionTitleGroup,
   Spinner,
   Status,
-  Tabs,
-  TabsList,
-  TabsTrigger,
   Tooltip,
   TooltipContent,
   TooltipTrigger,
   toast,
 } from "@kanzo-tech/ui";
 import { useSession } from "@kanzo-tech/auth";
-import { Link, useRouter } from "@kanzo-tech/navigation/next";
+import { useRouter } from "@kanzo-tech/navigation/next";
 import { useMutation } from "@tanstack/react-query";
 import { http, invalidate, type Schemas } from "@/lib/api/client";
 import { copyOf, toastError } from "@/lib/errors";
@@ -91,7 +87,6 @@ export function Blocked({ reason, children }: { reason?: string; children: React
 export function GraphHeader({ id }: { id: string }) {
   const graph = useGraph(id);
   const router = useRouter();
-  const pathname = usePathname();
   const { session, can } = useSession();
   const editor = can("editor");
   const me = session?.user.id;
@@ -181,8 +176,6 @@ export function GraphHeader({ id }: { id: string }) {
   const { label, variant } = STATUS[graph.status];
   // A failure keasy has its own words for says them; any other says "Failed".
   const worded = graph.status === "failed" ? copyOf(runProblem(graph)?.code ?? "")?.title : undefined;
-  const completed = graph.status === "completed";
-  const tab = pathname.endsWith("/recipe") ? "recipe" : "overview";
 
   return (
     <>
@@ -244,28 +237,6 @@ export function GraphHeader({ id }: { id: string }) {
           )}
         </SectionActions>
       </SectionHeader>
-
-      <Tabs value={tab}>
-        <TabsList className="mx-4 sm:mx-6" variant="underline">
-          <TabsTrigger asChild value="overview">
-            <Link href={`/graphs/${id}`}>Overview</Link>
-          </TabsTrigger>
-          <TabsTrigger asChild value="recipe">
-            <Link href={`/graphs/${id}/recipe`}>{WORDS.recipe}</Link>
-          </TabsTrigger>
-          {completed ? (
-            <TabsTrigger asChild value="explore">
-              <Link href={`/graphs/${id}/discover`}>{WORDS.explore}</Link>
-            </TabsTrigger>
-          ) : (
-            <Blocked reason={`No ${lower(WORDS.output)} yet`}>
-              <TabsTrigger disabled value="explore">
-                {WORDS.explore}
-              </TabsTrigger>
-            </Blocked>
-          )}
-        </TabsList>
-      </Tabs>
 
       <AlertDialog onOpenChange={(d) => setDeleting(d.open)} open={deleting}>
         <AlertDialogContent size="sm">

@@ -11,7 +11,8 @@ import { tenantOf } from "@/lib/tenant";
  * host. A page on a host that addresses no organization does not exist.
  */
 export function proxy(request: NextRequest) {
-  if (!request.nextUrl.pathname.startsWith("/api/") && tenantOf(request.nextUrl.hostname) === undefined) {
+  // `Host`, not `nextUrl`: Next builds the URL from the address it listens on, not the one asked for.
+  if (!request.nextUrl.pathname.startsWith("/api/") && tenantOf(request.headers.get("host")) === undefined) {
     return new NextResponse(null, { status: 404 });
   }
   return auth.proxy(request);

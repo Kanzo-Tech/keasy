@@ -17,10 +17,12 @@ import type { Role } from "./roles";
  * The relying party, in one place.
  *
  * This application is a Backend For Frontend: the confidential client lives
- * here, the tokens never reach the browser, and the Rust API behind it is a
- * resource server that validates the access token `/api/v1` forwards. Every
- * route handler lives under `/api`: `/api/auth` is the relying party and
- * `/api/v1` the token-mediating proxy.
+ * here, the tokens never reach the browser, and the Rust API and the AI gateway
+ * behind it are resource servers that validate the token forwarded to them: one
+ * exchanged for that one and the organization the request addresses, never the
+ * session's own. Every route handler lives under `/api`: `/api/auth` is the
+ * relying party and the rest the token-mediating proxy — `/api/ai` the gateway,
+ * `/api/v1` the API.
  *
  * Everything is bound on first use: `next build` collects every route's module
  * and the image is built without secrets, so a missing variable is a loud
@@ -124,9 +126,14 @@ export const auth = kanzoAuth(async () => ({
   allowInsecureHttp: issuer().startsWith("http://"),
   organization: (request) => tenantOf(request.url.hostname),
   problemPage: PROBLEM_PAGE,
-  // Each organization's own server. The spec's paths already start with `/v1`, so the forward
-  // strips `/api` only; a host that addresses no organization reaches none (404).
-  api: { mount: "/api", target: (organization) => organization && serverOf(organization) },
+  // Each organization's own server, sent a token exchanged for keasy-api and that organization. The
+  // spec's paths already start with `/v1`, so the forward strips `/api` only; a host that addresses
+  // no organization reaches none (404). Model calls are the longer mount: the platform's AI gateway,
+  // sent a token for it and the organization, which is who the gateway charges.
+  apis: {
+    "/api": { audience: "keasy-api", target: (organization) => organization && serverOf(organization) },
+    "/api/ai": { audience: "ai-gateway", target: required("KEASY_AI_URL") },
+  },
 }));
 
 /**

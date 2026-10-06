@@ -75,9 +75,8 @@ const registry: Partial<Record<ErrorCode | NoBodyCode | ClientCode | Code | Kanz
   "session/silent": { title: "Your session could not be read in time.", link: signIn },
   "idp/silent": { title: "The identity provider did not answer in time.", link: signIn },
   "idp/unreachable": { title: "The identity provider could not be reached.", link: signIn },
-  "gateway/unreachable": { title: "The AI gateway could not be reached." },
-  "gateway/silent": { title: "The AI gateway did not answer in time." },
   "ai/silent": { title: "The model stopped answering." },
+  "ai/rate-limited": { title: "This workspace has used its AI budget for now. Try again later." },
   "llm/failed": { title: "The model call failed. Please try again." },
   "query/failed": {
     title: "Query execution failed. The AI may have generated invalid SQL. Try rephrasing your question.",
@@ -170,36 +169,18 @@ const isCoded = (err: unknown): err is Coded =>
   typeof err === "object" && err !== null && isCode((err as { code?: unknown }).code);
 
 /**
- * Any thrown value with a code to branch on: one that carries a code is itself — an AI SDK stream's
- * error event included, which keasy's relay codes `gateway/silent`; a model call the AI SDK refused
- * is the server's `ErrorBody` it holds; anything else is `uncoded`, in its own words, its cause kept.
+ * Any thrown value with a code to branch on: one that carries a code is itself — a model call's
+ * `AiError` (`ai/silent`, `ai/rate-limited`) included; anything else is `uncoded`, in its own words,
+ * its cause kept — a refusal the AI gateway answered, or a forward that never reached it.
  */
 export function coded(err: unknown, uncoded: ClientCode = "web/unknown"): Coded {
   if (isCoded(err)) return err;
-  return (
-    answered(err) ?? {
-      code: uncoded,
-      title: "Something went wrong.",
-      message: messageOf(err) ?? String(err),
-      cause: (err as { cause?: unknown } | null)?.cause,
-    }
-  );
-}
-
-/**
- * A model call the AI SDK refused carries the server's answer as `responseBody`: when that is an
- * `ErrorBody` (`gateway/silent`, `gateway/unreachable`, …), its code is the failure's, not lost.
- */
-function answered(err: unknown): Coded | undefined {
-  const body = (err as { responseBody?: unknown } | null)?.responseBody;
-  if (typeof body !== "string") return undefined;
-  try {
-    const parsed = JSON.parse(body) as Coded;
-    return isCoded(parsed) ? parsed : undefined;
-  } catch {
-    // Not an ErrorBody: the gateway's own words, which the caller's fallback shows.
-    return undefined;
-  }
+  return {
+    code: uncoded,
+    title: "Something went wrong.",
+    message: messageOf(err) ?? String(err),
+    cause: (err as { cause?: unknown } | null)?.cause,
+  };
 }
 
 /** The `message` a thrown value carries, an `Error`'s or a protocol's error object's. */

@@ -6,7 +6,7 @@ import { ScrollArea, Skeleton, useDebouncedCommit } from "@kanzo-tech/ui";
 import {
   Dashboard,
   type Dashboards,
-  migrateDashboards,
+  parseDashboards,
   type Relation,
   RelationPicker,
   relationIdentities,
@@ -53,8 +53,9 @@ function SavedDashboard() {
   // Everyone reads the dashboard; only whoever may change the graph edits and saves it.
   const { can_modify } = settled($api.useSuspenseQuery("get", "/v1/graphs/{id}", init));
 
-  // Whatever the server held, as the current document: a document per type reads as one per relation.
-  const stored = useMemo(() => migrateDashboards(saved?.spec), [saved]);
+  // What the server holds, checked whole: a document an earlier release wrote is refused, not
+  // migrated, and the Boundary above shows why.
+  const stored = useMemo(() => parseDashboards(saved?.spec), [saved]);
   const save = useMutation({
     mutationFn: async (spec: Dashboards) => (await http.PUT("/v1/graphs/{id}/dashboard", { ...init, body: { spec: { ...spec } } })).data,
     onSuccess: (written) => queryClient.setQueryData(read.queryKey, written),
@@ -82,7 +83,16 @@ function SavedDashboard() {
           exclude={identities.map((i) => i.column)}
           key={key}
           onChange={
-            can_modify ? (spec) => change({ version: 2, byRelation: { ...current.byRelation, [key]: spec } }) : undefined
+            can_modify
+              ? (spec) => {
+                  // `undefined` is "Reset to automatic": the relation's entry goes, and the automatic
+                  // dashboard follows its statistics again.
+                  const byRelation = { ...current.byRelation };
+                  if (spec === undefined) delete byRelation[key];
+                  else byRelation[key] = spec;
+                  change({ byRelation });
+                }
+              : undefined
           }
           publish={publish}
           rowNoun={relation.path.length ? "paths" : relation.root}

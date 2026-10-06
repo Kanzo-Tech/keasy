@@ -41,8 +41,6 @@ pub struct AppState {
     pub branding: Arc<BrandingSettings>,
     /// Verifies the bearer token every protected request carries.
     pub auth: SharedValidator,
-    /// The AI gateway every model call is relayed to, if this workspace has one.
-    pub ai: Arc<crate::routes::ai::Gateway>,
 }
 
 /// The server, bound and ready to serve.
@@ -60,7 +58,6 @@ impl Application {
             application,
             database,
             oidc,
-            ai,
         } = settings;
         let db = get_database(&database).await?;
 
@@ -90,7 +87,6 @@ impl Application {
             workspace_name: application.workspace_name,
             branding: Arc::new(application.branding),
             auth,
-            ai: Arc::new(crate::routes::ai::Gateway::new(ai)),
         };
 
         let listener = TcpListener::bind(application.bind_addr)
@@ -163,8 +159,7 @@ fn routes() -> (OpenApiRouter<AppState>, OpenApiRouter<AppState>) {
         .merge(routes::graphs::dashboard::router())
         .merge(routes::graphs::rules::router())
         .merge(routes::secrets::router())
-        .merge(routes::connections::router())
-        .merge(routes::ai::router());
+        .merge(routes::connections::router());
     (public, protected)
 }
 
@@ -251,9 +246,8 @@ fn guarded<S: Clone + Send + Sync + 'static>(router: Router<S>, deadline: Durati
 pub const REQUEST_DEADLINE: Duration = Duration::from_secs(25);
 
 /// How long the browser waits on an answer: the web's `DEADLINE_MS`
-/// (`web/src/lib/deadline.ts`) for an API request, and `@kanzo-tech/llm`'s
-/// bound on a model stream's next chunk. The web holds its side against the
-/// published `x-keasy-bounds` (`web/src/lib/bounds.test.ts`).
+/// (`web/src/lib/deadline.ts`) for an API request. The web holds its side
+/// against the published `x-keasy-bounds` (`web/src/lib/bounds.test.ts`).
 pub const BROWSER_DEADLINE: Duration = Duration::from_secs(30);
 
 const _: () = assert!(
@@ -262,12 +256,8 @@ const _: () = assert!(
 );
 
 /// Answer within `deadline` or with `server/silent`. Dropping the handler's
-/// future is what ends whatever it was waiting on. The AI relay is bounded by
-/// its own idle deadline instead (`routes::ai::IDLE`), which names the gateway.
+/// future is what ends whatever it was waiting on.
 pub async fn within(deadline: Duration, request: Request<Body>, next: Next) -> Response {
-    if routes::ai::relays(request.uri().path()) {
-        return next.run(request).await;
-    }
     match tokio::time::timeout(deadline, next.run(request)).await {
         Ok(response) => response,
         Err(_) => {

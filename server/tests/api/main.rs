@@ -1,4 +1,3 @@
-mod ai;
 mod authentication;
 mod authorization;
 mod connections;

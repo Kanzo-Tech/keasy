@@ -1,12 +1,12 @@
 import type { InferredDescriptor } from "@fossil-lang/introspect";
 import { FOSSIL_PROMPT } from "@fossil-lang/prompt";
 
-import { suggest, type SuggestedQuestion } from "@kanzo-tech/ai";
-import { jsonSchema, Output, streamText } from "@kanzo-tech/llm";
+import { type Proposal, suggest } from "@kanzo-tech/ai";
+import { jsonSchema, Output, stream } from "@kanzo-tech/llm";
 import { gateway } from "@/lib/ai";
 
 /** A suggested question, as the wizard's table keeps it. */
-export type CompetencyQuestion = SuggestedQuestion & { id: string };
+export type CompetencyQuestion = Proposal & { id: string };
 
 const SUGGEST_PROMPT = `You are an expert in knowledge graph ontology design and competency questions.
 
@@ -62,7 +62,7 @@ const PROGRAM = jsonSchema<{ program: string }>({
   additionalProperties: false,
 });
 
-/** The program, as it is written: each partial object carries the text so far. */
+/** The program, as it is written: each partial object carries the text so far, and a cut answer throws. */
 export function writeProgram(
   domain: string,
   questions: string[],
@@ -70,29 +70,11 @@ export function writeProgram(
   signal: AbortSignal,
 ) {
   const listed = questions.map((q, i) => `${i + 1}. ${q}\n`).join("");
-  return failing(
-    (onError) =>
-      streamText({
-        model: gateway("chat"),
-        maxRetries: 0,
-        system: PROGRAM_PROMPT,
-        prompt: `Domain: ${domain}\n\nCompetency Questions:\n${listed}\nData Schemas:\n${describeFiles(schemas)}`,
-        output: Output.object({ schema: PROGRAM }),
-        abortSignal: signal,
-        onError,
-      }).partialOutputStream,
-  );
-}
-
-/**
- * `stream`, throwing the error that ended it. An output stream drops the answer's error event — it
- * reaches `onError` and the stream ends as if whole — so a cut answer would pass for a short one,
- * and the relay's `gateway/silent` would be lost.
- */
-async function* failing<T>(stream: (onError: (event: { error: unknown }) => void) => AsyncIterable<T>) {
-  let failure: { error: unknown } | undefined;
-  yield* stream((event) => {
-    failure = event;
-  });
-  if (failure) throw failure.error;
+  return stream({
+    model: gateway("chat"),
+    system: PROGRAM_PROMPT,
+    prompt: `Domain: ${domain}\n\nCompetency Questions:\n${listed}\nData Schemas:\n${describeFiles(schemas)}`,
+    output: Output.object({ schema: PROGRAM }),
+    abortSignal: signal,
+  }).partial;
 }

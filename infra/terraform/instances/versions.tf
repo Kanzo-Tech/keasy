@@ -1,6 +1,6 @@
 # The instances: one keasy (server + web + sessions) per organization of the platform
-# realm, as Swarm services on the platform's overlay. Identity and AI are applied
-# before this (infra/auth, infra/ai); this module only consumes their outputs.
+# realm, as Swarm services on the platform's overlay. Identity is applied before this
+# (infra/auth); this module only consumes its output.
 terraform {
   required_version = ">= 1.6.0"
   required_providers {

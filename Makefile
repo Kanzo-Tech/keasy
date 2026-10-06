@@ -11,14 +11,14 @@
 # Crates compile at runtime into the persistent `server-target` + `cargo-registry`
 # volumes, so only the first `up` (or one after `make clean`) pays a cold compile.
 
-.PHONY: help dev seed down logs restart clean ps api e2e deps deploy-platform deploy-auth deploy-ai-teams deploy-instances
+.PHONY: help dev seed down logs restart clean ps api e2e deps deploy-platform deploy-auth deploy-instances
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_%-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
 # The platform's services (identity, the AI gateway) come from kanzo-ui, at the
 # release keasy is built against: the same tag its @kanzo-tech/* packages pin.
-KANZO_UI_REF ?= v0.30.0
+KANZO_UI_REF ?= v0.31.0
 
 deps: ## Check out kanzo-ui's services at $(KANZO_UI_REF) into .deps/kanzo-ui
 	@if [ -d .deps/kanzo-ui/.git ]; then \
@@ -76,14 +76,15 @@ e2e: deps ## Run the e2e suite against the compose stack (main checkout only: Ke
 
 # ── Prod / Swarm deploy — Terraform owns everything (see infra/terraform/README.md) ──
 # platform (Traefik + Keycloak + Postgres + AI gateway) → auth (the kanzo realm + keasy's
-# client) and ai-teams (a team + key per tenant) → instances (keasy per organization).
-# Adding a tenant = its organization in realm.tfvars, its team in ai.tfvars, an entry in
-# instances/terraform.tfvars, then deploy-auth, deploy-ai-teams, deploy-instances.
+# client) → instances (keasy per organization).
+# Adding a tenant = its organization in realm.tfvars, an entry in instances/terraform.tfvars,
+# then deploy-auth, deploy-instances.
 #
-# The tfvars and the state of the auth/ai roots are operator-local, in $(DEPLOY_DIR)
-# (gitignored): realm.tfvars (organizations), auth.tfvars (redirect_uris — each organization's
-# origin — and backchannel_logout_url = "http://keasy-web:3000/api/auth/backchannel-logout"), ai.tfvars (ai_url,
-# tenants). platform and instances keep theirs beside them (terraform.tfvars, gitignored).
+# The tfvars and the state of the realm and auth roots are operator-local, in $(DEPLOY_DIR)
+# (gitignored): realm.tfvars (organizations, and apis = { ai-gateway = "…" }), auth.tfvars
+# (redirect_uris — each organization's origin — and backchannel_logout_url =
+# "http://keasy-web:3000/api/auth/backchannel-logout"). platform and instances keep theirs
+# beside them (terraform.tfvars, gitignored).
 DEPLOY_DIR ?= $(CURDIR)/infra/terraform/.operator
 TF_PLATFORM = terraform -chdir=infra/terraform/platform
 KC_ADMIN_PASSWORD = $$($(TF_PLATFORM) output -raw kc_admin_password)
@@ -102,11 +103,7 @@ deploy-auth: deps ## Phase 2 — apply kanzo-ui's realm (organizations), then ke
 	$(call tf-apply,.deps/kanzo-ui/services/auth/realm,realm,-var kc_admin_password="$(KC_ADMIN_PASSWORD)")
 	$(call tf-apply,infra/auth,auth,-var kc_admin_password="$(KC_ADMIN_PASSWORD)")
 
-deploy-ai-teams: ## Phase 2 — apply each tenant's AI team and key (infra/ai; reads the platform's master key)
-	$(call tf-apply,infra/ai,ai,-var ai_master_key="$$($(TF_PLATFORM) output -raw ai_master_key)")
-
-deploy-instances: ## Phase 3 — apply keasy per organization (instances/terraform.tfvars + the auth secret and AI keys)
+deploy-instances: ## Phase 3 — apply keasy per organization (instances/terraform.tfvars + the auth secret)
 	terraform -chdir=infra/terraform/instances init -input=false
 	terraform -chdir=infra/terraform/instances apply \
-	  -var oidc_client_secret="$$(TF_DATA_DIR=$(DEPLOY_DIR)/auth.terraform terraform -chdir=infra/auth output -raw client_secret)" \
-	  -var ai_keys="$$(TF_DATA_DIR=$(DEPLOY_DIR)/ai.terraform terraform -chdir=infra/ai output -json keys)"
+	  -var oidc_client_secret="$$(TF_DATA_DIR=$(DEPLOY_DIR)/auth.terraform terraform -chdir=infra/auth output -raw client_secret)"

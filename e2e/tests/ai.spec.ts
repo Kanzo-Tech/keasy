@@ -8,21 +8,23 @@ import { expectProblem } from "../support/problem";
 const stream = (route: Route, body: string) =>
   route.fulfill({ status: 200, contentType: "text/event-stream", body });
 
-test("11 an AI gateway that is down is gateway/unreachable in Ask", async ({ page, corpusGraph }) => {
+test("11 an AI gateway that is down fails the answer in Ask as llm/failed", async ({ page, corpusGraph }) => {
   test.setTimeout(180_000);
   stop("ai-gateway");
   try {
     await openPanel(page, corpusGraph, "Ask");
     await ask(page, "How many people are there?");
-    await expectProblem(page, "gateway/unreachable", { within: 20_000 });
+    // The BFF's forward cannot reach it and answers 500 with no code of its own: the failure is
+    // the model call's, in keasy's words.
+    await expectProblem(page, "llm/failed", { within: 20_000 });
   } finally {
     start("ai-gateway");
   }
 });
 
 test("12 a provider refusal the gateway relays is shown, not an empty answer", async ({ page, corpusGraph }) => {
-  // The gateway answers a spent budget in the protocol's error format, with its status; the
-  // provider's words are the detail of the one view.
+  // The gateway passes a provider's refusal on in the protocol's error format, with its status;
+  // the provider's words are the detail of the one view.
   await page.route(AI, (route) =>
     route.fulfill({
       status: 402,
@@ -35,15 +37,15 @@ test("12 a provider refusal the gateway relays is shown, not an empty answer", a
   await expectProblem(page, "llm/failed", { within: 15_000 });
 });
 
-test("13 an AI gateway that accepts and never answers is gateway/silent", async ({ page, corpusGraph }) => {
+test("13 an AI gateway that accepts and never answers is ai/silent", async ({ page, corpusGraph }) => {
   test.setTimeout(240_000);
   stop("ai-gateway");
   up("ai-gateway-silent");
   try {
     await openPanel(page, corpusGraph, "Ask");
     await ask(page, "How many people are there?");
-    // The relay gives the gateway 25 s, under the browser's 30 s.
-    await expectProblem(page, "gateway/silent", { within: 45_000 });
+    // The BFF forwards and waits; `@kanzo-tech/llm` gives the answer's headers 30 s.
+    await expectProblem(page, "ai/silent", { within: 45_000 });
   } finally {
     stop("ai-gateway-silent");
     start("ai-gateway");
@@ -109,6 +111,6 @@ test("16 SQL the engine refuses reaches the answer card, and the model reads the
   await openPanel(page, corpusGraph, "Ask");
   await ask(page, "How many people are there?");
   // The statement gate's refusal is the tool's answer, drawn in its card; the model reads DuckDB's words.
-  await expect(page.locator('[data-slot="query-result"]').getByRole("alert")).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator('[data-slot="query-result"] [data-code="query/refused"]')).toBeVisible({ timeout: 20_000 });
   await expect.poll(() => readBack).toMatch(/syntax error/i);
 });

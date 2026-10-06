@@ -55,29 +55,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/ai/chat/completions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Relay one chat completion to the gateway. The answer is streamed back as
-         *     the gateway sends it, byte for byte; a reader who leaves drops the stream,
-         *     and with it the upstream request. A refusal of the gateway's own — a spent
-         *     budget, an upstream failure — arrives in the protocol's error format, with
-         *     its status.
-         */
-        post: operations["chat_completions"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/branding": {
         parameters: {
             query?: never;
@@ -413,12 +390,6 @@ export interface components {
             name: string;
         };
         /**
-         * @description A model, by what it is for. Which upstream answers is the gateway's
-         *     configuration (`infra/ai/`), so nothing here names a provider.
-         * @enum {string}
-         */
-        Alias: "chat" | "complete";
-        /**
          * @description How this instance looks, as its deployment declares it (`KEASY_BRANDING_FILE`).
          *     Public: the web reads it to render the login page and the first paint,
          *     before anyone has signed in.
@@ -444,20 +415,6 @@ export interface components {
             organization: string;
             /** @description A theme stylesheet to inline on every page. */
             theme_css?: string | null;
-        };
-        /**
-         * @description An OpenAI chat completion request. `model` must be an alias; everything
-         *     else the protocol carries — `stream`, `tools`, `response_format`,
-         *     `temperature` — goes to the gateway untouched.
-         */
-        ChatCompletionRequest: {
-            /** Format: int32 */
-            max_completion_tokens?: number | null;
-            /** Format: int32 */
-            max_tokens?: number | null;
-            /** @description The conversation, in the OpenAI message format. */
-            messages: Record<string, never>[];
-            model: components["schemas"]["Alias"];
         };
         Check: {
             message?: string | null;
@@ -544,14 +501,10 @@ export interface components {
          *     variant is its wire name spelled in Rust, `area/kind-x` as `AreaKindX`, so
          *     the code a test asserts and the variant a handler names are one word.
          *
-         *     Every refusal the server writes is an [`ErrorBody`] with one of these, with
-         *     one exception: the AI relay (`routes::ai`) passes the gateway's own refusal
-         *     through in the OpenAI error format the browser's model client reads, status
-         *     and body untouched. Its own failures — unreachable, silent —
-         *     are `gateway/*` bodies like any other.
+         *     Every refusal the server writes is an [`ErrorBody`] with one of these.
          * @enum {string}
          */
-        ErrorCode: "auth/session-required" | "auth/keys-unavailable" | "rbac/no-membership" | "rbac/insufficient-role" | "rbac/forbidden" | "request/rate-limited" | "request/invalid" | "request/malformed" | "request/method-not-allowed" | "request/too-large" | "route/not-found" | "server/internal" | "server/silent" | "server/not-ready" | "graph/not-found" | "graph/not-draft" | "graph/not-completed" | "graph/not-running" | "graph/ended" | "graph/still-running" | "graph/already-running" | "graph/abandoned" | "graph/interrupted" | "graph/invalid-destination" | "graph/no-destination" | "graph/folder-taken" | "secret/not-found" | "connection/not-found" | "resource/already-exists" | "resource/in-use" | "connection/overlaps" | "probe/failed" | "store/refused" | "store/silent" | "gateway/unreachable" | "gateway/silent";
+        ErrorCode: "auth/session-required" | "auth/keys-unavailable" | "rbac/no-membership" | "rbac/insufficient-role" | "rbac/forbidden" | "request/rate-limited" | "request/invalid" | "request/malformed" | "request/method-not-allowed" | "request/too-large" | "route/not-found" | "server/internal" | "server/silent" | "server/not-ready" | "graph/not-found" | "graph/not-draft" | "graph/not-completed" | "graph/not-running" | "graph/ended" | "graph/still-running" | "graph/already-running" | "graph/abandoned" | "graph/interrupted" | "graph/invalid-destination" | "graph/no-destination" | "graph/folder-taken" | "secret/not-found" | "connection/not-found" | "resource/already-exists" | "resource/in-use" | "connection/overlaps" | "probe/failed" | "store/refused" | "store/silent";
         /** @description What a refusal carries beside its words. */
         ErrorData: {
             /**
@@ -956,55 +909,6 @@ export interface operations {
             };
             /** @description The database did not answer in time */
             503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-        };
-    };
-    chat_completions: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ChatCompletionRequest"];
-            };
-        };
-        responses: {
-            /** @description The gateway's answer as it streams: OpenAI chat completion chunks (`text/event-stream`), ended by an error event carrying `gateway/silent` if the gateway goes quiet mid-answer, or one completion (`application/json`) */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Not an alias, or a malformed request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            /** @description The AI gateway could not be reached */
-            502: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            /** @description The AI gateway did not begin its answer in time */
-            504: {
                 headers: {
                     [name: string]: unknown;
                 };

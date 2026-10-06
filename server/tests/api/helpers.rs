@@ -11,7 +11,7 @@ use secrecy::SecretString;
 use serde_json::json;
 
 use keasy_server::configuration::{
-    AiSettings, ApplicationSettings, BrandingSettings, DatabaseSettings, OidcSettings, Settings,
+    ApplicationSettings, BrandingSettings, DatabaseSettings, OidcSettings, Settings,
 };
 use keasy_server::credentials::sealing::SecretKey;
 use keasy_server::database::Database;
@@ -45,28 +45,15 @@ pub fn secret_key() -> SecretKey {
 }
 
 pub async fn spawn_app() -> TestApp {
-    spawn_app_with(no_gateway()).await
-}
-
-/// The server, relaying model calls to the gateway `ai` names.
-pub async fn spawn_app_with(ai: AiSettings) -> TestApp {
-    spawn(ai, BrandingSettings::default()).await
+    spawn(BrandingSettings::default()).await
 }
 
 /// The server, wearing the look `branding` declares.
 pub async fn spawn_app_branded(branding: BrandingSettings) -> TestApp {
-    spawn(no_gateway(), branding).await
+    spawn(branding).await
 }
 
-/// A gateway nothing listens on, for the tests that never call a model.
-fn no_gateway() -> AiSettings {
-    AiSettings {
-        url: "http://127.0.0.1:9".into(),
-        key: SecretString::from("unused"),
-    }
-}
-
-async fn spawn(ai: AiSettings, branding: BrandingSettings) -> TestApp {
+async fn spawn(branding: BrandingSettings) -> TestApp {
     let realm = realm("k1").await;
     let dir = tempfile::tempdir().unwrap();
     let database = DatabaseSettings {
@@ -89,7 +76,6 @@ async fn spawn(ai: AiSettings, branding: BrandingSettings) -> TestApp {
             audience: "keasy-api".into(),
             internal_base_url: None,
         },
-        ai,
     };
     let application = Application::build(settings).await.unwrap();
     let address = format!("http://127.0.0.1:{}", application.port());

@@ -4,11 +4,12 @@ import { describe, expect, it } from "vitest";
 import { API, MODEL_CALLS } from "./routes";
 
 describe("the model calls' path", () => {
-  it("is where the server serves every AI route", () => {
-    const ai = Object.entries(spec.paths as Record<string, Record<string, { tags?: string[] }>>)
-      .filter(([, operations]) => Object.values(operations).some((o) => o.tags?.includes("AI")))
-      .map(([path]) => `${API}${path}`);
-    expect(ai.length).toBeGreaterThan(0);
-    for (const path of ai) expect(path.startsWith(`${MODEL_CALLS}/`)).toBe(true);
+  // The BFF forwards a request by the longest mount it is under, so a server route there would
+  // reach the AI gateway instead.
+  it("is a mount of its own, which no route of the server's lies under", () => {
+    const shadowed = Object.keys(spec.paths)
+      .map((path) => `${API}${path}`)
+      .filter((path) => path === MODEL_CALLS || path.startsWith(`${MODEL_CALLS}/`));
+    expect(shadowed).toEqual([]);
   });
 });

@@ -52,67 +52,6 @@
         ]
       }
     },
-    "/v1/ai/chat/completions": {
-      "post": {
-        "tags": [
-          "AI"
-        ],
-        "summary": "Relay one chat completion to the gateway. The answer is streamed back as\nthe gateway sends it, byte for byte; a reader who leaves drops the stream,\nand with it the upstream request. A refusal of the gateway's own — a spent\nbudget, an upstream failure — arrives in the protocol's error format, with\nits status.",
-        "operationId": "chat_completions",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ChatCompletionRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "The gateway's answer as it streams: OpenAI chat completion chunks (`text/event-stream`), ended by an error event carrying `gateway/silent` if the gateway goes quiet mid-answer, or one completion (`application/json`)"
-          },
-          "400": {
-            "description": "Not an alias, or a malformed request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "502": {
-            "description": "The AI gateway could not be reached",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "504": {
-            "description": "The AI gateway did not begin its answer in time",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": [
-              "reader"
-            ]
-          }
-        ]
-      }
-    },
     "/v1/branding": {
       "get": {
         "tags": [
@@ -1925,14 +1864,6 @@
           }
         }
       },
-      "Alias": {
-        "type": "string",
-        "description": "A model, by what it is for. Which upstream answers is the gateway's\nconfiguration (`infra/ai/`), so nothing here names a provider.",
-        "enum": [
-          "chat",
-          "complete"
-        ]
-      },
       "Branding": {
         "type": "object",
         "description": "How this instance looks, as its deployment declares it (`KEASY_BRANDING_FILE`).\nPublic: the web reads it to render the login page and the first paint,\nbefore anyone has signed in.",
@@ -1982,42 +1913,6 @@
               "null"
             ],
             "description": "A theme stylesheet to inline on every page."
-          }
-        }
-      },
-      "ChatCompletionRequest": {
-        "type": "object",
-        "description": "An OpenAI chat completion request. `model` must be an alias; everything\nelse the protocol carries — `stream`, `tools`, `response_format`,\n`temperature` — goes to the gateway untouched.",
-        "required": [
-          "model",
-          "messages"
-        ],
-        "properties": {
-          "max_completion_tokens": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int32",
-            "minimum": 0
-          },
-          "max_tokens": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int32",
-            "minimum": 0
-          },
-          "messages": {
-            "type": "array",
-            "items": {
-              "type": "object"
-            },
-            "description": "The conversation, in the OpenAI message format."
-          },
-          "model": {
-            "$ref": "#/components/schemas/Alias"
           }
         }
       },
@@ -2261,7 +2156,7 @@
       },
       "ErrorCode": {
         "type": "string",
-        "description": "Every error the server answers with. Closed: a code the server does not\ndeclare here cannot be sent, and the web keys its copy by this enum.\n\nOne grammar with fossil's and kanzo-ui's codes, `area/kind`, so one registry\nin the web keys all three. The areas are keasy's own and never one of\nfossil's (`storage`, `engine`, `run`, …): a code means one thing. Each\nvariant is its wire name spelled in Rust, `area/kind-x` as `AreaKindX`, so\nthe code a test asserts and the variant a handler names are one word.\n\nEvery refusal the server writes is an [`ErrorBody`] with one of these, with\none exception: the AI relay (`routes::ai`) passes the gateway's own refusal\nthrough in the OpenAI error format the browser's model client reads, status\nand body untouched. Its own failures — unreachable, silent —\nare `gateway/*` bodies like any other.",
+        "description": "Every error the server answers with. Closed: a code the server does not\ndeclare here cannot be sent, and the web keys its copy by this enum.\n\nOne grammar with fossil's and kanzo-ui's codes, `area/kind`, so one registry\nin the web keys all three. The areas are keasy's own and never one of\nfossil's (`storage`, `engine`, `run`, …): a code means one thing. Each\nvariant is its wire name spelled in Rust, `area/kind-x` as `AreaKindX`, so\nthe code a test asserts and the variant a handler names are one word.\n\nEvery refusal the server writes is an [`ErrorBody`] with one of these.",
         "enum": [
           "auth/session-required",
           "auth/keys-unavailable",
@@ -2296,9 +2191,7 @@
           "connection/overlaps",
           "probe/failed",
           "store/refused",
-          "store/silent",
-          "gateway/unreachable",
-          "gateway/silent"
+          "store/silent"
         ]
       },
       "ErrorData": {

@@ -1,6 +1,6 @@
 //! Secrets: who keasy is when it reaches a store. Models are not here: every
-//! model call goes through the platform's AI gateway with the workspace's own
-//! key (`KEASY_AI_URL`), which is configuration, not a stored secret.
+//! model call goes from the web to the platform's AI gateway with the person's
+//! own token, exchanged for the gateway, and no server holds a model key.
 //!
 //! A spec comes twice. [`SecretSpec`] is what a request carries: its values
 //! included, as [`SecretString`], and it only deserializes. [`SecretSpecView`]

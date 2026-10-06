@@ -16,11 +16,7 @@ use utoipa::openapi::{OpenApi, Ref, RefOr, ResponseBuilder, content::ContentBuil
 /// variant is its wire name spelled in Rust, `area/kind-x` as `AreaKindX`, so
 /// the code a test asserts and the variant a handler names are one word.
 ///
-/// Every refusal the server writes is an [`ErrorBody`] with one of these, with
-/// one exception: the AI relay (`routes::ai`) passes the gateway's own refusal
-/// through in the OpenAI error format the browser's model client reads, status
-/// and body untouched. Its own failures — unreachable, silent —
-/// are `gateway/*` bodies like any other.
+/// Every refusal the server writes is an [`ErrorBody`] with one of these.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema, strum::EnumIter)]
 pub enum ErrorCode {
     #[serde(rename = "auth/session-required")]
@@ -122,13 +118,6 @@ pub enum ErrorCode {
     /// answer within its deadline; `after` says how long it was given.
     #[serde(rename = "store/silent")]
     StoreSilent,
-    /// The AI gateway could not be reached.
-    #[serde(rename = "gateway/unreachable")]
-    GatewayUnreachable,
-    /// The AI gateway sent nothing within its deadline — before its answer
-    /// began, or in the middle of it; `after` says how long it was given.
-    #[serde(rename = "gateway/silent")]
-    GatewaySilent,
 }
 
 impl ErrorCode {
@@ -170,8 +159,6 @@ impl ErrorCode {
             Self::ProbeFailed => "Validation failed",
             Self::StoreRefused => "The store refused",
             Self::StoreSilent => "The store did not answer in time",
-            Self::GatewayUnreachable => "The AI gateway is unreachable",
-            Self::GatewaySilent => "The AI gateway did not answer in time",
         }
     }
 }
@@ -354,8 +341,7 @@ impl IntoResponse for Refusal {
 /// axum's own answer — no route (404), a method the route does not take (405),
 /// a body over the limit (413), and the `Json`, `Path` and `Query` rejections
 /// (400/415/422) — whose plain-text message becomes the `detail`. A JSON error
-/// body passes untouched: the server writes only `ErrorBody`, save the AI
-/// relay's pass-through of the gateway's own refusal (see [`ErrorCode`]).
+/// body passes untouched: the server writes only `ErrorBody`.
 pub async fn as_error_body(response: Response) -> Response {
     let status = response.status();
     if !(status.is_client_error() || status.is_server_error()) {

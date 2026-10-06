@@ -21,14 +21,6 @@ variable "oidc_client_secret" {
   sensitive = true
 }
 
-# ── AI ───────────────────────────────────────────────────────────────────────
-# Organization alias => that instance's gateway key:
-#   terraform -chdir=infra/ai output -json keys
-variable "ai_keys" {
-  type      = map(string)
-  sensitive = true
-}
-
 # ── Fleet image defaults ─────────────────────────────────────────────────────
 # The release tag without its `v`: images.yml publishes keasy-server and keasy-web
 # under it, and every instance runs that pair.

@@ -263,11 +263,11 @@ export function AssistantWizard({
               className="h-7 border-0 px-0 text-sm shadow-none focus-visible:ring-0"
               onChange={(e) => {
                 const { value } = e.target;
-                setReqs((prev) => prev.map((r) => (r.id === row.original.id ? { ...r, question: value } : r)));
+                setReqs((prev) => prev.map((r) => (r.id === row.original.id ? { ...r, text: value } : r)));
               }}
               onClick={(e) => e.stopPropagation()}
               placeholder="Type a requirement..."
-              value={row.original.question}
+              value={row.original.text}
             />
             <span className="text-muted-foreground text-xs">{row.original.rationale}</span>
           </div>
@@ -291,7 +291,7 @@ export function AssistantWizard({
   const reqTable = useDataTable({ columns: reqColumns, data: reqs, getRowId: (r) => r.id });
   const questions = reqTable
     .getSelectedRowModel()
-    .rows.map((row) => row.original.question.trim())
+    .rows.map((row) => row.original.text.trim())
     .filter(Boolean);
 
   const suggest = useCall();
@@ -335,7 +335,7 @@ export function AssistantWizard({
 
   const addRequirement = () => {
     const id = `custom-${Date.now()}`;
-    setReqs((prev) => [...prev, { id, question: "", rationale: "Custom requirement" }]);
+    setReqs((prev) => [...prev, { id, text: "", rationale: "Custom requirement" }]);
     reqTable.setRowSelection((prev) => ({ ...prev, [id]: true }));
   };
 

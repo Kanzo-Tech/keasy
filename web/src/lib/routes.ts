@@ -5,7 +5,8 @@ export const PROBLEM_PAGE = "/auth/error";
 export const API = "/api";
 
 /**
- * Model calls, through the API proxy. `@kanzo-tech/llm`'s `createGateway` bounds them itself, so
- * `deadlineFetch` passes them through whole.
+ * Model calls: the BFF's own mount, forwarded to the platform's AI gateway with a token exchanged
+ * for it. `@kanzo-tech/llm`'s `createGateway` bounds them itself, so `deadlineFetch` passes them
+ * through whole.
  */
-export const MODEL_CALLS = `${API}/v1/ai`;
+export const MODEL_CALLS = `${API}/ai`;

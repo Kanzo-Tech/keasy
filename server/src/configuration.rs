@@ -14,18 +14,6 @@ pub struct Settings {
     pub application: ApplicationSettings,
     pub database: DatabaseSettings,
     pub oidc: OidcSettings,
-    /// The AI gateway. Every workspace has one.
-    pub ai: AiSettings,
-}
-
-/// The platform's AI gateway (LiteLLM, OpenAI-compatible) and this workspace's
-/// key to it. The key is the workspace's budget: it never reaches a browser,
-/// which reaches models only through this server.
-pub struct AiSettings {
-    /// Read from `KEASY_AI_URL`, e.g. `http://ai-gateway:4000`.
-    pub url: String,
-    /// Read from `KEASY_AI_KEY` or the file `KEASY_AI_KEY_FILE` names.
-    pub key: SecretString,
 }
 
 pub struct ApplicationSettings {
@@ -222,17 +210,6 @@ pub fn get_configuration() -> Result<Settings, String> {
             audience: nonblank("KEASY_OIDC_AUDIENCE").unwrap_or_else(|| "keasy-api".to_string()),
             internal_base_url: nonblank("KEASY_OIDC_INTERNAL_BASE_URL"),
         },
-        ai: ai_settings()?,
-    })
-}
-
-/// The gateway and the workspace's key to it, both required.
-fn ai_settings() -> Result<AiSettings, String> {
-    let url = nonblank("KEASY_AI_URL").ok_or("KEASY_AI_URL is required")?;
-    let key = resolve_secret("KEASY_AI_KEY")?.ok_or("KEASY_AI_KEY[_FILE] is required")?;
-    Ok(AiSettings {
-        url: url.trim_end_matches('/').to_string(),
-        key,
     })
 }
 

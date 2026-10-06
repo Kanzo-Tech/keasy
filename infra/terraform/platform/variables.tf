@@ -22,7 +22,7 @@ variable "postgres_image" {
 }
 
 # ── AI gateway ───────────────────────────────────────────────────────────────
-# Env name => key, for every upstream infra/ai/litellm.prod.yaml names
+# Env name => key, for every upstream ai-profile.yaml names
 # (e.g. { ANTHROPIC_API_KEY = "…" }).
 variable "ai_upstream_keys" {
   type      = map(string)
@@ -30,14 +30,8 @@ variable "ai_upstream_keys" {
   default   = {}
 }
 
-# The admin console's host, e.g. ai.internal.keasy.example.com. Null = no route.
-variable "ai_admin_hostname" {
-  type    = string
+# Tokens each organization may spend an hour, input and output together. Null = no budget.
+variable "ai_tokens_per_hour" {
+  type    = number
   default = null
-}
-
-# CIDRs allowed to reach the admin console (the operator's, a VPN's).
-variable "ai_admin_allow" {
-  type    = list(string)
-  default = []
 }

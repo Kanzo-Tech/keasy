@@ -1,5 +1,5 @@
 import {
-  PreferencesSections,
+  Pref,
   SectionBody,
   SectionDescription,
   SectionHeader,
@@ -15,12 +15,12 @@ const SECTIONS = [
   {
     title: "Appearance",
     description: "Control the look and feel of the interface.",
-    body: <PreferencesSections namespace="theme" only={["appearance"]} />,
+    body: <Pref name="theme.appearance" />,
   },
   {
     title: "Density",
     description: "How compact the interface is: the scale everything else is measured against.",
-    body: <PreferencesSections namespace="theme" only={["density"]} />,
+    body: <Pref name="theme.density" />,
   },
 ];
 

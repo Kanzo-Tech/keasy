@@ -6,7 +6,7 @@ import { FilterIcon, Sparkles } from "lucide-react";
 import { clauseSemiJoin, useClauses, useMosaic, type Selection } from "@kanzo-tech/ui/analytics";
 import { corpusReferences, GraphSelect } from "@kanzo-tech/graph";
 import { Button, EmptyDescription, EmptyHeader, EmptyIndicator, EmptyRoot } from "@kanzo-tech/ui";
-import { Chat, ChatSkeleton, useChat } from "@kanzo-tech/ai";
+import { Chat, ChatSkeleton, useAgentChat } from "@kanzo-tech/ai";
 import {
   dataAgent,
   dataSuggestions,
@@ -16,10 +16,10 @@ import {
   type DataScope,
   type QueryOutput,
 } from "@kanzo-tech/ai/data";
-import { DirectChatTransport } from "@kanzo-tech/llm";
-import { ProblemView } from "@/components/problem-view";
+import { problemCopy } from "@/components/problem-view";
 import { gateway } from "@/lib/ai";
 import { settled } from "@/lib/api/settled";
+import { coded } from "@/lib/errors";
 import { corpusKey, ONCE, useCorpus, useGraphKey, useVertices } from "@/lib/fossil/corpus";
 
 /**
@@ -88,7 +88,7 @@ function useStarters(schema: DataSchema, scope: DataScope) {
   });
   return {
     suggesting: starters.fetchStatus === "fetching",
-    questions: starters.isError ? [] : (starters.data ?? []).map((s) => s.question),
+    proposals: starters.isError ? [] : (starters.data ?? []),
   };
 }
 
@@ -124,40 +124,32 @@ function AskChat() {
   const vertices = useVertices();
   const schema = useSchema();
   const scope = useMemo<DataScope>(() => ({ selection: crossfilter, table: vertices }), [crossfilter, vertices]);
-  // What stopped an answer, as thrown: the AI SDK hands `useChat` a sentence, so the transport keeps
-  // the value itself for the failure view.
-  const [failure, setFailure] = useState<unknown>(undefined);
-  const transport = useMemo(
-    () =>
-      new DirectChatTransport({
-        agent: dataAgent({ model: gateway("chat"), coordinator, schema, scope, key }),
-        onError: (error) => {
-          setFailure(error);
-          return error instanceof Error ? error.message : String(error);
-        },
-      }),
+  const agent = useMemo(
+    () => dataAgent({ model: gateway("chat"), coordinator, schema, scope, key }),
     [coordinator, schema, scope, key],
   );
-  const chat = useChat({ transport });
+  const chat = useAgentChat(agent);
   const starters = useStarters(schema, scope);
   // What a reset of the crossfilter calls back, and what retracts the clause an answer published.
   const [source] = useState(() => ({ reset: () => {} }));
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      {/* What stopped the answer, by its code: the gateway's refusal, its silence, a broken stream. */}
-      {chat.error && <ProblemView className="m-2" error={failure ?? chat.error} uncoded="llm/failed" />}
       <Chat
-        chat={chat}
+        // What stopped the answer, by its code: a silence or a spent budget as `@kanzo-tech/llm` names
+        // it, and anything uncoded as `llm/failed`, in keasy's words.
+        chat={{ ...chat, error: chat.error === undefined ? undefined : coded(chat.error, "llm/failed") }}
+        copy={problemCopy}
         className="p-2"
         empty={<AskEmpty />}
         suggesting={starters.suggesting}
-        suggestions={starters.questions}
+        suggestions={starters.proposals}
         tools={{
-          query: (part) => (
+          query: (part, { stopped }) => (
             <QueryResult
               actions={(answer) => <AnswerActions answer={answer} crossfilter={crossfilter} source={source} />}
               part={part}
+              stopped={stopped}
             />
           ),
         }}

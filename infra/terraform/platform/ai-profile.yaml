@@ -1,0 +1,11 @@
+# The gateway's production profile: which upstream answers each alias, in agentgateway's
+# `llm.models` shape. Each upstream's key is an env var the gateway module sets from
+# `ai_upstream_keys`, read here by its name. Changing an entry rolls the gateway; no app changes.
+
+models:
+  - name: chat
+    provider: anthropic
+    params: { model: claude-sonnet-5-5, apiKey: $ANTHROPIC_API_KEY }
+  - name: complete
+    provider: anthropic
+    params: { model: claude-haiku-4-5-20251001, apiKey: $ANTHROPIC_API_KEY }

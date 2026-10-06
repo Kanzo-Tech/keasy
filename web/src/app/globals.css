@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "@kanzo-tech/ui/tailwind.css";
+@import "@kanzo-tech/graph/tailwind.css";
 @import "@kanzo-tech/ai/tailwind.css";
 @import "@kanzo-tech/metadata-form/tailwind.css";
 

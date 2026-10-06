@@ -36,7 +36,7 @@ export function up(...services: string[]) {
   compose("--profile", "faults", "up", "-d", "--wait", ...services);
 }
 
-/** Start `services` without waiting on a health check (the AI gateway's needs its model backend). */
+/** Start `services` without waiting on them (the AI gateway has no health check, and restarts until it reaches the realm). */
 export function start(...services: string[]) {
   compose("--profile", "faults", "up", "-d", ...services);
 }

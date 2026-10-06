@@ -1,32 +1,23 @@
 import { createGateway } from "@kanzo-tech/llm";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { coded } from "@/lib/errors";
 import { describeFiles, suggestQuestions, writeProgram } from "./assistant-prompts";
 
-const relay = vi.hoisted(() => ({ body: "" }));
+const model = vi.hoisted(() => ({ written: "" }));
 
+/** A gateway that answers with what `model.written` holds, then sends nothing more. */
 vi.mock("@/lib/ai", () => ({
   gateway: createGateway({
-    baseURL: "http://relay.test/v1/ai",
-    fetch: async () => new Response(relay.body, { headers: { "content-type": "text/event-stream" } }),
+    baseURL: "http://gateway.test/api/ai",
+    fetch: async () =>
+      new Response(
+        new ReadableStream<Uint8Array>({ start: (body) => body.enqueue(new TextEncoder().encode(model.written)) }),
+        { headers: { "content-type": "text/event-stream" } },
+      ),
   }),
 }));
 
 const chunk = (content: string) => `data: ${JSON.stringify({ choices: [{ index: 0, delta: { content } }] })}\n\n`;
-
-/** The event the server's relay ends a quiet answer with (`server/src/routes/ai.rs`, `error_event`). */
-const SILENT =
-  "\n\ndata: " +
-  JSON.stringify({
-    error: {
-      code: "gateway/silent",
-      title: "The AI gateway did not answer in time",
-      detail: "the AI gateway went silent mid-answer",
-      data: { after: 25_000 },
-      message: "the AI gateway went silent mid-answer",
-    },
-  }) +
-  "\n\n";
 
 async function failureOf(stream: AsyncIterable<unknown>): Promise<unknown> {
   try {
@@ -46,18 +37,23 @@ describe("the assistant prompts", () => {
   });
 });
 
-describe("an answer the relay ends as gateway/silent", () => {
+describe("an answer the model stops writing", () => {
   const signal = new AbortController().signal;
+  afterEach(() => vi.useRealTimers());
 
-  it("fails the suggestions with the relay's code, not as none", async () => {
-    relay.body = chunk('[{"question":') + SILENT;
-    const failure = await failureOf(suggestQuestions("people", [], signal));
-    expect(coded(failure, "llm/failed")).toMatchObject({ code: "gateway/silent" });
+  it("fails the suggestions as ai/silent, not as none", async () => {
+    vi.useFakeTimers();
+    model.written = chunk('[{"question":');
+    const failure = failureOf(suggestQuestions("people", [], signal));
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(coded(await failure, "llm/failed")).toMatchObject({ code: "ai/silent" });
   });
 
   it("fails a program it cut short, rather than passing the part written", async () => {
-    relay.body = chunk('{"program":"type { Person } := ') + SILENT;
-    const failure = await failureOf(writeProgram("people", ["Who?"], [], signal));
-    expect(coded(failure, "llm/failed")).toMatchObject({ code: "gateway/silent" });
+    vi.useFakeTimers();
+    model.written = chunk('{"program":"type { Person } := ');
+    const failure = failureOf(writeProgram("people", ["Who?"], [], signal));
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(coded(await failure, "llm/failed")).toMatchObject({ code: "ai/silent" });
   });
 });

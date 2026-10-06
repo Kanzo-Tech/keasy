@@ -67,7 +67,7 @@ describe("the deadline", () => {
     vi.stubGlobal("fetch", fetch);
     const stop = new AbortController();
     const init = { method: "POST", signal: stop.signal };
-    const url = "https://keasy.test/api/v1/ai/chat/completions";
+    const url = "https://keasy.test/api/ai/chat/completions";
     let settled = false;
     const answer = deadlineFetch((ms) => new Silent(ms), 1_000)(url, init);
     answer.then(

@@ -13,8 +13,8 @@ async function runToCompletion(page: Page): Promise<string> {
   return id;
 }
 
-/** The model calls the page makes, through the BFF to the server's relay to the AI gateway. */
-export const AI = "**/api/v1/ai/chat/completions";
+/** The model calls the page makes, through the BFF's forward to the AI gateway. */
+export const AI = "**/api/ai/chat/completions";
 
 /** OpenAI chat completion chunks as the gateway streams them, ending the stream. */
 export function sse(...chunks: unknown[]): string {

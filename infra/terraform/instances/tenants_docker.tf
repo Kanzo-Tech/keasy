@@ -7,8 +7,9 @@
 #
 # The **web** is the relying party for every organization: it holds the client secret and
 # the cookie-sealing secret, reads the organization from the host (<alias>.<base_domain>),
-# and forwards /api/v1 to that organization's server. One web means one session store and
-# one back-channel logout URL, which is all Keycloak calls per client.
+# and forwards /api/v1 to that organization's server and /api/ai to the platform's AI
+# gateway, each with a token exchanged for it and that organization. One web means one
+# session store and one back-channel logout URL, which is all Keycloak calls per client.
 
 locals {
   server_image = "ghcr.io/kanzo-tech/keasy-server:${var.release_version}"
@@ -29,11 +30,6 @@ resource "random_bytes" "secret_key" {
 resource "docker_secret" "oidc" {
   name = "keasy-oidc"
   data = base64encode(var.oidc_client_secret)
-}
-resource "docker_secret" "ai_key" {
-  for_each = var.tenants
-  name     = "keasy-ws-${each.key}-ai-key"
-  data     = base64encode(var.ai_keys[each.key])
 }
 resource "docker_secret" "session" {
   name = "keasy-session"
@@ -79,9 +75,6 @@ resource "docker_service" "server" {
         KEASY_OIDC_CLIENT_ID         = "keasy"
         KEASY_OIDC_INTERNAL_BASE_URL = var.oidc_internal_base_url
         KEASY_SECRET_KEY_FILE        = "/run/secrets/secret-key"
-        # The AI gateway on the overlay, and this workspace's key to it.
-        KEASY_AI_URL      = "http://ai-gateway:4000"
-        KEASY_AI_KEY_FILE = "/run/secrets/ai-key"
         }, contains(keys(docker_config.branding), each.key) ? {
         KEASY_BRANDING_FILE = "/etc/keasy/branding.yml"
       } : {})
@@ -99,11 +92,6 @@ resource "docker_service" "server" {
         secret_id   = docker_secret.secret_key[each.key].id
         secret_name = docker_secret.secret_key[each.key].name
         file_name   = "/run/secrets/secret-key"
-      }
-      secrets {
-        secret_id   = docker_secret.ai_key[each.key].id
-        secret_name = docker_secret.ai_key[each.key].name
-        file_name   = "/run/secrets/ai-key"
       }
 
       mounts {
@@ -227,6 +215,8 @@ resource "docker_service" "web" {
         # Where the BFF forwards `/api/v1` once it has attached the bearer token: the server
         # of the organization the request addresses.
         KEASY_API_URL = "http://keasy-ws-{tenant}-server:8080"
+        # Where the BFF forwards `/api/ai`: the platform's AI gateway, on the overlay.
+        KEASY_AI_URL = "http://ai-gateway:4000"
       }
 
       secrets {

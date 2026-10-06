@@ -1,15 +1,14 @@
 # Copy to terraform.tfvars (gitignored) on the manager. Every key here is an
 # organization alias of the `kanzo` realm (kanzo-ui services/auth/realm tfvars).
-# The OIDC secret and the AI keys are not written here: `make deploy-instances`
-# passes them from the infra/auth and infra/ai outputs.
+# The OIDC secret is not written here: `make deploy-instances` passes it from the
+# infra/auth output.
 
 base_domain     = "keasy.example.com"
 oidc_issuer_url = "https://auth.keasy.example.com/realms/kanzo"
 
 release_version = "0.0.3"
 
-# The fleet. Adding a tenant = its organization in the realm, its team in infra/ai,
-# an entry here.
+# The fleet. Adding a tenant = its organization in the realm, an entry here.
 tenants = {
   acme = {
     display_name = "Acme"

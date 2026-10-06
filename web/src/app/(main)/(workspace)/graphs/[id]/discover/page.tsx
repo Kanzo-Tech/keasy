@@ -43,7 +43,7 @@ import { HeaderEnd } from "@/app/(main)/_parts/header-end";
 import { AskPanel } from "./_parts/ask-panel";
 import { CorpusProvider, corpusQuery, useCorpus } from "@/lib/fossil/corpus";
 import { GraphInfo } from "./_parts/graph-info";
-import { GraphSettings, PlacementContext, type Placement } from "./_parts/graph-settings";
+import { GraphSettings } from "./_parts/graph-settings";
 import { RulesPanel } from "./_parts/rules-panel";
 import { Boundary } from "@/components/boundary";
 import { ProblemView } from "@/components/problem-view";
@@ -164,8 +164,7 @@ function CorpusStatus() {
 function Workspace() {
   const { graphId } = useCorpus();
   const { coordinator } = useMosaic();
-  const { look } = useGraphPrefs();
-  const placement = useState<Placement>({});
+  const { look, sim, placement } = useGraphPrefs();
   const crossfilter = useCrossfilter();
   const [active, setActive] = useState<PanelId>("info");
   const [panelOpen, setPanelOpen] = useState(true);
@@ -178,19 +177,19 @@ function Workspace() {
 
   return (
     <GraphFailure value={failure}>
-    <PlacementContext value={placement}>
     <GraphRoot
       coordinator={coordinator}
       filterBy={crossfilter}
       from={graphId}
       look={look}
+      sim={sim}
       onFailure={(error) => {
         // A canvas that cannot draw shows why in its own region; a selection or search that failed
         // leaves the graph drawn, so the toast is where it is said.
         setFailure(error);
         toastError(error, "The graph could not do that");
       }}
-      {...placement[0]}
+      {...placement}
     >
       <HeaderEnd>
         {/* Switching to the dashboard closes the dock: a dashboard is judged at full width. Reopen it
@@ -296,7 +295,6 @@ function Workspace() {
         </ToggleGroup>
       </ShellFooter>
     </GraphRoot>
-    </PlacementContext>
     </GraphFailure>
   );
 }

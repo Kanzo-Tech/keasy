@@ -8,9 +8,3 @@ output "kc_admin_password" {
 output "network_name" {
   value = docker_network.edge.name
 }
-
-# infra/ai mints each tenant's team and key with this.
-output "ai_master_key" {
-  value     = module.ai_gateway.master_key
-  sensitive = true
-}

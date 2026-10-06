@@ -13,26 +13,23 @@ include:
   - .deps/kanzo-ui/services/ai/compose.yml
 
 services:
-  # keasy, registered with the platform: its client and roles (infra/auth), the
-  # dev tenant's AI team and key (infra/ai), and its roles mapped onto the seed's
-  # organization groups. State in a volume, reset by `make clean` with the rest.
+  # keasy, registered with the platform: its client and roles (infra/auth), and its
+  # roles mapped onto the seed's organization groups. State in a volume, reset by
+  # `make clean` with the rest.
   provision:
     image: hashicorp/terraform:1.14
     restart: "no"
     entrypoint: ["/bin/sh", "-ec"]
     command:
       - |
-        for root in auth ai; do
-          export TF_DATA_DIR=/state/$$root/.terraform
-          terraform -chdir=/infra/$$root init -input=false -backend-config=path=/state/$$root/terraform.tfstate >/dev/null
-          terraform -chdir=/infra/$$root apply -input=false -auto-approve -var-file=dev.tfvars \
-            $$( [ $$root = auth ] && echo "-var kc_admin_password=$$KC_ADMIN_PASSWORD" )
-        done
+        export TF_DATA_DIR=/state/auth/.terraform
+        terraform -chdir=/infra/auth init -input=false -backend-config=path=/state/auth/terraform.tfstate >/dev/null
+        terraform -chdir=/infra/auth apply -input=false -auto-approve -var-file=dev.tfvars \
+          -var kc_admin_password=$$KC_ADMIN_PASSWORD
         apk add --no-cache --quiet curl jq >/dev/null
         KC_URL=http://keycloak:8080 sh /infra/auth/dev-roles.sh
     volumes:
       - ./infra/auth:/infra/auth:ro
-      - ./infra/ai:/infra/ai:ro
       - ./.deps/kanzo-ui/services/auth:/kanzo-auth:ro
       - provision-state:/state
     environment:
@@ -42,8 +39,6 @@ services:
     depends_on:
       auth-seed:
         condition: service_completed_successfully
-      ai-gateway:
-        condition: service_healthy
 
   server:
     build:
@@ -71,9 +66,6 @@ services:
       # The dev S3 credential, its data and shapes sources and the sink, in the
       # API's own request format.
       KEASY_BOOTSTRAP_FILE: /etc/keasy/bootstrap.json
-      # infra/ai/dev.tfvars fixes the dev tenant's gateway key.
-      KEASY_AI_URL: http://ai-gateway:4000
-      KEASY_AI_KEY: sk-keasy-dev-acme
     depends_on:
       provision:
         condition: service_completed_successfully
@@ -111,11 +103,16 @@ services:
       KEASY_OIDC_CLIENT_SECRET: dev-only-keasy-secret
       KEASY_SESSION_SECRET: dev-only-insecure-session-secret-change-me
       KEASY_SESSION_STORE_URL: redis://valkey:6379
+      # Where `/api/ai` is forwarded, with a token exchanged for the gateway and the organization.
+      KEASY_AI_URL: http://ai-gateway:4000
     depends_on:
       server:
         condition: service_healthy
       valkey:
         condition: service_healthy
+      # No healthcheck of its own: it restarts until the realm's keys can be fetched.
+      ai-gateway:
+        condition: service_started
 
   valkey:
     image: valkey/valkey:8.1-alpine
@@ -216,8 +213,8 @@ services:
         aliases:
           - s3.localhost
 
-  # The AI gateway, silent: accepts the relay's connection and never answers.
-  # Shares the gateway's name, so with `ai-gateway` stopped the server's relay
+  # The AI gateway, silent: accepts the web's forward and never answers. Shares
+  # the gateway's name, so with `ai-gateway` stopped the BFF's `/api/ai` forward
   # meets silence instead (scenario 13). Never up beside `ai-gateway`.
   ai-gateway-silent:
     profiles: [faults]

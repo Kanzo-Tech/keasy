@@ -19,10 +19,10 @@ included services' variables (e.g. `KC_ADMIN_PASSWORD`), and `provision` follows
 
 | What | Where |
 |------|-------|
-| App (web BFF, `/api/v1`) | [http://acme.localhost:3000](http://acme.localhost:3000) — one web, each organization at its subdomain |
+| App (web BFF, `/api/v1` and `/api/ai`) | [http://acme.localhost:3000](http://acme.localhost:3000) — one web, each organization at its subdomain |
 | Keycloak | [http://localhost:8080](http://localhost:8080) (admin `admin` / `admin`) |
 | API, for curl | `http://localhost:8081` |
-| AI gateway console | [http://localhost:4000/ui](http://localhost:4000/ui) (`admin` / `sk-dev-master-key`) |
+| AI gateway | `http://localhost:4000` — a token the realm issued for `ai-gateway` and one organization is its only credential; every request is logged to `ai-postgres` |
 
 AI runs on local models served by Docker Model Runner (Docker Desktop 4.40+,
 `docker desktop enable model-runner`): native on the host, on the Mac's GPU. The first `up`
@@ -111,7 +111,8 @@ graph TD
     Web -->|"session records"| Valkey[("Valkey")]
     Server -->|"JWKS"| Keycloak
     Server --> SQLite[("SQLite")]
-    Server -->|"tenant key"| Gateway["AI gateway (LiteLLM)"]
+    Web -->|"/api/ai + bearer token"| Gateway["AI gateway (agentgateway)"]
+    Gateway -->|"JWKS"| Keycloak
     Gateway --> Models["Docker Model Runner (dev) / providers (prod)"]
     Keycloak --> PostgreSQL[("PostgreSQL")]
 ```
@@ -140,9 +141,12 @@ changes it (roles `reader ⊂ editor ⊂ admin`, from the Keycloak organization 
 instance serves).
 
 Models are not a credential. Every call goes to the platform's **AI gateway**
-under an alias (`chat`, `complete`) with the workspace's own key, which
-only the server holds (`KEASY_AI_URL`, `KEASY_AI_KEY[_FILE]`). Budgets, upstreams and
-the dev/prod switch live in the gateway — see [`infra/ai/README.md`](infra/ai/README.md).
+(kanzo-ui's `services/ai`, agentgateway) under an alias (`chat`, `complete`), never a
+provider. The web forwards `/api/ai` to it (`KEASY_AI_URL`) as it forwards `/api/v1`, with
+the session's token exchanged for the `ai-gateway` audience and the organization the request
+addresses: that token is the gateway's only credential and names the organization it charges.
+No server holds a model key. Upstreams, their keys and the budget live in the gateway: in dev,
+kanzo-ui's compose on Docker Model Runner; in prod, `infra/terraform/platform/ai-profile.yaml`.
 
 A **credential** (S3 or Azure) is who keasy is when it reaches a store; a
 **connection** puts one to use (a storage prefix — a source or the one sink). Both
@@ -167,8 +171,7 @@ graph's SHACL rules): a stack started before it needs `docker compose down -v`.
 Docker Swarm, driven by Terraform — see [`infra/terraform/README.md`](infra/terraform/README.md).
 `make deploy-platform` brings up Traefik, Keycloak (on its own host), Postgres and the AI gateway;
 `make deploy-auth` applies kanzo-ui's `kanzo` realm (one organization per tenant) and keasy's
-client (`infra/auth`); `make deploy-ai-teams` a team and key per tenant (`infra/ai`); and
-`make deploy-instances` one server + web + Valkey stack per organization
+client (`infra/auth`); and `make deploy-instances` one server + web + Valkey stack per organization
 (`infra/terraform/instances`). Images are published to GHCR by
 `.github/workflows/images.yml` on `v*` tags, after the server and web CI pass.
 
@@ -185,7 +188,7 @@ client (`infra/auth`); `make deploy-ai-teams` a team and key per tenant (`infra/
 | `make e2e` | The failure scenarios (`e2e/`, Playwright) against the stack without models (`e2e/compose.yml`, as CI); main checkout only, as Keycloak admits :3000 alone |
 
 `docker-compose.yml` is the dev stack and nothing else. It includes kanzo-ui's services
-and applies the same `infra/auth` and `infra/ai` roots as prod, with their `dev.tfvars`.
+and applies the same `infra/auth` root as prod, with its `dev.tfvars`.
 The Rust toolchain is pinned once, in `server/rust-toolchain.toml`.
 
 ## API contract
@@ -207,8 +210,7 @@ api/                @keasy/api: the committed spec, its generated types and the 
 e2e/                @keasy/e2e: one Playwright test per failure scenario, its fixtures, and the `faults` profile's servers
 infra/dev/          the S3 store's config and seed, and an example program, dev-only
 infra/auth/         keasy's client and roles in the platform realm (dev and prod)
-infra/ai/           keasy's AI profile (litellm.prod.yaml) and its tenants' teams
-infra/terraform/    platform/ and instances/ — the Swarm deployment
+infra/terraform/    platform/ and instances/ — the Swarm deployment, and keasy's AI profile
 server/             Rust API (Dockerfile = release, Dockerfile.dev = cargo-watch)
   src/main.rs       configures from the environment and serves
   src/startup.rs    Application, AppState, the router and the spec it publishes

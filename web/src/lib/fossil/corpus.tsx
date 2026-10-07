@@ -3,8 +3,7 @@
 import { createContext, use, useMemo, type ReactNode } from "react";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { TableRefNode, column, eq, literal } from "@uwdata/mosaic-sql";
-import { mapping, open, type Close } from "@fossil-lang/corpus";
-import { mount } from "@fossil-lang/storage";
+import { open, type Close } from "@fossil-lang/corpus";
 import { readJoinGraph } from "@kanzo-tech/graph";
 import {
   MosaicProvider,
@@ -125,28 +124,6 @@ export function useVertices(): Query {
   );
 }
 
-/**
- * The IRIs the corpus's RDF reading is written in, as its manifest declares them: the classes of its
- * vertex types, and the predicates of its columns and relations — what a rule may target and check.
- */
-export function useVocabulary(): { classes: string[]; properties: string[] } {
-  const { graphId } = useCorpus();
-  const tables = new TableRefNode([graphId, "fossil_tables"]);
-  const columns = new TableRefNode([graphId, "fossil_columns"]);
-  const rows = useQueryRows<{ term: "class" | "property"; iri: string }>(
-    `SELECT DISTINCT CASE kind WHEN 'vertex' THEN 'class' ELSE 'property' END AS term, iri FROM ${tables} WHERE iri IS NOT NULL
-     UNION SELECT 'property' AS term, iri FROM ${columns} WHERE iri IS NOT NULL AND role IS NULL
-     ORDER BY iri`,
-  );
-  return useMemo(
-    () => ({
-      classes: rows.filter((r) => r.term === "class").map((r) => r.iri),
-      properties: rows.filter((r) => r.term === "property").map((r) => r.iri),
-    }),
-    [rows],
-  );
-}
-
 /** The corpus's join graph — its types and the edges between them — read once from its catalog. */
 export function useJoinGraph(): JoinGraph {
   const { graphId } = useCorpus();
@@ -159,31 +136,3 @@ export function useJoinGraph(): JoinGraph {
     }),
   );
 }
-
-/**
- * The corpus's RDF meaning, as fossil's RML mapping of its `fossil.json`. The manifest is read under
- * the same read credential `open` mounted, through the page's engine.
- */
-export function useCorpusMapping(): string {
-  const { graphId } = useCorpus();
-  return settled(
-    useSuspenseQuery({
-      queryKey: [...corpusKey(graphId), "mapping"],
-      queryFn: async ({ signal }) => {
-        const attachedTo = await engine({ signal });
-        const mounted = await mount(attachedTo, host, { job: graphId }, "read", { signal });
-        try {
-          const [manifest] = await mounted.files(mounted.prefixes.map((prefix) => `${prefix}${MANIFEST}`));
-          const text = await attachedTo.query(`SELECT content FROM read_text(${literal(manifest)})`, { signal });
-          return mapping(String(text.getChild("content")?.get(0)));
-        } finally {
-          await mounted.close();
-        }
-      },
-      ...ONCE,
-    }),
-  );
-}
-
-/** The file a corpus is described by. */
-const MANIFEST = "fossil.json";

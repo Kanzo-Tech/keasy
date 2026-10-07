@@ -95,8 +95,8 @@ them; paste one into the studio to map its graph into `output/`:
 | `infra/dev/geo.fossil` | OpenFlights onto `geo.shex`: 3,218 `Airport` vertices with `lat`/`lon`, 36,906 `routeTo` edges |
 
 `s3.localhost` is load-bearing: Docker's DNS answers it inside the compose network
-and `*.localhost` is loopback on the host, so the endpoint a vended credential names
-works from both sides. The issuer is `http://localhost:8080/realms/kanzo`, the one the
+and `*.localhost` is loopback on the host, so the endpoint the server is given
+(`AWS_ENDPOINT_URL_S3`, and the vended credential names) works from both sides. The issuer is `http://localhost:8080/realms/kanzo`, the one the
 browser sees; the server and the BFF fetch its keys at `http://keycloak:8080`
 (`KEASY_OIDC_INTERNAL_BASE_URL`).
 

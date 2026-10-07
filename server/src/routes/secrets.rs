@@ -79,6 +79,7 @@ pub async fn create_secret(
         &request.spec,
         request.probe_url.as_deref(),
         &caller.actor(),
+        &state.endpoints,
     )
     .await?;
     Ok((StatusCode::CREATED, Json(view.seen_by(&caller))))
@@ -129,7 +130,8 @@ pub async fn update_secret(
     let (spec, report) = match request.spec {
         Some(spec) => {
             let dependents = connections::using(&*db.read().await, &name)?;
-            let (report, failing) = probe::credential(&spec, None, &dependents).await?;
+            let (report, failing) =
+                probe::credential(&spec, None, &dependents, &state.endpoints).await?;
             if !report.passed() {
                 return Err(Refusal::probe_failed(
                     format!("the new spec was not stored: {}", report.failures()),
@@ -197,7 +199,8 @@ pub async fn validate_secret(
     // Validating stores the report on the secret: a change, guarded as one.
     caller.ensure_may_modify(&credential.provenance.created_by.id, "secret")?;
     let dependents = connections::using(&*db.read().await, &name)?;
-    let (report, _) = probe::credential(&credential.spec, None, &dependents).await?;
+    let (report, _) =
+        probe::credential(&credential.spec, None, &dependents, &state.endpoints).await?;
     persistence::set_validation(&*db.write().await, &name, &report)?;
     Ok(Json(report))
 }

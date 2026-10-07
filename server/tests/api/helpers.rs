@@ -20,6 +20,7 @@ use keasy_server::domain::{
     ValidationReport,
 };
 use keasy_server::startup::Application;
+use keasy_server::storage_client::Endpoints;
 
 /// The server on a free port over a fresh database, verifying tokens against
 /// a fake realm; `db` is a second handle on the same file.
@@ -28,6 +29,8 @@ pub struct TestApp {
     pub client: reqwest::Client,
     pub db: Database,
     pub realm: Realm,
+    /// Where its S3 and STS answer: the deployment's, as `AWS_ENDPOINT_URL_S3` sets it.
+    pub endpoints: Endpoints,
     _dir: tempfile::TempDir,
 }
 
@@ -44,16 +47,26 @@ pub fn secret_key() -> SecretKey {
     SecretKey::from_base64(&base64::engine::general_purpose::STANDARD.encode([42u8; 32])).unwrap()
 }
 
+/// The server, its S3 and STS at [`DEAD`].
 pub async fn spawn_app() -> TestApp {
-    spawn(BrandingSettings::default()).await
+    spawn(BrandingSettings::default(), DEAD).await
+}
+
+/// The server, its S3 and STS at `store`.
+pub async fn spawn_app_on(store: &str) -> TestApp {
+    spawn(BrandingSettings::default(), store).await
 }
 
 /// The server, wearing the look `branding` declares.
 pub async fn spawn_app_branded(branding: BrandingSettings) -> TestApp {
-    spawn(branding).await
+    spawn(branding, DEAD).await
 }
 
-async fn spawn(branding: BrandingSettings) -> TestApp {
+async fn spawn(branding: BrandingSettings, store: &str) -> TestApp {
+    let endpoints = Endpoints {
+        s3: Some(store.into()),
+        sts: Some(store.into()),
+    };
     let realm = realm("k1").await;
     let dir = tempfile::tempdir().unwrap();
     let database = DatabaseSettings {
@@ -68,6 +81,7 @@ async fn spawn(branding: BrandingSettings) -> TestApp {
             org_alias: ORG.into(),
             bootstrap_file: None,
             branding,
+            endpoints: endpoints.clone(),
         },
         database,
         oidc: OidcSettings {
@@ -86,6 +100,7 @@ async fn spawn(branding: BrandingSettings) -> TestApp {
         client: reqwest::Client::builder().build().unwrap(),
         db: Database::open(&db_path, secret_key()).unwrap(),
         realm,
+        endpoints,
         _dir: dir,
     }
 }
@@ -262,13 +277,13 @@ impl TestApp {
         (status, body["code"].as_str().map(str::to_owned))
     }
 
-    /// A stored S3 credential on `endpoint`, unprobed, created by `by`.
-    pub async fn credential(&self, name: &str, endpoint: &str, by: &str) {
+    /// A stored S3 credential, unprobed, created by `by`.
+    pub async fn credential(&self, name: &str, by: &str) {
         keasy_server::credentials::persistence::insert(
             &*self.db.write().await,
             self.db.secret_key(),
             &ResourceName::parse(name).unwrap(),
-            &s3(endpoint, "original-secret"),
+            &s3("original-secret"),
             &actor(by),
             &unprobed(),
         )
@@ -310,12 +325,11 @@ pub fn unprobed() -> ValidationReport {
     }
 }
 
-pub fn s3(endpoint: &str, secret: &str) -> SecretSpec {
+pub fn s3(secret: &str) -> SecretSpec {
     SecretSpec::S3 {
         access_key_id: "AK".into(),
         secret_access_key: SecretString::from(secret),
         region: "us-east-1".into(),
-        endpoint: Some(endpoint.into()),
         role_arn: None,
         external_id: None,
     }
@@ -325,9 +339,17 @@ pub fn s3(endpoint: &str, secret: &str) -> SecretSpec {
 pub const DEAD: &str = "http://127.0.0.1:1";
 
 /// A store that answers as S3 does, enough for LIST, PUT and DELETE: every
-/// bucket is empty and every write lands.
+/// bucket is empty and every write lands — for the access key `AK`. Any other
+/// key is refused, as S3 refuses a key it does not know.
 pub async fn fake_s3() -> String {
-    async fn answer(method: Method) -> axum::response::Response {
+    async fn answer(method: Method, headers: HeaderMap) -> axum::response::Response {
+        let signed_by_ak = headers
+            .get(header::AUTHORIZATION)
+            .and_then(|v| v.to_str().ok())
+            .is_some_and(|v| v.contains("Credential=AK/"));
+        if !signed_by_ak {
+            return StatusCode::FORBIDDEN.into_response();
+        }
         match method {
             Method::GET => (
                 [(header::CONTENT_TYPE, "application/xml")],

@@ -2572,7 +2572,7 @@
         "oneOf": [
           {
             "type": "object",
-            "title": "Amazon S3 / S3-compatible",
+            "title": "Amazon S3",
             "required": [
               "access_key_id",
               "secret_access_key",
@@ -2581,14 +2581,6 @@
             "properties": {
               "access_key_id": {
                 "type": "string"
-              },
-              "endpoint": {
-                "type": [
-                  "string",
-                  "null"
-                ],
-                "format": "uri",
-                "description": "MinIO, R2 or a gateway. An `http://` endpoint opts into plain HTTP."
               },
               "external_id": {
                 "type": [
@@ -2612,7 +2604,7 @@
                   "string",
                   "null"
                 ],
-                "description": "The role keasy assumes to vend a credential scoped to one prefix.\nAWS needs it. With an endpoint and no role, keasy asks for\n`arn:aws:iam::000000000000:role/keasy-vended`; a store that validates\nroles (Ceph RGW, SeaweedFS) needs that role declared, or this set."
+                "description": "The role keasy assumes to vend a credential scoped to one prefix.\nAWS needs it."
               },
               "secret_access_key": {
                 "type": "string",
@@ -2686,7 +2678,7 @@
         "oneOf": [
           {
             "type": "object",
-            "title": "Amazon S3 / S3-compatible",
+            "title": "Amazon S3",
             "required": [
               "access_key_id",
               "region",
@@ -2695,12 +2687,6 @@
             "properties": {
               "access_key_id": {
                 "type": "string"
-              },
-              "endpoint": {
-                "type": [
-                  "string",
-                  "null"
-                ]
               },
               "external_id": {
                 "type": [

@@ -132,6 +132,7 @@ pub async fn create_connection(
         request.secret,
         request.target,
         &caller.actor(),
+        &state.endpoints,
     )
     .await?;
     Ok((StatusCode::CREATED, Json(view.seen_by(&caller))))
@@ -186,9 +187,15 @@ pub async fn update_connection(
         current.target.is_sink() || updated.target.is_sink(),
     )?;
     Ok(Json(
-        crate::connections::save(&state.db, Some(&name), updated, &caller.actor())
-            .await?
-            .seen_by(&caller),
+        crate::connections::save(
+            &state.db,
+            Some(&name),
+            updated,
+            &caller.actor(),
+            &state.endpoints,
+        )
+        .await?
+        .seen_by(&caller),
     ))
 }
 
@@ -231,8 +238,12 @@ pub async fn validate_connection(
     // Validating stores the report on the connection: a change, guarded as one.
     may_change(&caller, Some(&connection), connection.target.is_sink())?;
     let credential = crate::credentials::named(&state.db, &connection.secret).await?;
-    let report =
-        crate::credentials::probe::connection(&credential.spec, &connection.target).await?;
+    let report = crate::credentials::probe::connection(
+        &credential.spec,
+        &connection.target,
+        &state.endpoints,
+    )
+    .await?;
     persistence::set_validation(&*state.db.write().await, &name, &report)?;
     Ok(Json(report))
 }
@@ -262,7 +273,8 @@ pub async fn list_connection_files(
         let source = crate::connections::source(&conn, &name)?;
         crate::connections::storage(&conn, state.db.secret_key(), &source)?
     };
-    let (files, truncated) = storage_client::list_files(&credential, &url, &under, limit).await?;
+    let (files, truncated) =
+        storage_client::list_files(&credential, &url, &state.endpoints, &under, limit).await?;
     Ok(Json(FileListing {
         files: files.into_iter().map(FileEntry::from).collect(),
         truncated,

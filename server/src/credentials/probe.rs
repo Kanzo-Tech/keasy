@@ -11,7 +11,7 @@ use crate::domain::{
     Check, ConnectionView, Direction, Operation, Outcome, SecretSpec, StorageLocation,
     StorageTarget, ValidationReport,
 };
-use crate::storage_client::{self, STORE_DEADLINE, StoreFailure, bounded, refused};
+use crate::storage_client::{self, Endpoints, STORE_DEADLINE, StoreFailure, bounded, refused};
 
 fn check(operation: Operation, outcome: Result<Option<String>, String>) -> Check {
     match outcome {
@@ -53,14 +53,19 @@ fn through(name: &str, checks: Vec<Check>) -> Vec<Check> {
 fn open(
     credential: &SecretSpec,
     url: &str,
+    endpoints: &Endpoints,
 ) -> Result<(storage_client::CloudStore, StorageLocation), String> {
     let url = StorageLocation::parse(url)?;
-    Ok((storage_client::store(credential, &url)?, url))
+    Ok((storage_client::store(credential, &url, endpoints)?, url))
 }
 
 /// LIST under `url`: the first page is proof enough.
-async fn list(credential: &SecretSpec, url: &str) -> Result<Check, StoreFailure> {
-    let (store, url) = match open(credential, url) {
+async fn list(
+    credential: &SecretSpec,
+    url: &str,
+    endpoints: &Endpoints,
+) -> Result<Check, StoreFailure> {
+    let (store, url) = match open(credential, url, endpoints) {
         Ok(opened) => opened,
         Err(e) => return Ok(check(Operation::List, Err(e))),
     };
@@ -76,8 +81,12 @@ async fn list(credential: &SecretSpec, url: &str) -> Result<Check, StoreFailure>
 
 /// WRITE an object under the sink, then DELETE it: a listing would only prove
 /// the credential can read.
-async fn write_delete(credential: &SecretSpec, url: &str) -> Result<Vec<Check>, StoreFailure> {
-    let (store, url) = match open(credential, url) {
+async fn write_delete(
+    credential: &SecretSpec,
+    url: &str,
+    endpoints: &Endpoints,
+) -> Result<Vec<Check>, StoreFailure> {
+    let (store, url) = match open(credential, url, endpoints) {
         Ok(opened) => opened,
         Err(e) => return Ok(vec![check(Operation::Write, Err(e))]),
     };
@@ -106,10 +115,11 @@ async fn write_delete(credential: &SecretSpec, url: &str) -> Result<Vec<Check>, 
 async fn storage(
     credential: &SecretSpec,
     target: &StorageTarget,
+    endpoints: &Endpoints,
 ) -> Result<Vec<Check>, StoreFailure> {
     match target.direction {
-        Direction::Source => Ok(vec![list(credential, &target.url).await?]),
-        Direction::Sink => write_delete(credential, &target.url).await,
+        Direction::Source => Ok(vec![list(credential, &target.url, endpoints).await?]),
+        Direction::Sink => write_delete(credential, &target.url, endpoints).await,
     }
 }
 
@@ -118,8 +128,9 @@ async fn storage(
 pub async fn connection(
     spec: &SecretSpec,
     target: &StorageTarget,
+    endpoints: &Endpoints,
 ) -> Result<ValidationReport, StoreFailure> {
-    Ok(report(storage(spec, target).await?))
+    Ok(report(storage(spec, target, endpoints).await?))
 }
 
 /// A credential, probed through every connection that uses it and at `url`
@@ -129,12 +140,17 @@ pub async fn credential(
     spec: &SecretSpec,
     url: Option<&str>,
     dependents: &[ConnectionView],
+    endpoints: &Endpoints,
 ) -> Result<(ValidationReport, Vec<String>), StoreFailure> {
     let (through_dependents, at_url) = futures::join!(
-        join_all(dependents.iter().map(|d| storage(spec, &d.target))),
+        join_all(
+            dependents
+                .iter()
+                .map(|d| storage(spec, &d.target, endpoints))
+        ),
         async {
             match url {
-                Some(url) => Some(list(spec, url).await),
+                Some(url) => Some(list(spec, url, endpoints).await),
                 None => None,
             }
         },

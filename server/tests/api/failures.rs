@@ -5,7 +5,7 @@
 use axum::http::{Method, StatusCode, header};
 use serde_json::json;
 
-use crate::helpers::{DEAD, EDITOR, TestApp, spawn_app};
+use crate::helpers::{EDITOR, TestApp, spawn_app, spawn_app_on};
 use keasy_server::domain::Direction;
 
 /// The status and the whole body, which must be an `ErrorBody`.
@@ -131,7 +131,7 @@ async fn each_resource_that_is_not_there_says_which() {
 }
 
 async fn sink(app: &TestApp) {
-    app.credential("key", DEAD, "u-1").await;
+    app.credential("key", "u-1").await;
     app.connection("sink", "key", Direction::Sink, "u-1").await;
 }
 
@@ -284,15 +284,15 @@ async fn a_burst_over_the_rate_is_refused_as_request_rate_limited() {
 /// in a report nor `server/silent`.
 #[tokio::test]
 async fn a_store_that_never_answers_is_store_silent_from_a_probe_and_a_listing() {
-    let app = spawn_app().await;
-    let member = app.token(EDITOR);
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let silent = format!("http://{}", listener.local_addr().unwrap());
-    app.credential("hung", &silent, "u-1").await;
+    let app = spawn_app_on(&silent).await;
+    let member = app.token(EDITOR);
+    app.credential("hung", "u-1").await;
     app.connection("data", "hung", Direction::Source, "u-1")
         .await;
 
-    let spec = json!({ "kind": "s3", "access_key_id": "AK", "secret_access_key": "s", "endpoint": silent });
+    let spec = json!({ "kind": "s3", "access_key_id": "AK", "secret_access_key": "s" });
     let started = std::time::Instant::now();
     let (created, validated, listed) = tokio::join!(
         app.send(

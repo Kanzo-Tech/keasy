@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { schemaOf } from "@/lib/api/spec";
-import { NAME_MAX, nameProblem } from "./graph-name";
+import { NAME_MAX, nameProblem, requiredName } from "./resource-name";
 
 describe("nameProblem", () => {
   it("is the contract's ResourceName rule", () => {
@@ -23,5 +23,14 @@ describe("nameProblem", () => {
     expect(nameProblem("")).toBeNull();
     expect(nameProblem("   ")).toBeNull();
     expect(nameProblem("  padded  ")).toBeNull();
+  });
+});
+
+describe("requiredName", () => {
+  it("says what is missing, and what the server would refuse", () => {
+    const name = requiredName("Give it a name.");
+    expect(name.safeParse("  ").error?.issues[0]?.message).toBe("Give it a name.");
+    expect(name.safeParse("a/b").success).toBe(false);
+    expect(name.safeParse(" hr-data ").data).toBe("hr-data");
   });
 });

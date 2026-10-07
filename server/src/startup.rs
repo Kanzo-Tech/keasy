@@ -29,6 +29,7 @@ use crate::configuration::{BrandingSettings, DatabaseSettings, Settings};
 use crate::database::Database;
 use crate::error::{ErrorBody, ErrorCode, ErrorData, Refusal};
 use crate::routes;
+use crate::storage_client::Endpoints;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -41,6 +42,8 @@ pub struct AppState {
     pub branding: Arc<BrandingSettings>,
     /// Verifies the bearer token every protected request carries.
     pub auth: SharedValidator,
+    /// Where S3 and STS answer, when not at AWS (`AWS_ENDPOINT_URL_S3`, `_STS`).
+    pub endpoints: Arc<Endpoints>,
 }
 
 /// The server, bound and ready to serve.
@@ -63,7 +66,7 @@ impl Application {
 
         // After the key check: a declared credential is sealed with the key.
         if let Some(path) = &application.bootstrap_file {
-            crate::bootstrap::ensure_declared(&db, path).await;
+            crate::bootstrap::ensure_declared(&db, path, &application.endpoints).await;
         }
 
         // Built without touching the network: Keycloak is routinely not up yet, and
@@ -87,6 +90,7 @@ impl Application {
             workspace_name: application.workspace_name,
             branding: Arc::new(application.branding),
             auth,
+            endpoints: Arc::new(application.endpoints),
         };
 
         let listener = TcpListener::bind(application.bind_addr)

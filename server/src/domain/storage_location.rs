@@ -39,13 +39,13 @@ impl StoreKind {
     }
 }
 
-/// The bucket a location is in, and the service that serves it. The service
-/// is part of the identity: `s3://data/` on MinIO and on AWS are two stores.
-/// It is `None` until [`StorageLocation::within`] names it from a credential.
+/// The bucket a location is in, and for Azure the account that serves it: the
+/// account is part of the identity, and is `None` until
+/// [`StorageLocation::within`] names it from a credential. An S3 bucket names
+/// itself — the service is the deployment's one (`AWS_ENDPOINT_URL_S3`).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Store {
     S3 {
-        endpoint: Option<String>,
         bucket: String,
     },
     Azure {
@@ -84,7 +84,6 @@ impl StorageLocation {
                 return Err(format!("{s:?}: {authority:?} is not a bucket name"));
             }
             Store::S3 {
-                endpoint: None,
                 bucket: authority.to_string(),
             }
         } else if AZURE.contains(&scheme.as_str()) {
@@ -138,8 +137,8 @@ impl StorageLocation {
         &self.path
     }
 
-    /// This location as reached through `credential`: the credential names
-    /// the service the text leaves implicit.
+    /// This location as reached through `credential`: an Azure credential
+    /// names the account the text leaves implicit.
     pub fn within(mut self, credential: &SecretSpec) -> Result<Self, String> {
         if StoreKind::of(credential) != self.kind() {
             return Err(format!(
@@ -149,11 +148,7 @@ impl StorageLocation {
             ));
         }
         match (&mut self.store, credential) {
-            (Store::S3 { endpoint, .. }, SecretSpec::S3 { endpoint: e, .. }) => {
-                *endpoint = e
-                    .as_deref()
-                    .map(|e| e.trim_end_matches('/').to_ascii_lowercase());
-            }
+            (Store::S3 { .. }, SecretSpec::S3 { .. }) => {}
             (
                 Store::Azure { account, .. },
                 SecretSpec::AzureAccountKey { account: a, .. }
@@ -222,12 +217,11 @@ mod tests {
         StorageLocation::parse(s).unwrap()
     }
 
-    fn s3(endpoint: Option<&str>) -> SecretSpec {
+    fn s3() -> SecretSpec {
         SecretSpec::S3 {
             access_key_id: "AK".into(),
             secret_access_key: SecretString::from("SK"),
             region: "us-east-1".into(),
-            endpoint: endpoint.map(Into::into),
             role_arn: None,
             external_id: None,
         }
@@ -291,19 +285,9 @@ mod tests {
     }
 
     #[test]
-    fn the_service_a_credential_reaches_is_part_of_the_identity() {
-        let minio = loc("s3://b/data/")
-            .within(&s3(Some("http://minio:9000/")))
-            .unwrap();
-        let aws = loc("s3://b/data/").within(&s3(None)).unwrap();
-        assert!(!minio.overlaps(&aws));
-        assert!(
-            minio.contains(
-                &loc("s3://b/data/x")
-                    .within(&s3(Some("HTTP://MINIO:9000")))
-                    .unwrap()
-            )
-        );
+    fn the_account_a_credential_reaches_is_part_of_the_identity() {
+        let data = loc("s3://b/data/").within(&s3()).unwrap();
+        assert!(data.contains(&loc("s3://b/data/x").within(&s3()).unwrap()));
         let az = SecretSpec::AzureAccountKey {
             account: "acct".into(),
             key: SecretString::from("k"),

@@ -224,7 +224,6 @@ mod tests {
             access_key_id: "AKIA".into(),
             secret_access_key: SecretString::from(secret),
             region: "eu-west-1".into(),
-            endpoint: None,
             role_arn: None,
             external_id: None,
         }

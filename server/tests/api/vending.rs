@@ -1,13 +1,13 @@
 use axum::http::{Method, StatusCode};
 use serde_json::json;
 
-use crate::helpers::{ADMIN, DEAD, EDITOR, READER, TestApp, spawn_app};
+use crate::helpers::{ADMIN, EDITOR, READER, TestApp, spawn_app};
 use keasy_server::domain::Direction;
 
 async fn workspace() -> (TestApp, String) {
     let app = spawn_app().await;
     let member = app.token(EDITOR);
-    app.credential("key", DEAD, "u-1").await;
+    app.credential("key", "u-1").await;
     app.connection("source", "key", Direction::Source, "u-1")
         .await;
     app.connection("sink", "key", Direction::Sink, "u-1").await;

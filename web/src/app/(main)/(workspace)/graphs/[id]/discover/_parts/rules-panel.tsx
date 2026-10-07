@@ -28,7 +28,7 @@ import {
   useDebouncedCommit,
 } from "@kanzo-tech/ui";
 import { numbers, useMosaic } from "@kanzo-tech/ui/analytics";
-import { useGraphContext } from "@kanzo-tech/graph";
+import { usePick } from "@kanzo-tech/graph";
 import { MetadataForm, pickByLanguage, useMetadataForm } from "@kanzo-tech/metadata-form";
 import { createRudofEngine, type NodeShapeIR, type RudofEngine } from "@kanzo-tech/metadata-form/rudof";
 import { ProblemView } from "@/components/problem-view";
@@ -218,7 +218,7 @@ function findingsOf(report: ValidationReport, shapes: NodeShapeIR[]): RuleFindin
  */
 function RuleFindings({ report, shapes }: { report: ValidationReport | undefined; shapes: NodeShapeIR[] }) {
   const { coordinator } = useMosaic();
-  const { select } = useGraphContext();
+  const { pick } = usePick("rules");
   const key = useGraphKey();
   const vertices = useVertices();
   const findings = useMemo(() => (report ? findingsOf(report, shapes) : []), [report, shapes]);
@@ -229,7 +229,7 @@ function RuleFindings({ report, shapes }: { report: ValidationReport | undefined
     const query = Query.from(vertices)
       .select(key)
       .where(isIn(column("subject"), finding.nodes.map((node) => literal(node))));
-    select(numbers(await coordinator.query(query), key), "external", `${finding.rule}: ${finding.message}`);
+    pick(numbers(await coordinator.query(query), key), `${finding.rule}: ${finding.message}`);
   };
   const row = (finding: RuleFinding) => (
     <Diagnostic variant={finding.variant}>

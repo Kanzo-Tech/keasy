@@ -1,253 +1,303 @@
 "use client";
 
-import { Database, FileText, GalleryVerticalEnd, KeyRound, type LucideIcon } from "lucide-react";
+import { Plus } from "lucide-react";
 import {
   Badge,
+  Button,
+  Card,
+  CardAction,
+  CardContent,
+  CardHeader,
+  CardTitle,
   EmptyDescription,
   EmptyHeader,
   EmptyRoot,
   EmptyTitle,
   FormatNumber,
-  Item,
-  ItemActions,
-  ItemContent,
-  ItemDescription,
-  ItemGroup,
-  ItemTitle,
+  SectionActions,
   SectionBody,
+  SectionDescription,
   SectionHeader,
   SectionRoot,
   SectionTitle,
   SectionTitleGroup,
+  Skeleton,
   StatDescription,
-  StatIndicator,
   StatLabel,
   StatRoot,
   StatValue,
+  Steps,
+  StepsDescription,
+  StepsIndicator,
+  StepsItem,
+  StepsList,
+  StepsSeparator,
+  StepsTitle,
+  StepsTrigger,
 } from "@kanzo-tech/ui";
-import { Link } from "@kanzo-tech/navigation/next";
-import { $api, type Schemas } from "@/lib/api/client";
-import { hasRunningGraphs, pollWhile, STATUS } from "@/lib/graphs";
-import { formatDate } from "@/lib/ui/format";
-import { lower, WORDS } from "@/lib/vocabulary";
-import { Boundary } from "@/components/boundary";
-import { settled } from "@/lib/api/settled";
+import { DataTableContent, DataTableRoot, useDataTable } from "@kanzo-tech/ui/table";
+import { Link, useRouter } from "@kanzo-tech/navigation/next";
 import { useSession } from "@kanzo-tech/auth";
+import { $api, type Schemas } from "@/lib/api/client";
+import { droppedRows, hasRunningGraphs, pollWhile } from "@/lib/graphs";
+import { lower, WORDS } from "@/lib/vocabulary";
+import { settled } from "@/lib/api/settled";
+import { Boundary, Loading } from "@/components/boundary";
+import { GRAPH_COLUMNS } from "@/components/graph-columns";
 
-interface Tile {
-  href: string;
-  icon: LucideIcon;
-  title: string;
-  /** `undefined` while loading. */
-  value?: string;
+type Graph = Schemas["Graph"];
+
+/** A figure on the overview: `value` is `undefined` while loading. */
+interface Figure {
+  label: string;
+  value?: number;
   description: string;
-  /** Unset when the figure has no good or bad reading. */
-  ok?: boolean;
+  href: string;
+  /** Something to look at: a figure with no good or bad reading leaves it unset. */
+  warn?: boolean;
 }
 
-const HEADING = "Workspace overview";
+const FIGURES = [WORDS.graphs, "Sources", "Dropped rows"] as const;
 
-const storageTile = (configured?: boolean): Tile => ({
-  href: "/settings/storage",
-  icon: GalleryVerticalEnd,
-  title: WORDS.storage,
-  value: configured === undefined ? undefined : configured ? "Configured" : "Not set",
-  description: `where ${lower(WORDS.graph)} ${lower(WORDS.output)}s land`,
-  ok: configured,
-});
+const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
-const plural = (n: number | undefined, one: string, many: string) => (n === 1 ? one : many);
+/** The newest graphs the dashboard lists; the rest are a click away on the Graphs page. */
+const RECENT = 5;
 
-const credentialsTile = (n?: number): Tile => ({
-  href: "/settings/credentials",
-  icon: KeyRound,
-  title: "Credentials",
-  value: n === undefined ? undefined : String(n),
-  description: plural(n, "credential configured", "credentials configured"),
-  ok: n === undefined ? undefined : n > 0,
-});
-
-const connectionsTile = (n?: number): Tile => ({
-  href: "/connections",
-  icon: Database,
-  title: "Connections",
-  value: n === undefined ? undefined : String(n),
-  description: plural(n, "connection configured", "connections configured"),
-  ok: n === undefined ? undefined : n > 0,
-});
-
-const outputsTile = (n?: number): Tile => ({
-  href: "/graphs",
-  icon: FileText,
-  title: `${WORDS.output}s`,
-  value: n === undefined ? undefined : String(n),
-  description: plural(n, `${lower(WORDS.graph)} completed`, `${lower(WORDS.graphs)} completed`),
-});
-
-/** One dashboard for every role: each tile is drawn for the roles that can read its figure. */
+/**
+ * The workspace at a glance, after the App shell showcase: the overview's figures, the newest graphs
+ * with a way to make another beside their title, and — for an editor — what is left to set up.
+ */
 export function Dashboard() {
-  const { can } = useSession();
+  const editor = useSession().can("editor");
   return (
-    <>
-      <SectionRoot className="gap-3" fill={false}>
-        <SectionHeader>
-          <SectionTitleGroup>
-            <SectionTitle>{HEADING}</SectionTitle>
-          </SectionTitleGroup>
-        </SectionHeader>
-        <SectionBody className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {can("admin") && (
-            <Boundary fallback={<TileView tile={storageTile()} />}>
-              <StorageTile />
+    <SectionRoot>
+      <SectionHeader scale="page">
+        <SectionTitleGroup>
+          <SectionTitle level={1} scale="page">
+            Overview
+          </SectionTitle>
+          <SectionDescription>What this workspace has built from its sources.</SectionDescription>
+        </SectionTitleGroup>
+      </SectionHeader>
+      <SectionBody className="gap-6" scale="page">
+        <Boundary fallback={<Figures />}>
+          <Overview />
+        </Boundary>
+        <div className="grid min-w-0 gap-6 xl:flex-1 xl:grid-cols-[minmax(0,1fr)_360px]">
+          <SectionRoot className="min-w-0 gap-3" fill={false}>
+            <SectionHeader>
+              <SectionTitleGroup>
+                <SectionTitle>{WORDS.graphs}</SectionTitle>
+              </SectionTitleGroup>
+              <SectionActions>
+                <Button asChild size="sm" variant="outline">
+                  <Link href="/graphs">View all</Link>
+                </Button>
+                {editor && (
+                  <Button asChild size="sm">
+                    <Link href="/graphs/new">
+                      <Plus />
+                      New {lower(WORDS.graph)}
+                    </Link>
+                  </Button>
+                )}
+              </SectionActions>
+            </SectionHeader>
+            <Boundary
+              fallback={
+                <Loading>
+                  <Skeleton className="h-40 w-full" />
+                </Loading>
+              }
+            >
+              <RecentGraphs />
+            </Boundary>
+          </SectionRoot>
+          {editor && (
+            <Boundary
+              fallback={
+                <Loading>
+                  <Skeleton className="h-full min-h-64 w-full" />
+                </Loading>
+              }
+            >
+              <Setup />
             </Boundary>
           )}
-          {can("editor") && (
-            <Boundary fallback={<TileView tile={credentialsTile()} />}>
-              <CredentialsTile />
-            </Boundary>
-          )}
-          <Boundary fallback={<TileView tile={connectionsTile()} />}>
-            <ConnectionsTile />
-          </Boundary>
-          <Boundary fallback={<TileView tile={outputsTile()} />}>
-            <OutputsTile />
-          </Boundary>
-        </SectionBody>
-      </SectionRoot>
-      <SectionRoot className="gap-3" fill={false}>
-        <SectionHeader>
-          <SectionTitleGroup>
-            <SectionTitle>Recent activity</SectionTitle>
-          </SectionTitleGroup>
-        </SectionHeader>
-        <Boundary fallback={<Activity />}>
-          <RecentActivity />
-        </Boundary>
-      </SectionRoot>
-      <SectionRoot className="gap-3" fill={false}>
-        <SectionHeader>
-          <SectionTitleGroup>
-            <SectionTitle>Recent {lower(WORDS.graphs)}</SectionTitle>
-          </SectionTitleGroup>
-        </SectionHeader>
-        <Boundary fallback={null}>
-          <RecentGraphs />
-        </Boundary>
-      </SectionRoot>
-    </>
+        </div>
+      </SectionBody>
+    </SectionRoot>
   );
-}
-
-function useConnections() {
-  return settled($api.useSuspenseQuery("get", "/v1/connections"));
-}
-
-function StorageTile() {
-  return <TileView tile={storageTile(useConnections().some((c) => c.target.direction === "sink"))} />;
-}
-
-function CredentialsTile() {
-  return <TileView tile={credentialsTile(settled($api.useSuspenseQuery("get", "/v1/secrets")).length)} />;
-}
-
-function ConnectionsTile() {
-  return <TileView tile={connectionsTile(useConnections().length)} />;
-}
-
-function OutputsTile() {
-  const outputs = useGraphs().filter((j) => j.status === "completed" && j.report).length;
-  return <TileView tile={outputsTile(outputs)} />;
 }
 
 function useGraphs() {
   return settled($api.useSuspenseQuery("get", "/v1/graphs", {}, { refetchInterval: pollWhile(hasRunningGraphs) }));
 }
 
-function RecentActivity() {
+function useConnections() {
+  return settled($api.useSuspenseQuery("get", "/v1/connections"));
+}
+
+/** The figures, as the graphs and connections say them. */
+function Overview() {
   const graphs = useGraphs();
-  const count = (status: Schemas["GraphStatus"][]) => graphs.filter((j) => status.includes(j.status)).length;
+  const connections = useConnections();
+  const sources = connections.filter((c) => c.target.direction === "source");
+  const outputs = connections.length - sources.length;
+  const credentials = new Set(sources.map((c) => c.secret)).size;
+  const dropping = graphs.flatMap((graph) => {
+    const rows = droppedRows(graph);
+    return rows ? [{ graph, rows }] : [];
+  });
+  const dropped = dropping.reduce((sum, d) => sum + d.rows, 0);
+  const only = dropping.length === 1 ? dropping[0].graph : undefined;
   return (
-    <Activity
-      stats={[
-        { label: `Total ${lower(WORDS.graphs)}`, value: graphs.length },
-        { label: "Completed", value: count(["completed"]) },
-        { label: "Failed", value: count(["failed"]) },
-        { label: "Running", value: count(["running"]) },
+    <Figures
+      figures={[
+        {
+          label: WORDS.graphs,
+          value: graphs.length,
+          description: `${graphs.filter((g) => g.status === "completed").length} completed`,
+          href: "/graphs",
+        },
+        {
+          label: "Sources",
+          value: sources.length,
+          description: `through ${plural(credentials, "credential")} · ${plural(outputs, lower(WORDS.output))}`,
+          href: "/connections",
+        },
+        {
+          label: "Dropped rows",
+          value: dropped,
+          description: only
+            ? `In ${name(only)}`
+            : dropping.length > 0
+              ? `Across ${plural(dropping.length, lower(WORDS.graph))}`
+              : "None left out by a join",
+          href: only ? `/graphs/${only.id}` : "/graphs",
+          warn: dropped > 0,
+        },
       ]}
     />
   );
 }
 
-const ACTIVITY = [`Total ${lower(WORDS.graphs)}`, "Completed", "Failed", "Running"];
+/** The overview's row of figures; loading when `figures` is absent. Each is a way into what it counts. */
+function Figures({ figures }: { figures?: Figure[] }) {
+  return (
+    <div className="grid gap-3 sm:grid-cols-3">
+      {(figures ?? FIGURES.map((label) => ({ label, description: "", href: "/graphs" }) as Figure)).map((f) => (
+        <StatRoot asChild key={f.label} variant={f.warn ? "warning" : "default"}>
+          <Link href={f.href}>
+            <StatLabel>{f.label}</StatLabel>
+            <StatValue loading={f.value === undefined}>
+              <FormatNumber notation="compact" value={f.value ?? 0} />
+            </StatValue>
+            <StatDescription>{f.description}</StatDescription>
+          </Link>
+        </StatRoot>
+      ))}
+    </div>
+  );
+}
 
-const RECENT = 5;
+const name = (graph: Graph) => graph.name ?? graph.id.slice(0, 8);
 
-/** The newest graphs, each a way into its page. */
+/** The newest graphs, as the Graphs page lists them: a row is the way into its graph. */
 function RecentGraphs() {
+  const router = useRouter();
   const recent = useGraphs().slice(0, RECENT);
+  const table = useDataTable({ columns: GRAPH_COLUMNS, data: recent });
   if (recent.length === 0) {
     return (
-      <EmptyRoot>
+      <EmptyRoot className="border">
         <EmptyHeader>
-          <EmptyTitle>No {lower(WORDS.graphs)} yet</EmptyTitle>
+          <EmptyTitle asChild>
+            <h3>No {lower(WORDS.graphs)} yet</h3>
+          </EmptyTitle>
           <EmptyDescription>
-            <Link href="/graphs">Go to {WORDS.graphs}</Link>
+            A {lower(WORDS.graph)} is a {lower(WORDS.recipe)} over your connections.
           </EmptyDescription>
         </EmptyHeader>
       </EmptyRoot>
     );
   }
   return (
-    <SectionBody>
-      <ItemGroup>
-        {recent.map((graph) => (
-          <Item asChild key={graph.id} variant="outline">
-            <Link href={`/graphs/${graph.id}`}>
-              <ItemContent>
-                <ItemTitle>{graph.name ?? graph.id.slice(0, 8)}</ItemTitle>
-                <ItemDescription>{formatDate(graph.created_at)}</ItemDescription>
-              </ItemContent>
-              <ItemActions>
-                <Badge variant={STATUS[graph.status].variant}>{STATUS[graph.status].label}</Badge>
-              </ItemActions>
-            </Link>
-          </Item>
-        ))}
-      </ItemGroup>
-    </SectionBody>
+    <DataTableRoot table={table}>
+      <DataTableContent<Graph> onRowClick={(graph) => router.push(`/graphs/${graph.id}`)} />
+    </DataTableRoot>
   );
 }
 
-/** The activity figures; loading when `stats` is absent. */
-function Activity({ stats }: { stats?: { label: string; value: number }[] }) {
+/** What is left before the workspace has shown what it holds, in the order it is done in. */
+function Setup() {
+  const secrets = settled($api.useSuspenseQuery("get", "/v1/secrets"));
+  const connections = useConnections();
+  const graphs = useGraphs();
+  const sources = connections.filter((c) => c.target.direction === "source");
+  const outputs = connections.length - sources.length;
+  const built = graphs.find((g) => g.status === "completed");
+  const steps = [
+    {
+      title: "Add a credential",
+      done: secrets.length > 0,
+      description: secrets[0]?.name ?? "Who keasy is when it reaches a store",
+      href: "/settings/credentials/new",
+    },
+    {
+      title: "Connect a source",
+      done: sources.length > 0,
+      description:
+        sources.length > 0
+          ? `${plural(sources.length, "source")}, ${plural(outputs, lower(WORDS.output))}`
+          : "A storage prefix to read from",
+      href: "/connections/new",
+    },
+    {
+      title: `Build a ${lower(WORDS.graph)}`,
+      done: built !== undefined,
+      description: built ? name(built) : `A ${lower(WORDS.recipe)} over your sources, run once`,
+      href: "/graphs/new",
+    },
+    {
+      title: `${WORDS.explore} it`,
+      done: false,
+      description: built ? `Open ${name(built)}` : `Once a ${lower(WORDS.graph)} has completed`,
+      href: built ? `/graphs/${built.id}/discover` : "/graphs",
+    },
+  ];
+  const current = steps.findIndex((s) => !s.done);
   return (
-    <SectionBody className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      {(stats ?? ACTIVITY.map((label) => ({ label, value: 0 }))).map((stat) => (
-        // Every figure is a way into the graphs it counts.
-        <StatRoot asChild key={stat.label}>
-          <Link href="/graphs">
-            <StatLabel>{stat.label}</StatLabel>
-            <StatValue loading={!stats}>
-              <FormatNumber value={stat.value} />
-            </StatValue>
-          </Link>
-        </StatRoot>
-      ))}
-    </SectionBody>
-  );
-}
-
-function TileView({ tile }: { tile: Tile }) {
-  return (
-    <StatRoot asChild variant={tile.ok === undefined ? "default" : tile.ok ? "success" : "warning"}>
-      <Link href={tile.href}>
-        <StatIndicator>
-          <tile.icon />
-        </StatIndicator>
-        <StatLabel>{tile.title}</StatLabel>
-        <StatValue loading={tile.value === undefined}>{tile.value}</StatValue>
-        <StatDescription>{tile.description}</StatDescription>
-      </Link>
-    </StatRoot>
+    <Card className="h-full">
+      <CardHeader>
+        <CardTitle className="text-base">Finish setting up</CardTitle>
+        <CardAction>
+          <Badge size="sm" variant="secondary">
+            {current}/{steps.length}
+          </Badge>
+        </CardAction>
+      </CardHeader>
+      <CardContent>
+        <Steps count={steps.length} orientation="vertical" step={current}>
+          <StepsList>
+            {steps.map((step, index) => (
+              <StepsItem className="[&:not(:last-child)]:min-h-16" index={index} key={step.title}>
+                <StepsTrigger asChild>
+                  <Link href={step.href}>
+                    <StepsIndicator>{index + 1}</StepsIndicator>
+                    <span className="flex flex-col items-start gap-0.5">
+                      <StepsTitle>{step.title}</StepsTitle>
+                      <StepsDescription>{step.description}</StepsDescription>
+                    </span>
+                  </Link>
+                </StepsTrigger>
+                <StepsSeparator />
+              </StepsItem>
+            ))}
+          </StepsList>
+        </Steps>
+      </CardContent>
+    </Card>
   );
 }

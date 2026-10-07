@@ -1,7 +1,7 @@
 use axum::http::{Method, StatusCode};
 use serde_json::json;
 
-use crate::helpers::{ADMIN, EDITOR, spawn_app, spawn_app_on};
+use crate::helpers::{ADMIN, EDITOR, Options, spawn_app, spawn_app_with};
 use keasy_server::domain::Direction;
 
 /// The credential a connection uses cannot be deleted, nor the sink a graph wrote
@@ -133,7 +133,11 @@ async fn three_objects() -> String {
 /// the connection's own, and at most `limit` long, saying whether there was more.
 #[tokio::test]
 async fn a_listing_stays_under_its_prefix_and_says_when_it_was_cut() {
-    let app = spawn_app_on(&three_objects().await).await;
+    let app = spawn_app_with(Options {
+        store: three_objects().await,
+        ..Options::default()
+    })
+    .await;
     let member = app.token(EDITOR);
     app.credential("key", "u-1").await;
     app.connection("data", "key", Direction::Source, "u-1")

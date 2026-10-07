@@ -1,7 +1,7 @@
 use axum::http::{Method, StatusCode};
 use serde_json::json;
 
-use crate::helpers::{ADMIN, EDITOR, fake_s3, spawn_app, spawn_app_on};
+use crate::helpers::{ADMIN, EDITOR, Options, fake_s3, spawn_app, spawn_app_with};
 use keasy_server::domain::{Direction, SecretSpec};
 
 /// A secret goes in and never comes out: not in a create's answer, not in a
@@ -169,7 +169,11 @@ async fn only_the_creator_or_an_admin_changes_a_secret_and_only_an_admin_the_sin
 /// every dependent accepts — and one they do not, which changes nothing.
 #[tokio::test]
 async fn a_rotation_is_committed_only_if_every_dependent_still_validates() {
-    let app = spawn_app_on(&fake_s3().await).await;
+    let app = spawn_app_with(Options {
+        store: fake_s3().await,
+        ..Options::default()
+    })
+    .await;
     let member = app.token(EDITOR);
     let owner = app.token_for("u-owner", ADMIN);
     // The store knows the key `AK` and refuses any other.

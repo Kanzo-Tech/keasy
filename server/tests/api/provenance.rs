@@ -4,14 +4,18 @@
 use axum::http::{Method, StatusCode};
 use serde_json::json;
 
-use crate::helpers::{ADMIN, EDITOR, fake_s3, spawn_app, spawn_app_on};
+use crate::helpers::{ADMIN, EDITOR, Options, fake_s3, spawn_app, spawn_app_with};
 use keasy_server::domain::Direction;
 
 /// A secret and a connection record their creator; an admin's change records
 /// the admin as the one who updated it and keeps who created it.
 #[tokio::test]
 async fn a_secret_and_a_connection_name_who_created_and_who_updated_them() {
-    let app = spawn_app_on(&fake_s3().await).await;
+    let app = spawn_app_with(Options {
+        store: fake_s3().await,
+        ..Options::default()
+    })
+    .await;
     let ana = app.token_profiled(
         "u-ana",
         EDITOR,

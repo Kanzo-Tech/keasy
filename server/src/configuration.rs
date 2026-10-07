@@ -37,6 +37,36 @@ pub struct ApplicationSettings {
     /// SDKs read it: `AWS_ENDPOINT_URL_S3` and `AWS_ENDPOINT_URL_STS`, each
     /// over the global `AWS_ENDPOINT_URL`. Unset is AWS.
     pub endpoints: Endpoints,
+    /// Each caller's allowance. Not read from the environment: [`Rate::BUILT`].
+    pub rate: Rate,
+}
+
+/// A caller's allowance: one request back every `period_ms`, up to `burst` held.
+#[derive(Clone, Copy)]
+pub struct Rate {
+    pub period_ms: u64,
+    pub burst: u32,
+}
+
+impl Rate {
+    /// Per caller: 20 requests a second, bursts of 100.
+    pub const RELEASE: Rate = Rate {
+        period_ms: 50,
+        burst: 100,
+    };
+
+    /// Relaxed in a debug build, where one person drives every request a page makes.
+    pub const DEBUG: Rate = Rate {
+        period_ms: 10,
+        burst: 500,
+    };
+
+    /// The allowance this build serves with.
+    pub const BUILT: Rate = if cfg!(debug_assertions) {
+        Rate::DEBUG
+    } else {
+        Rate::RELEASE
+    };
 }
 
 /// An instance's look, declared in its deployment the way Grafana reads its
@@ -211,6 +241,7 @@ pub fn get_configuration() -> Result<Settings, String> {
                 s3: nonblank("AWS_ENDPOINT_URL_S3").or_else(|| nonblank("AWS_ENDPOINT_URL")),
                 sts: nonblank("AWS_ENDPOINT_URL_STS").or_else(|| nonblank("AWS_ENDPOINT_URL")),
             },
+            rate: Rate::BUILT,
         },
         database: DatabaseSettings::from_env()?,
         oidc: OidcSettings {

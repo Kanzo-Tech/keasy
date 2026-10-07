@@ -11,7 +11,7 @@ use secrecy::SecretString;
 use serde_json::json;
 
 use keasy_server::configuration::{
-    ApplicationSettings, BrandingSettings, DatabaseSettings, OidcSettings, Settings,
+    ApplicationSettings, BrandingSettings, DatabaseSettings, OidcSettings, Rate, Settings,
 };
 use keasy_server::credentials::sealing::SecretKey;
 use keasy_server::database::Database;
@@ -47,25 +47,41 @@ pub fn secret_key() -> SecretKey {
     SecretKey::from_base64(&base64::engine::general_purpose::STANDARD.encode([42u8; 32])).unwrap()
 }
 
-/// The server, its S3 and STS at [`DEAD`].
+/// The server with every default of [`Options`].
 pub async fn spawn_app() -> TestApp {
-    spawn(BrandingSettings::default(), DEAD).await
+    spawn_app_with(Options::default()).await
 }
 
-/// The server, its S3 and STS at `store`.
-pub async fn spawn_app_on(store: &str) -> TestApp {
-    spawn(BrandingSettings::default(), store).await
+/// How a test's server differs from the default one; each field defaults on its own.
+pub struct Options {
+    /// Where its S3 and STS answer: [`DEAD`] unless said.
+    pub store: String,
+    /// Each caller's allowance: the build's.
+    pub rate: Rate,
+    /// Its declared look: none.
+    pub branding: BrandingSettings,
 }
 
-/// The server, wearing the look `branding` declares.
-pub async fn spawn_app_branded(branding: BrandingSettings) -> TestApp {
-    spawn(branding, DEAD).await
+impl Default for Options {
+    fn default() -> Self {
+        Self {
+            store: DEAD.into(),
+            rate: Rate::BUILT,
+            branding: BrandingSettings::default(),
+        }
+    }
 }
 
-async fn spawn(branding: BrandingSettings, store: &str) -> TestApp {
+/// The server as `options` describe it.
+pub async fn spawn_app_with(options: Options) -> TestApp {
+    let Options {
+        store,
+        rate,
+        branding,
+    } = options;
     let endpoints = Endpoints {
-        s3: Some(store.into()),
-        sts: Some(store.into()),
+        s3: Some(store.clone()),
+        sts: Some(store),
     };
     let realm = realm("k1").await;
     let dir = tempfile::tempdir().unwrap();
@@ -82,6 +98,7 @@ async fn spawn(branding: BrandingSettings, store: &str) -> TestApp {
             bootstrap_file: None,
             branding,
             endpoints: endpoints.clone(),
+            rate,
         },
         database,
         oidc: OidcSettings {

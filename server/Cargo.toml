@@ -33,6 +33,11 @@ reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"
 # needs no cmake or clang in the build image.
 jsonwebtoken = { version = "11", features = ["rust_crypto"] }
 secrecy = { version = "0.10", features = ["serde"] }
+# rudof reads a graph's rules on PUT, so the server refuses exactly the shapes
+# graphs the browser's rudof-wasm would: the same parser, the same base. Only
+# the two crates that read and compile SHACL, and none of their features.
+rudof_rdf = { git = "https://github.com/Kanzo-Tech/rudof", rev = "6422e9b", default-features = false }
+shacl = { git = "https://github.com/Kanzo-Tech/rudof", rev = "6422e9b", default-features = false }
 # No fossil crate is linked here, and none may be. fossil owns the language, the
 # compute and the SHAPE of the output; keasy owns the home, the keys and the
 # access. What a run produced travels as opaque JSON (the report IS the

@@ -210,7 +210,12 @@ async fn rules_name_who_saved_them_first_and_last() {
     let path = format!("/v1/graphs/{}/rules", graph["id"].as_str().unwrap());
 
     let (status, first) = app
-        .send(Method::PUT, &path, &ana, json!({ "shapes": "" }))
+        .send(
+            Method::PUT,
+            &path,
+            &ana,
+            json!({ "name": "r.ttl", "shapes": "" }),
+        )
         .await;
     assert_eq!(status, StatusCode::OK, "{first}");
     assert_eq!(
@@ -220,7 +225,12 @@ async fn rules_name_who_saved_them_first_and_last() {
     assert!(first.get("updated_by").is_none(), "{first}");
 
     let (status, second) = app
-        .send(Method::PUT, &path, &bruno, json!({ "shapes": "# admin" }))
+        .send(
+            Method::PUT,
+            &path,
+            &bruno,
+            json!({ "name": "r.ttl", "shapes": "# admin" }),
+        )
         .await;
     assert_eq!(status, StatusCode::OK, "{second}");
     assert_eq!(second["created_by"]["name"], "Ana Duarte");

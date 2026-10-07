@@ -654,6 +654,8 @@ export interface components {
             };
         };
         PutRulesRequest: {
+            /** @description The file's name, as the member dropped it: a name, not a path. */
+            name: string;
             /**
              * @description The shapes graph, `text/turtle`, stored as sent once rudof reads it as
              *     a SHACL shapes graph.
@@ -668,11 +670,16 @@ export interface components {
          */
         Role: "reader" | "editor" | "admin";
         /**
-         * @description A graph's rules: one SHACL shapes graph, the Turtle document the web's
-         *     rules editor writes. keasy stores it and hands it back, and never parses
-         *     it: rudof reads it where the rules run, in the browser.
+         * @description A graph's rules: one SHACL shapes graph, the Turtle file a member dropped,
+         *     under the name it was dropped with. keasy hands it back as it was sent:
+         *     rudof reads it where the rules run, in the browser.
          */
         Rules: components["schemas"]["Provenance"] & {
+            /**
+             * @description The file's name, as it was dropped: what the rules are called, and what
+             *     downloading them saves.
+             */
+            name: string;
             /** @description The shapes graph, `text/turtle`. */
             shapes: string;
         };
@@ -1617,6 +1624,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Rules"];
+                };
+            };
+            /** @description `name` is not a file's name: `request/invalid` on the field `name` */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
             /** @description Graph not found */

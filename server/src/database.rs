@@ -308,10 +308,12 @@ CREATE TABLE dashboards (
     updated_at      TEXT
 );
 
--- A graph's rules: one SHACL shapes graph, Turtle, opaque to keasy (rudof
--- reads it in the browser), gone with the graph.
+-- A graph's rules: one SHACL shapes graph, Turtle, and the name of the file
+-- it was dropped as, opaque to keasy (rudof reads it in the browser), gone
+-- with the graph.
 CREATE TABLE rules (
     graph_id        TEXT PRIMARY KEY REFERENCES graphs (id) ON DELETE CASCADE,
+    name            TEXT NOT NULL,
     shapes          TEXT NOT NULL,
     created_by      TEXT NOT NULL,
     created_by_name TEXT NOT NULL,

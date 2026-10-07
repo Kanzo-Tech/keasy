@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { createContext, use, useState } from "react";
+import { createContext, use, useMemo, useState } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import {
   BarChart3Icon,
@@ -22,7 +22,14 @@ import {
   useGraphPrefs,
   useGraphState,
 } from "@kanzo-tech/graph";
-import { FilterChips, useCrossfilter, useMosaic } from "@kanzo-tech/ui/analytics";
+import {
+  FilterBar,
+  MosaicClients,
+  relationQuery,
+  useCrossfilter,
+  useMosaic,
+  type Relation,
+} from "@kanzo-tech/ui/analytics";
 import {
   Button,
   Resizable,
@@ -41,7 +48,7 @@ import {
 } from "@kanzo-tech/ui";
 import { HeaderEnd } from "@/app/(main)/_parts/header-end";
 import { AskPanel } from "./_parts/ask-panel";
-import { CorpusProvider, corpusQuery, useCorpus } from "@/lib/fossil/corpus";
+import { CorpusProvider, corpusQuery, useCorpus, useJoinGraph } from "@/lib/fossil/corpus";
 import { GraphInfo } from "./_parts/graph-info";
 import { GraphSettings } from "./_parts/graph-settings";
 import { RulesPanel } from "./_parts/rules-panel";
@@ -55,7 +62,8 @@ import { settled } from "@/lib/api/settled";
  * (Graph · Dashboard), the footer strip picks which panel the dock holds (Info · Ask · Rules ·
  * Settings) and collapses it when the active icon is pressed again. Both views and every panel read
  * one graph and one crossfilter, so a lasso on the canvas filters the dashboard and a rule pressed in
- * the dock lights the canvas.
+ * the dock lights the canvas. `FilterBar`, under the header, is every clause on the page and the
+ * dashboard's filters, in either view.
  */
 
 // vgplot evaluated during the prerender is a TDZ, so the dashboard loads client-only.
@@ -129,25 +137,15 @@ function GraphRegion() {
   const failed = useGraphState((s) => s.status === "failed");
   const failure = use(GraphFailure);
   return (
-    <ShellMain className="relative size-full bg-background">
-      <GraphCanvas className="absolute inset-0">
-        <GraphToolbar className="absolute end-2 top-2 z-10" />
-        <GraphLegend className="absolute start-2 bottom-2 z-10" />
-        <Show when={failed && failure !== undefined}>
-          <div className="absolute inset-0 z-20 grid place-items-center p-6">
-            <ProblemView className="w-full max-w-xl" error={failure} />
-          </div>
-        </Show>
-      </GraphCanvas>
-    </ShellMain>
-  );
-}
-
-function DashboardRegion() {
-  return (
-    <ShellMain className="min-h-0 bg-background">
-      <DashboardView />
-    </ShellMain>
+    <GraphCanvas className="absolute inset-0">
+      <GraphToolbar className="absolute end-2 top-2 z-10" />
+      <GraphLegend className="absolute start-2 bottom-2 z-10" />
+      <Show when={failed && failure !== undefined}>
+        <div className="absolute inset-0 z-20 grid place-items-center p-6">
+          <ProblemView className="w-full max-w-xl" error={failure} />
+        </div>
+      </Show>
+    </GraphCanvas>
   );
 }
 
@@ -166,14 +164,19 @@ function Workspace() {
   const { coordinator } = useMosaic();
   const { look, sim, placement } = useGraphPrefs();
   const crossfilter = useCrossfilter();
+  const graph = useJoinGraph();
+  const [relation, setRelation] = useState<Relation>(() => ({ root: graph.types[0]?.name ?? "", path: [] }));
+  const table = useMemo(() => relationQuery(graph, relation), [graph, relation]);
   const [active, setActive] = useState<PanelId>("info");
   const [panelOpen, setPanelOpen] = useState(true);
+  // The dock's width while it is open; closed, it collapses to nothing and the main region stays
+  // mounted where it is, so the dashboard keeps what the reader filtered.
+  const [sizes, setSizes] = useState([72, 28]);
   const [view, setView] = useState<ViewId>("graph");
   const [failure, setFailure] = useState<unknown>(undefined);
 
   const ActiveBody = PANEL_BODY[active];
   const activeLabel = PANELS.find((p) => p.id === active)?.label ?? "";
-  const MainRegion = view === "graph" ? GraphRegion : DashboardRegion;
 
   return (
     <GraphFailure value={failure}>
@@ -216,21 +219,39 @@ function Workspace() {
         </ToggleGroup>
       </HeaderEnd>
 
+      <FilterBar
+        className="shrink-0 border-b px-3 py-1.5"
+        rowNoun={relation.path.length ? "paths" : relation.root}
+        table={table}
+      />
+
       <ShellBody className="min-w-0">
-        <Show fallback={<MainRegion />} when={panelOpen}>
-          <Resizable
-            className="min-h-0"
-            defaultSize={[72, 28]}
-            panels={[
-              { id: "canvas", minSize: 40 },
-              { id: "dock", minSize: 18 },
-            ]}
-          >
-            <ResizablePanel className="relative min-w-0 overflow-hidden" id="canvas">
-              <MainRegion />
-            </ResizablePanel>
-            <ResizableResizeTrigger id="canvas:dock" withHandle />
-            <ResizablePanel className="flex min-h-0 min-w-0 flex-col" id="dock">
+        <Resizable
+          className="min-h-0"
+          onCollapse={() => setPanelOpen(false)}
+          // A collapse is not a width to come back to.
+          onResize={(d) => d.size[1] > 0 && setSizes(d.size)}
+          panels={[
+            { id: "canvas", minSize: 40 },
+            { id: "dock", minSize: 18, collapsible: true, collapsedSize: 0 },
+          ]}
+          size={panelOpen ? sizes : [100, 0]}
+        >
+          <ResizablePanel className="relative min-w-0 overflow-hidden" id="canvas">
+            <ShellMain className="relative size-full min-h-0 bg-background">
+              {view === "graph" && <GraphRegion />}
+              {/* Hidden, not unmounted, in Graph view: its filters stay in the bar and keep filtering
+                  the page, and its charts ask nothing until it is shown again. */}
+              <MosaicClients enabled={view === "dashboard"}>
+                <div className="size-full min-h-0" hidden={view !== "dashboard"}>
+                  <DashboardView onRelationChange={setRelation} relation={relation} table={table} />
+                </div>
+              </MosaicClients>
+            </ShellMain>
+          </ResizablePanel>
+          <ResizableResizeTrigger hidden={!panelOpen} id="canvas:dock" withHandle />
+          <ResizablePanel className="flex min-h-0 min-w-0 flex-col" id="dock">
+            {panelOpen && (
               <ShellAside
                 aria-label={`${activeLabel} panel`}
                 className="size-full min-h-0 border-s-0 bg-card"
@@ -238,34 +259,26 @@ function Workspace() {
               >
                 <div className="flex min-h-9 shrink-0 items-center gap-2 border-b border-border px-3 py-1">
                   <span className="shrink-0 font-medium text-sm">{activeLabel}</span>
-                  {/* The page's scope: what every panel, tile and the canvas are filtered by. */}
-                  <FilterChips className="min-w-0 flex-1" />
-                  <div className="ms-auto flex shrink-0 items-center gap-1">
-                    <Button
-                      aria-label="Close panel"
-                      className="-me-1"
-                      onClick={() => setPanelOpen(false)}
-                      size="icon-sm"
-                      variant="ghost"
-                    >
-                      <XIcon />
-                    </Button>
-                  </div>
+                  <Button
+                    aria-label="Close panel"
+                    className="-me-1 ms-auto"
+                    onClick={() => setPanelOpen(false)}
+                    size="icon-sm"
+                    variant="ghost"
+                  >
+                    <XIcon />
+                  </Button>
                 </div>
                 <div className="min-h-0 flex-1">
                   {/* Keyed by panel, so a failed panel does not stay failed under the next one. */}
-                  <Boundary
-                    className="p-3"
-                    fallback={<Skeleton className="m-3 h-40" />}
-                    key={active}
-                  >
+                  <Boundary className="p-3" fallback={<Skeleton className="m-3 h-40" />} key={active}>
                     <ActiveBody />
                   </Boundary>
                 </div>
               </ShellAside>
-            </ResizablePanel>
-          </Resizable>
-        </Show>
+            )}
+          </ResizablePanel>
+        </Resizable>
       </ShellBody>
 
       <ShellFooter className="h-8 flex-row items-center justify-between px-2">

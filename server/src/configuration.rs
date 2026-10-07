@@ -32,6 +32,36 @@ pub struct ApplicationSettings {
     /// How this instance looks: declared by the operator, the same for every
     /// visitor, public.
     pub branding: BrandingSettings,
+    /// Each caller's allowance. Not read from the environment: [`Rate::BUILT`].
+    pub rate: Rate,
+}
+
+/// A caller's allowance: one request back every `period_ms`, up to `burst` held.
+#[derive(Clone, Copy)]
+pub struct Rate {
+    pub period_ms: u64,
+    pub burst: u32,
+}
+
+impl Rate {
+    /// Per caller: 20 requests a second, bursts of 100.
+    pub const RELEASE: Rate = Rate {
+        period_ms: 50,
+        burst: 100,
+    };
+
+    /// Relaxed in a debug build, where one person drives every request a page makes.
+    pub const DEBUG: Rate = Rate {
+        period_ms: 10,
+        burst: 500,
+    };
+
+    /// The allowance this build serves with.
+    pub const BUILT: Rate = if cfg!(debug_assertions) {
+        Rate::DEBUG
+    } else {
+        Rate::RELEASE
+    };
 }
 
 /// An instance's look, declared in its deployment the way Grafana reads its
@@ -202,6 +232,7 @@ pub fn get_configuration() -> Result<Settings, String> {
             )?,
             bootstrap_file: nonblank("KEASY_BOOTSTRAP_FILE"),
             branding: BrandingSettings::from_env()?,
+            rate: Rate::BUILT,
         },
         database: DatabaseSettings::from_env()?,
         oidc: OidcSettings {

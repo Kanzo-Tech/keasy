@@ -4,7 +4,10 @@
 use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
+use rudof_rdf::backend::{OxigraphInMemoryError, ReaderMode};
+use rudof_rdf::{RDFFormat, STRING_BASE};
 use serde::Deserialize;
+use shacl::ir::{IRError, IRSchema};
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
@@ -21,8 +24,8 @@ pub const MAX_SHAPES_BYTES: usize = 256 * 1024;
 
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct PutRulesRequest {
-    /// The shapes graph, `text/turtle`, stored as sent. keasy does not parse
-    /// it: rudof does, where the rules run.
+    /// The shapes graph, `text/turtle`, stored as sent once rudof reads it as
+    /// a SHACL shapes graph.
     pub shapes: String,
 }
 
@@ -49,6 +52,7 @@ pub async fn get_rules(
         (status = 200, description = "Rules saved", body = Rules),
         (status = 404, description = "Graph not found", body = ErrorBody),
         (status = 413, description = "The shapes graph is larger than a graph's rules may be", body = ErrorBody),
+        (status = 422, description = "rudof refused the shapes graph: `rules/refused`, placed by `line` and `column` when it is not Turtle", body = ErrorBody),
     )
 )]
 /// The rules are the graph's: who may change the graph may save them.
@@ -67,12 +71,45 @@ pub async fn put_rules(
             format!("A graph's rules are at most {MAX_SHAPES_BYTES} bytes; these are {size}"),
         ));
     }
+    read(&payload.shapes)?;
     Ok(Json(rules::put(
         &*state.db.write().await,
         &id,
         &payload.shapes,
         &caller.actor(),
     )?))
+}
+
+/// Refuse what rudof would: the shapes graph is read as the browser reads it
+/// (Turtle, relative IRIs against rudof's base for a string) and compiled, so
+/// a document every reader of the graph would fail on is never saved.
+fn read(shapes: &str) -> Result<(), Refusal> {
+    let Err(error) = IRSchema::from_str(
+        shapes,
+        &RDFFormat::Turtle,
+        Some(STRING_BASE),
+        &ReaderMode::Strict,
+    ) else {
+        return Ok(());
+    };
+    let at = match &error {
+        IRError::OxigraphInMemoryError(e) => match &**e {
+            OxigraphInMemoryError::Syntax { error, .. } => error.location().map(|at| at.start),
+            _ => None,
+        },
+        _ => None,
+    };
+    let mut refusal = Refusal::field(
+        StatusCode::UNPROCESSABLE_ENTITY,
+        ErrorCode::RulesRefused,
+        "shapes",
+        error.to_string(),
+    );
+    if let Some(at) = at {
+        refusal.body.data.line = Some(at.line + 1);
+        refusal.body.data.column = Some(at.column + 1);
+    }
+    Err(refusal)
 }
 
 /// The routes this module serves.

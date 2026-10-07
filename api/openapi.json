@@ -1041,6 +1041,16 @@
                 }
               }
             }
+          },
+          "422": {
+            "description": "rudof refused the shapes graph: `rules/refused`, placed by `line` and `column` when it is not Turtle",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2191,7 +2201,8 @@
           "connection/overlaps",
           "probe/failed",
           "store/refused",
-          "store/silent"
+          "store/silent",
+          "rules/refused"
         ]
       },
       "ErrorData": {
@@ -2207,6 +2218,15 @@
             "description": "How long a deadline waited before it fired, in milliseconds: set on\nthe `*/silent` codes, and only on them.",
             "minimum": 0
           },
+          "column": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "The column on `line`, as the parser counts it.",
+            "minimum": 0
+          },
           "dependents": {
             "type": "array",
             "items": {
@@ -2220,6 +2240,15 @@
               "null"
             ],
             "description": "The request field the refusal is about, so a form can say it on that\nfield: `folder`, `name`."
+          },
+          "line": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Where in the field's text the refusal is, when its parser says: the\n1-based line and column (in characters) its own message prints.",
+            "minimum": 0
           }
         }
       },
@@ -2484,7 +2513,7 @@
         "properties": {
           "shapes": {
             "type": "string",
-            "description": "The shapes graph, `text/turtle`, stored as sent. keasy does not parse\nit: rudof does, where the rules run."
+            "description": "The shapes graph, `text/turtle`, stored as sent once rudof reads it as\na SHACL shapes graph."
           }
         }
       },

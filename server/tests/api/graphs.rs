@@ -305,8 +305,8 @@ async fn a_graph_keeps_one_dashboard() {
     );
 }
 
-/// A graph's rules: none until saved, a Turtle string no larger than the cap,
-/// stored as sent, and its owner's alone.
+/// A graph's rules: none until saved, a Turtle string no larger than the cap
+/// that rudof reads as a shapes graph, stored as sent, and its owner's alone.
 #[tokio::test]
 async fn a_graph_keeps_one_shapes_graph_of_rules() {
     let app = spawn_app().await;
@@ -350,6 +350,49 @@ async fn a_graph_keeps_one_shapes_graph_of_rules() {
         .send(Method::PUT, &path, &mine, json!({ "shapes": huge }))
         .await;
     assert_eq!(status, StatusCode::PAYLOAD_TOO_LARGE);
+
+    let (status, body) = app
+        .send(
+            Method::PUT,
+            &path,
+            &mine,
+            json!({ "shapes": "@prefix sh: <http://www.w3.org/ns/shacl#> .\n<#S> a sh:NodeShape ;\n  sh:path .\n" }),
+        )
+        .await;
+    assert_eq!(
+        (
+            status,
+            body["code"].as_str(),
+            body["data"]["field"].as_str(),
+            &body["data"]["line"],
+            &body["data"]["column"],
+        ),
+        (
+            StatusCode::UNPROCESSABLE_ENTITY,
+            Some("rules/refused"),
+            Some("shapes"),
+            &json!(3),
+            &json!(11),
+        ),
+        "Turtle that does not parse is refused where the parser stopped: {body}"
+    );
+    let (status, body) = app
+        .send(
+            Method::PUT,
+            &path,
+            &mine,
+            json!({ "shapes": "@prefix sh: <http://www.w3.org/ns/shacl#> .\n<#S> a sh:NodeShape ; sh:minCount \"x\" .\n" }),
+        )
+        .await;
+    assert_eq!(
+        (status, body["code"].as_str(), &body["data"]["line"]),
+        (
+            StatusCode::UNPROCESSABLE_ENTITY,
+            Some("rules/refused"),
+            &json!(null)
+        ),
+        "Turtle that is not a SHACL shapes graph is refused, with no place: {body}"
+    );
 
     let shapes = "@prefix sh: <http://www.w3.org/ns/shacl#> .\n\n\
                   <#Person> a sh:NodeShape ;\n  sh:property [ sh:path <#age> ; sh:minCount 1 ] .\n";

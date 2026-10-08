@@ -5,6 +5,9 @@ import { defineConfig, devices } from "@playwright/test";
  * breaking one thing and asserting the one view that names it (`expectProblem`). Serial, because a
  * scenario that stops a service stops it for everyone.
  *
+ * The `smoke` project is the other half: no scenario, the dev seeds driven through every view
+ * Discovery has, and any console or page error a failure.
+ *
  * Only on :3000: Keycloak's client admits that origin alone, so a worktree on another port cannot
  * sign in.
  */
@@ -30,6 +33,14 @@ export default defineConfig({
     {
       name: "scenarios",
       testMatch: /tests\/.*\.spec\.ts/,
+      dependencies: ["setup"],
+      use: { storageState: ".auth/editor.json" },
+    },
+    // The dev seeds (`make seed`: LDBC SNB SF0.1, OpenFlights) through every view, where a console
+    // or page error fails the test (support/smoke.ts). Needs the seeds in the store.
+    {
+      name: "smoke",
+      testMatch: /\/smoke\/[^/]+\.spec\.ts$/,
       dependencies: ["setup"],
       use: { storageState: ".auth/editor.json" },
     },

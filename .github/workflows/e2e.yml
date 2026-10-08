@@ -1,6 +1,7 @@
 name: e2e
 
-# The failure scenarios (e2e/), against the whole compose stack: every PR to main.
+# The failure scenarios (e2e/tests) and the smoke over the dev seeds (e2e/smoke), against the whole
+# compose stack: every PR to main.
 
 on:
   pull_request:
@@ -44,13 +45,24 @@ jobs:
       - name: Check out the platform services
         run: make deps
 
+      # The dev seeds the smoke runs on, as `make seed` fetches them: pinned by digest, so the cache
+      # is keyed on the script that pins them. `s3-init` uploads them as the stack comes up.
+      - uses: actions/cache@v4
+        with:
+          path: infra/dev/.cache
+          key: dev-seed-${{ hashFiles('infra/dev/seed.sh') }}
+
+      - name: Fetch the dev seeds
+        run: make seed
+
       # Without models: the runners have no Docker Model plugin and no scenario needs one.
       - name: Bring up the stack
         run: docker compose -f docker-compose.yml -f e2e/compose.yml up -d --build --wait --wait-timeout 3600 web
 
       - run: pnpm --filter @keasy/e2e exec playwright install --with-deps chromium
 
-      - name: Run the scenarios
+      # `test`: the scenarios and the smoke over the dev seeds, in one run so one report.
+      - name: Run the scenarios and the smoke
         run: pnpm --filter @keasy/e2e test
         env:
           CI: "1"

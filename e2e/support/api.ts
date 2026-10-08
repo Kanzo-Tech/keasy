@@ -73,11 +73,17 @@ Purchases : Order from Orders
     buyer    = Person(Orders.person_id)
 `;
 
-/** A graph created through the API: `draft`, or submitted (`idle`) for its page's Run to run. */
-export async function createGraph(page: Page, { draft = false, name }: { draft?: boolean; name?: string } = {}) {
+/**
+ * A graph created through the API: `draft`, or submitted (`idle`) for its page's Run to run. Its
+ * program is the suite's shop unless `script` is given.
+ */
+export async function createGraph(
+  page: Page,
+  { draft = false, name, script = SHOP }: { draft?: boolean; name?: string; script?: string } = {},
+) {
   // A graph to run writes to a folder no other graph in the sink writes to.
   const folder = `e2e-${crypto.randomUUID()}`;
-  const created = await api(page, "POST", "/v1/graphs", { script: SHOP, name, sink_connection: SINK, folder });
+  const created = await api(page, "POST", "/v1/graphs", { script, name, sink_connection: SINK, folder });
   expect(created.status, JSON.stringify(created.body)).toBeLessThan(300);
   const { id } = created.body as { id: string };
   // A graph begins as a draft; submitting it makes it runnable.

@@ -55,4 +55,19 @@ describe("a report, filed under the rules of the file", () => {
     expect(rules.Post.unchecked).toBe("outside the profile");
     expect(rules.Comment.off).toBe(true);
   });
+
+  it("files the results of an anonymous property shape, whose sourceShape is a blank node", () => {
+    const model = Shapes.parse(RULES).model();
+    // `model()` names a blank node `_:` and its label; the report's term carries the label alone.
+    const title = model.nodeShapes.find((shape) => shape.id === "https://example.org/ForumRule")?.properties[0]?.id ?? "";
+    const report: ValidationReport = {
+      conforms: false,
+      results: [{ ...violation("https://example.org/f1"), sourceShape: { termType: "BlankNode", value: title.replace(/^_:/, "") } }],
+      unchecked: [],
+    };
+    const rules = Object.fromEntries(rulesOf(model, report).map((rule) => [rule.name, rule]));
+
+    expect(rules.Forum.findings.map((finding) => finding.nodes)).toEqual([["https://example.org/f1"]]);
+    expect(rules.Person.findings).toEqual([]);
+  });
 });

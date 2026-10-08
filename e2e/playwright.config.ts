@@ -41,7 +41,24 @@ export default defineConfig({
       dependencies: ["setup"],
       // No trace: tracing starts the page's screencast first, at 800px, and a recording joins the
       // screencast already running at its size — the demo comes out 800px wide in a 1080p frame.
-      use: { storageState: ".auth/editor.json", trace: "off" },
+      use: {
+        storageState: ".auth/editor.json",
+        trace: "off",
+        // An action waits for its element without bound by default, so a demo whose step never appears
+        // hangs instead of failing; 30 s names the step that did not come.
+        actionTimeout: 30_000,
+        // Headless Chromium draws WebGL in software (SwiftShader) unless told otherwise, and the
+        // Graph view of thousands of points then paints at a frame or two a second. These put it on
+        // the machine's GPU through ANGLE: Metal on a Mac (measured: "ANGLE Metal Renderer: Apple
+        // M4 Pro"); elsewhere the GPU flags still lift the blocklist.
+        launchOptions: {
+          args: [
+            ...(process.platform === "darwin" ? ["--use-angle=metal"] : []),
+            "--enable-gpu",
+            "--ignore-gpu-blocklist",
+          ],
+        },
+      },
     },
   ],
 });

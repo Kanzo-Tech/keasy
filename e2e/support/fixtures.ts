@@ -36,7 +36,7 @@ export async function openPanel(page: Page, graphId: string, panel: "Ask" | "Rul
  * Put `panel` in the dock of the Discovery already open, keeping what the page has picked. Pressing
  * the panel the dock already holds closes it, and Discovery opens on Info.
  */
-export async function switchPanel(page: Page, panel: "Info" | "Ask" | "Rules") {
+export async function switchPanel(page: Page, panel: "Info" | "Ask" | "Rules" | "Settings") {
   await page.getByRole("button", { name: panel, exact: true }).or(page.getByRole("radio", { name: panel })).first().click();
 }
 

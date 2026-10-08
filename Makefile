@@ -83,6 +83,13 @@ e2e: deps ## Run the e2e suite against the compose stack (main checkout only: Ke
 #   make demo DEMO=snb-explore      record one, light and dark
 #   make demo DEMO=all THEME=dark   record every demo, one side
 # `docker compose build web` first: the web image carries next.config.ts, which reads the switch.
+# Only a demo that asks the model swaps the gateway onto e2e/demos/models.yml, and puts it back after:
+# every `compose up` configures the project's models, which takes Model Runner a minute or more once
+# they have changed, and the graph demos call none. They touch no container at all: the dev server's
+# own furniture is hidden in the recording's browser (e2e/demos/record.ts) rather than by restarting
+# the web with NEXT_PUBLIC_KEASY_DEMO.
+DEMO_AI = $(filter all %-ask,$(DEMO))
+
 demo: ## List the product demos; DEMO=<name>|all records them (THEME=light|dark for one side)
 ifeq ($(DEMO),)
 	@pnpm --silent --filter @keasy/e2e exec playwright test --project=demos --no-deps --list \
@@ -90,11 +97,10 @@ ifeq ($(DEMO),)
 	@echo "make demo DEMO=<name>|all [THEME=light|dark]"
 else
 	@command -v ffmpeg >/dev/null || { echo "make demo: needs ffmpeg on PATH (macOS: brew install ffmpeg)" >&2; exit 1; }
-	docker compose build web
-	NEXT_PUBLIC_KEASY_DEMO=1 docker compose up -d --wait web
+	$(if $(DEMO_AI),docker compose -f docker-compose.yml -f e2e/demos/models.yml up -d --wait ai-gateway)
 	pnpm --filter @keasy/e2e exec playwright install chromium
 	DEMO_THEME=$(THEME) pnpm --filter @keasy/e2e demo $(if $(filter all,$(DEMO)),,--grep " $(DEMO): "); \
-	  status=$$?; docker compose up -d --wait web; exit $$status
+	  status=$$?; $(if $(DEMO_AI),docker compose up -d --wait ai-gateway;) exit $$status
 endif
 
 # ── Prod / Swarm deploy — Terraform owns everything (see infra/terraform/README.md) ──

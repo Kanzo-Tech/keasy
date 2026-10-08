@@ -2,7 +2,8 @@ import { demo, demoGraph } from "./record";
 
 /**
  * The worked example: LDBC SNB's Dashboard view — a root type, a bar clicked, a range brushed, and
- * the filters that land in the bar. A new demo is a file like this one beside it.
+ * the filters that land in the bar. A new demo is a file like this one beside it: subtitles that say
+ * what is happening, and no title card.
  */
 demo("snb-explore", "Dashboard over LDBC SNB: pick a type, click a bar, brush a range", {
   async arrange(page) {
@@ -15,15 +16,13 @@ demo("snb-explore", "Dashboard over LDBC SNB: pick a type, click a bar, brush a 
   },
 
   async act({ page, chapter, poster }) {
-    await chapter("LDBC Social Network", "327K nodes · 765K edges, explored in the browser", 2200);
-
     await chapter("Pick what to explore");
     await page.getByRole("combobox", { name: "Root type" }).describe("the root type").click();
     await page.getByRole("option", { name: "Person" }).describe("Person").click();
     await page.getByRole("heading", { name: /Count by Person\.gender/ }).waitFor();
     await page.waitForTimeout(1200);
 
-    await chapter("Click a bar to filter", "Every column gets a chart");
+    await chapter("Every column gets a chart — click a bar to filter");
     const tile = (field: string) =>
       page.locator("article").filter({ has: page.getByRole("heading", { name: `Count by Person.${field}` }) }).getByRole("img");
     const gender = tile("gender");
@@ -32,7 +31,7 @@ demo("snb-explore", "Dashboard over LDBC SNB: pick a type, click a bar, brush a 
     await gender.describe("female").click({ position: { x: g!.width * 0.45, y: g!.height * 0.3 } });
     await page.waitForTimeout(1800);
 
-    await chapter("Drag to narrow a range");
+    await chapter("Drag across time to narrow it further");
     const birthday = tile("birthday");
     const b = await birthday.boundingBox();
     await birthday.dragTo(birthday, {
@@ -46,6 +45,5 @@ demo("snb-explore", "Dashboard over LDBC SNB: pick a type, click a bar, brush a 
     await chapter("Every filter lands in the bar");
     await page.getByRole("button", { name: /Person\.gender/ }).first().describe("the gender filter").hover();
     await page.waitForTimeout(1600);
-    await chapter("keasy", "Your data, as a graph you can explore", 2000);
   },
 });

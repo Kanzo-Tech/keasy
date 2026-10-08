@@ -10,9 +10,10 @@ import { lower, WORDS } from "@/lib/vocabulary";
 
 /**
  * Failures the browser names itself, in the same `area/kind` grammar as fossil's and the server's: a
- * query the engine refused, a model call that failed uncoded, and anything uncoded.
+ * query the engine refused, a model call that failed uncoded, and anything uncoded. A failure the server
+ * names too keeps the server's code (`rules/refused`, rudof refusing a rules document).
  */
-export type ClientCode = "query/failed" | "llm/failed" | "rules/refused" | "web/unknown";
+export type ClientCode = "query/failed" | "llm/failed" | "web/unknown";
 
 /** A failure the browser raises itself, coded so it reaches the screen by the same path as the others. */
 export class ClientError extends Error {
@@ -173,7 +174,7 @@ const isCoded = (err: unknown): err is Coded =>
  * `AiError` (`ai/silent`, `ai/rate-limited`) included; anything else is `uncoded`, in its own words,
  * its cause kept — a refusal the AI gateway answered, or a forward that never reached it.
  */
-export function coded(err: unknown, uncoded: ClientCode = "web/unknown"): Coded {
+export function coded(err: unknown, uncoded: ClientCode | ErrorCode = "web/unknown"): Coded {
   if (isCoded(err)) return err;
   return {
     code: uncoded,

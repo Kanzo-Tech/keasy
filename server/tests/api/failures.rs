@@ -5,7 +5,8 @@
 use axum::http::{Method, StatusCode, header};
 use serde_json::json;
 
-use crate::helpers::{DEAD, EDITOR, TestApp, spawn_app};
+use crate::helpers::{EDITOR, Options, TestApp, spawn_app, spawn_app_with};
+use keasy_server::configuration::Rate;
 use keasy_server::domain::Direction;
 
 /// The status and the whole body, which must be an `ErrorBody`.
@@ -131,7 +132,7 @@ async fn each_resource_that_is_not_there_says_which() {
 }
 
 async fn sink(app: &TestApp) {
-    app.credential("key", DEAD, "u-1").await;
+    app.credential("key", "u-1").await;
     app.connection("sink", "key", Direction::Sink, "u-1").await;
 }
 
@@ -252,26 +253,35 @@ async fn a_store_that_refuses_to_vend_is_store_refused() {
     );
 }
 
-/// A caller over their rate is refused with `request/rate-limited`, in the one shape. The e2e
-/// suite cannot reach the limit through the dev BFF, which serves about as fast as the bucket
-/// refills; the server, asked directly, can be outrun.
+/// A caller over their rate is refused with `request/rate-limited`, in the one shape. The app is
+/// built with a bucket of two that refills once a minute, so the third request is over it however
+/// slowly the runner sends them.
 #[tokio::test]
 async fn a_burst_over_the_rate_is_refused_as_request_rate_limited() {
-    let app = spawn_app().await;
+    let app = spawn_app_with(Options {
+        rate: Rate {
+            period_ms: 60_000,
+            burst: 2,
+        },
+        ..Options::default()
+    })
+    .await;
     let member = app.token(EDITOR);
-    let answers = futures::future::join_all((0..1200).map(|_| {
-        app.client
+    let mut answers = Vec::new();
+    for _ in 0..3 {
+        let answer = app
+            .client
             .get(url(&app, "/v1/connections"))
             .bearer_auth(&member)
             .send()
-    }))
-    .await;
-    // The first answer that is not a listing has to be the limiter's: a 404 fails here too.
-    let over = answers
-        .into_iter()
-        .flatten()
-        .find(|answer| answer.status() != StatusCode::OK)
-        .expect("some of the burst was refused");
+            .await
+            .unwrap();
+        answers.push(answer);
+    }
+    let over = answers.pop().unwrap();
+    for held in answers {
+        assert_eq!(held.status(), StatusCode::OK);
+    }
     let (status, body) = refused(over).await;
     assert_eq!(
         (status, body["code"].as_str().unwrap()),
@@ -284,15 +294,19 @@ async fn a_burst_over_the_rate_is_refused_as_request_rate_limited() {
 /// in a report nor `server/silent`.
 #[tokio::test]
 async fn a_store_that_never_answers_is_store_silent_from_a_probe_and_a_listing() {
-    let app = spawn_app().await;
-    let member = app.token(EDITOR);
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let silent = format!("http://{}", listener.local_addr().unwrap());
-    app.credential("hung", &silent, "u-1").await;
+    let app = spawn_app_with(Options {
+        store: silent,
+        ..Options::default()
+    })
+    .await;
+    let member = app.token(EDITOR);
+    app.credential("hung", "u-1").await;
     app.connection("data", "hung", Direction::Source, "u-1")
         .await;
 
-    let spec = json!({ "kind": "s3", "access_key_id": "AK", "secret_access_key": "s", "endpoint": silent });
+    let spec = json!({ "kind": "s3", "access_key_id": "AK", "secret_access_key": "s" });
     let started = std::time::Instant::now();
     let (created, validated, listed) = tokio::join!(
         app.send(

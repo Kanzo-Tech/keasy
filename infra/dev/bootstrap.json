@@ -6,8 +6,7 @@
         "kind": "s3",
         "access_key_id": "keasy-admin",
         "secret_access_key": "keasy-admin-secret",
-        "region": "us-east-1",
-        "endpoint": "http://s3.localhost:9000"
+        "region": "us-east-1"
       }
     }
   ],

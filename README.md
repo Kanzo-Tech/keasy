@@ -94,6 +94,10 @@ them; paste one into the studio to map its graph into `output/`:
 | `infra/dev/snb.fossil` | LDBC SNB SF0.1 onto `snb.shex` |
 | `infra/dev/geo.fossil` | OpenFlights onto `geo.shex`: 3,218 `Airport` vertices with `lat`/`lon`, 36,906 `routeTo` edges |
 
+`infra/dev/geo.ttl` is rules for the OpenFlights graph: a SHACL shapes graph to drop on the graph's
+Rules panel in Discover. Most airports conform; 44 fail it (no IATA code, or an ICAO field that is
+not a four-letter ICAO code) and 29 more draw a warning (no time zone).
+
 `s3.localhost` is load-bearing: Docker's DNS answers it inside the compose network
 and `*.localhost` is loopback on the host, so the endpoint the server is given
 (`AWS_ENDPOINT_URL_S3`, and the vended credential names) works from both sides. The issuer is `http://localhost:8080/realms/kanzo`, the one the

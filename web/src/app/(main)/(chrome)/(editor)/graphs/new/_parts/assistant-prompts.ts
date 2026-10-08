@@ -1,4 +1,4 @@
-import type { InferredDescriptor } from "@fossil-lang/introspect";
+import type { InferredDescriptor } from "@fossil-lang/types";
 import { FOSSIL_PROMPT } from "@fossil-lang/prompt";
 
 import { type Proposal, suggest } from "@kanzo-tech/ai";
@@ -37,7 +37,7 @@ export function describeFiles(sources: readonly InferredDescriptor[]): string {
   return sources
     .map((s) => {
       const columns = s.columns.map((c) => `  - ${c.name} (${c.primitive})\n`).join("");
-      return `File: ${s.uri}\nColumns:\n${columns}\n`;
+      return `File: ${s.key}\nColumns:\n${columns}\n`;
     })
     .join("");
 }

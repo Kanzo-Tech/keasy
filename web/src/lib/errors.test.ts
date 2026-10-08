@@ -29,9 +29,9 @@ describe("a failure, kept as JSON", () => {
     expect(copyOf("run/over-budget")?.detail).not.toContain("GiB");
   });
 
-  it("names the missing file of a source from the locator it carries", () => {
+  it("names the missing file of a source from the location it carries", () => {
     expect(copyOf("source/not-found")).toMatchObject({ title: "The source names no file" });
-    expect(copyOf("source/not-found", { locator: "s3://lake/in/users.csv" })?.detail).toContain("s3://lake/in/users.csv");
+    expect(copyOf("source/not-found", { location: "s3://lake/in/users.csv" })?.detail).toContain("s3://lake/in/users.csv");
     expect(copyOf("source/not-found")?.detail).not.toContain("undefined");
   });
 

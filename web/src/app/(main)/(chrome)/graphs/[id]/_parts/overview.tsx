@@ -51,11 +51,11 @@ export function Overview({ graph }: { graph: Schemas["Graph"] }) {
 interface Row {
   table_name: string;
   kind: "vertex" | "edge" | "property";
-  rows: number;
+  record_count: number;
   source: string | null;
   destination: string | null;
   column_name: string | null;
-  type: string | null;
+  data_type: string | null;
 }
 
 interface Held {
@@ -69,11 +69,11 @@ const sum = (tables: { rows: number }[]) => tables.reduce((n, t) => n + t.rows, 
 function Holds({ graph }: { graph: Schemas["Graph"] }) {
   const { graphId } = useCorpus();
   const rows = useQueryRows<Row>(
-    `SELECT t.table_name, t.kind, t.rows::DOUBLE AS rows, t.source, t.destination, c.column_name, c.type
+    `SELECT t.table_name, t.kind, t.record_count::DOUBLE AS record_count, t.source, t.destination, c.column_name, c.data_type
      FROM ${new TableRefNode([graphId, "fossil_tables"])} t
      LEFT JOIN ${new TableRefNode([graphId, "fossil_columns"])} c ON c.table_name = t.table_name
      WHERE t.kind <> 'property'
-     ORDER BY t.table_name, c.ordinal`,
+     ORDER BY t.table_name, c.ordinal_position`,
   );
   const { types, edges, held } = useMemo(() => {
     const tables = [...Map.groupBy(rows, (r) => r.table_name).values()];
@@ -82,17 +82,17 @@ function Holds({ graph }: { graph: Schemas["Graph"] }) {
         t.table_name,
         {
           name: t.table_name,
-          rows: t.rows,
-          columns: [t, ...rest].flatMap((c) => (c.column_name ? [{ name: c.column_name, type: c.type ?? "" }] : [])),
+          rows: t.record_count,
+          columns: [t, ...rest].flatMap((c) => (c.column_name ? [{ name: c.column_name, type: c.data_type ?? "" }] : [])),
         },
       ]),
     );
     const types: VertexType[] = tables
       .filter(([t]) => t.kind === "vertex")
-      .map(([t]) => ({ name: t.table_name, rows: t.rows }));
+      .map(([t]) => ({ name: t.table_name, rows: t.record_count }));
     const edges: EdgeTable[] = tables
       .filter(([t]) => t.kind === "edge")
-      .map(([t]) => ({ name: t.table_name, rows: t.rows, source: t.source ?? "", destination: t.destination ?? "" }));
+      .map(([t]) => ({ name: t.table_name, rows: t.record_count, source: t.source ?? "", destination: t.destination ?? "" }));
     return { types, edges, held };
   }, [rows]);
 

@@ -29,7 +29,8 @@ import { Boundary, Loading } from "@/components/boundary";
 import { settled } from "@/lib/api/settled";
 import { storageConnections } from "@/lib/connections";
 import { type FieldProblem, fieldProblem, toastError } from "@/lib/errors";
-import { refs as referencesOf } from "@fossil-lang/wasm";
+import type { Diagnostic } from "@fossil-lang/types";
+import { inputs } from "@fossil-lang/wasm";
 import * as checker from "@/lib/fossil/checker";
 import { AssistantWizard } from "./assistant-wizard";
 import { ModePicker } from "./mode-picker";
@@ -88,9 +89,9 @@ function GraphStudio({ draft }: { draft?: Schemas["Graph"] }) {
   const nameRef = useRef<HTMLInputElement>(null);
   const [findingsOpen, setFindingsOpen] = useState(false);
   const [editor, setEditor] = useState<EditorApi | null>(null);
-  const [diagnostics, setDiagnostics] = useState<readonly checker.CheckRow[]>([]);
-  const [refs, setRefs] = useState<checker.SourceRefInfo[]>([]);
-  const [refsProblem, setRefsProblem] = useState<unknown>(undefined);
+  const [diagnostics, setDiagnostics] = useState<readonly Diagnostic[]>([]);
+  const [inputCount, setInputCount] = useState(0);
+  const [inputsProblem, setInputsProblem] = useState<unknown>(undefined);
   const [saved, setSaved] = useState(true);
 
   // The draft's server id: the `?draft=` the editor arrived with, or the one the
@@ -111,7 +112,7 @@ function GraphStudio({ draft }: { draft?: Schemas["Graph"] }) {
 
   const allConnections = settled($api.useSuspenseQuery("get", "/v1/connections"));
   const connections = useMemo(() => storageConnections(allConnections), [allConnections]);
-  const providers = settled(useSuspenseQuery(checker.providersQuery));
+  const formats = settled(useSuspenseQuery(checker.formatsQuery));
 
   useEffect(() => {
     if (!draft) return;
@@ -124,22 +125,22 @@ function GraphStudio({ draft }: { draft?: Schemas["Graph"] }) {
 
   // ── The program's lineage ───────────────────────────────────────────────
   // A graph's connections are its program's `@conn` references, read out of
-  // fossil's typed lineage — the same parse `fossil refs` runs natively, so the
-  // browser and the CLI never disagree about what a graph reads. One computation
-  // feeds the status strip's count.
+  // fossil's `inputs` — the one answer to what a program reads, so the editor
+  // and the run never disagree about it. One computation feeds the status
+  // strip's count.
   useEffect(() => {
     let alive = true;
     const id = setTimeout(() => {
-      void referencesOf(store.script)
+      void inputs(store.script)
         .then((rows) => {
           if (!alive) return;
-          setRefs(rows);
-          setRefsProblem(undefined);
+          setInputCount(rows.length);
+          setInputsProblem(undefined);
         })
         .catch((err: unknown) => {
           if (!alive) return;
-          setRefs([]);
-          setRefsProblem(err);
+          setInputCount(0);
+          setInputsProblem(err);
         });
     }, 300);
     return () => {
@@ -310,7 +311,7 @@ function GraphStudio({ draft }: { draft?: Schemas["Graph"] }) {
         connections={connections}
         onBack={() => store.setCreationMode(null)}
         onComplete={store.completeAssistant}
-        providers={providers}
+        formats={formats}
       />
     );
   }
@@ -427,8 +428,8 @@ function GraphStudio({ draft }: { draft?: Schemas["Graph"] }) {
                   <StudioSources
                     connections={sources}
                     onInsert={(text) => editor?.insert(text)}
-                    problem={refsProblem}
-                    providers={providers}
+                    problem={inputsProblem}
+                    formats={formats}
                   />
                 ),
               }
@@ -438,7 +439,7 @@ function GraphStudio({ draft }: { draft?: Schemas["Graph"] }) {
 
       <div className="flex h-8 shrink-0 flex-row items-center gap-2 border-t px-3 text-muted-foreground text-xs">
         <span className="truncate">
-          {refs.length} reference{refs.length === 1 ? "" : "s"}
+          {inputCount} reference{inputCount === 1 ? "" : "s"}
           {" · "}
           {draftMutation.isPending ? "saving…" : saved ? "draft saved" : "unsaved changes"}
         </span>

@@ -13,10 +13,11 @@ import {
   Show,
 } from "@kanzo-tech/ui";
 import { CodeEditor } from "@kanzo-tech/ui/editor";
-import { fossil, uncheckedRow } from "@fossil-lang/codemirror-fossil";
+import { fossil, uncheckedDiagnostic } from "@fossil-lang/codemirror-fossil";
 import { forceLinting, lintGutter } from "@codemirror/lint";
 import { EditorView } from "@codemirror/view";
 import { X } from "lucide-react";
+import type { Diagnostic } from "@fossil-lang/types";
 import type { FossilProgram } from "@fossil-lang/wasm";
 import * as checker from "@/lib/fossil/checker";
 import { useSourceDescriptors } from "./use-source-descriptors";
@@ -43,7 +44,7 @@ export function StudioEditor({
   program: string;
   onProgramChange: (program: string) => void;
   /** Every row of the last check — the ones the editor draws — or the one row of a check that never answered. */
-  onDiagnostics: (rows: readonly checker.CheckRow[]) => void;
+  onDiagnostics: (rows: readonly Diagnostic[]) => void;
   /** The editor's API, again whenever the view behind it changes. */
   onEditor: (editor: EditorApi) => void;
   /** The panel beside the program, under a header with its name and a close button; none, no rail. */
@@ -61,7 +62,7 @@ export function StudioEditor({
         if (alive) setOpened(p);
       })
       .catch((cause: unknown) => {
-        if (alive) onDiagnostics([uncheckedRow(checker.GRAPH_URI, cause)]);
+        if (alive) onDiagnostics([uncheckedDiagnostic(checker.GRAPH_URI, cause)]);
       });
     return () => {
       alive = false;
@@ -75,11 +76,10 @@ export function StudioEditor({
         ? [
             // The gutter is a caller's to install (`CodeEditor` themes the lint UI, ships none of it).
             lintGutter(),
-            fossil({
-              ...opened,
-              // The rows are the program's own `check` rows, coded — a check that threw included, as
-              // the one row the linter draws for it — so nothing reads "Valid" over a failed check.
-              onDiagnostics: (rows) => onDiagnostics(rows as readonly checker.CheckRow[]),
+            fossil(opened, {
+              // The program's own diagnostics, coded — a check that threw included, as the one
+              // diagnostic the linter draws for it — so nothing reads "Valid" over a failed check.
+              onDiagnostics,
               // One pane: a definition in a shape document is reported, not jumped to.
               onNavigate: (target) =>
                 setDefinition(

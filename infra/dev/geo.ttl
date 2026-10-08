@@ -1,0 +1,70 @@
+# Data-quality rules for the OpenFlights graph geo.fossil writes: a SHACL Core
+# shapes graph to drop on its Rules panel. The terms are geo.shex's, as the
+# corpus's `triples` view states them — schema.org for the airport and its
+# codes, WGS 84 for its position, `of:` for the dataset's own.
+#
+# The shapes say what a scheduled-service airport should carry, not what
+# geo.shex requires, so the seed both conforms and falls short. Of the 3,218
+# airports, 20 have no IATA code; 24 have an ICAO field that is not a
+# four-letter ICAO code — Transport Canada identifiers such as CAJ4, and FAA
+# ones such as S31; and 29 have no time zone, which is a warning. Every
+# position is in range and every route lands on an airport.
+
+@prefix sh:     <http://www.w3.org/ns/shacl#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix schema: <https://schema.org/> .
+@prefix geo:    <http://www.w3.org/2003/01/geo/wgs84_pos#> .
+@prefix of:     <https://openflights.example/vocab#> .
+@prefix :       <https://openflights.example/rules#> .
+
+:Airport
+  a sh:NodeShape ;
+  sh:targetClass schema:Airport ;
+  sh:property [
+    sh:path schema:name ;
+    sh:datatype xsd:string ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+  ] ;
+  sh:property [
+    sh:path schema:iataCode ;
+    sh:datatype xsd:string ;
+    sh:pattern "^[A-Z]{3}$" ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:message "An airport with scheduled routes has a three-letter IATA code." ;
+  ] ;
+  sh:property [
+    sh:path schema:icaoCode ;
+    sh:datatype xsd:string ;
+    sh:pattern "^[A-Z]{4}$" ;
+    sh:maxCount 1 ;
+    sh:message "An ICAO airport code is four letters." ;
+  ] ;
+  sh:property [
+    sh:path geo:lat ;
+    sh:datatype xsd:double ;
+    sh:minInclusive -90 ;
+    sh:maxInclusive 90 ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+  ] ;
+  sh:property [
+    sh:path geo:long ;
+    sh:datatype xsd:double ;
+    sh:minInclusive -180 ;
+    sh:maxInclusive 180 ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+  ] ;
+  sh:property [
+    sh:path of:timezone ;
+    sh:datatype xsd:string ;
+    sh:minCount 1 ;
+    sh:severity sh:Warning ;
+    sh:message "The airport has no IANA time zone." ;
+  ] ;
+  sh:property [
+    sh:path of:routeTo ;
+    sh:class schema:Airport ;
+  ] .

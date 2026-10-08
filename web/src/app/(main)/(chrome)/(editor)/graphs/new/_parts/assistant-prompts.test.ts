@@ -30,9 +30,7 @@ async function failureOf(stream: AsyncIterable<unknown>): Promise<unknown> {
 
 describe("the assistant prompts", () => {
   it("shows the model each file with its columns and types", () => {
-    const text = describeFiles([
-      { uri: "@c/people.csv", columns: [{ name: "email", primitive: "string" }] },
-    ] as never);
+    const text = describeFiles([{ key: "@c/people.csv", etag: "", columns: [{ name: "email", primitive: "string" }] }]);
     expect(text).toBe("File: @c/people.csv\nColumns:\n  - email (string)\n\n");
   });
 });

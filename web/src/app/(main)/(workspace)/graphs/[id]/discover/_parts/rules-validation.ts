@@ -9,7 +9,7 @@ import { corpusKey, useCorpus, useGraphKey, useVertices } from "@/lib/fossil/cor
 
 /**
  * A graph's rules, run by rudof on the page's one DuckDB over the corpus as RDF — the
- * `"<graph>".triples` view fossil's `open` creates. rudof parses the file, validates the triples
+ * `"<graph>".triples` view fossil's `attach` creates. rudof parses the file, validates the triples
  * whose subjects are in the page's subset, and writes the Shape Fragment of what conforms; keasy
  * only says which subset and reads the answer back.
  */
@@ -77,7 +77,7 @@ export function useRules(rules: ReadRules | undefined) {
   const predicate = pick.predicate();
   const triples = String(new TableRefNode([graphId, "triples"]));
   const focus = predicate.length
-    ? String(Query.from(vertices).select({ s_k: literal("I"), s_v: column("subject") }).where(predicate))
+    ? String(Query.from(vertices).select({ s_type: literal("I"), s_value: column("subject") }).where(predicate))
     : undefined;
 
   const checked = useQuery({
@@ -122,7 +122,7 @@ export function useRules(rules: ReadRules | undefined) {
       const { signal } = new AbortController();
       const attachedTo = await engine({ signal });
       await rules!.shapes.fragment({ table: triples, focus, engine: attachedTo, into, signal });
-      await publish(sql`${column("subject")} IN (SELECT s_v FROM ${into})`, label);
+      await publish(sql`${column("subject")} IN (SELECT s_value FROM ${into})`, label);
     },
   };
 }

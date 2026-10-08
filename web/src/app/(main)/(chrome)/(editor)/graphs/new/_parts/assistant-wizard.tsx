@@ -38,11 +38,11 @@ import {
 import { Link } from "@kanzo-tech/navigation/next";
 import { engine } from "@kanzo-tech/ui/analytics";
 import { introspect } from "@fossil-lang/introspect";
-import { providerFor } from "@fossil-lang/wasm";
+import type { Format } from "@fossil-lang/types";
+import { formatFor, inputs } from "@fossil-lang/wasm";
 import { $api } from "@/lib/api/client";
 import { gateway } from "@/lib/ai";
 import { type CompetencyQuestion, describeFiles, suggestQuestions, writeProgram } from "./assistant-prompts";
-import * as checker from "@/lib/fossil/checker";
 import { host } from "@/lib/fossil/host";
 import { sourceDescriptorsKey } from "./use-source-descriptors";
 import { reference, type StorageConnection } from "@/lib/connections";
@@ -157,7 +157,7 @@ function ConnectionFiles({
       ) : (
         <DataTableRoot table={table}>
           <DataTableContent<ConnectionFile>
-            empty={loading ? <Spinner className="mx-auto" /> : "No files a provider can read."}
+            empty={loading ? <Spinner className="mx-auto" /> : "No files a format reads."}
             onRowClick={(file) => table.getRow(file.path).toggleSelected()}
           />
           <DataTablePagination />
@@ -171,13 +171,13 @@ export function AssistantWizard({
   onComplete,
   onBack,
   connections,
-  providers,
+  formats,
 }: {
   onComplete: (script: string) => void;
   /** Back from the first screen: to the mode picker. */
   onBack: () => void;
   connections: Connection[];
-  providers: checker.ProviderInfo[];
+  formats: readonly Format[];
 }) {
   const [screen, setScreen] = useState(0);
   // Per connection, once the editor has touched it; untouched means every readable file.
@@ -206,7 +206,7 @@ export function AssistantWizard({
     ),
   });
   const readable = selected.map((connection, i) => {
-    const files = (listings[i]?.data?.files ?? []).filter((f) => providerFor(f.path, "data", providers));
+    const files = (listings[i]?.data?.files ?? []).filter((f) => formatFor(f.path, "data", formats));
     const selection =
       fileSelection[connection.name] ?? Object.fromEntries(files.map((f) => [f.path, true]));
     const listing = listings[i];
@@ -227,9 +227,9 @@ export function AssistantWizard({
   // hold and described the way the editor describes a program's sources — while
   // the editor is still writing the domain.
   const bindings = picked.flatMap(({ connection, path }) => {
-    const provider = providerFor(path, "data", providers);
-    return provider
-      ? [{ constructor: provider.name, uri: reference(connection, path) }]
+    const format = formatFor(path, "data", formats);
+    return format
+      ? [{ constructor: format.name, uri: reference(connection, path) }]
       : [];
   });
   const program = bindings.map((b, i) => `f${i} := io.${b.constructor}("${b.uri}")`).join("\n");
@@ -238,7 +238,7 @@ export function AssistantWizard({
   const described = useQuery({
     queryKey: sourceDescriptorsKey(bindings.map((b) => b.uri)),
     queryFn: async ({ signal }) =>
-      introspect(await (await checker.graphProgram({ signal })).sources(program), {
+      introspect(await inputs(program, { host, signal }), {
         host,
         engine: await engine({ signal }),
         signal,

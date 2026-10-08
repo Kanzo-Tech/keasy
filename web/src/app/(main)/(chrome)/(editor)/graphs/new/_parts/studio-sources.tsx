@@ -19,7 +19,7 @@ import {
   createTreeCollection,
 } from "@kanzo-tech/ui";
 import { BookMarked, Database, FileText, PlugZap } from "lucide-react";
-import type { ProviderInfo } from "@fossil-lang/wasm";
+import type { Format } from "@fossil-lang/types";
 import { $api } from "@/lib/api/client";
 import { queryClient } from "@/lib/api/query-client";
 import type { StorageConnection } from "@/lib/connections";
@@ -35,13 +35,13 @@ const KIND = { data: { icon: Database, label: "data" }, vocab: { icon: BookMarke
  */
 export function StudioSources({
   connections,
-  providers,
+  formats,
   problem,
   onInsert,
 }: {
   /** The program's sources: every connection but the sink, which output is written to. */
   connections: StorageConnection[];
-  providers: readonly ProviderInfo[];
+  formats: readonly Format[];
   /** Why the program's references could not be read. */
   problem: unknown;
   onInsert: (text: string) => void;
@@ -62,7 +62,7 @@ export function StudioSources({
     return childrenOf(
       node,
       files.map((f) => f.path),
-      providers,
+      formats,
     );
   };
 

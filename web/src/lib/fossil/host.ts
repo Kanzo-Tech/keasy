@@ -1,6 +1,6 @@
 import "client-only";
 
-import { type Access, type Host, type Scope, type StorageCredential, until } from "@fossil-lang/types";
+import type { Access, Host, Scope, StorageCredential } from "@fossil-lang/types";
 
 import { http } from "@/lib/api/client";
 import { queryClient } from "@/lib/api/query-client";
@@ -8,7 +8,7 @@ import { queryClient } from "@/lib/api/query-client";
 /**
  * keasy as fossil's `Host` — the editor's, a graph run's and a corpus's alike.
  * Fossil decides what a program reads and expands every `@name/…` into a
- * locator; keasy hands over the source connections' prefixes and, for a scope,
+ * location; keasy hands over the source connections' prefixes and, for a scope,
  * a credential scoped to its prefix for an hour. Fossil reaches the store with
  * it and renews it before it expires; keasy never signs a URL.
  *
@@ -24,17 +24,14 @@ import { queryClient } from "@/lib/api/query-client";
 const CONNECTIONS_FRESH_MS = 60_000;
 
 export const host: Host = {
-  // `signal` is fossil's: the caller's Stop, or the 30 s a host has to answer. Passing it to the
-  // request stops the request too, rather than leaving it to finish unread.
-  connections: async ({ signal }) => {
-    const connections = await until(
-      queryClient.fetchQuery({
-        queryKey: ["get", "/v1/connections", {}],
-        queryFn: async ({ signal: query }) => (await http.GET("/v1/connections", { signal: query })).data ?? [],
-        staleTime: CONNECTIONS_FRESH_MS,
-      }),
-      signal,
-    );
+  // The map is the query cache's, shared by every check, so fossil's `signal` does not reach its
+  // request: fossil stops waiting on its own, and the request finishes into the cache.
+  connections: async () => {
+    const connections = await queryClient.fetchQuery({
+      queryKey: ["get", "/v1/connections", {}],
+      queryFn: async ({ signal }) => (await http.GET("/v1/connections", { signal })).data ?? [],
+      staleTime: CONNECTIONS_FRESH_MS,
+    });
     return Object.fromEntries(
       connections.flatMap((c) => (c.target.direction === "source" ? [[c.name, c.target.url]] : [])),
     );

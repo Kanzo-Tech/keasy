@@ -148,7 +148,6 @@ export function startRun(graph: Schemas["Graph"]): void {
   void (async () => {
     try {
       const mod = await import("@fossil-lang/executor");
-      await mod.initFossilExecutor();
       // `run` reads every document and source the program names through the host, writes the
       // corpus under the graph, and answers its report or throws its `FossilError`. The report crosses
       // untouched — `GraphStatusReport.report` is opaque JSON on the server — and is asked again for as

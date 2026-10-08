@@ -122,9 +122,9 @@ const registry: Partial<Record<ErrorCode | NoBodyCode | ClientCode | Code | Kanz
   "source/not-found": {
     title: "The source names no file",
     detail: (data) => {
-      const locator = (data as { locator?: unknown } | undefined)?.locator;
-      return typeof locator === "string"
-        ? `Nothing was found at ${locator}. Check the path and the connection it is read through.`
+      const location = (data as { location?: unknown } | undefined)?.location;
+      return typeof location === "string"
+        ? `Nothing was found at ${location}. Check the path and the connection it is read through.`
         : "A file the program reads was not found. Check the path and the connection it is read through.";
     },
   },

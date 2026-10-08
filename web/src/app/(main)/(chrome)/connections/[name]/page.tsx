@@ -3,7 +3,7 @@
 import { use } from "react";
 import { MoreHorizontal } from "lucide-react";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { providerFor } from "@fossil-lang/wasm";
+import { formatFor } from "@fossil-lang/wasm";
 import {
   Button,
   DataList,
@@ -32,7 +32,7 @@ import {
 import { Provenance } from "@/components/provenance";
 import { ValidationBadge } from "@/components/validation-badge";
 import { $api, invalidate } from "@/lib/api/client";
-import { providersQuery } from "@/lib/fossil/checker";
+import { formatsQuery } from "@/lib/fossil/checker";
 import { toastError } from "@/lib/errors";
 import { reference } from "@/lib/connections";
 import { Boundary, Loading } from "@/components/boundary";
@@ -124,13 +124,13 @@ function ConnectionView({ name }: { name: string }) {
   );
 }
 
-/** What a storage connection's prefix holds that a provider can read. Fails on its own, beside the connection. */
+/** What a storage connection's prefix holds that a format reads. Fails on its own, beside the connection. */
 function Files({ name, url, kind }: { name: string; url: string; kind: "data" | "schema" }) {
   const { files: listed, truncated } = settled(
     $api.useSuspenseQuery("get", "/v1/connections/{name}/files", { params: { path: { name } } }),
   );
-  const providers = settled(useSuspenseQuery(providersQuery));
-  const readable = listed.filter((f) => providerFor(f.path, kind, providers));
+  const formats = settled(useSuspenseQuery(formatsQuery));
+  const readable = listed.filter((f) => formatFor(f.path, kind, formats));
   const cut = truncated && (
     <p className="text-muted-foreground text-xs">Only the first {listed.length.toLocaleString()} files are listed.</p>
   );

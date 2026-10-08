@@ -10,12 +10,12 @@ import {
   FindingsRoot,
   FindingsTrigger,
 } from "@kanzo-tech/ui";
-import type { CheckRow } from "@/lib/fossil/checker";
+import type { Diagnostic } from "@fossil-lang/types";
 import { ProblemItem } from "@/components/problem-view";
 
-/** LSP severity: 1 error, 2 warning, 3 information — as kanzo-ui's variants. */
-const VARIANT = { 1: "destructive", 2: "warning", 3: "info" } as const;
-const SEVERITY = { 1: "error", 2: "warning", 3: "info" } as const;
+/** LSP severity: 1 error, 2 warning, 3 information, 4 hint — as kanzo-ui's variants, a hint a note. */
+const VARIANT = { 1: "destructive", 2: "warning", 3: "info", 4: "info" } as const;
+const SEVERITY = { 1: "error", 2: "warning", 3: "info", 4: "info" } as const;
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
@@ -26,11 +26,11 @@ function tally({ destructive, warning, info }: FindingCounts): string {
 }
 
 interface CompilerFinding extends Finding {
-  row: CheckRow;
+  row: Diagnostic;
 }
 
 /** A finding as the one failure view shows it: its code, its line and title, its message and help. */
-function problemOf(row: CheckRow) {
+function problemOf(row: Diagnostic) {
   return {
     code: row.code,
     title: `Line ${row.range.start.line + 1} · ${row.title}`,
@@ -57,10 +57,10 @@ export function FindingsBadge({
   onOpenChange,
   onSelect,
 }: {
-  findings: readonly CheckRow[];
+  findings: readonly Diagnostic[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSelect: (finding: CheckRow) => void;
+  onSelect: (finding: Diagnostic) => void;
 }) {
   const listed = useMemo(
     () =>

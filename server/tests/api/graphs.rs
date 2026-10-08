@@ -1,7 +1,7 @@
 use axum::http::{Method, StatusCode};
 use serde_json::json;
 
-use crate::helpers::{ADMIN, DEAD, EDITOR, READER, spawn_app};
+use crate::helpers::{ADMIN, EDITOR, READER, spawn_app};
 use keasy_server::domain::Direction;
 
 /// A graph needs a destination, and it must be the sink.
@@ -9,7 +9,7 @@ use keasy_server::domain::Direction;
 async fn a_graph_goes_to_the_sink_or_is_refused() {
     let app = spawn_app().await;
     let member = app.token(EDITOR);
-    app.credential("key", DEAD, "u-1").await;
+    app.credential("key", "u-1").await;
     app.connection("source", "key", Direction::Source, "u-1")
         .await;
     app.connection("sink", "key", Direction::Sink, "u-1").await;
@@ -42,7 +42,7 @@ async fn a_graph_is_read_by_all_and_changed_by_its_creator_or_an_admin() {
     let theirs = app.token_for("u-2", EDITOR);
     let reader = app.token_for("u-3", READER);
     let admin = app.token_for("u-9", ADMIN);
-    app.credential("key", DEAD, "u-1").await;
+    app.credential("key", "u-1").await;
     app.connection("sink", "key", Direction::Sink, "u-1").await;
 
     let (_, graph) = app
@@ -112,7 +112,7 @@ async fn a_graph_is_read_by_all_and_changed_by_its_creator_or_an_admin() {
 async fn a_failed_run_keeps_its_problem_whole() {
     let app = spawn_app().await;
     let member = app.token(EDITOR);
-    app.credential("key", DEAD, "u-1").await;
+    app.credential("key", "u-1").await;
     app.connection("sink", "key", Direction::Sink, "u-1").await;
 
     let id = app.running(&member).await;
@@ -144,7 +144,7 @@ async fn a_failed_run_keeps_its_problem_whole() {
 async fn a_graph_writes_to_a_folder_of_its_own() {
     let app = spawn_app().await;
     let member = app.token(EDITOR);
-    app.credential("key", DEAD, "u-1").await;
+    app.credential("key", "u-1").await;
     app.connection("sink", "key", Direction::Sink, "u-1").await;
 
     let draft = |folder: Option<&str>| {
@@ -248,7 +248,7 @@ async fn a_graph_keeps_one_dashboard() {
     let app = spawn_app().await;
     let mine = app.token_for("u-1", EDITOR);
     let theirs = app.token_for("u-2", EDITOR);
-    app.credential("key", DEAD, "u-1").await;
+    app.credential("key", "u-1").await;
     app.connection("sink", "key", Direction::Sink, "u-1").await;
     let (_, graph) = app
         .send(
@@ -313,7 +313,7 @@ async fn a_graph_keeps_one_shapes_graph_of_rules() {
     let app = spawn_app().await;
     let mine = app.token_for("u-1", EDITOR);
     let theirs = app.token_for("u-2", EDITOR);
-    app.credential("key", DEAD, "u-1").await;
+    app.credential("key", "u-1").await;
     app.connection("sink", "key", Direction::Sink, "u-1").await;
     let (_, graph) = app
         .send(
@@ -488,7 +488,7 @@ async fn a_graph_keeps_one_shapes_graph_of_rules() {
 async fn a_misspelled_name_is_refused_on_its_field() {
     let app = spawn_app().await;
     let member = app.token(EDITOR);
-    app.credential("key", DEAD, "u-1").await;
+    app.credential("key", "u-1").await;
     app.connection("sink", "key", Direction::Sink, "u-1").await;
 
     for name in [" lead", "a/b", "@x", ""] {
@@ -541,7 +541,7 @@ async fn a_misspelled_name_is_refused_on_its_field() {
 async fn submitting_a_draft_makes_it_the_graph_in_place() {
     let app = spawn_app().await;
     let member = app.token(EDITOR);
-    app.credential("key", DEAD, "u-1").await;
+    app.credential("key", "u-1").await;
     app.connection("sink", "key", Direction::Sink, "u-1").await;
     let (_, draft) = app
         .send(
@@ -625,7 +625,7 @@ async fn submitting_a_draft_makes_it_the_graph_in_place() {
 async fn submitting_onto_a_taken_folder_leaves_the_draft() {
     let app = spawn_app().await;
     let member = app.token(EDITOR);
-    app.credential("key", DEAD, "u-1").await;
+    app.credential("key", "u-1").await;
     app.connection("sink", "key", Direction::Sink, "u-1").await;
     let create = |body: serde_json::Value| app.send(Method::POST, "/v1/graphs", &member, body);
     let (_, held) =
@@ -670,7 +670,7 @@ async fn submitting_onto_a_taken_folder_leaves_the_draft() {
 async fn a_run_reports_forward_and_every_end_is_dated() {
     let app = spawn_app().await;
     let member = app.token(EDITOR);
-    app.credential("key", DEAD, "u-1").await;
+    app.credential("key", "u-1").await;
     app.connection("sink", "key", Direction::Sink, "u-1").await;
 
     for target in ["completed", "failed", "cancelled", "draft", "idle"] {
@@ -715,7 +715,7 @@ async fn a_graph_runs_once_at_a_time_for_whoever_started_it() {
     let mine = app.token_for("u-1", EDITOR);
     let theirs = app.token_for("u-2", EDITOR);
     let admin = app.token_for("u-9", ADMIN);
-    app.credential("key", DEAD, "u-1").await;
+    app.credential("key", "u-1").await;
     app.connection("sink", "key", Direction::Sink, "u-1").await;
 
     let (_, draft) = app
@@ -760,7 +760,7 @@ async fn only_the_runner_reports_and_writes() {
     let app = spawn_app().await;
     let creator = app.token_for("u-1", EDITOR);
     let admin = app.token_for("u-9", ADMIN);
-    app.credential("key", DEAD, "u-1").await;
+    app.credential("key", "u-1").await;
     app.connection("sink", "key", Direction::Sink, "u-1").await;
     let id = app.submitted(&creator).await;
     let (status, _) = app.run(&admin, &id).await;
@@ -801,7 +801,7 @@ async fn a_run_is_stopped_by_its_runner_or_an_admin_through_its_runner() {
     let runner = app.token_for("u-1", EDITOR);
     let theirs = app.token_for("u-2", EDITOR);
     let admin = app.token_for("u-9", ADMIN);
-    app.credential("key", DEAD, "u-1").await;
+    app.credential("key", "u-1").await;
     app.connection("sink", "key", Direction::Sink, "u-1").await;
     let beat = |id: String| {
         let runner = runner.clone();
@@ -877,7 +877,7 @@ async fn a_run_is_stopped_by_its_runner_or_an_admin_through_its_runner() {
 async fn running_again_writes_over_the_last_output() {
     let app = spawn_app().await;
     let member = app.token(EDITOR);
-    app.credential("key", DEAD, "u-1").await;
+    app.credential("key", "u-1").await;
     app.connection("sink", "key", Direction::Sink, "u-1").await;
     let id = app.running(&member).await;
     let (_, done) = app
@@ -907,7 +907,7 @@ async fn running_again_writes_over_the_last_output() {
 async fn a_graph_says_where_its_output_lands() {
     let app = spawn_app().await;
     let member = app.token(EDITOR);
-    app.credential("key", DEAD, "u-1").await;
+    app.credential("key", "u-1").await;
     app.connection("sink", "key", Direction::Sink, "u-1").await;
     let id = app.submitted(&member).await;
     let (_, graph) = app

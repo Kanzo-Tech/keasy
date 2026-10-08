@@ -1,11 +1,44 @@
 import { referenceTo } from "@fossil-lang/types";
 
-import type { Schemas } from "@/lib/api/client";
+import type { Inputs, Schemas } from "@/lib/api/client";
 import { schemaOf } from "@/lib/api/spec";
 
 export type Connection = Schemas["ConnectionView"];
 export type Credential = Schemas["SecretView"];
-/** The title the contract gives a credential kind (`Amazon S3 / S3-compatible`). */
+type Kind = Inputs["SecretSpec"]["kind"];
+
+/**
+ * The clouds a credential is for, each with the scheme its locations are written in and its ways
+ * of signing in — the credential kinds the contract publishes, grouped by the store they reach.
+ */
+export const CLOUDS = [
+  {
+    value: "aws",
+    label: "AWS",
+    holds: "Amazon S3",
+    scheme: "s3://",
+    methods: [{ kind: "s3", label: "Access key" }],
+  },
+  {
+    value: "azure",
+    label: "Azure",
+    holds: "Blob Storage, ADLS",
+    scheme: "az://",
+    methods: [
+      { kind: "azure_account_key", label: "Account key" },
+      { kind: "azure_service_principal", label: "Service principal" },
+    ],
+  },
+] as const satisfies readonly { value: string; label: string; holds: string; scheme: string; methods: readonly { kind: Kind; label: string }[] }[];
+
+export type Cloud = (typeof CLOUDS)[number];
+
+/** The cloud a credential kind reaches. */
+export function cloudOf(kind: string): Cloud {
+  return CLOUDS.find((c) => c.methods.some((m) => m.kind === kind)) ?? CLOUDS[0];
+}
+
+/** The title the contract gives a credential kind (`Amazon S3`). */
 export function kindTitle(kind: string): string {
   const schema = schemaOf("SecretSpec");
   return (

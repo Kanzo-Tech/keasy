@@ -9,6 +9,7 @@ use crate::domain::{
     StorageLocation, StorageTarget,
 };
 use crate::error::{ErrorCode, Refusal};
+use crate::storage_client::Endpoints;
 
 /// The connection `name`, or 404.
 pub async fn named(db: &Database, name: &str) -> Result<ConnectionView, Refusal> {
@@ -22,6 +23,7 @@ pub async fn named(db: &Database, name: &str) -> Result<ConnectionView, Refusal>
 fn fits(
     credential: Option<Credential>,
     connection: &mut ConnectionView,
+    endpoints: &Endpoints,
 ) -> Result<Credential, Refusal> {
     let credential = credential.ok_or_else(|| {
         Refusal::invalid(format!("there is no secret named {:?}", connection.secret))
@@ -29,7 +31,8 @@ fn fits(
     let location = StorageLocation::parse(&connection.target.url)
         .and_then(|l| l.within(&credential.spec))
         .map_err(Refusal::invalid)?;
-    crate::storage_client::store(&credential.spec, &location).map_err(Refusal::invalid)?;
+    crate::storage_client::store(&credential.spec, &location, endpoints)
+        .map_err(Refusal::invalid)?;
     connection.target.url = location.to_string();
     Ok(credential)
 }
@@ -74,6 +77,7 @@ pub async fn save(
     name: Option<&str>,
     mut connection: ConnectionView,
     by: &Actor,
+    endpoints: &Endpoints,
 ) -> Result<ConnectionView, Refusal> {
     ResourceName::parse(&connection.name).map_err(|e| Refusal::invalid_field("name", e))?;
     let credential = crate::credentials::persistence::get(
@@ -81,10 +85,11 @@ pub async fn save(
         db.secret_key(),
         &connection.secret,
     )?;
-    let credential = fits(credential, &mut connection)?;
+    let credential = fits(credential, &mut connection, endpoints)?;
     disjoint(db, &connection, name).await?;
     let report =
-        crate::credentials::probe::connection(&credential.spec, &connection.target).await?;
+        crate::credentials::probe::connection(&credential.spec, &connection.target, endpoints)
+            .await?;
     if !report.passed() {
         return Err(Refusal::probe_failed(report.failures(), Vec::new()));
     }
@@ -105,6 +110,7 @@ pub async fn create(
     secret: String,
     target: StorageTarget,
     by: &Actor,
+    endpoints: &Endpoints,
 ) -> Result<ConnectionView, Refusal> {
     let connection = ConnectionView {
         name,
@@ -114,7 +120,7 @@ pub async fn create(
         validation: None,
         can_modify: false,
     };
-    save(db, None, connection, by).await
+    save(db, None, connection, by, endpoints).await
 }
 
 /// A storage connection's location, as its secret reaches it, and that secret.

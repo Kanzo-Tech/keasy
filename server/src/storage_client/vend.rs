@@ -19,7 +19,7 @@ use secrecy::{ExposeSecret, SecretString};
 use serde::Deserialize;
 use sha2::Sha256;
 
-use super::StoreFailure;
+use super::{Endpoints, StoreFailure};
 use crate::domain::{Access, SecretSpec, StorageLocation, Store, VendedCredential};
 
 /// How long a vended credential lives: Unity Catalog's and Polaris's default.
@@ -30,7 +30,7 @@ pub const VENDED_FOR: Duration = Duration::from_secs(3600);
 /// the same margin.
 const CLOCK_SKEW: Duration = Duration::from_secs(300);
 
-/// The role an S3-compatible endpoint is asked for when the credential names
+/// The role a configured STS endpoint is asked for when the credential names
 /// none. The dev store (`infra/dev/seaweedfs/iam.json`) declares exactly this
 /// one; a store that validates roles needs the credential's `role_arn`.
 const S3_COMPATIBLE_ROLE: &str = "arn:aws:iam::000000000000:role/keasy-vended";
@@ -84,14 +84,16 @@ fn http(deadlines: Deadlines) -> reqwest::Client {
 pub async fn vend(
     credential: &SecretSpec,
     location: &StorageLocation,
+    endpoints: &Endpoints,
     access: Access,
 ) -> Result<VendedCredential, StoreFailure> {
-    vend_within(credential, location, access, DEADLINES).await
+    vend_within(credential, location, endpoints, access, DEADLINES).await
 }
 
 async fn vend_within(
     credential: &SecretSpec,
     location: &StorageLocation,
+    endpoints: &Endpoints,
     access: Access,
     deadlines: Deadlines,
 ) -> Result<VendedCredential, StoreFailure> {
@@ -100,11 +102,10 @@ async fn vend_within(
             access_key_id,
             secret_access_key,
             region,
-            endpoint,
             role_arn,
             external_id,
         } => {
-            let role = match (role_arn, endpoint) {
+            let role = match (role_arn, &endpoints.sts) {
                 (Some(role), _) => role.as_str(),
                 (None, Some(_)) => S3_COMPATIBLE_ROLE,
                 (None, None) => {
@@ -119,7 +120,7 @@ async fn vend_within(
                 access_key_id,
                 secret_access_key,
                 region,
-                endpoint.as_deref(),
+                endpoints,
                 role,
                 external_id.as_deref(),
                 location,
@@ -204,7 +205,7 @@ async fn assume_role(
     access_key_id: &str,
     secret_access_key: &SecretString,
     region: &str,
-    endpoint: Option<&str>,
+    endpoints: &Endpoints,
     role: &str,
     external_id: Option<&str>,
     location: &StorageLocation,
@@ -229,7 +230,7 @@ async fn assume_role(
             None,
             "keasy",
         ));
-    if let Some(endpoint) = endpoint {
+    if let Some(endpoint) = &endpoints.sts {
         config = config.endpoint_url(endpoint);
     }
     let issued = aws_sdk_sts::Client::from_conf(config.build())
@@ -265,8 +266,8 @@ async fn assume_role(
         (credentials.expiration.secs() * 1000).to_string(),
     );
     put("client.region", region.to_string());
-    if let Some(endpoint) = endpoint {
-        put("s3.endpoint", endpoint.to_string());
+    if let Some(endpoint) = &endpoints.s3 {
+        put("s3.endpoint", endpoint.clone());
         put("s3.path-style-access", "true".into());
     }
     Ok(VendedCredential {
@@ -652,14 +653,23 @@ mod tests {
             access_key_id: "AK".into(),
             secret_access_key: SecretString::from("secret"),
             region: "us-east-1".into(),
-            endpoint: Some(url),
             role_arn: None,
             external_id: None,
         };
+        let endpoints = Endpoints {
+            s3: None,
+            sts: Some(url),
+        };
         let started = std::time::Instant::now();
-        let err = vend_within(&credential, &loc("s3://b/out"), Access::Read, SHORT)
-            .await
-            .unwrap_err();
+        let err = vend_within(
+            &credential,
+            &loc("s3://b/out"),
+            &endpoints,
+            Access::Read,
+            SHORT,
+        )
+        .await
+        .unwrap_err();
         assert!(is_silent(&err, "STS"), "{err}");
         assert!(started.elapsed() < Duration::from_secs(3));
     }

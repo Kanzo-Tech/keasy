@@ -4,7 +4,7 @@
 # organization; no instance holds a key. The profile — which upstream answers which alias —
 # is keasy's.
 module "ai_gateway" {
-  source = "git::https://github.com/Kanzo-Tech/ui.git//services/ai/modules/gateway?ref=v0.31.0"
+  source = "git::https://github.com/Kanzo-Tech/ui.git//services/ai/modules/gateway?ref=v0.33.0"
 
   network       = docker_network.edge.name
   alias         = "ai-gateway"

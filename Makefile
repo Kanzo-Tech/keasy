@@ -11,14 +11,14 @@
 # Crates compile at runtime into the persistent `server-target` + `cargo-registry`
 # volumes, so only the first `up` (or one after `make clean`) pays a cold compile.
 
-.PHONY: help dev seed down logs restart clean ps api e2e deps deploy-platform deploy-auth deploy-instances
+.PHONY: help dev seed down logs restart clean ps api e2e demo deps deploy-platform deploy-auth deploy-instances
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_%-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
 # The platform's services (identity, the AI gateway) come from kanzo-ui, at the
 # release keasy is built against: the same tag its @kanzo-tech/* packages pin.
-KANZO_UI_REF ?= v0.32.0
+KANZO_UI_REF ?= v0.33.0
 
 deps: ## Check out kanzo-ui's services at $(KANZO_UI_REF) into .deps/kanzo-ui
 	@if [ -d .deps/kanzo-ui/.git ]; then \
@@ -73,6 +73,29 @@ e2e: deps seed ## Run the e2e suite against the compose stack (main checkout onl
 	docker compose -f docker-compose.yml -f e2e/compose.yml up -d --wait --wait-timeout 1800 web
 	pnpm --filter @keasy/e2e exec playwright install chromium
 	pnpm --filter @keasy/e2e test
+
+# ── Product demos ──────────────────────────────────────────────────────────
+# Recorded, not asserted (e2e/demos/): a Playwright script per demo against the stack `make dev`
+# and `make seed` bring up, on :3000 (main checkout only, as for e2e). The web is restarted with
+# NEXT_PUBLIC_KEASY_DEMO, which turns off the dev server's own furniture, and put back after. Each
+# demo is written to e2e/demos/out/<demo>-<theme>.mp4 and .png; the MP4 needs ffmpeg on PATH.
+#   make demo                       list the demos
+#   make demo DEMO=snb-explore      record one, light and dark
+#   make demo DEMO=all THEME=dark   record every demo, one side
+# `docker compose build web` first: the web image carries next.config.ts, which reads the switch.
+demo: ## List the product demos; DEMO=<name>|all records them (THEME=light|dark for one side)
+ifeq ($(DEMO),)
+	@pnpm --silent --filter @keasy/e2e exec playwright test --project=demos --no-deps --list \
+	  | sed -n 's/.*› \([a-z0-9-]*\): \(.*\)$$/  \1	\2/p'
+	@echo "make demo DEMO=<name>|all [THEME=light|dark]"
+else
+	@command -v ffmpeg >/dev/null || { echo "make demo: needs ffmpeg on PATH (macOS: brew install ffmpeg)" >&2; exit 1; }
+	docker compose build web
+	NEXT_PUBLIC_KEASY_DEMO=1 docker compose up -d --wait web
+	pnpm --filter @keasy/e2e exec playwright install chromium
+	DEMO_THEME=$(THEME) pnpm --filter @keasy/e2e demo $(if $(filter all,$(DEMO)),,--grep " $(DEMO): "); \
+	  status=$$?; docker compose up -d --wait web; exit $$status
+endif
 
 # ── Prod / Swarm deploy — Terraform owns everything (see infra/terraform/README.md) ──
 # platform (Traefik + Keycloak + Postgres + AI gateway) → auth (the kanzo realm + keasy's

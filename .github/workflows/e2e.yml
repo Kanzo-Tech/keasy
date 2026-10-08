@@ -61,7 +61,7 @@ jobs:
 
       - run: pnpm --filter @keasy/e2e exec playwright install --with-deps chromium
 
-      # Every project: the scenarios, and the smoke over the dev seeds. One run, so one report.
+      # `test`: the scenarios and the smoke over the dev seeds, in one run so one report.
       - name: Run the scenarios and the smoke
         run: pnpm --filter @keasy/e2e test
         env:

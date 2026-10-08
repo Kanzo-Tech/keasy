@@ -44,5 +44,15 @@ export default defineConfig({
       dependencies: ["setup"],
       use: { storageState: ".auth/editor.json" },
     },
+    // Product demos, recorded rather than asserted (demos/, `make demo`). Never part of `test`:
+    // it names the projects it runs, so CI and `make e2e` do not record.
+    {
+      name: "demos",
+      testMatch: /demos\/.*\.demo\.ts/,
+      dependencies: ["setup"],
+      // No trace: tracing starts the page's screencast first, at 800px, and a recording joins the
+      // screencast already running at its size — the demo comes out 800px wide in a 1080p frame.
+      use: { storageState: ".auth/editor.json", trace: "off" },
+    },
   ],
 });

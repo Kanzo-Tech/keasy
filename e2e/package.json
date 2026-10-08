@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "playwright test",
+    "test": "playwright test --project=guard --project=scenarios --project=smoke",
+    "demo": "playwright test --project=demos",
     "guard": "playwright test --project=guard",
     "typecheck": "tsc --noEmit"
   },

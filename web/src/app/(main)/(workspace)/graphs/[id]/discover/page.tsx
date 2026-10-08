@@ -65,8 +65,8 @@ import { settled } from "@/lib/api/settled";
  * (Graph · Dashboard), the footer strip picks which panel the dock holds (Info · Ask · Rules ·
  * Settings) and collapses it when the active icon is pressed again. Both views and every panel read
  * one graph and one crossfilter, so a lasso on the canvas filters the dashboard and a rule pressed in
- * the dock lights the canvas. `FilterBar`, under the header, is every clause on the page and the
- * dashboard's filters, in either view. A dashboard tile is edited in the Format aside at the body's
+ * the dock lights the canvas. `FilterBar`, under the header, is every clause on the page in either
+ * view, and the dashboard's filter controls in Dashboard. A dashboard tile is edited in the Format aside at the body's
  * end edge, beside the dock rather than in it, so the panel the reader had open stays open.
  */
 
@@ -264,8 +264,9 @@ function Workspace() {
           <ResizablePanel className="relative min-w-0 overflow-hidden" id="canvas">
             <ShellMain className="relative size-full min-h-0 bg-background">
               {view === "graph" && <GraphRegion />}
-              {/* Hidden, not unmounted, in Graph view: its filters stay in the bar and keep filtering
-                  the page, and its charts ask nothing until it is shown again. */}
+              {/* Hidden, not unmounted, in Graph view: its filters keep filtering the page and stay in
+                  the bar as removable chips (their editing controls leave it until Dashboard is
+                  shown), and its charts ask nothing until it is shown again. */}
               <MosaicClients enabled={view === "dashboard"}>
                 <div className="size-full min-h-0" hidden={view !== "dashboard"}>
                   <DashboardView onRelationChange={setRelation} relation={relation} table={table} />

@@ -73,6 +73,7 @@ function useSchema(): DataSchema {
 /**
  * Questions to start from, cached per graph and per scope: a filter changed is a different question
  * to ask. Streamed, so the pills land one by one; a failure leaves none, and the chat works the same.
+ * A few short questions are a completion: `gateway("complete")`.
  */
 function useStarters(schema: DataSchema, scope: DataScope) {
   const { graphId } = useCorpus();
@@ -81,7 +82,7 @@ function useStarters(schema: DataSchema, scope: DataScope) {
   const starters = useQuery({
     queryKey: [...corpusKey(graphId), "starters", String(scope.selection.predicate(null) ?? "")],
     queryFn: streamedQuery({
-      streamFn: ({ signal }) => dataSuggestions({ model: gateway("chat"), schema, scope, abortSignal: signal }),
+      streamFn: ({ signal }) => dataSuggestions({ model: gateway("complete"), schema, scope, abortSignal: signal }),
     }),
     staleTime: Infinity,
     retry: false,

@@ -9,7 +9,6 @@ import {
   AlertDialogContent,
   AlertDialogFooter,
   AlertDialogHeader,
-  Badge,
   Button,
   EmptyContent,
   EmptyDescription,
@@ -33,17 +32,15 @@ import {
   DataTableSearch,
   DataTableToolbar,
   DataTableViewOptions,
-  facetFilterFn,
-  sortableHeader,
   useDataTable,
 } from "@kanzo-tech/ui/table";
 import { Link, useRouter } from "@kanzo-tech/navigation/next";
 import { $api, invalidate, type Schemas } from "@/lib/api/client";
-import { formatDate, formatGraphDuration } from "@/lib/ui/format";
-import { hasRunningGraphs, pollWhile, runProblem, STATUS } from "@/lib/graphs";
-import { copyOf, toastError } from "@/lib/errors";
+import { hasRunningGraphs, pollWhile, STATUS } from "@/lib/graphs";
+import { toastError } from "@/lib/errors";
 import { lower, WORDS } from "@/lib/vocabulary";
 import { Boundary, Loading } from "@/components/boundary";
+import { GRAPH_COLUMNS } from "@/components/graph-columns";
 import { settled } from "@/lib/api/settled";
 import { useSession } from "@kanzo-tech/auth";
 
@@ -89,44 +86,7 @@ function Graphs() {
 
   const columns = useMemo<ColumnDef<Graph>[]>(
     () => [
-      {
-        accessorKey: "name",
-        header: sortableHeader("Name"),
-        cell: ({ row }) => (
-          <span className="font-medium">{row.original.name ?? row.original.id.slice(0, 8)}</span>
-        ),
-      },
-      {
-        accessorKey: "status",
-        header: "Status",
-        cell: ({ getValue, row }) => {
-          const { label, variant } = STATUS[getValue<GraphStatus>()];
-          // A failure keasy has its own words for says them; any other says "Failed".
-          const worded = row.original.status === "failed" ? copyOf(runProblem(row.original)?.code ?? "")?.title : undefined;
-          if (worded) return <Badge variant="destructive">{worded}</Badge>;
-          return <Badge variant={variant}>{label}</Badge>;
-        },
-        filterFn: facetFilterFn,
-      },
-      {
-        accessorKey: "created_at",
-        header: sortableHeader("Created"),
-        cell: ({ getValue }) => (
-          <span className="text-muted-foreground">{formatDate(getValue<string>())}</span>
-        ),
-      },
-      {
-        id: "created_by",
-        header: "Created by",
-        cell: ({ row }) => <span className="text-muted-foreground">{row.original.created_by.name}</span>,
-      },
-      {
-        id: "duration",
-        header: "Duration",
-        cell: ({ row }) => (
-          <span className="text-muted-foreground">{formatGraphDuration(row.original)}</span>
-        ),
-      },
+      ...GRAPH_COLUMNS,
       actionsColumn<Graph>({
         label: (row) => `Actions for ${row.original.name ?? row.original.id}`,
         menu: (row) =>

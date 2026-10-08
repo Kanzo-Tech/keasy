@@ -9,6 +9,7 @@ pub mod sealing;
 use crate::database::Database;
 use crate::domain::{Actor, Credential, ResourceName, SecretSpec, SecretView};
 use crate::error::{ErrorCode, Refusal};
+use crate::storage_client::Endpoints;
 
 /// The credential `name`, unsealed, or 404.
 pub async fn named(db: &Database, name: &str) -> Result<Credential, Refusal> {
@@ -24,9 +25,10 @@ pub async fn create(
     spec: &SecretSpec,
     probe_url: Option<&str>,
     by: &Actor,
+    endpoints: &Endpoints,
 ) -> Result<SecretView, Refusal> {
     let name = ResourceName::parse(name).map_err(|e| Refusal::invalid_field("name", e))?;
-    let (report, _) = probe::credential(spec, probe_url, &[]).await?;
+    let (report, _) = probe::credential(spec, probe_url, &[], endpoints).await?;
     if !report.passed() {
         return Err(Refusal::probe_failed(report.failures(), Vec::new()));
     }

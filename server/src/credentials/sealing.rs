@@ -101,7 +101,6 @@ fn plaintext(spec: &SecretSpec) -> Vec<u8> {
             access_key_id,
             secret_access_key,
             region,
-            endpoint,
             role_arn,
             external_id,
         } => json!({
@@ -109,7 +108,6 @@ fn plaintext(spec: &SecretSpec) -> Vec<u8> {
             "access_key_id": access_key_id,
             "secret_access_key": secret_access_key.expose_secret(),
             "region": region,
-            "endpoint": endpoint,
             "role_arn": role_arn,
             "external_id": external_id,
         }),

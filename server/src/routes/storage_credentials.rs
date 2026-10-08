@@ -85,7 +85,8 @@ pub async fn vend(
             }
         }
     };
-    let vended = storage_client::vend::vend(&credential, &location, access).await?;
+    let vended =
+        storage_client::vend::vend(&credential, &location, &state.endpoints, access).await?;
     Ok((
         [(header::CACHE_CONTROL, "no-store")],
         Json(VendedCredentials {

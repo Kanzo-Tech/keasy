@@ -1,6 +1,6 @@
 use keasy_server::configuration::BrandingSettings;
 
-use crate::helpers::{spawn_app, spawn_app_branded};
+use crate::helpers::{Options, spawn_app, spawn_app_with};
 
 #[tokio::test]
 async fn liveness_answers_without_a_token() {
@@ -62,7 +62,11 @@ branding:
 "#,
     )
     .unwrap();
-    let app = spawn_app_branded(branding).await;
+    let app = spawn_app_with(Options {
+        branding,
+        ..Options::default()
+    })
+    .await;
     let body: serde_json::Value = app
         .client
         .get(format!("{}/v1/branding", app.address))

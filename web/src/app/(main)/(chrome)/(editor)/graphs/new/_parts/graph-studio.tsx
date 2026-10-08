@@ -35,7 +35,7 @@ import { AssistantWizard } from "./assistant-wizard";
 import { ModePicker } from "./mode-picker";
 import { folderProblem, folderSlug } from "./folder";
 import { FindingsBadge } from "./findings-badge";
-import { nameProblem } from "./graph-name";
+import { nameProblem } from "@/lib/resource-name";
 import { StudioSources } from "./studio-sources";
 import { type EditorApi, StudioEditor } from "./studio-editor";
 import { StudioOutput, type OutputValues } from "./studio-output";

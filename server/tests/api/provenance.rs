@@ -4,29 +4,32 @@
 use axum::http::{Method, StatusCode};
 use serde_json::json;
 
-use crate::helpers::{ADMIN, DEAD, EDITOR, fake_s3, spawn_app};
+use crate::helpers::{ADMIN, EDITOR, Options, fake_s3, spawn_app, spawn_app_with};
 use keasy_server::domain::Direction;
 
 /// A secret and a connection record their creator; an admin's change records
 /// the admin as the one who updated it and keeps who created it.
 #[tokio::test]
 async fn a_secret_and_a_connection_name_who_created_and_who_updated_them() {
-    let app = spawn_app().await;
+    let app = spawn_app_with(Options {
+        store: fake_s3().await,
+        ..Options::default()
+    })
+    .await;
     let ana = app.token_profiled(
         "u-ana",
         EDITOR,
         json!({ "name": "Ana Duarte", "preferred_username": "ana" }),
     );
     let bruno = app.token_profiled("u-bruno", ADMIN, json!({ "name": "Bruno" }));
-    let s3 = fake_s3().await;
 
     let (status, secret) = app
         .send(
             Method::POST,
             "/v1/secrets",
             &ana,
-            json!({ "name": "minio", "probe_url": "s3://b/", "spec": {
-                "kind": "s3", "access_key_id": "AK", "secret_access_key": "s", "endpoint": s3
+            json!({ "name": "store", "probe_url": "s3://b/", "spec": {
+                "kind": "s3", "access_key_id": "AK", "secret_access_key": "s"
             }}),
         )
         .await;
@@ -46,7 +49,7 @@ async fn a_secret_and_a_connection_name_who_created_and_who_updated_them() {
             Method::POST,
             "/v1/connections",
             &ana,
-            json!({ "name": "data", "secret": "minio", "target": { "url": "s3://b/data/" } }),
+            json!({ "name": "data", "secret": "store", "target": { "url": "s3://b/data/" } }),
         )
         .await;
     assert_eq!(status, StatusCode::CREATED, "{connection}");
@@ -72,7 +75,7 @@ async fn a_secret_and_a_connection_name_who_created_and_who_updated_them() {
     let (status, renamed) = app
         .send(
             Method::PATCH,
-            "/v1/secrets/minio",
+            "/v1/secrets/store",
             &bruno,
             json!({ "name": "store" }),
         )
@@ -92,7 +95,7 @@ async fn a_secret_and_a_connection_name_who_created_and_who_updated_them() {
 #[tokio::test]
 async fn a_graph_names_its_creator_by_name_then_username_then_a_placeholder() {
     let app = spawn_app().await;
-    app.credential("key", DEAD, "u-1").await;
+    app.credential("key", "u-1").await;
     app.connection("sink", "key", Direction::Sink, "u-1").await;
 
     for (profile, expected) in [
@@ -127,7 +130,7 @@ async fn a_graph_names_its_creator_by_name_then_username_then_a_placeholder() {
 #[tokio::test]
 async fn the_name_is_kept_from_when_it_was_written() {
     let app = spawn_app().await;
-    app.credential("key", DEAD, "u-1").await;
+    app.credential("key", "u-1").await;
     app.connection("sink", "key", Direction::Sink, "u-1").await;
     let before = app.token_profiled("u-ana", EDITOR, json!({ "name": "Ana Duarte" }));
     let after = app.token_profiled("u-ana", EDITOR, json!({ "name": "Ana D. Silva" }));
@@ -149,7 +152,7 @@ async fn the_name_is_kept_from_when_it_was_written() {
 #[tokio::test]
 async fn a_dashboard_names_who_saved_it_first_and_last() {
     let app = spawn_app().await;
-    app.credential("key", DEAD, "u-1").await;
+    app.credential("key", "u-1").await;
     app.connection("sink", "key", Direction::Sink, "u-1").await;
     let ana = app.token_profiled("u-ana", EDITOR, json!({ "name": "Ana Duarte" }));
     let bruno = app.token_profiled("u-bruno", ADMIN, json!({ "name": "Bruno" }));
@@ -195,7 +198,7 @@ async fn a_dashboard_names_who_saved_it_first_and_last() {
 #[tokio::test]
 async fn rules_name_who_saved_them_first_and_last() {
     let app = spawn_app().await;
-    app.credential("key", DEAD, "u-1").await;
+    app.credential("key", "u-1").await;
     app.connection("sink", "key", Direction::Sink, "u-1").await;
     let ana = app.token_profiled("u-ana", EDITOR, json!({ "name": "Ana Duarte" }));
     let bruno = app.token_profiled("u-bruno", ADMIN, json!({ "name": "Bruno" }));
@@ -245,7 +248,12 @@ async fn a_declared_secret_is_the_bootstraps() {
         .to_string(),
     )
     .unwrap();
-    keasy_server::bootstrap::ensure_declared(&app.db, file.path().to_str().unwrap()).await;
+    keasy_server::bootstrap::ensure_declared(
+        &app.db,
+        file.path().to_str().unwrap(),
+        &app.endpoints,
+    )
+    .await;
 
     let editor = app.token(EDITOR);
     let (status, secret) = app

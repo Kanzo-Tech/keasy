@@ -9,6 +9,7 @@ use secrecy::{ExposeSecret, SecretString};
 use serde::{Deserialize, Serialize};
 
 use crate::credentials::sealing::SecretKey;
+use crate::storage_client::Endpoints;
 
 pub struct Settings {
     pub application: ApplicationSettings,
@@ -32,6 +33,10 @@ pub struct ApplicationSettings {
     /// How this instance looks: declared by the operator, the same for every
     /// visitor, public.
     pub branding: BrandingSettings,
+    /// Where S3 and STS answer when they are not AWS's own, read as the AWS
+    /// SDKs read it: `AWS_ENDPOINT_URL_S3` and `AWS_ENDPOINT_URL_STS`, each
+    /// over the global `AWS_ENDPOINT_URL`. Unset is AWS.
+    pub endpoints: Endpoints,
     /// Each caller's allowance. Not read from the environment: [`Rate::BUILT`].
     pub rate: Rate,
 }
@@ -232,6 +237,10 @@ pub fn get_configuration() -> Result<Settings, String> {
             )?,
             bootstrap_file: nonblank("KEASY_BOOTSTRAP_FILE"),
             branding: BrandingSettings::from_env()?,
+            endpoints: Endpoints {
+                s3: nonblank("AWS_ENDPOINT_URL_S3").or_else(|| nonblank("AWS_ENDPOINT_URL")),
+                sts: nonblank("AWS_ENDPOINT_URL_STS").or_else(|| nonblank("AWS_ENDPOINT_URL")),
+            },
             rate: Rate::BUILT,
         },
         database: DatabaseSettings::from_env()?,

@@ -698,11 +698,6 @@ export interface components {
         SecretSpec: {
             access_key_id: string;
             /**
-             * Format: uri
-             * @description MinIO, R2 or a gateway. An `http://` endpoint opts into plain HTTP.
-             */
-            endpoint?: string | null;
-            /**
              * @description AWS's guard against the confused deputy, when the role's trust
              *     policy asks for one.
              */
@@ -713,9 +708,7 @@ export interface components {
             region?: string;
             /**
              * @description The role keasy assumes to vend a credential scoped to one prefix.
-             *     AWS needs it. With an endpoint and no role, keasy asks for
-             *     `arn:aws:iam::000000000000:role/keasy-vended`; a store that validates
-             *     roles (Ceph RGW, SeaweedFS) needs that role declared, or this set.
+             *     AWS needs it.
              */
             role_arn?: string | null;
             /** Format: password */
@@ -738,7 +731,6 @@ export interface components {
         /** @description A secret's spec as a response shows it: what names it, never what signs with it. */
         SecretSpecView: {
             access_key_id: string;
-            endpoint?: string | null;
             external_id?: string | null;
             /** @enum {string} */
             kind: "s3";

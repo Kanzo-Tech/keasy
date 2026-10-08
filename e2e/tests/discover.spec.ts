@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import { expect } from "@playwright/test";
 
 import { api, createGraph, MISSING } from "../support/api";
@@ -29,25 +30,10 @@ test("17 a rules file rudof cannot read is rules/refused in the Rules panel, and
   expect((await api(page, "GET", `/v1/graphs/${corpusGraph}/rules`)).body).toBeNull();
 });
 
-/**
- * The shop's rules: a person lives where the shop ships, and an order is for at least one item. The
- * fixtures hold eight people, two of them outside GB and US (NL, CH), and twelve orders.
- */
-const SHOP_RULES = `@prefix sh: <http://www.w3.org/ns/shacl#> .
-@prefix ex: <https://example.org/> .
-
-ex:PersonShape a sh:NodeShape ;
-  sh:targetClass ex:Person ;
-  sh:property [ sh:path ex:country ; sh:in ( "GB" "US" ) ; sh:message "Ships only to GB and US" ] .
-
-ex:OrderShape a sh:NodeShape ;
-  sh:targetClass ex:Order ;
-  sh:property [ sh:path ex:quantity ; sh:minInclusive 1 ] .
-`;
-
 test("rules are validated over the corpus's triples: what fails, what conforms, and over the page's subset", async ({ page, corpusGraph }) => {
   await openPanel(page, corpusGraph, "Rules");
-  await page.locator('input[type="file"]').setInputFiles({ name: "shop.ttl", mimeType: "text/turtle", buffer: Buffer.from(SHOP_RULES) });
+  // The suite's own rules over its fixtures (e2e/fixtures/vocab/shop.ttl), dropped as a person drops them.
+  await page.locator('input[type="file"]').setInputFiles(fileURLToPath(new URL("../fixtures/vocab/shop.ttl", import.meta.url)));
   const counts = page.locator('[data-slot="graph-counts"]');
   const person = page.getByRole("region", { name: "Person" });
 

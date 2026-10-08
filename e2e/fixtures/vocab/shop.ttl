@@ -1,0 +1,15 @@
+# The shop's rules: a SHACL Core shapes graph to drop on its Rules panel, in the
+# terms shop.shex gives the corpus's `triples` view. A person lives where the
+# shop ships, and an order is for at least one item. Of the eight people two
+# fall short (p-007 in NL, p-008 in CH); every one of the twelve orders conforms.
+
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix ex: <https://example.org/> .
+
+ex:PersonShape a sh:NodeShape ;
+  sh:targetClass ex:Person ;
+  sh:property [ sh:path ex:country ; sh:in ( "GB" "US" ) ; sh:message "Ships only to GB and US" ] .
+
+ex:OrderShape a sh:NodeShape ;
+  sh:targetClass ex:Order ;
+  sh:property [ sh:path ex:quantity ; sh:minInclusive 1 ] .

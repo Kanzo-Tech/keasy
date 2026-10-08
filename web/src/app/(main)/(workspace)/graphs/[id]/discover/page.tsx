@@ -26,8 +26,10 @@ import {
   FilterBar,
   MosaicClients,
   relationQuery,
+  TileEditorAside,
   useCrossfilter,
   useMosaic,
+  useTileEditorOpen,
   type Relation,
 } from "@kanzo-tech/ui/analytics";
 import {
@@ -45,6 +47,7 @@ import {
   Spinner,
   ToggleGroup,
   ToggleGroupItem,
+  useSidebar,
 } from "@kanzo-tech/ui";
 import { HeaderEnd } from "@/app/(main)/_parts/header-end";
 import { AskPanel } from "./_parts/ask-panel";
@@ -63,7 +66,8 @@ import { settled } from "@/lib/api/settled";
  * Settings) and collapses it when the active icon is pressed again. Both views and every panel read
  * one graph and one crossfilter, so a lasso on the canvas filters the dashboard and a rule pressed in
  * the dock lights the canvas. `FilterBar`, under the header, is every clause on the page and the
- * dashboard's filters, in either view.
+ * dashboard's filters, in either view. A dashboard tile is edited in the Format aside at the body's
+ * end edge, beside the dock rather than in it, so the panel the reader had open stays open.
  */
 
 // vgplot evaluated during the prerender is a TDZ, so the dashboard loads client-only.
@@ -146,6 +150,22 @@ function GraphRegion() {
         </div>
       </Show>
     </GraphCanvas>
+  );
+}
+
+/**
+ * The page's aside for the dashboard's tile editor — draw.io's Format panel, shown while a tile is
+ * edited. It stays mounted, hidden, because a page without a `TileEditorAside` offers no editing; a
+ * phone draws it over the view.
+ */
+function FormatAside() {
+  const { isMobile } = useSidebar();
+  return (
+    // `z-10` over the overlay's `z-5`: a table tile's sticky header in the view is `z-10` too, and
+    // the aside comes after it.
+    <ShellAside aria-label="Format" className="z-10 bg-card" hidden={!useTileEditorOpen()} overlay={isMobile} side="end" width={352}>
+      <TileEditorAside />
+    </ShellAside>
   );
 }
 
@@ -279,6 +299,7 @@ function Workspace() {
             )}
           </ResizablePanel>
         </Resizable>
+        <FormatAside />
       </ShellBody>
 
       <ShellFooter className="h-8 flex-row items-center justify-between px-2">

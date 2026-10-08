@@ -29,6 +29,14 @@ export function text(content: string, finish: string | null = null) {
 /** Open a graph's Discovery on the dock panel `panel` (Info · Ask · Rules · Settings). */
 export async function openPanel(page: Page, graphId: string, panel: "Ask" | "Rules") {
   await page.goto(`/graphs/${graphId}/discover`);
+  await switchPanel(page, panel);
+}
+
+/**
+ * Put `panel` in the dock of the Discovery already open, keeping what the page has picked. Pressing
+ * the panel the dock already holds closes it, and Discovery opens on Info.
+ */
+export async function switchPanel(page: Page, panel: "Info" | "Ask" | "Rules") {
   await page.getByRole("button", { name: panel, exact: true }).or(page.getByRole("radio", { name: panel })).first().click();
 }
 

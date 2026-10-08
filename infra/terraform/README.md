@@ -59,7 +59,7 @@ resource server — it validates the bearer token the web forwards against the r
 checks `aud` against `keasy-api` and reads the roles for its organization, so it needs no
 OIDC secret. The API is not routed from the edge; the web's `/api/v1` forwards to it.
 
-The AI gateway is reached the same way: the web forwards `/api/ai` to `ai-gateway:4000`
+The AI gateway is reached the same way: the web forwards `/api/ai` to `ai-gateway:4000/v1`
 with the person's token exchanged for the gateway's audience and the organization the
 request addresses, and the gateway charges that organization. No instance holds a model
 key; the upstreams' keys are the gateway's (`ai_upstream_keys`), and which upstream

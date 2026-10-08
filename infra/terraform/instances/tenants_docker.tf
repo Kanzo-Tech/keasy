@@ -215,8 +215,9 @@ resource "docker_service" "web" {
         # Where the BFF forwards `/api/v1` once it has attached the bearer token: the server
         # of the organization the request addresses.
         KEASY_API_URL = "http://keasy-ws-{tenant}-server:8080"
-        # Where the BFF forwards `/api/ai`: the platform's AI gateway, on the overlay.
-        KEASY_AI_URL = "http://ai-gateway:4000"
+        # Where the BFF forwards `/api/ai`: the platform's AI gateway on the overlay, at its
+        # OpenAI-compatible API (`/v1`), the only path on which it resolves an alias.
+        KEASY_AI_URL = "http://ai-gateway:4000/v1"
       }
 
       secrets {

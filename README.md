@@ -78,10 +78,11 @@ attribution, and it travels to the bucket with the files. It is derived on your 
 committed: the subset's own digest is pinned, so every machine derives the same bytes.
 
 Without them the bucket holds the shapes alone and `s3-init` says to run `make seed`.
-The end-to-end suite does not need it: `s3-init` also mirrors the suite's own
+The failure scenarios do not need it: `s3-init` also mirrors the suite's own
 fixtures (`e2e/fixtures/`, a small shop: people, orders and `shop.shex`) to `e2e/`,
 and the suite declares its connections over them (**E2E source**, **E2E shapes**) as
-it signs in.
+it signs in. The smoke (`e2e/smoke/`) does: it runs both programs over these seeds and
+drives Discovery through them, so `make e2e` fetches them first, as CI does.
 
 At boot the instance declares, over that bucket, the **LDBC SNB** and **OpenFlights**
 source connections (`ldbc/`, `geo/`), the **Dev shapes** vocabulary connection (`vocab/`,
@@ -189,7 +190,7 @@ client (`infra/auth`); and `make deploy-instances` one server + web + Valkey sta
 | `make logs` / `make logs-<svc>` | Tail logs |
 | `make restart` / `make restart-<svc>` | Restart without rebuilding |
 | `make shell-<svc>` | Shell in a container |
-| `make e2e` | The failure scenarios (`e2e/`, Playwright) against the stack without models (`e2e/compose.yml`, as CI); main checkout only, as Keycloak admits :3000 alone |
+| `make e2e` | The failure scenarios and the smoke over the dev seeds (`e2e/`, Playwright) against the stack without models (`e2e/compose.yml`, as CI); main checkout only, as Keycloak admits :3000 alone |
 
 `docker-compose.yml` is the dev stack and nothing else. It includes kanzo-ui's services
 and applies the same `infra/auth` root as prod, with its `dev.tfvars`.
@@ -211,7 +212,7 @@ make api   # UPDATE_EXPECT=1 cargo test --test api openapi, then pnpm generate
 
 ```
 api/                @keasy/api: the committed spec, its generated types and the client
-e2e/                @keasy/e2e: one Playwright test per failure scenario, its fixtures, and the `faults` profile's servers
+e2e/                @keasy/e2e: one Playwright test per failure scenario, the smoke over the dev seeds, its fixtures, and the `faults` profile's servers
 infra/dev/          the S3 store's config and seed, and an example program, dev-only
 infra/auth/         keasy's client and roles in the platform realm (dev and prod)
 infra/terraform/    platform/ and instances/ — the Swarm deployment, and keasy's AI profile

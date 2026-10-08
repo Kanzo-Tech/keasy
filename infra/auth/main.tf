@@ -1,6 +1,6 @@
 # The Rust API, as a resource server: the `aud` it validates and the scope the web exchanges for.
 module "keasy_api" {
-  source = "git::https://github.com/Kanzo-Tech/ui.git//services/auth/modules/api?ref=v0.31.0"
+  source = "git::https://github.com/Kanzo-Tech/ui.git//services/auth/modules/api?ref=v0.33.0"
 
   realm_id    = var.realm
   client_id   = "keasy-api"
@@ -8,7 +8,7 @@ module "keasy_api" {
 }
 
 module "keasy" {
-  source = "git::https://github.com/Kanzo-Tech/ui.git//services/auth/modules/app?ref=v0.31.0"
+  source = "git::https://github.com/Kanzo-Tech/ui.git//services/auth/modules/app?ref=v0.33.0"
 
   realm_id      = var.realm
   client_id     = "keasy"

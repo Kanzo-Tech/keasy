@@ -28,3 +28,18 @@ test("17 a rules file rudof cannot read is rules/refused in the Rules panel, and
   await expectProblem(page, "rules/refused", { within: 20_000 });
   expect((await api(page, "GET", `/v1/graphs/${corpusGraph}/rules`)).body).toBeNull();
 });
+
+test("the tile editor is the Dashboard view's: Graph view hides it, and its draft comes back with Dashboard", async ({ page, corpusGraph }) => {
+  await page.goto(`/graphs/${corpusGraph}/discover`);
+  const format = page.getByRole("complementary", { name: "Format" });
+  await page.getByRole("radio", { name: "Dashboard" }).click();
+  await page.getByRole("button", { name: "Add tile" }).click({ timeout: 30_000 });
+  const title = format.getByRole("textbox", { name: "Title" });
+  await title.fill("Kept across views");
+
+  await page.getByRole("radio", { name: "Graph" }).click();
+  await expect(format).toBeHidden();
+
+  await page.getByRole("radio", { name: "Dashboard" }).click();
+  await expect(title).toHaveValue("Kept across views");
+});

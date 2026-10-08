@@ -154,16 +154,18 @@ function GraphRegion() {
 }
 
 /**
- * The page's aside for the dashboard's tile editor — draw.io's Format panel, shown while a tile is
- * edited. It stays mounted, hidden, because a page without a `TileEditorAside` offers no editing; a
- * phone draws it over the view.
+ * The Dashboard view's aside for its tile editor — draw.io's Format panel, shown while a tile is
+ * edited and the dashboard is the view. It stays mounted, hidden, because a page without a
+ * `TileEditorAside` offers no editing, and because the draft is the hidden dashboard's: Graph view
+ * hides the editor with its board, and Dashboard brings both back as they were. A phone draws it
+ * over the view.
  */
-function FormatAside() {
+function FormatAside({ shown }: { shown: boolean }) {
   const { isMobile } = useSidebar();
   return (
     // `z-10` over the overlay's `z-5`: a table tile's sticky header in the view is `z-10` too, and
     // the aside comes after it.
-    <ShellAside aria-label="Format" className="z-10 bg-card" hidden={!useTileEditorOpen()} overlay={isMobile} side="end" width={352}>
+    <ShellAside aria-label="Format" className="z-10 bg-card" hidden={!(useTileEditorOpen() && shown)} overlay={isMobile} side="end" width={352}>
       <TileEditorAside />
     </ShellAside>
   );
@@ -239,10 +241,12 @@ function Workspace() {
         </ToggleGroup>
       </HeaderEnd>
 
+      {/* The readout is the view's: the dashboard's relation in Dashboard, and in Graph none, because
+          what the clauses leave of the graph is the footer's GraphCounts and the legend's rows. */}
       <FilterBar
         className="shrink-0 border-b px-3 py-1.5"
         rowNoun={relation.path.length ? "paths" : relation.root}
-        table={table}
+        table={view === "dashboard" ? table : undefined}
       />
 
       <ShellBody className="min-w-0">
@@ -299,7 +303,7 @@ function Workspace() {
             )}
           </ResizablePanel>
         </Resizable>
-        <FormatAside />
+        <FormatAside shown={view === "dashboard"} />
       </ShellBody>
 
       <ShellFooter className="h-8 flex-row items-center justify-between px-2">

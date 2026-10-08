@@ -3,7 +3,7 @@
 import { createContext, use, useMemo, type ReactNode } from "react";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { TableRefNode, column, eq, literal } from "@uwdata/mosaic-sql";
-import { open, type Close } from "@fossil-lang/corpus";
+import { attach, type Attachment } from "@fossil-lang/corpus";
 import { readJoinGraph } from "@kanzo-tech/graph";
 import {
   MosaicProvider,
@@ -22,18 +22,17 @@ import { host } from "@/lib/fossil/host";
 /** Everything read off a corpus is read once, and dropped with the page. */
 export const ONCE = { staleTime: Infinity, gcTime: 0, retry: false } as const;
 
-/** The root of every cached read of a graph's opened output; its own, so invalidating a graph never reopens it. */
+/** The root of every cached read of a graph's attached output; its own, so invalidating a graph never reattaches it. */
 export const corpusKey = (graphId: string) => ["corpus", graphId] as const;
 
 /**
- * A graph's corpus, attached under its id to the page's one engine by fossil's `open`, which asks
+ * A graph's corpus, attached under its id to the page's one engine by fossil's `attach`, which asks
  * {@link host} for the read credential: SQL names it `"<graphId>"."<Table>"`, and what it holds is its
- * `fossil_tables` and `fossil_columns`, asked through the coordinator by whoever needs to know.
+ * `fossil_tables`, `fossil_columns` and `triples`, asked through the coordinator by whoever needs to know.
  */
 export interface Corpus {
   graphId: string;
-  /** Detaches the corpus. */
-  close: Close;
+  attachment: Attachment;
 }
 
 /** The corpus, and the coordinator of the engine it was attached to — the one `MosaicProvider` hands down. */
@@ -44,8 +43,8 @@ export function corpusQuery(graphId: string) {
     queryKey: corpusKey(graphId),
     queryFn: async ({ signal }): Promise<Opened> => {
       const attachedTo = await engine({ signal });
-      const close = await open(graphId, { engine: attachedTo, host, signal });
-      return { graphId, close, coordinator: attachedTo.coordinator };
+      const attachment = await attach(graphId, { engine: attachedTo, host, signal });
+      return { graphId, attachment, coordinator: attachedTo.coordinator };
     },
     ...ONCE,
   });
@@ -56,7 +55,7 @@ export function corpusQuery(graphId: string) {
 queryClient.getQueryCache().subscribe((event) => {
   const key = event.query.queryKey;
   if (event.type === "removed" && key.length === 2 && key[0] === "corpus") {
-    void (event.query.state.data as Corpus | undefined)?.close();
+    void (event.query.state.data as Corpus | undefined)?.attachment.detach();
   }
 });
 

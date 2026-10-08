@@ -66,29 +66,29 @@ importers:
         specifier: ^3.4.0
         version: 3.4.2
       '@fossil-lang/codemirror-fossil':
-        specifier: ^0.3.0-alpha.26
-        version: 0.3.0-alpha.26(@codemirror/autocomplete@6.20.1)(@codemirror/language@6.12.3)(@codemirror/lint@6.9.5)(@codemirror/state@6.7.6)(@codemirror/view@6.40.0)(@fossil-lang/wasm@0.3.0-alpha.26)
+        specifier: ^0.3.0-alpha.27
+        version: 0.3.0-alpha.27(@codemirror/autocomplete@6.20.1)(@codemirror/language@6.12.3)(@codemirror/lint@6.9.5)(@codemirror/state@6.7.6)(@codemirror/view@6.40.0)(@fossil-lang/wasm@0.3.0-alpha.27)
       '@fossil-lang/corpus':
-        specifier: ^0.3.0-alpha.26
-        version: 0.3.0-alpha.26
+        specifier: ^0.3.0-alpha.27
+        version: 0.3.0-alpha.27
       '@fossil-lang/executor':
-        specifier: ^0.3.0-alpha.26
-        version: 0.3.0-alpha.26
+        specifier: ^0.3.0-alpha.27
+        version: 0.3.0-alpha.27
       '@fossil-lang/introspect':
-        specifier: ^0.3.0-alpha.26
-        version: 0.3.0-alpha.26
+        specifier: ^0.3.0-alpha.27
+        version: 0.3.0-alpha.27
       '@fossil-lang/prompt':
-        specifier: ^0.3.0-alpha.26
-        version: 0.3.0-alpha.26
+        specifier: ^0.3.0-alpha.27
+        version: 0.3.0-alpha.27
       '@fossil-lang/storage':
-        specifier: 0.3.0-alpha.26
-        version: 0.3.0-alpha.26
+        specifier: 0.3.0-alpha.27
+        version: 0.3.0-alpha.27
       '@fossil-lang/types':
-        specifier: ^0.3.0-alpha.26
-        version: 0.3.0-alpha.26
+        specifier: ^0.3.0-alpha.27
+        version: 0.3.0-alpha.27
       '@fossil-lang/wasm':
-        specifier: ^0.3.0-alpha.26
-        version: 0.3.0-alpha.26
+        specifier: ^0.3.0-alpha.27
+        version: 0.3.0-alpha.27
       '@kanzo-tech/ai':
         specifier: ^0.31.2
         version: 0.31.2(@ai-sdk/react@4.0.129(react@19.2.3)(zod@4.3.6))(@ark-ui/react@5.39.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@codemirror/lang-sql@6.10.0)(@kanzo-tech/mosaic@0.31.2(@uwdata/mosaic-core@0.32.0)(@uwdata/mosaic-sql@0.32.0))(@kanzo-tech/ui@0.31.2(@codemirror/autocomplete@6.20.1)(@codemirror/commands@6.11.1)(@codemirror/language@6.12.3)(@codemirror/search@6.7.2)(@codemirror/state@6.7.6)(@codemirror/view@6.40.0)(@kanzo-tech/mosaic@0.31.2(@uwdata/mosaic-core@0.32.0)(@uwdata/mosaic-sql@0.32.0))(@lezer/highlight@1.2.3)(@tanstack/react-table@8.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@uwdata/mosaic-core@0.32.0)(@uwdata/mosaic-plot@0.32.0)(@uwdata/mosaic-sql@0.32.0)(@uwdata/vgplot@0.32.0)(lucide-react@1.47.0(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwindcss@4.3.3)(typescript@5.9.3))(ai@7.0.126(zod@4.3.6))(lucide-react@1.47.0(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tailwind-merge@3.7.0)(tailwindcss@4.3.3)(zod@4.3.6)
@@ -460,36 +460,36 @@ packages:
   '@floating-ui/utils@0.2.11':
     resolution: {integrity: sha512-RiB/yIh78pcIxl6lLMG0CgBXAZ2Y0eVHqMPYugu+9U0AeT6YBeiJpf7lbdJNIugFP5SIjwNRgo4DhR1Qxi26Gg==}
 
-  '@fossil-lang/codemirror-fossil@0.3.0-alpha.26':
-    resolution: {integrity: sha512-xEZWQFFDT2H9vg/1hTUbL6XkBZ8hkswvAwRjxed4aEPGiI9cJ5tKazXe92zVraakrcsS6PnVvnNCKN4Pw5Hj6Q==}
+  '@fossil-lang/codemirror-fossil@0.3.0-alpha.27':
+    resolution: {integrity: sha512-W7zcVb5as8j5Il/Sa6SUkoZXsZOlwWMvhA2Y+89GvTvxg6hAUlE2b8aP2r+6qBqtCYl+/lidhAtDMthA9y5Kww==}
     peerDependencies:
       '@codemirror/autocomplete': '>=6'
       '@codemirror/language': '>=6'
       '@codemirror/lint': '>=6'
       '@codemirror/state': '>=6'
       '@codemirror/view': '>=6'
-      '@fossil-lang/wasm': 0.3.0-alpha.26
+      '@fossil-lang/wasm': 0.3.0-alpha.27
 
-  '@fossil-lang/corpus@0.3.0-alpha.26':
-    resolution: {integrity: sha512-2sw6sdVxAiLo/U2auAdWEsO8rjmptiCZ2ZGDUchGMw1XxxYOYyZUNPc/lCPuDfiAySXxMZz5qy2H27TbpA8gvA==}
+  '@fossil-lang/corpus@0.3.0-alpha.27':
+    resolution: {integrity: sha512-Y22JT9WQF6tDfE+ea30F8Q5F8KuS4sxCrgYajvy++KNUq1jLw5Jpyzlz7TCLGUBTQoS33lGhi4LKOxqhP0sIsQ==}
 
-  '@fossil-lang/executor@0.3.0-alpha.26':
-    resolution: {integrity: sha512-gH82Wpz7af9/Tfc76HCw/Tw81iXBHu81ZcILw53DigsexXjpnbPSejgUXT9HUh0bo+uAxUFnaZKcfwiJG9DV8A==}
+  '@fossil-lang/executor@0.3.0-alpha.27':
+    resolution: {integrity: sha512-GxoL3l/8hSxG/ASG9iRX4eTF+8yExg6Yk+YwlmGb546SWmL5kbEzVR044Gd3l78nRqixXjaZZrdWBF8/A2Utug==}
 
-  '@fossil-lang/introspect@0.3.0-alpha.26':
-    resolution: {integrity: sha512-XkAD3lP5hI+iAewWFaxccIQkcgl16rcm6i9ONchhPyT9zZ15VtDvnddjdE5MSLl+masgHEf1eqvz6zmqlK3SdA==}
+  '@fossil-lang/introspect@0.3.0-alpha.27':
+    resolution: {integrity: sha512-gMzeCX6lS+VN/8SEK4KIlZQJngJFXQicTBnjAvQlgCUvq8vj3CUAXaXCJ6SgQq2KcY1xHwAjO8inJpfFnVJ8wg==}
 
-  '@fossil-lang/prompt@0.3.0-alpha.26':
-    resolution: {integrity: sha512-M8epztECnR1eBuuw5vd964xw2d74yZba9R7W1jhp9LO14mUM8gqy7aB/UNRb0noEWjFZnEV0xBfv9cGuyqcZDQ==}
+  '@fossil-lang/prompt@0.3.0-alpha.27':
+    resolution: {integrity: sha512-wd0yxvPLd4uV9PdyIDe0MqvdzwSTehuZzLRXiQYp6rNHzl0FRK7uzzKRCzoNMMkGorPc4Kv3TiUc3PnSUi1kJg==}
 
-  '@fossil-lang/storage@0.3.0-alpha.26':
-    resolution: {integrity: sha512-AAh721MpmCQ3/ujusk0rua29AXbKMAd37A5Nk2qt1SV868jcQzPwqVIFXGRmGga9OEQwLgjjY9mkwq0aBk/jNQ==}
+  '@fossil-lang/storage@0.3.0-alpha.27':
+    resolution: {integrity: sha512-qEneZJgPo/QMv7YywbATvDTSgYrllPf2sxFh09/Rtqs9KAa12b3KHNOOcGU7w5mtyaqp+X6xLlBMAvovjH/QgA==}
 
-  '@fossil-lang/types@0.3.0-alpha.26':
-    resolution: {integrity: sha512-8+EPomnL1VIVsoJXVnMJVpyX3bMbmF2BHux5OvC6wbk3/AT3kJck0PN7lIGVm/1AIhjgQUaednsKyhMcYU2Zug==}
+  '@fossil-lang/types@0.3.0-alpha.27':
+    resolution: {integrity: sha512-R4hVgGB2prgdfxy+OSGsMAsAbh5pBc3mT59JMupoz1vJoM/0mEDN2U2S5B2E48rBFoL8Xx9lBIQQFuS8TFsVAA==}
 
-  '@fossil-lang/wasm@0.3.0-alpha.26':
-    resolution: {integrity: sha512-jKW6mfb7l2+hyttpEtd5nrZvhaof2UNFjxtsci7w6pgRS34zpYJzh6yAYuL/MWvsKT/E8KkxJJpf6kL4C8ayQQ==}
+  '@fossil-lang/wasm@0.3.0-alpha.27':
+    resolution: {integrity: sha512-IeSgg55vx0wXfj82mSttOHPIUYjsg+VSd5YzX4MYz0yVoXLDhd32GlJ7ILj1UZU9AvkbTV0OH7gSBqYICnqrgQ==}
 
   '@humanfs/core@0.19.2':
     resolution: {integrity: sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==}
@@ -4527,44 +4527,44 @@ snapshots:
 
   '@floating-ui/utils@0.2.11': {}
 
-  '@fossil-lang/codemirror-fossil@0.3.0-alpha.26(@codemirror/autocomplete@6.20.1)(@codemirror/language@6.12.3)(@codemirror/lint@6.9.5)(@codemirror/state@6.7.6)(@codemirror/view@6.40.0)(@fossil-lang/wasm@0.3.0-alpha.26)':
+  '@fossil-lang/codemirror-fossil@0.3.0-alpha.27(@codemirror/autocomplete@6.20.1)(@codemirror/language@6.12.3)(@codemirror/lint@6.9.5)(@codemirror/state@6.7.6)(@codemirror/view@6.40.0)(@fossil-lang/wasm@0.3.0-alpha.27)':
     dependencies:
       '@codemirror/autocomplete': 6.20.1
       '@codemirror/language': 6.12.3
       '@codemirror/lint': 6.9.5
       '@codemirror/state': 6.7.6
       '@codemirror/view': 6.40.0
-      '@fossil-lang/types': 0.3.0-alpha.26
-      '@fossil-lang/wasm': 0.3.0-alpha.26
+      '@fossil-lang/types': 0.3.0-alpha.27
+      '@fossil-lang/wasm': 0.3.0-alpha.27
       '@lezer/highlight': 1.2.3
 
-  '@fossil-lang/corpus@0.3.0-alpha.26':
+  '@fossil-lang/corpus@0.3.0-alpha.27':
     dependencies:
-      '@fossil-lang/storage': 0.3.0-alpha.26
-      '@fossil-lang/types': 0.3.0-alpha.26
+      '@fossil-lang/storage': 0.3.0-alpha.27
+      '@fossil-lang/types': 0.3.0-alpha.27
 
-  '@fossil-lang/executor@0.3.0-alpha.26':
+  '@fossil-lang/executor@0.3.0-alpha.27':
     dependencies:
-      '@fossil-lang/storage': 0.3.0-alpha.26
-      '@fossil-lang/types': 0.3.0-alpha.26
+      '@fossil-lang/storage': 0.3.0-alpha.27
+      '@fossil-lang/types': 0.3.0-alpha.27
 
-  '@fossil-lang/introspect@0.3.0-alpha.26':
+  '@fossil-lang/introspect@0.3.0-alpha.27':
     dependencies:
-      '@fossil-lang/storage': 0.3.0-alpha.26
-      '@fossil-lang/types': 0.3.0-alpha.26
+      '@fossil-lang/storage': 0.3.0-alpha.27
+      '@fossil-lang/types': 0.3.0-alpha.27
 
-  '@fossil-lang/prompt@0.3.0-alpha.26': {}
+  '@fossil-lang/prompt@0.3.0-alpha.27': {}
 
-  '@fossil-lang/storage@0.3.0-alpha.26':
+  '@fossil-lang/storage@0.3.0-alpha.27':
     dependencies:
-      '@fossil-lang/types': 0.3.0-alpha.26
+      '@fossil-lang/types': 0.3.0-alpha.27
 
-  '@fossil-lang/types@0.3.0-alpha.26': {}
+  '@fossil-lang/types@0.3.0-alpha.27': {}
 
-  '@fossil-lang/wasm@0.3.0-alpha.26':
+  '@fossil-lang/wasm@0.3.0-alpha.27':
     dependencies:
-      '@fossil-lang/storage': 0.3.0-alpha.26
-      '@fossil-lang/types': 0.3.0-alpha.26
+      '@fossil-lang/storage': 0.3.0-alpha.27
+      '@fossil-lang/types': 0.3.0-alpha.27
 
   '@humanfs/core@0.19.2':
     dependencies:

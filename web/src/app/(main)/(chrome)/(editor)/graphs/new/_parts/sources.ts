@@ -1,9 +1,10 @@
-import { providerFor, type ProviderInfo } from "@fossil-lang/wasm";
+import type { Format } from "@fossil-lang/types";
+import { formatFor } from "@fossil-lang/wasm";
 import type { TreeNodeType } from "@kanzo-tech/ui";
 import { reference, type StorageConnection } from "@/lib/connections";
 
 /**
- * A node of the sources explorer: a connection, a folder under it, or a file a provider reads. A
+ * A node of the sources explorer: a connection, a folder under it, or a file a format reads. A
  * connection or folder carries `childrenCount` and no children until it is opened — Ark's lazy
  * branch — and `under` is the folder it lists, relative to the connection, as the files endpoint
  * takes its `prefix`.
@@ -44,7 +45,7 @@ export function bindingName(file: string): string {
 export function childrenOf(
   parent: SourceNode,
   keys: readonly string[],
-  providers: readonly ProviderInfo[],
+  formats: readonly Format[],
 ): SourceNode[] {
   const c = parent.connection!;
   const under = parent.under ?? "";
@@ -56,8 +57,8 @@ export function childrenOf(
     const ref = reference(c, key);
     if (!ref.startsWith(at + under)) continue;
     const rest = ref.slice(at.length + under.length);
-    const provider = providerFor(rest, role, providers);
-    if (!provider) continue;
+    const format = formatFor(rest, role, formats);
+    if (!format) continue;
     const slash = rest.indexOf("/");
     if (slash >= 0) {
       const folder = `${under}${rest.slice(0, slash + 1)}`;
@@ -68,8 +69,8 @@ export function childrenOf(
       files.push({
         id: `${c.name}:${key}`,
         name: rest,
-        reader: provider.name,
-        line: `${bindingName(rest)} := io.${provider.name}("${ref}")`,
+        reader: format.name,
+        line: `${bindingName(rest)} := io.${format.name}("${ref}")`,
       });
     }
   }

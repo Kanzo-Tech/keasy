@@ -13,9 +13,9 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { introspect } from "@fossil-lang/introspect";
+import { inputs } from "@fossil-lang/wasm";
 import { engine } from "@kanzo-tech/ui/analytics";
 
-import * as checker from "@/lib/fossil/checker";
 import { host } from "@/lib/fossil/host";
 
 export const sourceDescriptorsKey = (sources: readonly string[]) => ["source-descriptors", sources] as const;
@@ -52,14 +52,14 @@ export function useSourceDescriptors(script: string): Described | null {
   const program = useDebouncedValue(script, TYPING_PAUSE_MS);
 
   const { data: sources } = useQuery({
-    queryKey: ["program-sources", program],
-    queryFn: async ({ signal }) => (await checker.graphProgram({ signal })).sources(program),
+    queryKey: ["program-inputs", program],
+    queryFn: async ({ signal }) => (await inputs(program, { host, signal })).filter((i) => i.role === "data"),
     staleTime: Infinity,
   });
 
   const { data } = useQuery({
     queryKey: sourceDescriptorsKey(
-      (sources ?? []).map((s) => `${s.format}:${s.locator}:${s.option ?? ""}`).sort(),
+      (sources ?? []).map((s) => `${s.format}:${s.location}:${s.option ?? ""}`).sort(),
     ),
     queryFn: async ({ signal }) => introspect(sources ?? [], { host, engine: await engine({ signal }), signal }),
     enabled: !!sources && sources.length > 0,

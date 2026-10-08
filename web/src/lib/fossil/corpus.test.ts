@@ -12,7 +12,7 @@ vi.mock("@/lib/api/query-client", async () => {
 });
 vi.mock("@/lib/fossil/host", () => ({ host: {} }));
 vi.mock("@fossil-lang/corpus", () => ({
-  open: async () => {
+  attach: async () => {
     throw notFound;
   },
 }));
@@ -20,7 +20,7 @@ vi.mock("@fossil-lang/corpus", () => ({
 const { corpusQuery } = await import("./corpus");
 
 describe("corpusQuery", () => {
-  it("settles on the error a failed open raises, so the page shows it instead of a spinner", async () => {
+  it("settles on the error a failed attach raises, so the page shows it instead of a spinner", async () => {
     const observer = new QueryObserver(new QueryClient(), corpusQuery("00000000-0000-0000-0000-000000000000"));
     const settled = new Promise<ReturnType<typeof observer.getCurrentResult>>((resolve) => {
       const stop = observer.subscribe((result) => {

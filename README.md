@@ -190,10 +190,37 @@ client (`infra/auth`); and `make deploy-instances` one server + web + Valkey sta
 | `make restart` / `make restart-<svc>` | Restart without rebuilding |
 | `make shell-<svc>` | Shell in a container |
 | `make e2e` | The failure scenarios (`e2e/`, Playwright) against the stack without models (`e2e/compose.yml`, as CI); main checkout only, as Keycloak admits :3000 alone |
+| `make demo` | List the product demos; `DEMO=<name>` or `DEMO=all` records them (see [Demos](#demos)) |
 
 `docker-compose.yml` is the dev stack and nothing else. It includes kanzo-ui's services
 and applies the same `infra/auth` root as prod, with its `dev.tfvars`.
 The Rust toolchain is pinned once, in `server/rust-toolchain.toml`.
+
+## Demos
+
+Product demos are Playwright scripts in `e2e/demos/` that record instead of asserting, against
+the stack `make dev` and `make seed` bring up on :3000 (main checkout only, as for `make e2e`).
+
+```sh
+make demo                          # list them: name and what each shows
+make demo DEMO=snb-explore         # record one, light and dark
+make demo DEMO=all THEME=dark      # every demo, one side
+```
+
+Each lands in `e2e/demos/out/` as `<demo>-<theme>.mp4` (H.264, 1080p) and `<demo>-<theme>.png`
+(the poster), gitignored. It needs `ffmpeg` on PATH (`brew install ffmpeg`), which turns
+Playwright's WebM into the MP4. The graph view lays out on the GPU, so record on a machine with
+one: without, it paints at a frame or two a second.
+
+`make demo` restarts the `web` container with `NEXT_PUBLIC_KEASY_DEMO=1`, which turns off Next's dev
+indicator and React Query's devtools, and puts it back when it is done.
+
+**Adding a demo** is a file `e2e/demos/<name>.demo.ts` calling `demo(name, description, { arrange,
+act })` from `e2e/demos/record.ts`; `make demo` lists it from that title. `arrange` gets the page
+ready off camera (`demoGraph` finds or runs a dev graph); `act` is what is recorded, with
+`chapter(title)` for step titles and `poster()` where the still should be. The cursor and each
+action's title are Playwright's (`page.screencast.showActions`); `locator.describe("…")` is what a
+title reads. `snb-explore.demo.ts` is the worked example.
 
 ## API contract
 

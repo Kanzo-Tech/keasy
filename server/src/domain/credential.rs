@@ -22,7 +22,7 @@ fn us_east_1() -> String {
 #[derive(Debug, Deserialize, ToSchema)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum SecretSpec {
-    #[schema(title = "Amazon S3 / S3-compatible")]
+    #[schema(title = "Amazon S3")]
     S3 {
         access_key_id: String,
         #[schema(value_type = String, format = Password, write_only)]
@@ -30,14 +30,8 @@ pub enum SecretSpec {
         #[serde(default = "us_east_1")]
         #[schema(default = "us-east-1")]
         region: String,
-        /// MinIO, R2 or a gateway. An `http://` endpoint opts into plain HTTP.
-        #[serde(default)]
-        #[schema(format = "uri")]
-        endpoint: Option<String>,
         /// The role keasy assumes to vend a credential scoped to one prefix.
-        /// AWS needs it. With an endpoint and no role, keasy asks for
-        /// `arn:aws:iam::000000000000:role/keasy-vended`; a store that validates
-        /// roles (Ceph RGW, SeaweedFS) needs that role declared, or this set.
+        /// AWS needs it.
         #[serde(default)]
         role_arn: Option<String>,
         /// AWS's guard against the confused deputy, when the role's trust
@@ -65,12 +59,10 @@ pub enum SecretSpec {
 #[derive(Debug, Serialize, ToSchema)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum SecretSpecView {
-    #[schema(title = "Amazon S3 / S3-compatible")]
+    #[schema(title = "Amazon S3")]
     S3 {
         access_key_id: String,
         region: String,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        endpoint: Option<String>,
         #[serde(skip_serializing_if = "Option::is_none")]
         role_arn: Option<String>,
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -92,14 +84,12 @@ impl SecretSpec {
             Self::S3 {
                 access_key_id,
                 region,
-                endpoint,
                 role_arn,
                 external_id,
                 ..
             } => SecretSpecView::S3 {
                 access_key_id: access_key_id.clone(),
                 region: region.clone(),
-                endpoint: endpoint.clone(),
                 role_arn: role_arn.clone(),
                 external_id: external_id.clone(),
             },

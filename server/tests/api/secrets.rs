@@ -1,7 +1,7 @@
 use axum::http::{Method, StatusCode};
 use serde_json::json;
 
-use crate::helpers::{ADMIN, DEAD, EDITOR, fake_s3, spawn_app};
+use crate::helpers::{ADMIN, EDITOR, Options, fake_s3, spawn_app, spawn_app_with};
 use keasy_server::domain::{Direction, SecretSpec};
 
 /// A secret goes in and never comes out: not in a create's answer, not in a
@@ -15,7 +15,7 @@ async fn no_response_carries_a_secret() {
             Method::POST,
             "/v1/secrets",
             &member,
-            json!({ "name": "minio", "spec": {
+            json!({ "name": "store", "spec": {
                 "kind": "s3", "access_key_id": "AK", "secret_access_key": "top-secret"
             }}),
         )
@@ -26,7 +26,7 @@ async fn no_response_carries_a_secret() {
         (status, created),
         app.send(Method::GET, "/v1/secrets", &member, json!(null))
             .await,
-        app.send(Method::GET, "/v1/secrets/minio", &member, json!(null))
+        app.send(Method::GET, "/v1/secrets/store", &member, json!(null))
             .await,
     ] {
         assert!(!body.to_string().contains("top-secret"), "{body}");
@@ -61,8 +61,8 @@ async fn only_the_creator_or_an_admin_changes_a_secret_and_only_an_admin_the_sin
     let creator = app.token_for("u-1", EDITOR);
     let other = app.token_for("u-2", EDITOR);
     let owner = app.token_for("u-owner", ADMIN);
-    app.credential("key", DEAD, "u-1").await;
-    app.credential("spare", DEAD, "u-1").await;
+    app.credential("key", "u-1").await;
+    app.credential("spare", "u-1").await;
     app.connection("data", "key", Direction::Source, "u-1")
         .await;
     app.connection("sink", "key", Direction::Sink, "u-1").await;
@@ -94,8 +94,7 @@ async fn only_the_creator_or_an_admin_changes_a_secret_and_only_an_admin_the_sin
             "validating stores a report: {validate} is a change"
         );
     }
-    let spec =
-        json!({ "kind": "s3", "access_key_id": "AK", "secret_access_key": "s", "endpoint": DEAD });
+    let spec = json!({ "kind": "s3", "access_key_id": "AK", "secret_access_key": "s" });
     let (status, made) = app
         .send(
             Method::POST,
@@ -170,22 +169,22 @@ async fn only_the_creator_or_an_admin_changes_a_secret_and_only_an_admin_the_sin
 /// every dependent accepts — and one they do not, which changes nothing.
 #[tokio::test]
 async fn a_rotation_is_committed_only_if_every_dependent_still_validates() {
-    let app = spawn_app().await;
+    let app = spawn_app_with(Options {
+        store: fake_s3().await,
+        ..Options::default()
+    })
+    .await;
     let member = app.token(EDITOR);
     let owner = app.token_for("u-owner", ADMIN);
-    let s3 = fake_s3().await;
-    let spec = |endpoint: &str, secret: &str| {
-        json!({
-            "kind": "s3", "access_key_id": "AK", "secret_access_key": secret, "endpoint": endpoint
-        })
-    };
+    // The store knows the key `AK` and refuses any other.
+    let spec = |key: &str, secret: &str| json!({ "kind": "s3", "access_key_id": key, "secret_access_key": secret });
 
     let (status, body) = app
         .send(
             Method::POST,
             "/v1/secrets",
             &member,
-            json!({ "name": "minio", "spec": spec(DEAD, "s"), "probe_url": "s3://b/" }),
+            json!({ "name": "store", "spec": spec("UNKNOWN", "s"), "probe_url": "s3://b/" }),
         )
         .await;
     assert_eq!(
@@ -199,7 +198,7 @@ async fn a_rotation_is_committed_only_if_every_dependent_still_validates() {
             Method::POST,
             "/v1/secrets",
             &member,
-            json!({ "name": "minio", "spec": spec(&s3, "first"), "probe_url": "s3://b/" }),
+            json!({ "name": "store", "spec": spec("AK", "first"), "probe_url": "s3://b/" }),
         )
         .await;
     assert_eq!(status, StatusCode::CREATED, "{body}");
@@ -210,7 +209,7 @@ async fn a_rotation_is_committed_only_if_every_dependent_still_validates() {
             Method::POST,
             "/v1/connections",
             &member,
-            json!({ "name": "data", "secret": "minio",
+            json!({ "name": "data", "secret": "store",
             "target": { "url": "s3://b/data/" } }),
         )
         .await;
@@ -220,7 +219,7 @@ async fn a_rotation_is_committed_only_if_every_dependent_still_validates() {
             Method::POST,
             "/v1/connections",
             &owner,
-            json!({ "name": "out", "secret": "minio",
+            json!({ "name": "out", "secret": "store",
             "target": { "url": "s3://b/out/", "direction": "sink" } }),
         )
         .await;
@@ -242,32 +241,31 @@ async fn a_rotation_is_committed_only_if_every_dependent_still_validates() {
     let (status, body) = app
         .send(
             Method::PATCH,
-            "/v1/secrets/minio",
+            "/v1/secrets/store",
             &member,
-            json!({ "spec": spec(DEAD, "second") }),
+            json!({ "spec": spec("UNKNOWN", "second") }),
         )
         .await;
     assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{body}");
     assert_eq!(body["data"]["dependents"], json!(["data", "out"]));
-    let kept = keasy_server::credentials::named(&app.db, "minio")
+    let kept = keasy_server::credentials::named(&app.db, "store")
         .await
         .unwrap();
     assert!(
-        matches!(&kept.spec, SecretSpec::S3 { endpoint, .. }
-        if endpoint.as_deref() == Some(s3.as_str())),
+        matches!(&kept.spec, SecretSpec::S3 { access_key_id, .. } if access_key_id == "AK"),
         "the old spec stands"
     );
 
     let (status, body) = app
         .send(
             Method::PATCH,
-            "/v1/secrets/minio",
+            "/v1/secrets/store",
             &member,
-            json!({ "spec": spec(&s3, "second") }),
+            json!({ "spec": spec("AK", "second") }),
         )
         .await;
     assert_eq!(status, StatusCode::OK, "{body}");
-    let rotated = keasy_server::credentials::named(&app.db, "minio")
+    let rotated = keasy_server::credentials::named(&app.db, "store")
         .await
         .unwrap();
     assert!(

@@ -25,10 +25,11 @@ use utoipa_axum::router::OpenApiRouter;
 use crate::authentication::middleware::{AuthenticatedUser, bearer_required};
 use crate::authentication::role::Role;
 use crate::authentication::token::{SharedValidator, Validator};
-use crate::configuration::{BrandingSettings, DatabaseSettings, Settings};
+use crate::configuration::{BrandingSettings, DatabaseSettings, Rate, Settings};
 use crate::database::Database;
 use crate::error::{ErrorBody, ErrorCode, ErrorData, Refusal};
 use crate::routes;
+use crate::storage_client::Endpoints;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -41,6 +42,8 @@ pub struct AppState {
     pub branding: Arc<BrandingSettings>,
     /// Verifies the bearer token every protected request carries.
     pub auth: SharedValidator,
+    /// Where S3 and STS answer, when not at AWS (`AWS_ENDPOINT_URL_S3`, `_STS`).
+    pub endpoints: Arc<Endpoints>,
 }
 
 /// The server, bound and ready to serve.
@@ -63,7 +66,7 @@ impl Application {
 
         // After the key check: a declared credential is sealed with the key.
         if let Some(path) = &application.bootstrap_file {
-            crate::bootstrap::ensure_declared(&db, path).await;
+            crate::bootstrap::ensure_declared(&db, path, &application.endpoints).await;
         }
 
         // Built without touching the network: Keycloak is routinely not up yet, and
@@ -87,6 +90,7 @@ impl Application {
             workspace_name: application.workspace_name,
             branding: Arc::new(application.branding),
             auth,
+            endpoints: Arc::new(application.endpoints),
         };
 
         let listener = TcpListener::bind(application.bind_addr)
@@ -99,7 +103,7 @@ impl Application {
         Ok(Self {
             port,
             listener,
-            router: router(state),
+            router: router(state, application.rate),
         })
     }
 
@@ -171,13 +175,8 @@ pub fn openapi() -> utoipa::openapi::OpenApi {
     api
 }
 
-pub fn router(state: AppState) -> Router {
+pub fn router(state: AppState, rate: Rate) -> Router {
     let (public, protected) = routes();
-    let rate = if cfg!(debug_assertions) {
-        DEV_RATE
-    } else {
-        RATE
-    };
     let per_caller = Arc::new(
         GovernorConfigBuilder::default()
             .key_extractor(Subject)
@@ -196,25 +195,6 @@ pub fn router(state: AppState) -> Router {
 
     guarded(router, REQUEST_DEADLINE).with_state(state)
 }
-
-/// A caller's allowance: one request back every `period_ms`, up to `burst` held.
-#[derive(Clone, Copy)]
-struct Rate {
-    period_ms: u64,
-    burst: u32,
-}
-
-/// Per caller: 20 requests a second, bursts of 100.
-const RATE: Rate = Rate {
-    period_ms: 50,
-    burst: 100,
-};
-
-/// Relaxed in a debug build, where one person drives every request a page makes.
-const DEV_RATE: Rate = Rate {
-    period_ms: 10,
-    burst: 500,
-};
 
 /// The largest request body: a credential, a connection, a graph's script and
 /// run report — never data, which goes to the store, not through here.

@@ -1,7 +1,7 @@
 use axum::http::{Method, StatusCode};
 use serde_json::json;
 
-use crate::helpers::{ADMIN, DEAD, EDITOR, spawn_app};
+use crate::helpers::{ADMIN, EDITOR, Options, spawn_app, spawn_app_with};
 use keasy_server::domain::Direction;
 
 /// The credential a connection uses cannot be deleted, nor the sink a graph wrote
@@ -11,7 +11,7 @@ async fn what_is_in_use_is_not_deleted() {
     let app = spawn_app().await;
     let member = app.token(EDITOR);
     let owner = app.token_for("u-owner", ADMIN);
-    app.credential("key", DEAD, "u-1").await;
+    app.credential("key", "u-1").await;
     app.connection("data", "key", Direction::Source, "u-1")
         .await;
     app.connection("sink", "key", Direction::Sink, "u-1").await;
@@ -53,7 +53,7 @@ async fn what_is_in_use_is_not_deleted() {
 async fn a_storage_location_never_overlaps_another() {
     let app = spawn_app().await;
     let member = app.token(EDITOR);
-    app.credential("key", DEAD, "u-1").await;
+    app.credential("key", "u-1").await;
     app.connection("data", "key", Direction::Source, "u-1")
         .await;
     app.connection("sink", "key", Direction::Sink, "u-1").await;
@@ -133,9 +133,13 @@ async fn three_objects() -> String {
 /// the connection's own, and at most `limit` long, saying whether there was more.
 #[tokio::test]
 async fn a_listing_stays_under_its_prefix_and_says_when_it_was_cut() {
-    let app = spawn_app().await;
+    let app = spawn_app_with(Options {
+        store: three_objects().await,
+        ..Options::default()
+    })
+    .await;
     let member = app.token(EDITOR);
-    app.credential("key", &three_objects().await, "u-1").await;
+    app.credential("key", "u-1").await;
     app.connection("data", "key", Direction::Source, "u-1")
         .await;
 

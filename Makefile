@@ -18,7 +18,7 @@ help: ## Show this help
 
 # The platform's services (identity, the AI gateway) come from kanzo-ui, at the
 # release keasy is built against: the same tag its @kanzo-tech/* packages pin.
-KANZO_UI_REF ?= v0.32.0
+KANZO_UI_REF ?= v0.33.0
 
 deps: ## Check out kanzo-ui's services at $(KANZO_UI_REF) into .deps/kanzo-ui
 	@if [ -d .deps/kanzo-ui/.git ]; then \

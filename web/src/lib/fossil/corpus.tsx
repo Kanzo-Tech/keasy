@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, use, useMemo, type ReactNode } from "react";
+import { createContext, use, useEffect, useMemo, type ReactNode } from "react";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { TableRefNode, column, eq, literal } from "@uwdata/mosaic-sql";
 import { attach, type Attachment } from "@fossil-lang/corpus";
@@ -38,6 +38,15 @@ export interface Corpus {
 /** The corpus, and the coordinator of the engine it was attached to — the one `MosaicProvider` hands down. */
 type Opened = Corpus & { coordinator: Coordinator };
 
+/**
+ * The attach, cached under {@link corpusKey}: every reader of one graph shares one attachment. The
+ * cache never collects it (`gcTime: Infinity`, which TanStack Query documents as disabling garbage
+ * collection): collecting is the cache's decision about memory, taken on a timer, and a page whose
+ * readers are suspended holds no observer of it while they are. useSuspenseQuery floors `gcTime` at
+ * 1 s (`ensureSuspenseTimers`) for exactly that window, so on a slow machine a corpus collected — and
+ * detached — under its own suspended readers failed them with `schema "<graph>" does not exist`.
+ * What ends an attachment is the page that holds it: {@link CorpusProvider}.
+ */
 export function corpusQuery(graphId: string) {
   return queryOptions({
     queryKey: corpusKey(graphId),
@@ -47,17 +56,37 @@ export function corpusQuery(graphId: string) {
       return { graphId, attachment, coordinator: attachedTo.coordinator };
     },
     ...ONCE,
+    gcTime: Infinity,
   });
 }
 
-// A corpus lives as long as its cache entry: attached by the query, detached when the last observer
-// has gone and the entry is collected. An unmount effect would close it under StrictMode's remount.
-queryClient.getQueryCache().subscribe((event) => {
-  const key = event.query.queryKey;
-  if (event.type === "removed" && key.length === 2 && key[0] === "corpus") {
-    void (event.query.state.data as Corpus | undefined)?.attachment.detach();
-  }
-});
+/** How many committed providers hold each graph's corpus. */
+const holders = new Map<string, number>();
+
+/**
+ * Hold `graphId`'s corpus while the calling component is committed. The last holder to go detaches
+ * it and drops every read under {@link corpusKey}, after the commit it went in: a navigation that
+ * swaps one page holding the graph for another, and StrictMode's remount, re-hold it in that same
+ * commit, so neither detaches. Nothing holds a corpus before its page first commits, and nothing
+ * releases it then either: a page left while it was still suspended leaves its corpus attached and
+ * cached, for the next visit to reuse.
+ */
+function useHold(graphId: string) {
+  useEffect(() => {
+    holders.set(graphId, (holders.get(graphId) ?? 0) + 1);
+    return () => {
+      const left = (holders.get(graphId) ?? 1) - 1;
+      if (left > 0) return void holders.set(graphId, left);
+      holders.delete(graphId);
+      setTimeout(() => {
+        if (holders.has(graphId)) return;
+        const opened = queryClient.getQueryData<Opened>(corpusKey(graphId));
+        queryClient.removeQueries({ queryKey: corpusKey(graphId) });
+        void opened?.attachment.detach();
+      });
+    };
+  }, [graphId]);
+}
 
 const CorpusContext = createContext<Corpus | null>(null);
 
@@ -69,7 +98,9 @@ function chartFailed(error: unknown) {
   toastError(error, "A chart could not be drawn");
 }
 
+/** The corpus to everything under it, held attached for as long as this is committed. */
 export function CorpusProvider({ value: { coordinator, ...corpus }, children }: { value: Opened; children: ReactNode }) {
+  useHold(corpus.graphId);
   return (
     <CorpusContext value={corpus}>
       <MosaicProvider coordinator={coordinator} onFailure={chartFailed}>

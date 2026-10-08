@@ -110,6 +110,9 @@ services:
       # the gateway's OpenAI-compatible API, which is under `/v1`. A path outside it is passed
       # through unread — no alias resolved, no tokens counted.
       KEASY_AI_URL: http://ai-gateway:4000/v1
+      # Set by `make demo` alone: the dev server without Next's dev indicator or React Query's
+      # devtools, which a recording would otherwise show (web/next.config.ts).
+      NEXT_PUBLIC_KEASY_DEMO: ${NEXT_PUBLIC_KEASY_DEMO:-}
     depends_on:
       server:
         condition: service_healthy

@@ -1,10 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { TriangleAlert } from "lucide-react";
+import { useMemo } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { TableRefNode } from "@uwdata/mosaic-sql";
-import type { RunReport } from "@fossil-lang/executor";
 import { useQueryRows } from "@kanzo-tech/ui/analytics";
 import {
   Badge,
@@ -20,7 +18,6 @@ import {
   SectionTitle,
   SectionTitleGroup,
   StatDescription,
-  StatIndicator,
   StatLabel,
   StatRoot,
   StatValue,
@@ -67,12 +64,6 @@ interface Held {
   columns: { name: string; type: string }[];
 }
 
-/** Each edge table's dropped rows, from fossil's run report: the input rows that resolved no endpoint pair. */
-function droppedBy(graph: Schemas["Graph"]): Map<string, number> | undefined {
-  const dropped = (graph.report as Partial<RunReport> | undefined)?.dropped;
-  return Array.isArray(dropped) ? new Map(dropped.map((d) => [d.table, d.dropped])) : undefined;
-}
-
 const sum = (tables: { rows: number }[]) => tables.reduce((n, t) => n + t.rows, 0);
 
 function Holds({ graph }: { graph: Schemas["Graph"] }) {
@@ -104,9 +95,6 @@ function Holds({ graph }: { graph: Schemas["Graph"] }) {
       .map(([t]) => ({ name: t.table_name, rows: t.rows, source: t.source ?? "", destination: t.destination ?? "" }));
     return { types, edges, held };
   }, [rows]);
-  const drops = droppedBy(graph);
-  const dropped = drops && [...drops.values()].reduce((n, d) => n + d, 0);
-  const [edgesOpen, setEdgesOpen] = useState(false);
 
   return (
     <div className="flex flex-col gap-8">
@@ -130,26 +118,6 @@ function Holds({ graph }: { graph: Schemas["Graph"] }) {
           <StatValue>{formatGraphDuration(graph) || "—"}</StatValue>
           <StatDescription>{formatDate(graph.completed_at)}</StatDescription>
         </StatRoot>
-        {dropped ? (
-          <StatRoot asChild variant="warning">
-            <a href="#edges" onClick={() => setEdgesOpen(true)}>
-              <StatIndicator>
-                <TriangleAlert />
-              </StatIndicator>
-              <StatLabel>Dropped rows</StatLabel>
-              <StatValue>
-                <FormatNumber value={dropped} />
-              </StatValue>
-              <StatDescription>See why</StatDescription>
-            </a>
-          </StatRoot>
-        ) : (
-          <StatRoot>
-            <StatLabel>Dropped rows</StatLabel>
-            <StatValue>{dropped ?? "—"}</StatValue>
-            <StatDescription>{drops ? "every edge row found both ends" : "not in the run report"}</StatDescription>
-          </StatRoot>
-        )}
       </div>
 
       <Part title="Schema">
@@ -172,7 +140,7 @@ function Holds({ graph }: { graph: Schemas["Graph"] }) {
         </Table>
       </Part>
 
-      <Collapsible id="edges" onOpenChange={(d) => setEdgesOpen(d.open)} open={edgesOpen}>
+      <Collapsible>
         <CollapsibleTrigger asChild>
           <Button className="-ms-2.5" variant="ghost">
             <span className="font-semibold">Edges</span>
@@ -188,7 +156,6 @@ function Holds({ graph }: { graph: Schemas["Graph"] }) {
                 <TableHead>From</TableHead>
                 <TableHead>To</TableHead>
                 <TableHead className="w-28 text-end">Rows</TableHead>
-                <TableHead className="w-28 text-end">Dropped</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -200,16 +167,10 @@ function Holds({ graph }: { graph: Schemas["Graph"] }) {
                   <TableCell className="text-end tabular-nums">
                     <FormatNumber value={e.rows} />
                   </TableCell>
-                  <TableCell className="text-end tabular-nums text-muted-foreground">
-                    {drops?.has(e.name) ? <FormatNumber value={drops.get(e.name)!} /> : "—"}
-                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
-          <p className="mt-2 text-muted-foreground text-xs">
-            A dropped row is an input row of a relation whose two ends did not both match a vertex.
-          </p>
         </CollapsibleContent>
       </Collapsible>
     </div>

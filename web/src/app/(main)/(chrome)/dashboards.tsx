@@ -39,7 +39,7 @@ import { DataTableContent, DataTableRoot, useDataTable } from "@kanzo-tech/ui/ta
 import { Link, useRouter } from "@kanzo-tech/navigation/next";
 import { useSession } from "@kanzo-tech/auth";
 import { $api, type Schemas } from "@/lib/api/client";
-import { droppedRows, hasRunningGraphs, pollWhile } from "@/lib/graphs";
+import { hasRunningGraphs, pollWhile } from "@/lib/graphs";
 import { lower, WORDS } from "@/lib/vocabulary";
 import { settled } from "@/lib/api/settled";
 import { Boundary, Loading } from "@/components/boundary";
@@ -53,11 +53,9 @@ interface Figure {
   value?: number;
   description: string;
   href: string;
-  /** Something to look at: a figure with no good or bad reading leaves it unset. */
-  warn?: boolean;
 }
 
-const FIGURES = [WORDS.graphs, "Sources", "Dropped rows"] as const;
+const FIGURES = [WORDS.graphs, "Sources"] as const;
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
@@ -146,12 +144,6 @@ function Overview() {
   const sources = connections.filter((c) => c.target.direction === "source");
   const outputs = connections.length - sources.length;
   const credentials = new Set(sources.map((c) => c.secret)).size;
-  const dropping = graphs.flatMap((graph) => {
-    const rows = droppedRows(graph);
-    return rows ? [{ graph, rows }] : [];
-  });
-  const dropped = dropping.reduce((sum, d) => sum + d.rows, 0);
-  const only = dropping.length === 1 ? dropping[0].graph : undefined;
   return (
     <Figures
       figures={[
@@ -167,17 +159,6 @@ function Overview() {
           description: `through ${plural(credentials, "credential")} · ${plural(outputs, lower(WORDS.output))}`,
           href: "/connections",
         },
-        {
-          label: "Dropped rows",
-          value: dropped,
-          description: only
-            ? `In ${name(only)}`
-            : dropping.length > 0
-              ? `Across ${plural(dropping.length, lower(WORDS.graph))}`
-              : "None left out by a join",
-          href: only ? `/graphs/${only.id}` : "/graphs",
-          warn: dropped > 0,
-        },
       ]}
     />
   );
@@ -186,9 +167,9 @@ function Overview() {
 /** The overview's row of figures; loading when `figures` is absent. Each is a way into what it counts. */
 function Figures({ figures }: { figures?: Figure[] }) {
   return (
-    <div className="grid gap-3 sm:grid-cols-3">
+    <div className="grid gap-3 sm:grid-cols-2">
       {(figures ?? FIGURES.map((label) => ({ label, description: "", href: "/graphs" }) as Figure)).map((f) => (
-        <StatRoot asChild key={f.label} variant={f.warn ? "warning" : "default"}>
+        <StatRoot asChild key={f.label}>
           <Link href={f.href}>
             <StatLabel>{f.label}</StatLabel>
             <StatValue loading={f.value === undefined}>

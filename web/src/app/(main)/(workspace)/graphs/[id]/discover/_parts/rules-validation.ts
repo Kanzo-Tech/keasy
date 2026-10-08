@@ -1,10 +1,10 @@
 "use client";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { and, column, count, type ExprNode, isIn, literal, Query, sql, TableRefNode } from "@uwdata/mosaic-sql";
+import { and, column, count, createTable, type ExprNode, isIn, literal, Query, sql, TableRefNode } from "@uwdata/mosaic-sql";
 import { engine, numbers, useClauses, useCrossfilter, useMosaic } from "@kanzo-tech/ui/analytics";
 import { usePick } from "@kanzo-tech/graph";
-import type { LangString, Shapes, ShapeModelJson, ValidationReport } from "@kanzo-tech/rudof-wasm";
+import type { LangString, Shapes, ShapeModelJson, TermValue, ValidationReport } from "@kanzo-tech/rudof-wasm";
 import { corpusKey, useCorpus, useGraphKey, useVertices } from "@/lib/fossil/corpus";
 
 /**
@@ -76,14 +76,27 @@ export function useRules(rules: ReadRules | undefined) {
   const key = useGraphKey();
   const predicate = pick.predicate();
   const triples = String(new TableRefNode([graphId, "triples"]));
-  const focus = predicate.length
+  const subset = predicate.length
     ? String(Query.from(vertices).select({ s_type: literal("I"), s_value: column("subject") }).where(predicate))
     : undefined;
 
+  /**
+   * The page's engine, and the relation rudof reads the focus nodes from: rudof takes a relation's
+   * name, so the subset's subjects are a view beside the triples, replaced on every read. Nothing
+   * picked elsewhere is no focus, and every target is checked.
+   */
+  const prepared = async (signal: AbortSignal) => {
+    const attachedTo = await engine({ signal });
+    if (subset === undefined) return { attachedTo, focus: undefined };
+    const focus = new TableRefNode([graphId, "rules_focus"]);
+    await attachedTo.query(String(createTable(focus, subset, { view: true, replace: true })), { signal });
+    return { attachedTo, focus: String(focus) };
+  };
+
   const checked = useQuery({
-    queryKey: [...corpusKey(graphId), "rules", "report", rules?.shapes, focus ?? ""],
+    queryKey: [...corpusKey(graphId), "rules", "report", rules?.shapes, subset ?? ""],
     queryFn: async ({ signal }): Promise<Checked> => {
-      const attachedTo = await engine({ signal });
+      const { attachedTo, focus } = await prepared(signal);
       const report = await rules!.shapes.validate({ table: triples, focus, engine: attachedTo, signal });
       const counted = Query.from(vertices).select({ total: count(), inScope: predicate.length ? count().where(and(...predicate)) : count() });
       const answer = await attachedTo.query(String(counted), { signal });
@@ -120,7 +133,7 @@ export function useRules(rules: ReadRules | undefined) {
       const into = String(new TableRefNode([graphId, "rules_fragment"]));
       // Asked for by a press, and nothing stops it once asked: a signal that never aborts.
       const { signal } = new AbortController();
-      const attachedTo = await engine({ signal });
+      const { attachedTo, focus } = await prepared(signal);
       await rules!.shapes.fragment({ table: triples, focus, engine: attachedTo, into, signal });
       await publish(sql`${column("subject")} IN (SELECT s_value FROM ${into})`, label);
     },
@@ -165,9 +178,12 @@ function wordOf(messages: LangString[]): string | undefined {
   return messages[0]?.value;
 }
 
+/** A shape's node as `model()` names it: its IRI, or `_:` and the label of a blank node. */
+const shapeId = (node: TermValue) => (node.termType === "BlankNode" ? `_:${node.value}` : node.value);
+
 /**
- * The report filed under the rules it came from. A result's `sourceShape` names a node shape or one
- * of its property shapes, as `model()` names them, so each finds its rule.
+ * The report filed under the rules it came from. A result's `sourceShape` is the node of a node
+ * shape or of one of its property shapes, so each finds its rule by that node's id.
  */
 export function rulesOf(model: ShapeModelJson, report: ValidationReport): Rule[] {
   const owner = new Map<string, Rule>();
@@ -184,12 +200,12 @@ export function rulesOf(model: ShapeModelJson, report: ValidationReport): Rule[]
     return rule;
   });
   for (const { shape, reason } of report.unchecked) {
-    const rule = owner.get(shape.value);
+    const rule = owner.get(shapeId(shape));
     if (rule) rule.unchecked = reason;
   }
   const found = new Map<string, Finding>();
   for (const result of report.results) {
-    const shape = result.sourceShape?.value ?? "";
+    const shape = result.sourceShape ? shapeId(result.sourceShape) : "";
     const rule = owner.get(shape);
     if (!rule) continue;
     const component = result.sourceConstraintComponent ?? "";

@@ -106,8 +106,10 @@ services:
       KEASY_OIDC_CLIENT_SECRET: dev-only-keasy-secret
       KEASY_SESSION_SECRET: dev-only-insecure-session-secret-change-me
       KEASY_SESSION_STORE_URL: redis://valkey:6379
-      # Where `/api/ai` is forwarded, with a token exchanged for the gateway and the organization.
-      KEASY_AI_URL: http://ai-gateway:4000
+      # Where `/api/ai` is forwarded, with a token exchanged for the gateway and the organization:
+      # the gateway's OpenAI-compatible API, which is under `/v1`. A path outside it is passed
+      # through unread — no alias resolved, no tokens counted.
+      KEASY_AI_URL: http://ai-gateway:4000/v1
     depends_on:
       server:
         condition: service_healthy

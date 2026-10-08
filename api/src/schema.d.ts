@@ -504,7 +504,7 @@ export interface components {
          *     Every refusal the server writes is an [`ErrorBody`] with one of these.
          * @enum {string}
          */
-        ErrorCode: "auth/session-required" | "auth/keys-unavailable" | "rbac/no-membership" | "rbac/insufficient-role" | "rbac/forbidden" | "request/rate-limited" | "request/invalid" | "request/malformed" | "request/method-not-allowed" | "request/too-large" | "route/not-found" | "server/internal" | "server/silent" | "server/not-ready" | "graph/not-found" | "graph/not-draft" | "graph/not-completed" | "graph/not-running" | "graph/ended" | "graph/still-running" | "graph/already-running" | "graph/abandoned" | "graph/interrupted" | "graph/invalid-destination" | "graph/no-destination" | "graph/folder-taken" | "secret/not-found" | "connection/not-found" | "resource/already-exists" | "resource/in-use" | "connection/overlaps" | "probe/failed" | "store/refused" | "store/silent";
+        ErrorCode: "auth/session-required" | "auth/keys-unavailable" | "rbac/no-membership" | "rbac/insufficient-role" | "rbac/forbidden" | "request/rate-limited" | "request/invalid" | "request/malformed" | "request/method-not-allowed" | "request/too-large" | "route/not-found" | "server/internal" | "server/silent" | "server/not-ready" | "graph/not-found" | "graph/not-draft" | "graph/not-completed" | "graph/not-running" | "graph/ended" | "graph/still-running" | "graph/already-running" | "graph/abandoned" | "graph/interrupted" | "graph/invalid-destination" | "graph/no-destination" | "graph/folder-taken" | "secret/not-found" | "connection/not-found" | "resource/already-exists" | "resource/in-use" | "connection/overlaps" | "probe/failed" | "store/refused" | "store/silent" | "rules/refused";
         /** @description What a refusal carries beside its words. */
         ErrorData: {
             /**
@@ -513,6 +513,11 @@ export interface components {
              *     the `*\/silent` codes, and only on them.
              */
             after?: number | null;
+            /**
+             * Format: int64
+             * @description The column on `line`, as the parser counts it.
+             */
+            column?: number | null;
             /**
              * @description What the refusal is about: what still uses a secret or connection,
              *     or the connections a rotation would break.
@@ -523,6 +528,12 @@ export interface components {
              *     field: `folder`, `name`.
              */
             field?: string | null;
+            /**
+             * Format: int64
+             * @description Where in the field's text the refusal is, when its parser says: the
+             *     1-based line and column (in characters) its own message prints.
+             */
+            line?: number | null;
         };
         /** @description One object under a connection's prefix. */
         FileEntry: {
@@ -644,8 +655,8 @@ export interface components {
         };
         PutRulesRequest: {
             /**
-             * @description The shapes graph, `text/turtle`, stored as sent. keasy does not parse
-             *     it: rudof does, where the rules run.
+             * @description The shapes graph, `text/turtle`, stored as sent once rudof reads it as
+             *     a SHACL shapes graph.
              */
             shapes: string;
         };
@@ -1611,6 +1622,15 @@ export interface operations {
             };
             /** @description The shapes graph is larger than a graph's rules may be */
             413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description rudof refused the shapes graph: `rules/refused`, placed by `line` and `column` when it is not Turtle */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

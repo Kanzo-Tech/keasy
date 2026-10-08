@@ -7,13 +7,8 @@ import {
   Button,
   ButtonGroup,
   ButtonGroupSeparator,
-  Editable,
-  EditableArea,
-  EditableCancelTrigger,
-  EditableControl,
-  EditableEditTrigger,
-  EditableInput,
-  EditablePreview,
+  Field,
+  FieldLabel,
   Input,
   Menu,
   MenuContent,
@@ -21,14 +16,13 @@ import {
   MenuTrigger,
   Show,
   Spinner,
-  ToggleGroup,
-  ToggleGroupItem,
+  Toggle,
   Tooltip,
   TooltipContent,
   TooltipTrigger,
   toast,
 } from "@kanzo-tech/ui";
-import { Check, ChevronDown, Database, FolderDown, Pencil, Save, X } from "lucide-react";
+import { Check, ChevronDown, FolderTree, Save } from "lucide-react";
 import { useRouter } from "@kanzo-tech/navigation/next";
 import { $api, http, invalidate, type Schemas } from "@/lib/api/client";
 import { Boundary, Loading } from "@/components/boundary";
@@ -42,32 +36,25 @@ import { ModePicker } from "./mode-picker";
 import { folderProblem, folderSlug } from "./folder";
 import { FindingsBadge } from "./findings-badge";
 import { nameProblem } from "@/lib/resource-name";
-import { StudioConnections } from "./studio-connections";
+import { StudioSources } from "./studio-sources";
 import { type EditorApi, StudioEditor } from "./studio-editor";
 import { StudioOutput, type OutputValues } from "./studio-output";
 import { UnsavedChangesGuard } from "@/lib/ui/unsaved-changes-guard";
 import { useGraphEditorStore } from "./graph-editor-store";
 import { lower, WORDS } from "@/lib/vocabulary";
 
-const PANELS = [
-  { id: "connections", label: "Connections", icon: Database },
-  { id: "output", label: "Output", icon: FolderDown },
-] as const;
-
-type PanelId = (typeof PANELS)[number]["id"];
-
 /** Quiet before the draft writes itself. Long enough that a pause in typing is
  *  a pause, short enough that leaving the tab does not lose a paragraph. */
 const AUTOSAVE_MS = 1500;
 
 /**
- * The graph studio: one screen, the program and one panel beside it.
+ * The graph studio: one screen, the program and its sources beside it.
  *
  * What the program reads and where its output lands are not pages to walk
- * through but properties of the program you are writing, so they are panels
- * next to it, picked from the bottom strip the way discovery picks its dock
- * (Hex, Observable). What the compiler found is the header's tally, pressed to
- * list it. Create is the one commit point and commits: when something stands in
+ * through but properties of the program you are writing: the files it can read
+ * are an explorer beside it (a catalog explorer's tree), and where it lands sits
+ * beside its name, the way a document shows its folder. What the compiler found
+ * is the header's tally, pressed to list it. Create is the one commit point and commits: when something stands in
  * its way it says what, and pressing it shows where. The draft saves itself, so
  * the strip at the bottom reports rather than commands.
  */
@@ -97,7 +84,8 @@ function GraphStudio({ draft }: { draft?: Schemas["Graph"] }) {
 
   const store = useGraphEditorStore();
   const [railOpen, setRailOpen] = useState(true);
-  const [panel, setPanel] = useState<PanelId>("connections");
+  const [outputOpen, setOutputOpen] = useState(false);
+  const nameRef = useRef<HTMLInputElement>(null);
   const [findingsOpen, setFindingsOpen] = useState(false);
   const [editor, setEditor] = useState<EditorApi | null>(null);
   const [diagnostics, setDiagnostics] = useState<readonly checker.CheckRow[]>([]);
@@ -117,7 +105,6 @@ function GraphStudio({ draft }: { draft?: Schemas["Graph"] }) {
   const savingRef = useRef<Promise<string> | null>(null);
   const autosaveRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const submittingRef = useRef(false);
-  const [nameEditing, setNameEditing] = useState(false);
   // What the server refused on Create, keyed to the value it was about, so
   // editing that value clears it.
   const [refused, setRefused] = useState<(FieldProblem & { value: string }) | null>(null);
@@ -139,7 +126,7 @@ function GraphStudio({ draft }: { draft?: Schemas["Graph"] }) {
   // A graph's connections are its program's `@conn` references, read out of
   // fossil's typed lineage — the same parse `fossil refs` runs natively, so the
   // browser and the CLI never disagree about what a graph reads. One computation
-  // feeds the Connections panel's "in use" marks and the status strip's count.
+  // feeds the status strip's count.
   useEffect(() => {
     let alive = true;
     const id = setTimeout(() => {
@@ -161,14 +148,10 @@ function GraphStudio({ draft }: { draft?: Schemas["Graph"] }) {
     };
   }, [store.script]);
 
-  const usedNames = useMemo(
-    () => new Set(refs.map((r) => r.connection).filter((c): c is string => !!c)),
-    [refs],
-  );
-
   // Every graph lands in a sink. With one in the workspace there is nothing to
   // choose, so it is chosen.
   const sinks = useMemo(() => connections.filter((c) => c.direction === "sink"), [connections]);
+  const sources = useMemo(() => connections.filter((c) => c.direction !== "sink"), [connections]);
   useEffect(() => {
     if (sinks.length === 1 && !useGraphEditorStore.getState().sinkConnectionId) {
       store.setSinkConnectionId(sinks[0].name);
@@ -187,12 +170,7 @@ function GraphStudio({ draft }: { draft?: Schemas["Graph"] }) {
   const folderRefused = refusedOn("folder", folder);
 
   const errors = diagnostics.filter((d) => d.severity === 1).length;
-  const outputIncomplete = !destination || !folderValid || !!folderRefused;
-
-  const openPanel = (id: PanelId) => {
-    setPanel(id);
-    setRailOpen(true);
-  };
+  const showOutput = () => setOutputOpen(true);
 
   // What stands in Create's way, first thing first: the words its tooltip says,
   // and where pressing it takes the editor to fix it.
@@ -204,16 +182,13 @@ function GraphStudio({ draft }: { draft?: Schemas["Graph"] }) {
           show: () => setFindingsOpen(true),
         }
       : nameError
-        ? { reason: `Fix the ${lower(WORDS.graph)}'s name: ${nameError}`, show: () => setNameEditing(true) }
+        ? { reason: `Fix the ${lower(WORDS.graph)}'s name: ${nameError}`, show: () => nameRef.current?.focus() }
         : !destination
-          ? { reason: "Pick where the graph lands, under Output.", show: () => openPanel("output") }
+          ? { reason: "Pick where the graph lands, beside its name.", show: showOutput }
           : !folderValid
-            ? { reason: "Fix the output folder, under Output.", show: () => openPanel("output") }
+            ? { reason: "Fix the output folder, beside the name.", show: showOutput }
             : folderRefused
-              ? {
-                  reason: `Fix the output folder, under Output: ${folderRefused}`,
-                  show: () => openPanel("output"),
-                }
+              ? { reason: `Fix the output folder, beside the name: ${folderRefused}`, show: showOutput }
               : null;
 
   // ── Saving ──────────────────────────────────────────────────────────────
@@ -298,10 +273,10 @@ function GraphStudio({ draft }: { draft?: Schemas["Graph"] }) {
       const problem = fieldProblem(err);
       if (problem?.field === "folder") {
         setRefused({ ...problem, value: sent.folder });
-        openPanel("output");
+        showOutput();
       } else if (problem?.field === "name") {
         setRefused({ ...problem, value: sent.name });
-        setNameEditing(true);
+        nameRef.current?.focus();
       } else {
         toastError(err, `Could not create the ${lower(WORDS.graph)}`);
       }
@@ -343,37 +318,25 @@ function GraphStudio({ draft }: { draft?: Schemas["Graph"] }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <div className="@container flex h-14 min-w-0 shrink-0 items-center gap-2 border-b px-3">
-        {/* At rest the preview sizes the root and truncates itself; editing, the root takes a
-            fixed width that the input fills, so the cancel button closes the field at its end. */}
-        <Editable
-          activationMode="dblclick"
-          edit={nameEditing}
-          invalid={!!nameError}
-          onEditChange={(d) => setNameEditing(d.edit)}
-          className="w-auto max-w-[10rem] has-[[data-slot=editable-area][data-focus]]:w-64 has-[[data-slot=editable-area][data-focus]]:max-w-[50cqw] @3xl:max-w-[20rem]"
-          onValueChange={(d) => store.setName(d.value)}
-          placeholder={`Unnamed ${lower(WORDS.graph)}`}
-          value={store.name}
-        >
-          <EditableArea className="w-auto data-focus:flex-1">
-            <EditableInput asChild>
-              <Input size="sm" />
-            </EditableInput>
-            <EditablePreview className="font-medium data-invalid:text-destructive" size="sm" variant="ghost" />
-          </EditableArea>
-          <EditableControl>
-            <EditableEditTrigger asChild>
-              <Button aria-label={`Rename the ${lower(WORDS.graph)}`} size="icon-sm" variant="ghost">
-                <Pencil />
-              </Button>
-            </EditableEditTrigger>
-            <EditableCancelTrigger asChild>
-              <Button aria-label="Discard the new name" size="icon-sm" variant="ghost">
-                <X />
-              </Button>
-            </EditableCancelTrigger>
-          </EditableControl>
-        </Editable>
+        <Field className="w-auto" invalid={!!nameError} orientation="horizontal">
+          <FieldLabel className="flex-none">Name</FieldLabel>
+          <Input
+            className="w-64"
+            onChange={(e) => store.setName(e.target.value)}
+            placeholder={`Unnamed ${lower(WORDS.graph)}`}
+            ref={nameRef}
+            size="sm"
+            value={store.name}
+          />
+        </Field>
+        <StudioOutput
+          connections={connections}
+          folderRefused={folderRefused}
+          onChange={onOutputChange}
+          onOpenChange={setOutputOpen}
+          open={outputOpen}
+          values={output}
+        />
 
         <div className="ms-auto flex items-center gap-1.5">
           <FindingsBadge
@@ -458,24 +421,16 @@ function GraphStudio({ draft }: { draft?: Schemas["Graph"] }) {
         rail={
           railOpen
             ? {
-                label: PANELS.find((p) => p.id === panel)!.label,
+                label: "Sources",
                 onClose: () => setRailOpen(false),
-                content:
-                  panel === "connections" ? (
-                    <StudioConnections
-                      connections={connections}
-                      onInsert={(text) => editor?.insert(text)}
-                      used={usedNames}
-                      usedProblem={refsProblem}
-                    />
-                  ) : (
-                    <StudioOutput
-                      connections={connections}
-                      folderRefused={folderRefused}
-                      onChange={onOutputChange}
-                      values={output}
-                    />
-                  ),
+                content: (
+                  <StudioSources
+                    connections={sources}
+                    onInsert={(text) => editor?.insert(text)}
+                    problem={refsProblem}
+                    providers={providers}
+                  />
+                ),
               }
             : null
         }
@@ -487,33 +442,10 @@ function GraphStudio({ draft }: { draft?: Schemas["Graph"] }) {
           {" · "}
           {draftMutation.isPending ? "saving…" : saved ? "draft saved" : "unsaved changes"}
         </span>
-        {/* Single-select and deselectable: pressing the open panel's button again collapses the rail. */}
-        <ToggleGroup
-          aria-label="Panels"
-          className="ms-auto"
-          multiple={false}
-          onValueChange={(d) => {
-            const next = d.value[0] as PanelId | undefined;
-            if (next) openPanel(next);
-            else setRailOpen(false);
-          }}
-          size="sm"
-          spacing={2}
-          value={railOpen ? [panel] : []}
-        >
-          {PANELS.map((p) => (
-            <ToggleGroupItem aria-label={p.label} className="relative" key={p.id} value={p.id}>
-              <p.icon />
-              {p.label}
-              <Show when={p.id === "output" && outputIncomplete}>
-                <span
-                  aria-label="incomplete"
-                  className="absolute end-1 top-1 size-1.5 rounded-full bg-destructive"
-                />
-              </Show>
-            </ToggleGroupItem>
-          ))}
-        </ToggleGroup>
+        <Toggle className="ms-auto" onPressedChange={setRailOpen} pressed={railOpen} size="sm">
+          <FolderTree />
+          Sources
+        </Toggle>
       </div>
 
       <UnsavedChangesGuard dirty={dirty} />

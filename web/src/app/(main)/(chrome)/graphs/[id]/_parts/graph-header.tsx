@@ -11,6 +11,8 @@ import {
   AlertDialogHeader,
   Badge,
   Button,
+  Clipboard,
+  ClipboardTrigger,
   Menu,
   MenuContent,
   MenuItem,
@@ -32,13 +34,13 @@ import { useRouter } from "@kanzo-tech/navigation/next";
 import { useMutation } from "@tanstack/react-query";
 import { http, invalidate, type Schemas } from "@/lib/api/client";
 import { copyOf, toastError } from "@/lib/errors";
+import { formatDate } from "@/lib/ui/format";
+import { Provenance } from "@/components/provenance";
 import { type Primary, primaryAction, runProblem, STATUS } from "@/lib/graphs";
 import { lower, WORDS } from "@/lib/vocabulary";
 import { folderSlug } from "@/app/(main)/(chrome)/(editor)/graphs/new/_parts/folder";
 import { markInterrupted, startRun, useLiveRun } from "./use-browser-graph-runner";
 import { useGraph } from "./use-graph";
-
-type Graph = Schemas["Graph"];
 
 const ICON = {
   edit: Pencil,
@@ -80,6 +82,18 @@ export function Blocked({ reason, children }: { reason?: string; children: React
       </TooltipTrigger>
       <TooltipContent>{reason}</TooltipContent>
     </Tooltip>
+  );
+}
+
+/** A value the header shows, and copies whole. */
+function Copyable({ value, shown = value, label }: { value: string; shown?: string; label: string }) {
+  return (
+    <span className="inline-flex items-center gap-1 font-mono text-xs">
+      {shown}
+      <Clipboard className="w-auto" timeout={1200} value={value}>
+        <ClipboardTrigger aria-label={`Copy ${label}`} />
+      </Clipboard>
+    </span>
   );
 }
 
@@ -187,6 +201,22 @@ export function GraphHeader({ id }: { id: string }) {
             </SectionTitle>
             <Badge variant={worded ? "destructive" : variant}>{worded ?? label}</Badge>
           </div>
+          <SectionDescription asChild>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              <span className="flex flex-wrap gap-x-1">
+                <Provenance of={graph} />
+                {graph.runner && graph.started_at && (
+                  <span>
+                    · last {lower(WORDS.run)} by {runnerName(graph.runner, me)}, {formatDate(graph.started_at)}
+                  </span>
+                )}
+              </span>
+              {graph.output && (
+                <Copyable label={`the ${lower(WORDS.output)} location`} value={graph.output} />
+              )}
+              <Copyable label={`the ${lower(WORDS.graph)}'s id`} shown={graph.id.slice(0, 8)} value={graph.id} />
+            </div>
+          </SectionDescription>
           {graph.status === "running" && (
             <SectionDescription className="flex items-center gap-2">
               <Status variant={graph.cancel_requested ? "warning" : "info"} />

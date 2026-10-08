@@ -305,8 +305,9 @@ async fn a_graph_keeps_one_dashboard() {
     );
 }
 
-/// A graph's rules: none until saved, a Turtle string no larger than the cap
-/// that rudof reads as a shapes graph, stored as sent, and its owner's alone.
+/// A graph's rules: none until saved, a Turtle file no larger than the cap
+/// that rudof reads as a shapes graph, stored as sent under its file's name,
+/// and its owner's alone.
 #[tokio::test]
 async fn a_graph_keeps_one_shapes_graph_of_rules() {
     let app = spawn_app().await;
@@ -337,8 +338,9 @@ async fn a_graph_keeps_one_shapes_graph_of_rules() {
     assert_eq!(status, StatusCode::NOT_FOUND);
 
     for body in [
-        json!({ "shapes": { "a": 1 } }),
-        json!({ "shapes": null }),
+        json!({ "name": "r.ttl", "shapes": { "a": 1 } }),
+        json!({ "name": "r.ttl", "shapes": null }),
+        json!({ "shapes": "" }),
         json!({}),
     ] {
         let (status, _) = app.send(Method::PUT, &path, &mine, body.clone()).await;
@@ -347,7 +349,12 @@ async fn a_graph_keeps_one_shapes_graph_of_rules() {
     }
     let huge = "#".repeat(keasy_server::routes::graphs::rules::MAX_SHAPES_BYTES + 1);
     let (status, _) = app
-        .send(Method::PUT, &path, &mine, json!({ "shapes": huge }))
+        .send(
+            Method::PUT,
+            &path,
+            &mine,
+            json!({ "name": "r.ttl", "shapes": huge }),
+        )
         .await;
     assert_eq!(status, StatusCode::PAYLOAD_TOO_LARGE);
 
@@ -356,7 +363,7 @@ async fn a_graph_keeps_one_shapes_graph_of_rules() {
             Method::PUT,
             &path,
             &mine,
-            json!({ "shapes": "@prefix sh: <http://www.w3.org/ns/shacl#> .\n<#S> a sh:NodeShape ;\n  sh:path .\n" }),
+            json!({ "name": "r.ttl", "shapes": "@prefix sh: <http://www.w3.org/ns/shacl#> .\n<#S> a sh:NodeShape ;\n  sh:path .\n" }),
         )
         .await;
     assert_eq!(
@@ -381,7 +388,7 @@ async fn a_graph_keeps_one_shapes_graph_of_rules() {
             Method::PUT,
             &path,
             &mine,
-            json!({ "shapes": "@prefix sh: <http://www.w3.org/ns/shacl#> .\n<#S> a sh:NodeShape ; sh:minCount \"x\" .\n" }),
+            json!({ "name": "r.ttl", "shapes": "@prefix sh: <http://www.w3.org/ns/shacl#> .\n<#S> a sh:NodeShape ; sh:minCount \"x\" .\n" }),
         )
         .await;
     assert_eq!(
@@ -396,13 +403,63 @@ async fn a_graph_keeps_one_shapes_graph_of_rules() {
 
     let shapes = "@prefix sh: <http://www.w3.org/ns/shacl#> .\n\n\
                   <#Person> a sh:NodeShape ;\n  sh:property [ sh:path <#age> ; sh:minCount 1 ] .\n";
+    for name in ["", "a/b.ttl", "..\\b.ttl", "a\nb.ttl", &"x".repeat(256)] {
+        let (status, body) = app
+            .send(
+                Method::PUT,
+                &path,
+                &mine,
+                json!({ "name": name, "shapes": shapes }),
+            )
+            .await;
+        assert_eq!(
+            (
+                status,
+                body["code"].as_str(),
+                body["data"]["field"].as_str()
+            ),
+            (
+                StatusCode::BAD_REQUEST,
+                Some("request/invalid"),
+                Some("name")
+            ),
+            "{name:?} is not a file's name: {body}"
+        );
+    }
+    let (_, read) = app.send(Method::GET, &path, &mine, json!(null)).await;
+    assert_eq!(read, json!(null), "a refused file leaves nothing behind");
+
     let (status, saved) = app
-        .send(Method::PUT, &path, &mine, json!({ "shapes": shapes }))
+        .send(
+            Method::PUT,
+            &path,
+            &mine,
+            json!({ "name": "ldbc-quality.ttl", "shapes": shapes }),
+        )
         .await;
     assert_eq!(status, StatusCode::OK, "{saved}");
     assert_eq!(saved["created_by"]["id"], "u-1");
     let (_, read) = app.send(Method::GET, &path, &mine, json!(null)).await;
-    assert_eq!(read["shapes"], shapes, "stored as sent");
+    assert_eq!(
+        (&read["name"], &read["shapes"]),
+        (&json!("ldbc-quality.ttl"), &json!(shapes)),
+        "stored as sent, under its file's name"
+    );
+
+    let (status, body) = app
+        .send(
+            Method::PUT,
+            &path,
+            &mine,
+            json!({ "name": "ldbc-quality-v2.ttl", "shapes": "<#S> a ;" }),
+        )
+        .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{body}");
+    let (_, read) = app.send(Method::GET, &path, &mine, json!(null)).await;
+    assert_eq!(
+        read["name"], "ldbc-quality.ttl",
+        "a file rudof refuses leaves the previous one in place"
+    );
 
     let (status, read) = app.send(Method::GET, &path, &theirs, json!(null)).await;
     assert_eq!(
@@ -411,7 +468,12 @@ async fn a_graph_keeps_one_shapes_graph_of_rules() {
         "everyone reads them"
     );
     let (status, body) = app
-        .send(Method::PUT, &path, &theirs, json!({ "shapes": "" }))
+        .send(
+            Method::PUT,
+            &path,
+            &theirs,
+            json!({ "name": "r.ttl", "shapes": "" }),
+        )
         .await;
     assert_eq!(
         (status, body["code"].as_str()),

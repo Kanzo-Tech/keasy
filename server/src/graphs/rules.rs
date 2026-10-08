@@ -1,4 +1,5 @@
-//! The `rules` table: one SHACL shapes graph per graph, stored as sent.
+//! The `rules` table: one SHACL shapes graph per graph, and its file's name,
+//! stored as sent.
 
 use rusqlite::{Connection, OptionalExtension, params};
 
@@ -8,12 +9,13 @@ use crate::domain::{Actor, Rules, now_iso8601};
 pub fn get(conn: &Connection, graph_id: &str) -> DbResult<Option<Rules>> {
     Ok(conn
         .query_row(
-            "SELECT shapes, created_by, created_by_name, created_at,
+            "SELECT name, shapes, created_by, created_by_name, created_at,
                     updated_by, updated_by_name, updated_at
              FROM rules WHERE graph_id = ?1",
             [graph_id],
             |row| {
                 Ok(Rules {
+                    name: row.get("name")?,
                     shapes: row.get("shapes")?,
                     provenance: provenance_columns(row)?,
                 })
@@ -22,17 +24,23 @@ pub fn get(conn: &Connection, graph_id: &str) -> DbResult<Option<Rules>> {
         .optional()?)
 }
 
-/// Replace the graph's rules with `shapes`: the first save creates them, every
-/// later one updates them and keeps who created them.
-pub fn put(conn: &Connection, graph_id: &str, shapes: &str, by: &Actor) -> DbResult<Rules> {
+/// Replace the graph's rules with the file `name` holding `shapes`: the first
+/// save creates them, every later one replaces both and keeps who created them.
+pub fn put(
+    conn: &Connection,
+    graph_id: &str,
+    name: &str,
+    shapes: &str,
+    by: &Actor,
+) -> DbResult<Rules> {
     let now = now_iso8601();
     conn.execute(
-        "INSERT INTO rules (graph_id, shapes, created_by, created_by_name, created_at)
-         VALUES (?1, ?2, ?3, ?4, ?5)
+        "INSERT INTO rules (graph_id, name, shapes, created_by, created_by_name, created_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6)
          ON CONFLICT (graph_id) DO UPDATE SET
-             shapes = excluded.shapes, updated_by = excluded.created_by,
+             name = excluded.name, shapes = excluded.shapes, updated_by = excluded.created_by,
              updated_by_name = excluded.created_by_name, updated_at = excluded.created_at",
-        params![graph_id, shapes, by.id, by.name, now],
+        params![graph_id, name, shapes, by.id, by.name, now],
     )?;
     get(conn, graph_id)?.ok_or_else(|| DbError::Invalid(format!("no graph {graph_id:?}")))
 }
@@ -66,7 +74,8 @@ mod tests {
         }
     }
 
-    /// Saved, replaced and read back byte for byte; gone with its graph.
+    /// Saved, replaced and read back byte for byte under its file's name; gone
+    /// with its graph.
     #[test]
     fn the_rules_are_the_last_shapes_saved_and_die_with_their_graph() {
         let (conn, id) = conn_with_graph();
@@ -75,6 +84,7 @@ mod tests {
         let first = put(
             &conn,
             &id,
+            "quality.ttl",
             "@prefix sh: <http://www.w3.org/ns/shacl#> .",
             &ana(),
         )
@@ -82,9 +92,10 @@ mod tests {
         assert_eq!(first.provenance.created_by, ana());
         assert_eq!(first.provenance.updated_by, None);
         let shapes = "@prefix sh: <http://www.w3.org/ns/shacl#> .\n\n<#S> a sh:NodeShape ;\n  sh:message \"ñ\" .\n";
-        put(&conn, &id, shapes, &bruno()).unwrap();
+        put(&conn, &id, "quality-v2.ttl", shapes, &bruno()).unwrap();
         let saved = get(&conn, &id).unwrap().unwrap();
         assert_eq!(saved.shapes, shapes);
+        assert_eq!(saved.name, "quality-v2.ttl", "the file is replaced whole");
         assert_eq!(saved.provenance.created_by, ana(), "the creator is kept");
         assert_eq!(saved.provenance.updated_by, Some(bruno()));
 
@@ -95,6 +106,6 @@ mod tests {
     #[test]
     fn rules_need_their_graph() {
         let (conn, _) = conn_with_graph();
-        assert!(put(&conn, "no-such-graph", "", &ana()).is_err());
+        assert!(put(&conn, "no-such-graph", "r.ttl", "", &ana()).is_err());
     }
 }

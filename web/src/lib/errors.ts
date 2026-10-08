@@ -82,10 +82,8 @@ const registry: Partial<Record<ErrorCode | NoBodyCode | ClientCode | Code | Kanz
   "query/failed": {
     title: "Query execution failed. The AI may have generated invalid SQL. Try rephrasing your question.",
   },
-  "rules/refused": {
-    title: "The rules could not be read",
-    detail: "rudof refused the rules document. Edit or switch off the rule it names.",
-  },
+  // rudof's own message places a syntax error by line and column; it is the detail.
+  "rules/refused": { title: "The rules could not be read" },
   "graph/no-webgl": {
     title: "This browser cannot draw the graph",
     detail: "The graph needs WebGL, which this browser or device does not offer. The dashboard still works.",

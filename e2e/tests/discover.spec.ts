@@ -17,12 +17,14 @@ test("02 a graph that has not completed opens in discover as graph/not-completed
   await expectProblem(page, "graph/not-completed", { within: 10_000 });
 });
 
-test("17 a rule rudof refuses is rules/refused in the Rules panel", async ({ page, corpusGraph }) => {
-  // SHACL-SPARQL is not SHACL Core: the SQL engine refuses the shape when it loads, never skips it.
-  const shapes = `@prefix sh: <http://www.w3.org/ns/shacl#> .
-<urn:uuid:e2e-refused> a sh:NodeShape ; sh:targetClass <https://example.org/Person> ;
-  sh:sparql [ sh:select "SELECT $this WHERE { }" ] .`;
-  expect((await api(page, "PUT", `/v1/graphs/${corpusGraph}/rules`, { shapes })).status).toBe(200);
+test("17 a rules file rudof cannot read is rules/refused in the Rules panel, and nothing is saved", async ({ page, corpusGraph }) => {
   await openPanel(page, corpusGraph, "Rules");
+  // Dropped as a person drops it: the server reads it with rudof and refuses it where Turtle stops.
+  await page.locator('input[type="file"]').setInputFiles({
+    name: "broken.ttl",
+    mimeType: "text/turtle",
+    buffer: Buffer.from("@prefix sh: <http://www.w3.org/ns/shacl#> .\n<#S> a sh:NodeShape ;\n  sh:path .\n"),
+  });
   await expectProblem(page, "rules/refused", { within: 20_000 });
+  expect((await api(page, "GET", `/v1/graphs/${corpusGraph}/rules`)).body).toBeNull();
 });

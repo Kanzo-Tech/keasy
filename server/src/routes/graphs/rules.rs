@@ -1,5 +1,5 @@
-//! A graph's rules — one SHACL shapes graph, Turtle — read and replaced whole
-//! by the member who owns the graph.
+//! A graph's rules — one SHACL shapes graph, a Turtle file — read, and
+//! replaced whole with the file's name by the member who owns the graph.
 
 use axum::Json;
 use axum::extract::{Path, State};
@@ -24,6 +24,8 @@ pub const MAX_SHAPES_BYTES: usize = 256 * 1024;
 
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct PutRulesRequest {
+    /// The file's name, as the member dropped it: a name, not a path.
+    pub name: String,
     /// The shapes graph, `text/turtle`, stored as sent once rudof reads it as
     /// a SHACL shapes graph.
     pub shapes: String,
@@ -50,6 +52,7 @@ pub async fn get_rules(
     request_body = PutRulesRequest,
     responses(
         (status = 200, description = "Rules saved", body = Rules),
+        (status = 400, description = "`name` is not a file's name: `request/invalid` on the field `name`", body = ErrorBody),
         (status = 404, description = "Graph not found", body = ErrorBody),
         (status = 413, description = "The shapes graph is larger than a graph's rules may be", body = ErrorBody),
         (status = 422, description = "rudof refused the shapes graph: `rules/refused`, placed by `line` and `column` when it is not Turtle", body = ErrorBody),
@@ -71,13 +74,36 @@ pub async fn put_rules(
             format!("A graph's rules are at most {MAX_SHAPES_BYTES} bytes; these are {size}"),
         ));
     }
+    named(&payload.name)?;
     read(&payload.shapes)?;
     Ok(Json(rules::put(
         &*state.db.write().await,
         &id,
+        &payload.name,
         &payload.shapes,
         &caller.actor(),
     )?))
+}
+
+/// The longest file name the common file systems keep, in bytes.
+const MAX_NAME_BYTES: usize = 255;
+
+/// Refuse a name no file could have: empty, longer than a file system keeps,
+/// or holding a path separator or a control character. Download saves the
+/// rules under it.
+fn named(name: &str) -> Result<(), Refusal> {
+    if name.is_empty()
+        || name.len() > MAX_NAME_BYTES
+        || name
+            .chars()
+            .any(|c| c == '/' || c == '\\' || c.is_control())
+    {
+        return Err(Refusal::invalid_field(
+            "name",
+            format!("{name:?} is not a file's name"),
+        ));
+    }
+    Ok(())
 }
 
 /// Refuse what rudof would: the shapes graph is read as the browser reads it

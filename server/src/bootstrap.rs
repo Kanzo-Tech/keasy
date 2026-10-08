@@ -15,6 +15,7 @@ use crate::database::Database;
 use crate::domain::Actor;
 use crate::routes::connections::CreateConnectionRequest;
 use crate::routes::secrets::CreateSecretRequest;
+use crate::storage_client::Endpoints;
 
 #[derive(Deserialize)]
 struct Declared {
@@ -24,7 +25,7 @@ struct Declared {
     connections: Vec<CreateConnectionRequest>,
 }
 
-pub async fn ensure_declared(db: &Database, path: &str) {
+pub async fn ensure_declared(db: &Database, path: &str, endpoints: &Endpoints) {
     let declared = match std::fs::read(path)
         .map_err(|e| e.to_string())
         .and_then(|bytes| serde_json::from_slice::<Declared>(&bytes).map_err(|e| e.to_string()))
@@ -49,6 +50,7 @@ pub async fn ensure_declared(db: &Database, path: &str) {
             &request.spec,
             request.probe_url.as_deref(),
             &Actor::bootstrap(),
+            endpoints,
         )
         .await
         {
@@ -73,6 +75,7 @@ pub async fn ensure_declared(db: &Database, path: &str) {
             request.secret,
             request.target,
             &Actor::bootstrap(),
+            endpoints,
         )
         .await
         {

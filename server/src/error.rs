@@ -118,6 +118,10 @@ pub enum ErrorCode {
     /// answer within its deadline; `after` says how long it was given.
     #[serde(rename = "store/silent")]
     StoreSilent,
+    /// rudof refused a rules document: it is not Turtle, or not a SHACL shapes
+    /// graph. `line` and `column` place it when the Turtle parser does.
+    #[serde(rename = "rules/refused")]
+    RulesRefused,
 }
 
 impl ErrorCode {
@@ -159,6 +163,7 @@ impl ErrorCode {
             Self::ProbeFailed => "Validation failed",
             Self::StoreRefused => "The store refused",
             Self::StoreSilent => "The store did not answer in time",
+            Self::RulesRefused => "The rules could not be read",
         }
     }
 }
@@ -189,6 +194,13 @@ pub struct ErrorData {
     /// field: `folder`, `name`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub field: Option<String>,
+    /// Where in the field's text the refusal is, when its parser says: the
+    /// 1-based line and column (in characters) its own message prints.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub line: Option<u64>,
+    /// The column on `line`, as the parser counts it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub column: Option<u64>,
 }
 
 impl ErrorBody {

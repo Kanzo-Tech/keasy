@@ -175,6 +175,18 @@ pub async fn bounded<T>(
         }))
 }
 
+/// Where S3 and STS answer when they are not AWS's own — a dev store, a
+/// gateway. Deployment config, not a credential's: read as the AWS SDKs read
+/// it, `AWS_ENDPOINT_URL_S3` and `AWS_ENDPOINT_URL_STS` over the global
+/// `AWS_ENDPOINT_URL`
+/// (<https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoints.html>).
+/// `None` is AWS; an `http://` endpoint opts into plain HTTP.
+#[derive(Debug, Clone, Default)]
+pub struct Endpoints {
+    pub s3: Option<String>,
+    pub sts: Option<String>,
+}
+
 /// An object store client that keeps its provider, so it can sign.
 pub enum CloudStore {
     Azure(MicrosoftAzure),
@@ -182,7 +194,11 @@ pub enum CloudStore {
 }
 
 /// The client `credential` opens on the bucket or container `location` names.
-pub fn store(credential: &SecretSpec, location: &StorageLocation) -> Result<CloudStore, String> {
+pub fn store(
+    credential: &SecretSpec,
+    location: &StorageLocation,
+    endpoints: &Endpoints,
+) -> Result<CloudStore, String> {
     if StoreKind::of(credential) != location.kind() {
         return Err(format!(
             "this credential reaches {} URLs, not {}",
@@ -197,7 +213,6 @@ pub fn store(credential: &SecretSpec, location: &StorageLocation) -> Result<Clou
             access_key_id,
             secret_access_key,
             region,
-            endpoint,
             ..
         } => {
             let mut builder = AmazonS3Builder::new()
@@ -207,7 +222,7 @@ pub fn store(credential: &SecretSpec, location: &StorageLocation) -> Result<Clou
                 .with_region(region)
                 .with_client_options(client_options())
                 .with_retry(retry());
-            if let Some(endpoint) = endpoint {
+            if let Some(endpoint) = &endpoints.s3 {
                 // object_store refuses plain HTTP unless told; an `http://`
                 // endpoint (a dev store on a laptop) is that telling.
                 builder = builder
@@ -277,10 +292,11 @@ impl CloudStore {
 pub async fn list_files(
     credential: &SecretSpec,
     location: &StorageLocation,
+    endpoints: &Endpoints,
     under: &ObjectPath,
     limit: usize,
 ) -> Result<(Vec<ObjectMeta>, bool), StoreFailure> {
-    let store = store(credential, location)?;
+    let store = store(credential, location, endpoints)?;
     let prefix: ObjectPath = location.path().parts().chain(under.parts()).collect();
     bounded(STORE_DEADLINE, async {
         let mut entries = Vec::new();
@@ -306,7 +322,6 @@ mod tests {
             access_key_id: "AK".into(),
             secret_access_key: SecretString::from("SK"),
             region: "us-east-1".into(),
-            endpoint: None,
             role_arn: None,
             external_id: None,
         }
@@ -324,7 +339,8 @@ mod tests {
     #[test]
     fn a_credential_opens_only_its_own_stores() {
         let url = |s: &str| StorageLocation::parse(s).unwrap();
-        assert!(store(&s3(), &url("s3://bucket/data/x.csv")).is_ok());
-        assert!(store(&s3(), &url("az://container/x.csv")).is_err());
+        let aws = Endpoints::default();
+        assert!(store(&s3(), &url("s3://bucket/data/x.csv"), &aws).is_ok());
+        assert!(store(&s3(), &url("az://container/x.csv"), &aws).is_err());
     }
 }

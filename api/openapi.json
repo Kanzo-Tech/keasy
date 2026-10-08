@@ -1041,6 +1041,16 @@
                 }
               }
             }
+          },
+          "422": {
+            "description": "rudof refused the shapes graph: `rules/refused`, placed by `line` and `column` when it is not Turtle",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2191,7 +2201,8 @@
           "connection/overlaps",
           "probe/failed",
           "store/refused",
-          "store/silent"
+          "store/silent",
+          "rules/refused"
         ]
       },
       "ErrorData": {
@@ -2207,6 +2218,15 @@
             "description": "How long a deadline waited before it fired, in milliseconds: set on\nthe `*/silent` codes, and only on them.",
             "minimum": 0
           },
+          "column": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "The column on `line`, as the parser counts it.",
+            "minimum": 0
+          },
           "dependents": {
             "type": "array",
             "items": {
@@ -2220,6 +2240,15 @@
               "null"
             ],
             "description": "The request field the refusal is about, so a form can say it on that\nfield: `folder`, `name`."
+          },
+          "line": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Where in the field's text the refusal is, when its parser says: the\n1-based line and column (in characters) its own message prints.",
+            "minimum": 0
           }
         }
       },
@@ -2484,7 +2513,7 @@
         "properties": {
           "shapes": {
             "type": "string",
-            "description": "The shapes graph, `text/turtle`, stored as sent. keasy does not parse\nit: rudof does, where the rules run."
+            "description": "The shapes graph, `text/turtle`, stored as sent once rudof reads it as\na SHACL shapes graph."
           }
         }
       },
@@ -2572,7 +2601,7 @@
         "oneOf": [
           {
             "type": "object",
-            "title": "Amazon S3 / S3-compatible",
+            "title": "Amazon S3",
             "required": [
               "access_key_id",
               "secret_access_key",
@@ -2581,14 +2610,6 @@
             "properties": {
               "access_key_id": {
                 "type": "string"
-              },
-              "endpoint": {
-                "type": [
-                  "string",
-                  "null"
-                ],
-                "format": "uri",
-                "description": "MinIO, R2 or a gateway. An `http://` endpoint opts into plain HTTP."
               },
               "external_id": {
                 "type": [
@@ -2612,7 +2633,7 @@
                   "string",
                   "null"
                 ],
-                "description": "The role keasy assumes to vend a credential scoped to one prefix.\nAWS needs it. With an endpoint and no role, keasy asks for\n`arn:aws:iam::000000000000:role/keasy-vended`; a store that validates\nroles (Ceph RGW, SeaweedFS) needs that role declared, or this set."
+                "description": "The role keasy assumes to vend a credential scoped to one prefix.\nAWS needs it."
               },
               "secret_access_key": {
                 "type": "string",
@@ -2686,7 +2707,7 @@
         "oneOf": [
           {
             "type": "object",
-            "title": "Amazon S3 / S3-compatible",
+            "title": "Amazon S3",
             "required": [
               "access_key_id",
               "region",
@@ -2695,12 +2716,6 @@
             "properties": {
               "access_key_id": {
                 "type": "string"
-              },
-              "endpoint": {
-                "type": [
-                  "string",
-                  "null"
-                ]
               },
               "external_id": {
                 "type": [

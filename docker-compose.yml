@@ -66,6 +66,9 @@ services:
       # The dev S3 credential, its data and shapes sources and the sink, in the
       # API's own request format.
       KEASY_BOOTSTRAP_FILE: /etc/keasy/bootstrap.json
+      # The dev store answers S3 and STS on one port, as the AWS SDKs read it.
+      AWS_ENDPOINT_URL_S3: http://s3.localhost:9000
+      AWS_ENDPOINT_URL_STS: http://s3.localhost:9000
     depends_on:
       provision:
         condition: service_completed_successfully

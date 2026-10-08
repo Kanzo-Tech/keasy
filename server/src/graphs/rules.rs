@@ -1,4 +1,4 @@
-//! The `rules` table: one SHACL shapes graph per graph, stored opaque.
+//! The `rules` table: one SHACL shapes graph per graph, stored as sent.
 
 use rusqlite::{Connection, OptionalExtension, params};
 

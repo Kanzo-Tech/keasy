@@ -93,12 +93,6 @@ Posts : Post from PostRow
     hasCreator   = Person(PostRow.creator)
     isLocatedIn  = Place(PostRow.place)
 
-// A comment replies to a post or to a comment, never both, so one of the two
-// reply edges names no vertex on every row and the run counts it as dropped.
-// Splitting the rows into two mappings, as the roots above are, is the shape
-// this wants; but two mappings of one type that write the same edge
-// (`hasCreator`) each write the whole edge file, and the second replaces the
-// first.
 Comments : Comment from CommentRow
     @subject       = "http://www.ldbc.eu/ldbc_socialnet/1.0/data/comment/{CommentRow.id}"
     creationDate   = CommentRow.creationDate

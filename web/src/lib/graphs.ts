@@ -96,13 +96,3 @@ export function primaryAction(graph: Graph, { editor, me, runsHere }: Viewer): P
     }
   }
 }
-
-/**
- * The rows the last run's edge joins left out, summed over its edge tables — fossil's run report's
- * `dropped` (`EdgeDrops[]`); `undefined` for a graph whose last run reported none.
- */
-export function droppedRows(graph: Graph): number | undefined {
-  const drops = (graph.report as { dropped?: { dropped?: unknown }[] } | null | undefined)?.dropped;
-  if (!Array.isArray(drops)) return undefined;
-  return drops.reduce((sum, d) => sum + (typeof d.dropped === "number" ? d.dropped : 0), 0);
-}

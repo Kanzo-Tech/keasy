@@ -1,11 +1,12 @@
 "use client";
 
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useMemo } from "react";
 import { experimental_streamedQuery as streamedQuery, useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { FilterIcon, Sparkles } from "lucide-react";
-import { clauseSemiJoin, useClauses, useMosaic, type Selection } from "@kanzo-tech/ui/analytics";
-import { corpusReferences, GraphSelect } from "@kanzo-tech/graph";
-import { Button, EmptyDescription, EmptyHeader, EmptyIndicator, EmptyRoot } from "@kanzo-tech/ui";
+import { Sparkles } from "lucide-react";
+import { count, Query } from "@uwdata/mosaic-sql";
+import { useChartQuery, useClauses, useMosaic } from "@kanzo-tech/ui/analytics";
+import { corpusReferences, usePick } from "@kanzo-tech/graph";
+import { Badge, Button, EmptyDescription, EmptyHeader, EmptyIndicator, EmptyRoot } from "@kanzo-tech/ui";
 import { Chat, ChatSkeleton, useAgentChat } from "@kanzo-tech/ai";
 import {
   dataAgent,
@@ -16,7 +17,7 @@ import {
   type DataScope,
   type QueryOutput,
 } from "@kanzo-tech/ai/data";
-import { problemCopy } from "@/components/problem-view";
+import { problemCopy, ProblemView } from "@/components/problem-view";
 import { gateway } from "@/lib/ai";
 import { settled } from "@/lib/api/settled";
 import { coded } from "@/lib/errors";
@@ -72,8 +73,8 @@ function useSchema(): DataSchema {
 
 /**
  * Questions to start from, cached per graph and per scope: a filter changed is a different question
- * to ask. Streamed, so the pills land one by one; a failure leaves none, and the chat works the same.
- * A few short questions are a completion: `gateway("complete")`.
+ * to ask. Streamed, so the pills land one by one; a failure is drawn in their place, with a retry,
+ * and the chat works the same. A few short questions are a completion: `gateway("complete")`.
  */
 function useStarters(schema: DataSchema, scope: DataScope) {
   const { graphId } = useCorpus();
@@ -90,32 +91,48 @@ function useStarters(schema: DataSchema, scope: DataScope) {
   return {
     suggesting: starters.fetchStatus === "fetching",
     proposals: starters.isError ? [] : (starters.data ?? []),
+    failure: starters.isError && (
+      <ProblemView className="w-full" error={starters.error} onRetry={() => void starters.refetch()} uncoded="llm/failed" />
+    ),
   };
 }
 
 /**
- * An answer that carries the graph's key, taken back to the page: its vertices on the canvas, or the
- * page filtered to them — a semi-join on identity, so the graph, the dashboard and the rules follow.
+ * An answer that carries the graph's key, added to the page's subset as the answer's own clause — a
+ * semi-join on identity, so the graph, the dashboard and the rules follow. Pressed again, it takes
+ * the clause back.
  */
-function AnswerActions({ answer, crossfilter, source }: { answer: QueryOutput; crossfilter: Selection; source: object }) {
+function AnswerActions({ answer }: { answer: QueryOutput }) {
   const key = useGraphKey();
+  const subset = usePick(`ask ${answer.sql}`);
   if (!answer.rows[0] || !(key in answer.rows[0])) return null;
   const ids = [...new Set(answer.rows.map((row) => Number(row[key])).filter(Number.isFinite))];
+  const added = subset.picked !== null;
   return (
-    <>
-      <GraphSelect disabled={ids.length === 0} label={answer.sql} load={async () => ids}>
-        <span className="text-xs">Show on graph</span>
-      </GraphSelect>
-      <Button
-        disabled={ids.length === 0}
-        onClick={() => crossfilter.update(clauseSemiJoin(key, ids, { source, label: "Ask" }))}
-        size="sm"
-        variant="ghost"
-      >
-        <FilterIcon />
-        Filter to these
-      </Button>
-    </>
+    <Button
+      aria-pressed={added}
+      disabled={!added && ids.length === 0}
+      onClick={() => subset.pick(added ? null : ids, "Ask")}
+      size="sm"
+      variant="ghost"
+    >
+      {added ? "✓ In the subset" : "Add to the subset"}
+    </Button>
+  );
+}
+
+/**
+ * What the next question is asked over, in the composer: the subset's size while the page holds one,
+ * and nothing while it does not — every question then reads the whole graph.
+ */
+function SubsetPill({ vertices }: { vertices: Query }) {
+  const { crossfilter } = useMosaic();
+  const { row } = useChartQuery({ deps: [vertices], query: (filter) => Query.from(vertices).select({ n: count() }).where(filter) });
+  if (!row || crossfilter.clauses.length === 0) return null;
+  return (
+    <Badge pill variant="outline">
+      Subset · {Number(row.n).toLocaleString()} nodes
+    </Badge>
   );
 }
 
@@ -131,8 +148,6 @@ function AskChat() {
   );
   const chat = useAgentChat(agent);
   const starters = useStarters(schema, scope);
-  // What a reset of the crossfilter calls back, and what retracts the clause an answer published.
-  const [source] = useState(() => ({ reset: () => {} }));
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -142,13 +157,15 @@ function AskChat() {
         chat={{ ...chat, error: chat.error === undefined ? undefined : coded(chat.error, "llm/failed") }}
         copy={problemCopy}
         className="p-2"
+        context={<SubsetPill vertices={vertices} />}
         empty={<AskEmpty />}
+        notice={starters.failure}
         suggesting={starters.suggesting}
         suggestions={starters.proposals}
         tools={{
           query: (part, { stopped }) => (
             <QueryResult
-              actions={(answer) => <AnswerActions answer={answer} crossfilter={crossfilter} source={source} />}
+              actions={(answer) => <AnswerActions answer={answer} />}
               part={part}
               stopped={stopped}
             />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { ScrollArea, Skeleton, useDebouncedCommit } from "@kanzo-tech/ui";
 import {
@@ -11,8 +11,8 @@ import {
   RelationPicker,
   relationIdentities,
   relationKey,
-  relationQuery,
   semiJoinOf,
+  type TableExpr,
 } from "@kanzo-tech/ui/analytics";
 import { SavedBy } from "@/components/provenance";
 import { $api, http } from "@/lib/api/client";
@@ -27,14 +27,22 @@ import { useCorpus, useJoinGraph } from "@/lib/fossil/corpus";
  * hops a `RelationPicker` takes from it — on the crossfilter the graph reads. A lasso on the canvas
  * filters it, and its tiles publish to the page as one semi-join on the root's key, so a brush here
  * greys out the canvas. The graph keeps one saved document, a spec per relation; a relation nobody
- * has edited draws the automatic one.
+ * has edited draws the automatic one. The relation is the page's: its `FilterBar` counts the same
+ * rows, and draws this dashboard's filters.
  */
-export default function DashboardView() {
+export interface DashboardViewProps {
+  relation: Relation;
+  onRelationChange: (relation: Relation) => void;
+  /** `relation` as the query its rows come from. */
+  table: TableExpr;
+}
+
+export default function DashboardView(props: DashboardViewProps) {
   // The saved document is read once; a failed read is shown in place of the dashboard, not
   // replaced by the automatic one an edit would then overwrite.
   return (
     <Boundary className="p-4" fallback={<Skeleton className="h-full w-full" />}>
-      <SavedDashboard />
+      <SavedDashboard {...props} />
     </Boundary>
   );
 }
@@ -42,10 +50,9 @@ export default function DashboardView() {
 /** Saved after a pause, not per edit: dragging a slider is many edits and one decision. */
 const SAVE_MS = 800;
 
-function SavedDashboard() {
+function SavedDashboard({ relation, onRelationChange, table }: DashboardViewProps) {
   const { graphId } = useCorpus();
   const graph = useJoinGraph();
-  const [relation, setRelation] = useState<Relation>(() => ({ root: graph.types[0]?.name ?? "", path: [] }));
 
   const init = { params: { path: { id: graphId } } };
   const read = $api.queryOptions("get", "/v1/graphs/{id}/dashboard", init);
@@ -67,14 +74,13 @@ function SavedDashboard() {
   const current = draft !== stored ? draft : save.isPending ? save.variables : draft;
 
   const key = relationKey(graph, relation);
-  const table = useMemo(() => relationQuery(graph, relation), [graph, relation]);
   const identities = useMemo(() => relationIdentities(graph, relation), [graph, relation]);
   const publish = useMemo(() => semiJoinOf(identities[0].column, table, { label: key }), [identities, table, key]);
 
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex min-h-10 shrink-0 items-center gap-2 border-b px-3 py-1">
-        <RelationPicker className="min-w-0" graph={graph} onValueChange={setRelation} value={relation} />
+        <RelationPicker className="min-w-0" graph={graph} onValueChange={onRelationChange} value={relation} />
         {saved && <SavedBy className="ms-auto shrink-0" of={saved} />}
       </div>
       <ScrollArea className="min-h-0 flex-1">
@@ -95,7 +101,6 @@ function SavedDashboard() {
               : undefined
           }
           publish={publish}
-          rowNoun={relation.path.length ? "paths" : relation.root}
           table={table}
           value={current.byRelation[key]}
         />

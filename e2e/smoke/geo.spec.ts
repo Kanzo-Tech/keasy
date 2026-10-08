@@ -1,7 +1,7 @@
 import { fileURLToPath } from "node:url";
 
 import { switchPanel } from "../support/fixtures";
-import { brush, expect, saveDashboard, test } from "../support/smoke";
+import { agreedCount, brush, expect, PLOT, saveDashboard, test } from "../support/smoke";
 
 /**
  * The OpenFlights dev graph (infra/dev/geo.fossil over `make seed`'s subset): 3,218 airports and the
@@ -10,6 +10,10 @@ import { brush, expect, saveDashboard, test } from "../support/smoke";
  */
 
 const AIRPORTS = 3218;
+
+// The suite's first visits to the views compile them in the dev server, and the seed is 160 times
+// the shop.
+test.describe.configure({ timeout: 300_000 });
 
 /** One tile of every kind and every chart mark, over Airport — the relation a type alone is. */
 const DASHBOARD = {
@@ -45,14 +49,17 @@ test("the flights dashboard draws every tile kind, and holds under a brush and a
   // dashboard fails here until the smoke draws it too.
   await page.getByRole("button", { name: "Add tile" }).click();
   const format = page.getByRole("complementary", { name: "Format" });
-  await expect(format.getByRole("radio")).toHaveText(["Figure", "Chart", "Table", "Bar", "Line", "Area", "Histogram", "Scatter", "Fit"]);
+  const offered = async (group: string) =>
+    [...(await format.getByRole("radiogroup", { name: group }).ariaSnapshot()).matchAll(/radio "([^"]+)"/g)].map((m) => m[1]);
+  expect(await offered("Kind")).toEqual(["Figure", "Chart", "Table"]);
+  expect(await offered("Mark")).toEqual(["Bar", "Line", "Area", "Histogram", "Scatter", "Fit"]);
   await format.getByRole("button", { name: "Cancel" }).click();
 
   const figure = (title: string) => page.locator('[data-slot="dashboard-figures"] > *').filter({ hasText: title });
   const card = (title: string) => page.locator('[data-slot="dashboard-tiles"] > *').filter({ hasText: title });
   await expect(figure("Airports")).toContainText("3,218");
   for (const title of ["By country", "Altitude along latitude", "Along longitude", "By altitude", "Positions", "Altitude against latitude"]) {
-    await expect(card(title).locator("svg").first(), title).toBeVisible();
+    await expect(card(title).locator(PLOT).first(), title).toBeVisible();
   }
   await expect(card("By country")).toContainText("United States");
   await expect(card("Airport rows")).toContainText("Airport.iataCode");
@@ -60,30 +67,32 @@ test("the flights dashboard draws every tile kind, and holds under a brush and a
   // A brush on the altitude histogram: every other tile reads the airports it keeps, the fit
   // pre-aggregated, and the bar names it as a chip.
   await brush(page, card("By altitude"));
-  const readout = filters.getByText(/ of 3,218 Airport$/);
-  await expect(readout).toBeVisible();
-  const kept = (await readout.textContent())!.split(" of ")[0]!;
-  expect(Number(kept.replace(/,/g, ""))).toBeGreaterThan(0);
-  expect(Number(kept.replace(/,/g, ""))).toBeLessThan(AIRPORTS);
-  await expect(figure("Airports")).toContainText(kept);
-  await expect(card("Altitude against latitude").locator("svg").first()).toBeVisible();
+  const kept = await agreedCount(page, { total: AIRPORTS, noun: "Airport", figure: "Airports" });
+  expect(kept).toBeGreaterThan(0);
+  expect(kept).toBeLessThan(AIRPORTS);
+  await expect(card("Altitude against latitude").locator(PLOT).first()).toBeVisible();
   const brushChip = filters.getByRole("button", { name: /^Remove .*Airport\.altitude/ });
   await expect(brushChip).toBeVisible();
   await brushChip.click();
   await expect(filters).toContainText(`${AIRPORTS.toLocaleString("en-US")} Airport`);
 
   // The dashboard's filter chip: the 40 airports in Spain.
-  await filters.getByRole("button", { name: /Airport\.country/ }).click();
-  await page.getByRole("searchbox", { name: "Filter values" }).fill("Spain");
-  await page.getByRole("option", { name: /^Spain/ }).click();
+  await filters.getByRole("button", { name: /^Airport\.country:/ }).click();
+  await page.getByRole("textbox", { name: "Filter values" }).fill("Spain");
+  // Each value with its count over the whole relation.
+  await page.getByRole("option", { name: "Spain 40", exact: true }).click();
   await page.keyboard.press("Escape");
-  await expect(filters).toContainText("40 of 3,218 Airport");
-  await expect(figure("Airports")).toContainText("40");
-  await expect(card("By country")).toContainText("Spain");
+  expect(await agreedCount(page, { total: AIRPORTS, noun: "Airport", figure: "Airports" })).toBe(40);
+  // The table pages through the 40, every one of them in Spain.
+  await expect(card("Airport rows")).toContainText("1–25 of 40");
+  await expect(card("Airport rows").getByRole("row").filter({ hasNotText: "Airport.country" }).filter({ hasNotText: "Spain" })).toHaveCount(0);
 });
 
 test("the flights rules find what the seed lacks: IATA codes, four-letter ICAO codes, time zones", async ({ page, geoGraph }) => {
   await page.goto(`/graphs/${geoGraph}/discover`);
+  // From Dashboard view: on CI's software GPU the canvas's layout shares the CPU with rudof, and the
+  // check that takes ~10 s beside the dashboard took ~3 min beside the canvas.
+  await page.getByRole("radio", { name: "Dashboard" }).click();
   await switchPanel(page, "Rules");
   // infra/dev/geo.ttl, dropped on the panel as a person drops it.
   await page.locator('input[type="file"]').setInputFiles(fileURLToPath(new URL("../../infra/dev/geo.ttl", import.meta.url)));

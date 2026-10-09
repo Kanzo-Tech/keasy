@@ -11,21 +11,21 @@ demo("flights-crossfilter", "Crossfiltering over OpenFlights: a click, a brush, 
     await onMap(page, await demoGraph(page, "OpenFlights", "geo"));
     await page.getByRole("radio", { name: "Dashboard" }).dispatchEvent("click");
     await page.getByRole("heading", { name: /Count by Airport\.country/ }).waitFor({ timeout: 60_000 });
-    await page.waitForTimeout(1500);
+    await page.waitForTimeout(900);
   },
 
   async act({ page, chapter, poster }) {
     const tile = (title: RegExp) =>
       page.locator("article").filter({ has: page.getByRole("heading", { name: title }) }).getByRole("img").first();
 
-    await chapter("One filter, every chart", 1800);
+    await chapter("One filter, every chart");
 
     await chapter("Click a country — every chart follows");
     const country = tile(/Count by Airport\.country/);
     const c = await country.boundingBox();
     // Bars are sorted by count, so the top one is the country with the most airports.
     await country.click({ position: { x: c!.width * 0.35, y: c!.height * 0.08 } });
-    await page.waitForTimeout(1800);
+    await page.waitForTimeout(1100);
 
     await chapter("Drag across longitude — just the West");
     const lon = tile(/Count by Airport\.lon$/);
@@ -36,14 +36,15 @@ demo("flights-crossfilter", "Crossfiltering over OpenFlights: a click, a brush, 
       targetPosition: { x: l!.width * 0.292, y: l!.height * 0.5 },
       steps: 20,
     });
-    await page.waitForTimeout(1800);
+    await page.waitForTimeout(1100);
     await poster();
 
     await chapter("Switch to the graph — the same filter, on the map");
     await page.getByRole("radio", { name: "Graph" }).click();
-    await page.waitForTimeout(2500);
+    await page.waitForTimeout(900);
+    await page.waitForTimeout(1400);
 
     await chapter("Every filter lands in the bar");
-    await page.waitForTimeout(1500);
+    await page.waitForTimeout(900);
   },
 });

@@ -22,12 +22,12 @@ demo("flights-map", "OpenFlights put on a map: the force layout's scatter, then 
   async act({ page, chapter, poster }) {
     // Woken, so the cloud is moving when the map takes over.
     await page.getByRole("button", { name: /^(Resume|Run) the layout$/ }).click();
-    await chapter("A graph of airports, spread by its links", 2600);
+    await chapter("A graph of airports, spread by its links");
 
     await chapter("Put it on a map: longitude across, latitude up");
     await placeOnMap(page);
     await pauseLayout(page);
-    await page.waitForTimeout(2200);
+    await page.waitForTimeout(1300);
     await poster();
 
     await chapter("Find anything — here, every airport in Spain");
@@ -35,9 +35,9 @@ demo("flights-map", "OpenFlights put on a map: the force layout's scatter, then 
     await page.getByRole("button", { name: /Find anything in the graph/ }).click();
     await page.getByPlaceholder("Find anything in the graph…").pressSequentially("country:Spain", { delay: 60 });
     await page.getByRole("button", { name: /^Add \d[\d,]* to the subset/ }).click({ timeout: 30_000 });
-    await page.waitForTimeout(2500);
+    await page.waitForTimeout(1400);
 
     await chapter("The map keeps only what you picked");
-    await page.waitForTimeout(1500);
+    await page.waitForTimeout(1200);
   },
 });

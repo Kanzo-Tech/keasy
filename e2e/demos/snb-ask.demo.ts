@@ -48,10 +48,21 @@ demo("snb-ask", "Ask over LDBC SNB: a plain question, its query and chart, and t
   },
 
   async act({ page, chapter, poster }) {
+    // The same crossfilter as every chart: the question is asked over what the page has filtered.
+    await chapter("Filter the page: women only");
+    const gender = page
+      .locator("article")
+      .filter({ has: page.getByRole("heading", { name: "Count by Person.gender" }) })
+      .getByRole("img");
+    const g = await gender.boundingBox();
+    // The upper bar of two is `female`.
+    await gender.click({ position: { x: g!.width * 0.45, y: g!.height * 0.3 } });
+    await page.waitForTimeout(900);
+
     await chapter("Ask about what's in view, in plain words");
     const box = page.getByPlaceholder("Ask about your data…").describe("the question");
     await box.click();
-    await box.pressSequentially("Which browsers do women use most?", { delay: 35 });
+    await box.pressSequentially("Which browsers do they use most?", { delay: 35 });
     await page.waitForTimeout(400);
     await box.press("Enter");
 
@@ -62,8 +73,8 @@ demo("snb-ask", "Ask over LDBC SNB: a plain question, its query and chart, and t
       .getByRole("complementary", { name: "Ask panel" })
       .getByText("Running", { exact: true })
       .waitFor({ state: "hidden", timeout: 120_000 });
-    await chapter("Every answer is a query, with its chart", 2200);
-    await page.waitForTimeout(1500);
+    await chapter("Every answer is a query, with its chart");
+    await page.waitForTimeout(900);
     await poster();
 
     // Not every answer can be a filter (an aggregate over no column the page has is not), so the
@@ -72,7 +83,7 @@ demo("snb-ask", "Ask over LDBC SNB: a plain question, its query and chart, and t
     if (await filter.isVisible()) {
       await chapter("Send the answer back to the page as a filter");
       await filter.describe("filter to it").click();
-      await page.waitForTimeout(2500);
+      await page.waitForTimeout(1400);
     }
   },
 });

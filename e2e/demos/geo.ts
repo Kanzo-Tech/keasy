@@ -53,8 +53,12 @@ export async function onMap(page: Page, id: string) {
   await page.getByRole("button", { name: /^(Resume|Run) the layout$/ }).waitFor({ timeout: 120_000 });
 }
 
-/** Hide the routes, and the labels (each an airport's IRI), from the Settings panel, which must be open. */
+/**
+ * Legible marks (larger points, so what a filter keeps stands out from what it greys), no routes, and
+ * no labels (each an airport's IRI), from the Settings panel, which must be open.
+ */
 export async function hideEdges(page: Page) {
+  await page.getByRole("radiogroup", { name: "Marks" }).getByText("Legible", { exact: true }).click();
   await page.getByRole("radiogroup", { name: "Edges" }).getByText("Hidden", { exact: true }).click();
   const labels = page.getByRole("slider", { name: "Labels" });
   if (await labels.isVisible()) {
@@ -79,4 +83,10 @@ export async function widenDock(page: Page, by: number) {
   await page.mouse.down();
   await page.mouse.move(x - by, y, { steps: 10 });
   await page.mouse.up();
+}
+
+/** Zoom the canvas onto what is selected, from the toolbar, when something is. */
+export async function frameSelection(page: Page) {
+  const frame = page.getByRole("button", { name: "Frame the selection" });
+  if (await frame.isVisible()) await frame.click();
 }

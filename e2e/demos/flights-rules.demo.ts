@@ -29,18 +29,18 @@ demo("flights-rules", "Rules over OpenFlights on the map: the findings, who fail
   },
 
   async act({ page, chapter, poster }) {
-    await chapter("Every airport, checked against your rules", 2200);
-    await chapter("Red breaks a rule, amber is a warning", 2200);
+    await chapter("Every airport, checked against your rules");
+    await chapter("Red breaks a rule, amber is a warning");
 
     const airport = page.getByRole("region", { name: /Airport/ });
     await chapter("Show the ones that break one — the map keeps only them");
     await airport.getByRole("button", { name: /^Show \d+/ }).first().click();
-    await page.waitForTimeout(2200);
+    await page.waitForTimeout(1300);
     await poster();
 
     await chapter("Or only the airports that pass");
     await airport.getByRole("button", { name: /^Showing \d+/ }).first().click();
     await page.getByRole("button", { name: "Show what conforms" }).click();
-    await page.waitForTimeout(2200);
+    await page.waitForTimeout(1300);
   },
 });

@@ -48,6 +48,9 @@ const FURNITURE = () => {
   else hide();
 };
 
+/** How long a subtitle is read before its step starts. */
+const LEAD = 700;
+
 /** How long the cursor glides to a target before the action lands there. */
 const GLIDE = 550;
 
@@ -162,8 +165,8 @@ type Theme = (typeof THEMES)[number];
 
 export interface Scene {
   page: Page;
-  /** A subtitle saying what is happening, at the foot of the frame, held for `ms`; the demo waits it
-   * out. A demo has no title card, at the start or the end: only these. */
+  /** A subtitle saying what is happening, at the foot of the frame, shown for `ms`; the step starts
+   * shortly after it appears. A demo has no title card, at the start or the end: only these. */
   chapter(text: string, ms?: number): Promise<void>;
   /** Take the poster here: `<name>-<theme>.png`, a lossless still of this moment. */
   poster(): Promise<void>;
@@ -275,6 +278,7 @@ export function demo(name: string, description: string, { arrange, act }: Demo) 
       mkdirSync(frames);
       const shot: { name: string; at: number }[] = [];
       const chapters: { text: string; start: number; end: number }[] = [];
+      let shown: { dispose(): Promise<void> } | undefined;
       const began = Date.now();
 
       await page.screencast.start({
@@ -291,13 +295,14 @@ export function demo(name: string, description: string, { arrange, act }: Demo) 
         await gliding(page, () =>
           act({
             page,
-            chapter: async (text, ms = 1800) => {
+            // A subtitle leads its step rather than holding it up: it shows for `ms`, the step starts
+            // after LEAD, and the next subtitle replaces it, so nothing on screen waits on the words.
+            chapter: async (text, ms = 2200) => {
               const start = (Date.now() - began) / 1000;
-              await page.screencast.showOverlay(subtitle(text), {
-                duration: ms,
-              });
-              await page.waitForTimeout(ms + 150);
-              chapters.push({ text, start, end: (Date.now() - began) / 1000 });
+              await shown?.dispose();
+              shown = await page.screencast.showOverlay(subtitle(text), { duration: ms });
+              await page.waitForTimeout(LEAD);
+              chapters.push({ text, start, end: start + ms / 1000 });
             },
             poster: async () => {
               await page.screenshot({ path: `${file}.png` });

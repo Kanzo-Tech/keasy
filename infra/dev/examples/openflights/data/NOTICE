@@ -8,6 +8,6 @@ Database Contents License: https://opendatacommons.org/licenses/dbcl/1-0/
 airports.csv and routes.csv in this folder are a Derivative Database of
 airports.dat and routes.dat at commit e3bc6dedbcceb8b7b74248a00dcd6207254da6bd
 of https://github.com/jpatokal/openflights, and are offered under the same
-licence. They are not committed: infra/dev/seed.sh derives them, and its
-`geo()` step is the full description of how — the airports that some direct
+licence. They are not committed: infra/dev/examples/openflights/fetch.sh
+derives them, and it is the full description of how — the airports that some direct
 route touches, the routes between them, nulls and a header normalised.

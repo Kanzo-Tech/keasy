@@ -8,7 +8,7 @@ import { signIn } from "./sign-in";
 
 /**
  * The smoke suite's fixtures: the two dev seed graphs, run once per worker from the programs `make
- * seed`'s data is mapped by (infra/dev/snb.fossil, infra/dev/geo.fossil — read from the tree, never
+ * seed`'s data is mapped by (infra/dev/examples/<example>/mapping.fossil — read from the tree, never
  * retyped), and a guard every smoke test runs under: **a console error or an uncaught page error
  * anywhere in the test's browser context fails it.**
  *
@@ -37,13 +37,15 @@ function watch(context: BrowserContext): string[] {
   return seen;
 }
 
-const program = (name: string) => readFileSync(fileURLToPath(new URL(`../../infra/dev/${name}`, import.meta.url)), "utf8");
+/** The program that maps the dev example `example` (infra/dev/examples/<example>/). */
+const program = (example: string) =>
+  readFileSync(fileURLToPath(new URL(`../../infra/dev/examples/${example}/mapping.fossil`, import.meta.url)), "utf8");
 
 /**
  * A seed graph, run to completion by the browser on a context of its own — under the same guard, so
  * a run that logs an error fails every test that needs the graph.
  */
-async function seedGraph(browser: import("@playwright/test").Browser, name: string, file: string, within: number) {
+async function seedGraph(browser: import("@playwright/test").Browser, name: string, example: string, within: number) {
   const context = await browser.newContext({
     storageState: { cookies: [], origins: [] },
     baseURL: process.env.KEASY_URL ?? "http://acme.localhost:3000",
@@ -51,9 +53,9 @@ async function seedGraph(browser: import("@playwright/test").Browser, name: stri
   const errors = watch(context);
   const page = await context.newPage();
   await signIn(page, "bruno");
-  const id = await runToCompletion(page, { name, script: program(file), within });
+  const id = await runToCompletion(page, { name, script: program(example), within });
   await context.close();
-  expect(errors, `console and page errors while running ${file}`).toEqual([]);
+  expect(errors, `console and page errors while running the ${example} example`).toEqual([]);
   return id;
 }
 
@@ -67,9 +69,9 @@ export const test = base.extend<{ quiet: void }, { geoGraph: string; snbGraph: s
     { auto: true },
   ],
   // OpenFlights: 3,218 airports and the 36,906 direct routes between them.
-  geoGraph: [async ({ browser }, use) => use(await seedGraph(browser, "smoke OpenFlights", "geo.fossil", 300_000)), { scope: "worker", timeout: 360_000 }],
+  geoGraph: [async ({ browser }, use) => use(await seedGraph(browser, "smoke OpenFlights", "openflights", 300_000)), { scope: "worker", timeout: 360_000 }],
   // LDBC SNB SF0.1: 327,588 vertices of eight types.
-  snbGraph: [async ({ browser }, use) => use(await seedGraph(browser, "smoke LDBC SNB", "snb.fossil", 900_000)), { scope: "worker", timeout: 960_000 }],
+  snbGraph: [async ({ browser }, use) => use(await seedGraph(browser, "smoke LDBC SNB", "snb", 900_000)), { scope: "worker", timeout: 960_000 }],
 });
 
 /** Save `spec` as the graph's dashboard for the relation keyed `key`, as the Dashboard view's editor does. */

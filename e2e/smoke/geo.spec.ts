@@ -4,9 +4,9 @@ import { switchPanel } from "../support/fixtures";
 import { agreedCount, brush, expect, PLOT, saveDashboard, test } from "../support/smoke";
 
 /**
- * The OpenFlights dev graph (infra/dev/geo.fossil over `make seed`'s subset): 3,218 airports and the
- * 36,906 direct routes between them. Every number below is the seed's, counted from
- * infra/dev/seed/geo/airports.csv, which `make seed` pins by digest.
+ * The OpenFlights dev graph (infra/dev/examples/openflights/mapping.fossil over `make seed`'s subset):
+ * 3,218 airports and the 36,906 direct routes between them. Every number below is the seed's, counted
+ * from infra/dev/examples/openflights/data/airports.csv, which `make seed` pins by digest.
  */
 
 const AIRPORTS = 3218;
@@ -88,30 +88,32 @@ test("the flights dashboard draws every tile kind, and holds under a brush and a
   await expect(card("Airport rows").getByRole("row").filter({ hasNotText: "Airport.country" }).filter({ hasNotText: "Spain" })).toHaveCount(0);
 });
 
-test("the flights rules find what the seed lacks: IATA codes, four-letter ICAO codes, time zones", async ({ page, geoGraph }) => {
+test("the flights rules find what the seed lacks: IATA codes, four-letter ICAO codes, time zones, and flag high airports", async ({ page, geoGraph }) => {
   await page.goto(`/graphs/${geoGraph}/discover`);
   // From Dashboard view: on CI's software GPU the canvas's layout shares the CPU with rudof, and the
   // check that takes ~10 s beside the dashboard took ~3 min beside the canvas.
   await page.getByRole("radio", { name: "Dashboard" }).click();
   await switchPanel(page, "Rules");
-  // infra/dev/geo.ttl, dropped on the panel as a person drops it.
-  await page.locator('input[type="file"]').setInputFiles(fileURLToPath(new URL("../../infra/dev/geo.ttl", import.meta.url)));
+  // infra/dev/examples/openflights/rules.ttl, dropped on the panel as a person drops it.
+  await page.locator('input[type="file"]').setInputFiles(fileURLToPath(new URL("../../infra/dev/examples/openflights/rules.ttl", import.meta.url)));
   await expect(page.getByText("Checked over all 3,218 nodes")).toBeVisible({ timeout: 60_000 });
 
   const airport = page.getByRole("region", { name: "Airport" });
   const finding = (message: string) => airport.locator('[data-slot="diagnostic"]').filter({ hasText: message });
   // airports.csv: 20 rows with an empty `iata`; 24 whose `icao` is not four capitals (CAJ4, S31, VA1P,
-  // …); 29 with an empty `timezone`, a warning. Nothing else: every position is in range and every
-  // route lands on an airport.
-  await expect(airport.locator('[data-slot="diagnostic"]')).toHaveCount(3);
+  // …); 29 with an empty `timezone`, a warning; 218 whose `altitude` is above 4,000 ft, a warning too.
+  // Nothing else: every position is in range and every route lands on an airport.
+  await expect(airport.locator('[data-slot="diagnostic"]')).toHaveCount(4);
   await expect(finding("An airport with scheduled routes has a three-letter IATA code.")).toContainText("Violation");
   await expect(finding("An airport with scheduled routes has a three-letter IATA code.").getByRole("button", { name: "Show 20" })).toBeVisible();
   await expect(finding("An ICAO airport code is four letters.")).toContainText("Violation");
   await expect(finding("An ICAO airport code is four letters.").getByRole("button", { name: "Show 24" })).toBeVisible();
   await expect(finding("The airport has no IANA time zone.")).toContainText("Warning");
   await expect(finding("The airport has no IANA time zone.").getByRole("button", { name: "Show 29" })).toBeVisible();
+  await expect(finding("A high-altitude airport: takeoff performance is limited.")).toContainText("Warning");
+  await expect(finding("A high-altitude airport: takeoff performance is limited.").getByRole("button", { name: "Show 218" })).toBeVisible();
   await expect(airport.getByLabel("2 violations")).toBeVisible();
-  await expect(airport.getByLabel("1 warnings")).toBeVisible();
+  await expect(airport.getByLabel("2 warnings")).toBeVisible();
 
   // Show puts the finding's airports on the page.
   await finding("The airport has no IANA time zone.").getByRole("button", { name: "Show 29" }).click();

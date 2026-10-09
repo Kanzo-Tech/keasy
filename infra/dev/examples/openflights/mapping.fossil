@@ -1,13 +1,13 @@
 // OpenFlights airports and the direct routes between them (`make seed`: the
 // 3,218 airports some direct route touches and the 36,906 directed routes
-// between them; ODbL, infra/dev/seed/geo/NOTICE), mapped onto geo.shex.
+// between them; ODbL, data/NOTICE), mapped onto shapes.shex.
 //
 // A dev graph with a position on every vertex: `lon` and `lat` are WGS 84
 // decimal degrees, numeric, for Discover's Map placement (x = lon, y = lat).
 // `country` is a column to cluster or colour by.
 
 @rename(Airport, "http://www.w3.org/2003/01/geo/wgs84_pos#long" as lon)
-type { Airport } := io.shex("@Dev shapes/geo.shex")
+type { Airport } := io.shex("@OpenFlights shapes/shapes.shex")
 
 AirportRow := io.csv("@OpenFlights/airports.csv")
 RouteRow   := io.csv("@OpenFlights/routes.csv")

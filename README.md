@@ -57,7 +57,7 @@ the server assumes to vend a credential scoped to one prefix). It has no console
 |------|-------|
 | S3 API (and STS) | `http://s3.localhost:9000` (and `http://localhost:9000`) |
 | Credentials | `keasy-admin` / `keasy-admin-secret` |
-| Bucket | `keasy-dev`, seeded from `infra/dev/seed/` on every `up` |
+| Bucket | `keasy-dev`, seeded from `infra/dev/examples/` on every `up` |
 
 The dev graph is the [LDBC Social Network Benchmark](https://ldbcouncil.org/benchmarks/snb/)
 at scale factor 0.1 — the official Interactive v1 `CsvCompositeMergeForeign` archive
@@ -65,7 +65,7 @@ at scale factor 0.1 — the official Interactive v1 `CsvCompositeMergeForeign` a
 not in git; fetch it once, before `make dev`:
 
 ```bash
-make seed   # downloads, checks the SHA-256s, unpacks into infra/dev/seed/ldbc/ and geo/
+make seed   # downloads, checks the SHA-256s, unpacks into infra/dev/examples/snb/data/ and openflights/data/
 ```
 
 The same `make seed` fetches a second, geographic graph: [OpenFlights](https://openflights.org/data)
@@ -73,7 +73,7 @@ airports and routes, pinned to one upstream commit and its SHA-256s, and cut dow
 airports some direct route touches and the 36,906 directed routes between them (700 KB of CSV, needs
 `python3`). Every airport carries numeric `lat` and `lon` in WGS 84 degrees, so Discover's Map
 placement (x = `lon`, y = `lat`) draws it as a map. The data is © OpenFlights under the
-[ODbL](https://opendatacommons.org/licenses/odbl/1-0/) — `infra/dev/seed/geo/NOTICE` is the
+[ODbL](https://opendatacommons.org/licenses/odbl/1-0/) — `infra/dev/examples/openflights/data/NOTICE` is the
 attribution, and it travels to the bucket with the files. It is derived on your machine and not
 committed: the subset's own digest is pinned, so every machine derives the same bytes.
 
@@ -84,20 +84,30 @@ and the suite declares its connections over them (**E2E source**, **E2E shapes**
 it signs in. The smoke (`e2e/smoke/`) does: it runs both programs over these seeds and
 drives Discovery through them, so `make e2e` fetches them first, as CI does.
 
-At boot the instance declares, over that bucket, the **LDBC SNB** and **OpenFlights**
-source connections (`ldbc/`, `geo/`), the **Dev shapes** vocabulary connection (`vocab/`,
-holding `snb.shex` and `geo.shex`) and the sink (`output/`). Access is proved before each
-connection row is written, and an existing sink is never overwritten. Two programs run over
-them; paste one into the studio to map its graph into `output/`:
+Each example is one folder under `infra/dev/examples/<name>/`: `fetch.sh` (what `make seed` runs
+for it), `shapes.shex`, `mapping.fossil` and the gitignored `data/` it fetches. In the bucket it is
+`examples/<name>/data/` and `examples/<name>/shapes/`. At boot the instance declares, over them, a
+data source and a vocabulary connection per example — **LDBC SNB** and **LDBC SNB shapes**,
+**OpenFlights** and **OpenFlights shapes** — and the sink, **Workspace output** (`output/`). Access
+is proved before each connection row is written, and an existing sink is never overwritten. Each
+example's program reads its own two connections; paste one into the studio to map its graph into
+`output/`:
 
 | Program | Graph |
 |---------|-------|
-| `infra/dev/snb.fossil` | LDBC SNB SF0.1 onto `snb.shex` |
-| `infra/dev/geo.fossil` | OpenFlights onto `geo.shex`: 3,218 `Airport` vertices with `lat`/`lon`, 36,906 `routeTo` edges |
+| `infra/dev/examples/snb/mapping.fossil` | LDBC SNB SF0.1 onto its `shapes.shex` |
+| `infra/dev/examples/openflights/mapping.fossil` | OpenFlights onto its `shapes.shex`: 3,218 `Airport` vertices with `lat`/`lon`, 36,906 `routeTo` edges |
 
-`infra/dev/geo.ttl` is rules for the OpenFlights graph: a SHACL shapes graph to drop on the graph's
-Rules panel in Discover. Most airports conform; 44 fail it (no IATA code, or an ICAO field that is
-not a four-letter ICAO code) and 29 more draw a warning (no time zone).
+`infra/dev/examples/openflights/rules.ttl` is rules for the OpenFlights graph: a SHACL shapes graph
+to drop on the graph's Rules panel in Discover. Most airports conform; 44 fail it (no IATA code, or
+an ICAO field that is not a four-letter ICAO code), and two kinds draw a warning: 29 with no time
+zone and 218 above 4,000 ft, where takeoff performance is limited.
+
+**A stack seeded before the examples moved** (when they were `infra/dev/seed/` and `snb.fossil`,
+`geo.fossil` at `infra/dev/`) keeps its old connections. The instance declares a connection only when
+none of that name exists, so **LDBC SNB** and **OpenFlights** still point at `ldbc/` and `geo/`, and
+**Dev shapes** stays in the list. Wipe the volume (`docker compose down -v`), run `make seed` and
+`make dev` again, and delete the old `infra/dev/seed/` folder, which nothing ignores any more.
 
 `s3.localhost` is load-bearing: Docker's DNS answers it inside the compose network
 and `*.localhost` is loopback on the host, so the endpoint the server is given

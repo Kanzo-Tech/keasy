@@ -14,17 +14,22 @@
     {
       "name": "LDBC SNB",
       "secret": "Dev S3",
-      "target": { "url": "s3://keasy-dev/ldbc/", "kind": "data", "direction": "source" }
+      "target": { "url": "s3://keasy-dev/examples/snb/data/", "kind": "data", "direction": "source" }
+    },
+    {
+      "name": "LDBC SNB shapes",
+      "secret": "Dev S3",
+      "target": { "url": "s3://keasy-dev/examples/snb/shapes/", "kind": "vocab", "direction": "source" }
     },
     {
       "name": "OpenFlights",
       "secret": "Dev S3",
-      "target": { "url": "s3://keasy-dev/geo/", "kind": "data", "direction": "source" }
+      "target": { "url": "s3://keasy-dev/examples/openflights/data/", "kind": "data", "direction": "source" }
     },
     {
-      "name": "Dev shapes",
+      "name": "OpenFlights shapes",
       "secret": "Dev S3",
-      "target": { "url": "s3://keasy-dev/vocab/", "kind": "vocab", "direction": "source" }
+      "target": { "url": "s3://keasy-dev/examples/openflights/shapes/", "kind": "vocab", "direction": "source" }
     },
     {
       "name": "Workspace output",

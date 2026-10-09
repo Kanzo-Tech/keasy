@@ -1,5 +1,5 @@
-import { discoverUrl } from "../support/fixtures";
-import { agreedCount, brush, expect, PLOT, saveDashboard, test } from "../support/smoke";
+import { DiscoverPage, saveDashboard } from "../support/app";
+import { agreedCount, expect, test } from "../support/smoke";
 
 /**
  * The LDBC SNB dev graph (infra/dev/examples/snb/mapping.fossil over `make seed`'s SF0.1): 327,588
@@ -30,50 +30,44 @@ const DASHBOARD = {
   ],
 };
 
-test("the social network opens in Graph view with every vertex", async ({ page, snbGraph }) => {
-  await page.goto(`/graphs/${snbGraph}/discover`);
-  await expect(page.locator('[data-slot="graph-counts"]')).toHaveText(/^327\.6K nodes · /, { timeout: 120_000 });
+test("the social network opens in Graph view with every vertex", async ({ page, env, snbGraph }) => {
+  const discover = await DiscoverPage.open(page, env, snbGraph);
+  // 327.6K nodes on a software GPU: the counts are read off the footer, not after the canvas has drawn.
+  await expect.poll(() => discover.counts(), { timeout: 120_000 }).toMatch(/^327\.6K nodes · /);
 });
 
-test("the social network's dashboard over a hop draws every tile kind, and holds under a brush and a filter chip", async ({ page, snbGraph }) => {
+test("the social network's dashboard over a hop draws every tile kind, and holds under a brush and a filter chip", async ({ page, env, snbGraph }) => {
   await saveDashboard(page, snbGraph, RELATION, DASHBOARD);
   // Opened on the dashboard: the canvas never draws 327.6K nodes on a software GPU first.
-  await page.goto(discoverUrl(snbGraph, { view: "dashboard" }));
+  const discover = await DiscoverPage.open(page, env, snbGraph, { view: "dashboard" });
+  await discover.relation("Comment", ["replyOfPost → Post"]);
+  const bar = await discover.filters();
+  await expect.poll(() => bar.readout(), { timeout: 60_000 }).toMatch(new RegExp(`^${PATHS} paths`));
 
-  const relation = page.getByRole("group", { name: "Relation" });
-  await relation.getByRole("combobox", { name: "Root type" }).click();
-  await page.getByRole("option", { name: "Comment", exact: true }).click();
-  await relation.getByRole("button", { name: "Hop" }).click();
-  await page.getByRole("menuitem", { name: "replyOfPost → Post" }).click();
-
-  const filters = page.getByRole("region", { name: "Filters" });
-  await expect(filters).toContainText(`${PATHS} paths`, { timeout: 60_000 });
-
-  const figure = (title: string) => page.locator('[data-slot="dashboard-figures"] > *').filter({ hasText: title });
-  const card = (title: string) => page.locator('[data-slot="dashboard-tiles"] > *').filter({ hasText: title });
-  await expect(figure("Replies")).toContainText("74.3K");
+  // Each tile reads a join of 74,256 paths: more than a type's table takes (the smoke's harnesses wait 60 s).
+  const dashboard = await discover.dashboard();
+  expect(await (await dashboard.tile("Replies")).text()).toContain("74.3K");
   for (const title of ["By browser", "Length over time", "Posts replied to over time", "By reply length", "Reply against post", "Fit of reply against post"]) {
-    // Each reads a join of 74,256 paths: more than a type's table takes.
-    await expect(card(title).locator(PLOT).first(), title).toBeVisible({ timeout: 60_000 });
+    await (await (await dashboard.tile(title)).chart()).settled();
   }
-  await expect(card("By browser")).toContainText("Firefox");
-  await expect(card("Reply rows")).toContainText("Comment.browserUsed");
+  expect(await (await dashboard.tile("By browser")).text()).toContain("Firefox");
+  expect(await (await dashboard.tile("Reply rows")).text()).toContain("Comment.browserUsed");
 
-  // A brush on reply length, past the bin of the shortest — most replies are under a hundred
-  // characters: every other tile reads the paths it keeps.
-  await brush(page, card("By reply length"), 0.14, 0.25);
-  const kept = await agreedCount(page, { total: 74_256, noun: "paths", figure: "Replies" });
+  // A brush on reply length, from 100 to 300 characters — past the bin of the shortest, as most
+  // replies are under a hundred: every other tile reads the paths it keeps.
+  await (await (await dashboard.tile("By reply length")).chart()).brush({ x: [100, 300] });
+  const kept = await agreedCount(discover, { total: 74_256, noun: "paths", figure: "Replies" });
   expect(kept).toBeGreaterThan(0);
   expect(kept).toBeLessThan(74_256);
-  await expect(card("Fit of reply against post").locator(PLOT).first()).toBeVisible();
-  const brushChip = filters.getByRole("button", { name: /^Remove .*Comment\.length/ });
-  await brushChip.click();
-  await expect(filters).toContainText(`${PATHS} paths`);
+  await (await (await dashboard.tile("Fit of reply against post")).chart()).settled();
+  await bar.remove("Comment.length");
+  await expect.poll(() => bar.readout()).toMatch(new RegExp(`^${PATHS} paths`));
 
-  // The filter chip: the 28,807 replies written in Firefox.
-  await filters.getByRole("button", { name: /^Comment\.browserUsed:/ }).click();
+  // The filter chip: the 28,807 replies written in Firefox. The control's value list is the
+  // library's and has no harness method yet, so it is driven by its roles.
+  await bar.open("Comment.browserUsed");
   // Each value with its count over the whole relation.
   await page.getByRole("option", { name: "Firefox 28807", exact: true }).click();
   await page.keyboard.press("Escape");
-  expect(await agreedCount(page, { total: 74_256, noun: "paths", figure: "Replies" })).toBe(28_807);
+  expect(await agreedCount(discover, { total: 74_256, noun: "paths", figure: "Replies" })).toBe(28_807);
 });

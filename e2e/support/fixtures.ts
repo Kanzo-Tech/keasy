@@ -1,7 +1,8 @@
-import { expect, test as base, type Page } from "@playwright/test";
+import type { Page } from "@playwright/test";
 
-import { createGraph } from "./stack/api";
 import { signIn } from "./auth/sign-in";
+import { expect, test as base } from "./env";
+import { createGraph } from "./stack/api";
 
 /**
  * A graph the browser has run to completion, so its corpus opens in Discovery: the suite's shop, or
@@ -45,28 +46,6 @@ export function discoverUrl(
   if (view) query.set("view", view);
   if (panel) query.set("panel", panel);
   return `/graphs/${graphId}/discover${query.size ? `?${query}` : ""}`;
-}
-
-/** Open a graph's Discovery, in Graph view, with `panel` in the dock. */
-export async function openPanel(page: Page, graphId: string, panel: "ask" | "rules") {
-  await page.goto(discoverUrl(graphId, { panel }));
-}
-
-/**
- * Put `panel` in the dock of the Discovery already open, as a reader does mid-way, keeping what the
- * page has picked. The footer's `ShellDockSwitcher` draws each panel as a radio named by its label.
- * Pressing the panel the dock already holds closes it, so a test that only needs a panel open opens
- * it from the URL with `openPanel` or `discoverUrl`.
- */
-export async function switchPanel(page: Page, panel: "Info" | "Ask" | "Rules" | "Settings") {
-  await page.getByRole("radio", { name: panel, exact: true }).click();
-}
-
-/** Ask the Ask panel `question`. */
-export async function ask(page: Page, question: string) {
-  const box = page.getByPlaceholder("Ask about your data…");
-  await box.fill(question);
-  await box.press("Enter");
 }
 
 export const test = base.extend<object, { corpusGraph: string }>({

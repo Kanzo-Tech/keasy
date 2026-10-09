@@ -1,9 +1,9 @@
 import { expect, test } from "../support/fixtures";
 
-import { api, createGraph, SOURCE } from "../support/api";
-import { stop, up, without } from "../support/compose";
-import { expectProblem } from "../support/problem";
-import { signIn } from "../support/sign-in";
+import { api, createGraph, SOURCE } from "../support/stack/api";
+import { stop, up, without } from "../support/stack/compose";
+import { expectProblem } from "../support/stack/problem";
+import { signIn } from "../support/auth/sign-in";
 
 test("03 a store that accepts and never answers ends the run as store/silent", async ({ page }) => {
   test.setTimeout(300_000);

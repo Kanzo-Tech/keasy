@@ -1,5 +1,6 @@
 import { discoverUrl } from "../support/fixtures";
-import { demo, demoGraph } from "./record";
+import { seedGraph } from "../support/seeds";
+import { demo } from "./record";
 
 /**
  * The worked example: LDBC SNB's Dashboard view — a root type, a bar clicked, a range brushed, and
@@ -8,7 +9,7 @@ import { demo, demoGraph } from "./record";
  */
 demo("snb-explore", "Dashboard over LDBC SNB: pick a type, click a bar, brush a range", {
   async arrange(page) {
-    const id = await demoGraph(page, "LDBC Social Network", "snb");
+    const id = await seedGraph(page, "snb", { name: "Demo · LDBC Social Network", reuse: true });
     // Opened on the dashboard: the Graph view would lay out 327K nodes first, on a machine without a
     // GPU too.
     await page.goto(discoverUrl(id, { view: "dashboard" }));

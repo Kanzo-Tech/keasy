@@ -1,5 +1,5 @@
 .auth/
 playwright-report/
 test-results/
-# What `make demo` records (demos/record.ts).
+# What `make demo` records (demos/record/).
 demos/out/

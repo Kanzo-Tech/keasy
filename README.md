@@ -229,8 +229,9 @@ are hidden in the recording's browser. A demo that asks the model (`snb-ask`) sw
 `e2e/demos/models.yml` for the recording and puts the dev models back after.
 
 **Adding a demo** is a file `e2e/demos/<name>.demo.ts` calling `demo(name, description, { arrange,
-act })` from `e2e/demos/record.ts`; `make demo` lists it from that title. `arrange` gets the page
-ready off camera (`demoGraph` finds or runs a dev graph); `act` is what is recorded, with
+act })` from `e2e/demos/record/`; `make demo` lists it from that title. `arrange` gets the page
+ready off camera (`seedGraph` from `e2e/support/seeds.ts`, with `reuse`, finds or runs a dev
+example's graph); `act` is what is recorded, with
 `chapter(text)` for a subtitle saying what is happening (no title cards) and `poster()` where the
 still should be. The cursor and each
 action's title are Playwright's (`page.screencast.showActions`); `locator.describe("…")` is what a

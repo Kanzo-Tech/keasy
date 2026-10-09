@@ -1,5 +1,6 @@
+import { seedGraph } from "../support/seeds";
 import { onMap } from "./geo";
-import { demo, demoGraph } from "./record";
+import { demo } from "./record";
 
 /**
  * Crossfiltering over OpenFlights: one filter for every chart and every view. A country clicked in the
@@ -8,7 +9,7 @@ import { demo, demoGraph } from "./record";
  */
 demo("flights-crossfilter", "Crossfiltering over OpenFlights: a click, a brush, and the same filter on the map", {
   async arrange(page) {
-    await onMap(page, await demoGraph(page, "OpenFlights", "geo"));
+    await onMap(page, await seedGraph(page, "openflights", { name: "Demo · OpenFlights", reuse: true }));
     await page.getByRole("radio", { name: "Dashboard" }).dispatchEvent("click");
     await page.getByRole("heading", { name: /Count by Airport\.country/ }).waitFor({ timeout: 60_000 });
     await page.waitForTimeout(900);

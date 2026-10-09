@@ -1,6 +1,6 @@
 import { expect, test } from "../support/fixtures";
 
-import { signIn } from "../support/sign-in";
+import { signIn } from "../support/auth/sign-in";
 
 test.describe("a reader", () => {
   test.use({ storageState: ".auth/reader.json" });

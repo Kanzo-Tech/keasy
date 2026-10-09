@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 /** The repository root, where docker-compose.yml is. */
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 /** The stack the suite runs against: the dev stack without models (e2e/compose.yml), as `make e2e`
  * and CI bring it up. Every call names the same files, so compose sees one project. */

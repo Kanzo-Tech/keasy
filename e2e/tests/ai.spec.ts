@@ -1,9 +1,9 @@
 import { expect, type Route } from "@playwright/test";
 
-import { SOURCE } from "../support/api";
-import { start, stop, up } from "../support/compose";
+import { SOURCE } from "../support/stack/api";
+import { start, stop, up } from "../support/stack/compose";
 import { AI, ask, openPanel, sse, test, text } from "../support/fixtures";
-import { expectProblem } from "../support/problem";
+import { expectProblem } from "../support/stack/problem";
 
 const stream = (route: Route, body: string) =>
   route.fulfill({ status: 200, contentType: "text/event-stream", body });

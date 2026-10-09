@@ -1,7 +1,8 @@
 import type { Page } from "@playwright/test";
 
+import { seedGraph } from "../support/seeds";
 import { showPanel } from "./geo";
-import { demo, demoGraph } from "./record";
+import { demo } from "./record";
 
 /**
  * Load both model aliases before the camera rolls. The gateway ends a call that sends nothing for 20 s,
@@ -32,7 +33,7 @@ async function warmUp(page: Page) {
  */
 demo("snb-ask", "Ask over LDBC SNB: a plain question, its query and chart, and the answer as a filter", {
   async arrange(page) {
-    const id = await demoGraph(page, "LDBC Social Network", "snb");
+    const id = await seedGraph(page, "snb", { name: "Demo · LDBC Social Network", reuse: true });
     await page.goto(`/graphs/${id}/discover`);
     // Dispatched rather than clicked, as in snb-explore: the Graph view of 327K nodes never settles
     // a frame on a machine without a GPU.

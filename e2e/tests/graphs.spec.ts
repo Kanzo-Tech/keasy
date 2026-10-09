@@ -1,7 +1,7 @@
 import { expect, test } from "../support/fixtures";
 
-import { api, createGraph, expectRefusal, MISSING } from "../support/api";
-import { expectProblem } from "../support/problem";
+import { api, createGraph, expectRefusal, MISSING } from "../support/stack/api";
+import { expectProblem } from "../support/stack/problem";
 
 test("06 a 500 on the graph is shown as its code, and the poll stops", async ({ page }) => {
   // Running, with no tab running it, so the page polls it; the first read is real, the rest fail.

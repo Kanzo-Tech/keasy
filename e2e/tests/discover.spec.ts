@@ -1,9 +1,9 @@
 import { fileURLToPath } from "node:url";
 import { expect } from "@playwright/test";
 
-import { api, createGraph, MISSING } from "../support/api";
+import { api, createGraph, MISSING } from "../support/stack/api";
 import { discoverUrl, openPanel, switchPanel, test } from "../support/fixtures";
-import { expectProblem } from "../support/problem";
+import { expectProblem } from "../support/stack/problem";
 
 test("01 a graph that does not exist opens in discover as graph/not-found", async ({ page }) => {
   await page.goto(`/graphs/${MISSING}/discover`);

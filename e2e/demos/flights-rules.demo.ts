@@ -2,21 +2,22 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { expect } from "@playwright/test";
 
-import { api } from "../support/api";
+import { seedGraph } from "../support/seeds";
+import { api } from "../support/stack/api";
 import { onMap, showPanel, widenDock } from "./geo";
-import { demo, demoGraph } from "./record";
+import { demo } from "./record";
 
 /**
  * Rules over OpenFlights, from the rules already loaded and checked: the findings read, the airports
- * that break a rule lit on the map, then the ones that pass. Off camera, `infra/dev/geo.ttl` is saved
- * as the graph's rules, the graph is placed on a map with its 36.9K routes hidden (with them drawn,
- * nothing on the map reads), and the dock is widened so the findings' columns fit. The Graph view
- * lays out on the GPU: record on a machine with one.
+ * that break a rule lit on the map, then the ones that pass. Off camera, the example's rules
+ * (`infra/dev/examples/openflights/rules.ttl`) are saved as the graph's, the graph is placed on a map
+ * with its 36.9K routes hidden (with them drawn, nothing on the map reads), and the dock is widened
+ * so the findings' columns fit. The Graph view lays out on the GPU: record on a machine with one.
  */
 demo("flights-rules", "Rules over OpenFlights on the map: the findings, who fails, then who passes", {
   async arrange(page) {
-    const id = await demoGraph(page, "OpenFlights", "geo");
-    const shapes = readFileSync(fileURLToPath(new URL("../../infra/dev/geo.ttl", import.meta.url)), "utf8");
+    const id = await seedGraph(page, "openflights", { name: "Demo · OpenFlights", reuse: true });
+    const shapes = readFileSync(fileURLToPath(new URL("../../infra/dev/examples/openflights/rules.ttl", import.meta.url)), "utf8");
     const saved = await api(page, "PUT", `/v1/graphs/${id}/rules`, { name: "geo.ttl", shapes });
     expect(saved.status, JSON.stringify(saved.body)).toBeLessThan(300);
 

@@ -1,5 +1,6 @@
+import { seedGraph } from "../support/seeds";
 import { hideEdges, openGraphView, pauseLayout, placeOnMap, showPanel } from "./geo";
-import { demo, demoGraph } from "./record";
+import { demo } from "./record";
 
 /**
  * OpenFlights put on a map: the airports moving as the force layout spreads them, then Placement → Map
@@ -10,7 +11,7 @@ import { demo, demoGraph } from "./record";
  */
 demo("flights-map", "OpenFlights put on a map: the force layout's scatter, then longitude and latitude, then one country", {
   async arrange(page) {
-    await openGraphView(page, await demoGraph(page, "OpenFlights", "geo"));
+    await openGraphView(page, await seedGraph(page, "openflights", { name: "Demo · OpenFlights", reuse: true }));
     await page.waitForTimeout(6000);
     await pauseLayout(page);
     await showPanel(page, "Settings");

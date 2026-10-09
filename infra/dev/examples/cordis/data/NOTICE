@@ -1,0 +1,19 @@
+Contains information from CORDIS, the Community Research and Development
+Information Service of the European Union (https://cordis.europa.eu): the
+"CORDIS - EU research projects under HORIZON EUROPE (2021-2027)" dataset,
+published by the Publications Office of the European Union.
+© European Union, 1994-2026. Reuse is authorised under the Commission's reuse
+policy (Commission Decision 2011/833/EU of 12 December 2011) and the Creative
+Commons Attribution 4.0 International licence (CC BY 4.0):
+https://creativecommons.org/licenses/by/4.0/
+CORDIS's copyright notice: https://cordis.europa.eu/about/legal
+
+projects.csv, organisations.csv, participations.csv and schemes.csv in this
+folder are derived from project.csv, organization.csv, topics.csv and
+legalBasis.csv in CORDIS's export of 2026-08-06 (cordis-HORIZONprojects-csv.zip,
+as the Internet Archive captured it on 2026-08-19). Changes: columns selected
+(project objectives, keywords, addresses, contacts and CORDIS bookkeeping
+dropped), organisations listed once each, positions split into latitude and
+longitude, amounts written with a decimal point, and the CSV dialect
+normalised. They are not committed: infra/dev/examples/cordis/fetch.sh derives
+them, and it is the full description of how.

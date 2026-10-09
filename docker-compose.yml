@@ -166,8 +166,8 @@ services:
   # Idempotent, so a re-`up` converges. Each example in infra/dev/examples/
   # goes to examples/<name>/ in the bucket: its shapes, which are in git, to
   # shapes/, and its data, which `make seed` fetches into its data/ (LDBC SNB
-  # SF0.1, the OpenFlights subset), to data/ — without the data the bucket
-  # holds the shapes alone, and this says so.
+  # SF0.1, the OpenFlights and CORDIS subsets), to data/ — without the data the
+  # bucket holds the shapes alone, and this says so.
   s3-init:
     image: amazon/aws-cli:2.37.8
     restart: "no"
@@ -183,6 +183,7 @@ services:
         aws s3api put-bucket-cors --bucket keasy-dev --cors-configuration file:///etc/seaweedfs/cors.json
         aws s3 cp --no-progress /examples/snb/shapes.shex s3://keasy-dev/examples/snb/shapes/shapes.shex
         aws s3 cp --no-progress /examples/openflights/shapes.shex s3://keasy-dev/examples/openflights/shapes/shapes.shex
+        aws s3 cp --no-progress /examples/cordis/shapes.shex s3://keasy-dev/examples/cordis/shapes/shapes.shex
         # The failure scenarios' own fixtures (e2e/fixtures/); the smoke (e2e/smoke/) reads the dev seed.
         aws s3 sync --no-progress /e2e s3://keasy-dev/e2e
         if [ -f /examples/snb/data/.sha256 ]; then
@@ -194,6 +195,11 @@ services:
           aws s3 sync --no-progress --exclude ".gitignore" --exclude ".sha256" /examples/openflights/data s3://keasy-dev/examples/openflights/data
         else
           echo "s3-init: no OpenFlights seed — run \`make seed\`, then \`make dev\`"
+        fi
+        if [ -f /examples/cordis/data/.sha256 ]; then
+          aws s3 sync --no-progress --exclude ".gitignore" --exclude ".sha256" /examples/cordis/data s3://keasy-dev/examples/cordis/data
+        else
+          echo "s3-init: no CORDIS seed — run \`make seed\`, then \`make dev\`"
         fi
         aws s3 ls --recursive s3://keasy-dev
     volumes:

@@ -1,0 +1,97 @@
+# Horizon Europe's projects, the organisations in them and what each was
+# granted, as shapes: the input vocabulary of mapping.fossil, over the subset
+# `make seed` derives from CORDIS (data/; CC BY 4.0, see its NOTICE).
+#
+# EURIO's terms wherever EURIO has one that fits as it is defined — EURIO, the
+# EUropean Research Information Ontology, is the Publications Office's model of
+# CORDIS (http://data.europa.eu/s66#, v2.4). A participation is EURIO's own
+# n-ary relation: an eurio:OrganisationRole, a Role, which "in CORDIS …
+# represents the participation of a person or organisation in a research
+# project" (EURIO's definition), and which eurio:isRoleOf the organisation
+# and eurio:isInvolvedIn the project. The role and the money belong to it, not
+# to the organisation or the project, and an organisation takes part in one
+# project in more than one role (a participant and a third party, say).
+# Funding schemes are EURIO's too: the call topic a project answers is an
+# eurio:FundingScheme that eurio:isSubSchemeOf a programme part (HORIZON.2.5,
+# "Climate, Energy and Mobility"), and the project names its topic with
+# eurio:hasAssociatedFundingScheme, the one funding-scheme link EURIO gives a
+# project directly (the others go from an eurio:Grant).
+#
+# The rest is CORDIS's own, under `cordis:` — a `.example` namespace (RFC 2606),
+# as EURIO has no term for it, or none a vertex can carry as a value:
+# - Amounts, in euro. EURIO puts an amount on an eurio:MonetaryAmount node of
+#   its own (eurio:hasTotalCost from a project; eurio:hasFundingAmount from a
+#   grant), which would make every amount a vertex, not a number to chart or
+#   sum. So `totalCost` (a project's, and a participant's share of it),
+#   `ecMaxContribution` (the most the EU pays the project), `ecContribution`
+#   and `netEcContribution` (a participant's EU contribution, gross and net of
+#   what it passes on to its linked third parties) are plain decimals here.
+# - `acronym`: EURIO's eurio:hasAcronym points to an eurio:Acronym node.
+# - `fundingScheme`: the type of action (HORIZON-RIA, HORIZON-ERC, …), which
+#   EURIO links from an eurio:Grant, not from a project.
+# - `shortName`, `country`, `city`: EURIO keeps these on an organisation's
+#   eurio:Site and its eurio:PostalAddress. `country` is CORDIS's code, the
+#   EU's own (EL for Greece, UK), not ISO 3166-1's.
+# - `activityType`: CORDIS's code — HES (higher or secondary education), REC
+#   (research organisation), PRC (private for-profit), PUB (public body), OTH
+#   (other). EURIO has subclasses of eurio:Organisation for the first four; a
+#   vertex has one type here, so the code is a value.
+# - `sme`, `ended`: whether the organisation counted as an SME in that grant,
+#   and whether its participation has ended. EURIO's eurio:SME is a class of
+#   organisation, and CORDIS records SME status per participation.
+# An organisation's position is the W3C WGS 84 Basic Geo vocabulary's, as the
+# OpenFlights example's is — decimal degrees, for Discover's Map placement.
+# geo:long's short name is `long`; mapping.fossil renames it `lon`.
+#
+# eurio:roleLabel holds CORDIS's role as CORDIS writes it for Horizon Europe:
+# coordinator, participant, associatedPartner or thirdParty. EURIO v2.4 lists
+# the labels of earlier programmes ("third party", "partner", …); the values
+# are kept as CORDIS has them rather than translated.
+
+PREFIX eurio:  <http://data.europa.eu/s66#>
+PREFIX geo:    <http://www.w3.org/2003/01/geo/wgs84_pos#>
+PREFIX cordis: <https://cordis.example/vocab#>
+PREFIX xsd:    <http://www.w3.org/2001/XMLSchema#>
+
+eurio:Project {
+  eurio:identifier                 xsd:string ;
+  cordis:acronym                   xsd:string ;
+  eurio:title                      xsd:string ;
+  eurio:projectStatus              xsd:string ;
+  eurio:startDate                  xsd:date ;
+  eurio:endDate                    xsd:date ;
+  eurio:signatureDate              xsd:date ? ;
+  cordis:totalCost                 xsd:decimal ;
+  cordis:ecMaxContribution         xsd:decimal ;
+  cordis:fundingScheme             xsd:string ;
+  eurio:hasAssociatedFundingScheme @eurio:FundingScheme
+}
+
+eurio:FundingScheme {
+  eurio:code          xsd:string ;
+  eurio:title         xsd:string ;
+  eurio:isSubSchemeOf @eurio:FundingScheme ?
+}
+
+eurio:Organisation {
+  eurio:identifier    xsd:string ;
+  eurio:legalName     xsd:string ;
+  cordis:shortName    xsd:string ? ;
+  cordis:activityType xsd:string ? ;
+  cordis:country      xsd:string ? ;
+  cordis:city         xsd:string ? ;
+  geo:lat             xsd:double ? ;
+  geo:long            xsd:double ?
+}
+
+eurio:OrganisationRole {
+  eurio:roleLabel          xsd:string ;
+  eurio:order              xsd:nonNegativeInteger ;
+  cordis:ecContribution    xsd:decimal ? ;
+  cordis:netEcContribution xsd:decimal ? ;
+  cordis:totalCost         xsd:decimal ? ;
+  cordis:sme               xsd:boolean ? ;
+  cordis:ended             xsd:boolean ;
+  eurio:isRoleOf           @eurio:Organisation ;
+  eurio:isInvolvedIn       @eurio:Project
+}

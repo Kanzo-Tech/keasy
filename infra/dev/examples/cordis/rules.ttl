@@ -1,0 +1,129 @@
+# Data-quality rules for the CORDIS graph mapping.fossil writes: a SHACL Core
+# shapes graph to drop on its Rules panel. The terms are shapes.shex's, as the
+# corpus's `triples` view states them — EURIO's for projects, organisations and
+# their roles, WGS 84 for a position, `cordis:` for CORDIS's own.
+#
+# The shapes say what a funding record should carry, not what shapes.shex
+# requires, so the seed both conforms and falls short. Of the 23,451 projects,
+# 12,525 declare a total cost of 0 — most of them MSCA fellowships and
+# networks, ERC Proof of Concept grants and coordination and support actions —
+# so their EU contribution is above their total cost, a warning. Of the 35,122
+# organisations, 5 have no country and one has two (`DE;HU`); 1,675 have no
+# position, which keeps them off the map, a warning. Of the 145,274
+# participations, 356 do not say whether the organisation counted as an SME,
+# and 3,164 have ended, which is a warning: 3,092 of them in projects still
+# running. Every amount is non-negative, every status and role is one CORDIS
+# uses, and every participation has one organisation and one project.
+
+@prefix sh:     <http://www.w3.org/ns/shacl#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix eurio:  <http://data.europa.eu/s66#> .
+@prefix geo:    <http://www.w3.org/2003/01/geo/wgs84_pos#> .
+@prefix cordis: <https://cordis.example/vocab#> .
+@prefix :       <https://cordis.example/rules#> .
+
+:Project
+  a sh:NodeShape ;
+  sh:targetClass eurio:Project ;
+  sh:property [
+    sh:path eurio:title ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+  ] ;
+  sh:property [
+    sh:path eurio:projectStatus ;
+    sh:in ( "SIGNED" "CLOSED" "TERMINATED" ) ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+  ] ;
+  sh:property [
+    sh:path cordis:ecMaxContribution ;
+    sh:minExclusive 0 ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+  ] ;
+  sh:property [
+    sh:path cordis:totalCost ;
+    sh:minExclusive 0 ;
+    sh:severity sh:Warning ;
+    sh:message "The project declares a total cost of 0: its EU contribution is above it." ;
+  ] ;
+  sh:property [
+    sh:path eurio:hasAssociatedFundingScheme ;
+    sh:class eurio:FundingScheme ;
+    sh:minCount 1 ;
+  ] .
+
+:Organisation
+  a sh:NodeShape ;
+  sh:targetClass eurio:Organisation ;
+  sh:property [
+    sh:path eurio:legalName ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+  ] ;
+  sh:property [
+    sh:path cordis:country ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:message "An organisation is registered in a country." ;
+  ] ;
+  sh:property [
+    sh:path cordis:country ;
+    sh:pattern "^[A-Z]{2}$" ;
+    sh:message "A country is one two-letter code." ;
+  ] ;
+  sh:property [
+    sh:path geo:lat ;
+    sh:minInclusive -90 ;
+    sh:maxInclusive 90 ;
+    sh:minCount 1 ;
+    sh:severity sh:Warning ;
+    sh:message "The organisation has no position: it is not on the map." ;
+  ] ;
+  sh:property [
+    sh:path geo:long ;
+    sh:minInclusive -180 ;
+    sh:maxInclusive 180 ;
+  ] .
+
+:OrganisationRole
+  a sh:NodeShape ;
+  sh:targetClass eurio:OrganisationRole ;
+  sh:property [
+    sh:path eurio:roleLabel ;
+    sh:in ( "coordinator" "participant" "associatedPartner" "thirdParty" ) ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+  ] ;
+  sh:property [
+    sh:path cordis:ecContribution ;
+    sh:minInclusive 0 ;
+  ] ;
+  sh:property [
+    sh:path cordis:netEcContribution ;
+    sh:minInclusive 0 ;
+  ] ;
+  sh:property [
+    sh:path cordis:sme ;
+    sh:minCount 1 ;
+    sh:message "A participation says whether the organisation is an SME." ;
+  ] ;
+  sh:property [
+    sh:path cordis:ended ;
+    sh:in ( false ) ;
+    sh:severity sh:Warning ;
+    sh:message "The organisation's participation has ended." ;
+  ] ;
+  sh:property [
+    sh:path eurio:isRoleOf ;
+    sh:class eurio:Organisation ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+  ] ;
+  sh:property [
+    sh:path eurio:isInvolvedIn ;
+    sh:class eurio:Project ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+  ] .

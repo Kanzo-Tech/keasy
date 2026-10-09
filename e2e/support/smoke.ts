@@ -7,7 +7,7 @@ import { runToCompletion } from "./fixtures";
 import { signIn } from "./sign-in";
 
 /**
- * The smoke suite's fixtures: the two dev seed graphs, run once per worker from the programs `make
+ * The smoke suite's fixtures: the dev seed graphs, run once per worker from the programs `make
  * seed`'s data is mapped by (infra/dev/examples/<example>/mapping.fossil — read from the tree, never
  * retyped), and a guard every smoke test runs under: **a console error or an uncaught page error
  * anywhere in the test's browser context fails it.**
@@ -59,7 +59,7 @@ async function seedGraph(browser: import("@playwright/test").Browser, name: stri
   return id;
 }
 
-export const test = base.extend<{ quiet: void }, { geoGraph: string; snbGraph: string }>({
+export const test = base.extend<{ quiet: void }, { geoGraph: string; snbGraph: string; cordisGraph: string }>({
   quiet: [
     async ({ context }, use) => {
       const errors = watch(context);
@@ -72,6 +72,9 @@ export const test = base.extend<{ quiet: void }, { geoGraph: string; snbGraph: s
   geoGraph: [async ({ browser }, use) => use(await seedGraph(browser, "smoke OpenFlights", "openflights", 300_000)), { scope: "worker", timeout: 360_000 }],
   // LDBC SNB SF0.1: 327,588 vertices of eight types.
   snbGraph: [async ({ browser }, use) => use(await seedGraph(browser, "smoke LDBC SNB", "snb", 900_000)), { scope: "worker", timeout: 960_000 }],
+  // CORDIS Horizon Europe: 206,629 vertices of four types — projects, organisations, the
+  // participations between them, and funding schemes.
+  cordisGraph: [async ({ browser }, use) => use(await seedGraph(browser, "smoke CORDIS", "cordis", 600_000)), { scope: "worker", timeout: 660_000 }],
 });
 
 /** Save `spec` as the graph's dashboard for the relation keyed `key`, as the Dashboard view's editor does. */

@@ -1,0 +1,72 @@
+// Horizon Europe's projects from CORDIS, the organisations in them and each
+// participation (`make seed`: 23,451 projects, 35,122 organisations, 145,274
+// participations, 2,767 call topics and 15 programme parts; CC BY 4.0,
+// data/NOTICE), mapped onto shapes.shex — EURIO's terms.
+//
+// A participation is a vertex, not an edge: its role and its EU contribution
+// belong to the relationship, and fossil types a vertex's properties from its
+// shape, where an edge has none. So an OrganisationRole points to its
+// organisation (`isRoleOf`) and to its project (`isInvolvedIn`). Organisations
+// carry numeric `lat` and `lon`, WGS 84 decimal degrees, for Discover's Map
+// placement (x = lon, y = lat), where CORDIS has a position for them.
+
+@rename(Organisation, "http://www.w3.org/2003/01/geo/wgs84_pos#long" as lon)
+type { Project, FundingScheme, Organisation, OrganisationRole } := io.shex("@CORDIS shapes/shapes.shex")
+
+ProjectRow       := io.csv("@CORDIS/projects.csv")
+SchemeRow        := io.csv("@CORDIS/schemes.csv")
+OrganisationRow  := io.csv("@CORDIS/organisations.csv")
+ParticipationRow := io.csv("@CORDIS/participations.csv")
+
+// The programme parts head the scheme hierarchy and have no parent, and a
+// mapping writes an edge for every row it reads: they are their own
+// population, as the LDBC SNB example's continents are.
+Programmes : FundingScheme from SchemeRow.where(SchemeRow.parent == null)
+    @subject = "https://cordis.example/scheme/{SchemeRow.code}"
+    code     = SchemeRow.code
+    title    = SchemeRow.title
+
+Topics : FundingScheme from SchemeRow.where(SchemeRow.parent != null)
+    @subject      = "https://cordis.example/scheme/{SchemeRow.code}"
+    code          = SchemeRow.code
+    title         = SchemeRow.title
+    isSubSchemeOf = FundingScheme(SchemeRow.parent)
+
+Projects : Project from ProjectRow
+    @subject                   = "https://cordis.example/project/{ProjectRow.id}"
+    identifier                 = ProjectRow.id
+    acronym                    = ProjectRow.acronym
+    title                      = ProjectRow.title
+    projectStatus              = ProjectRow.status
+    startDate                  = ProjectRow.startDate
+    endDate                    = ProjectRow.endDate
+    signatureDate              = ProjectRow.signatureDate
+    totalCost                  = ProjectRow.totalCost
+    ecMaxContribution          = ProjectRow.ecMaxContribution
+    fundingScheme              = ProjectRow.fundingScheme
+    hasAssociatedFundingScheme = FundingScheme(ProjectRow.topic)
+
+Organisations : Organisation from OrganisationRow
+    @subject     = "https://cordis.example/organisation/{OrganisationRow.id}"
+    identifier   = OrganisationRow.id
+    legalName    = OrganisationRow.name
+    shortName    = OrganisationRow.shortName
+    activityType = OrganisationRow.activityType
+    country      = OrganisationRow.country
+    city         = OrganisationRow.city
+    lat          = OrganisationRow.lat
+    lon          = OrganisationRow.lon
+
+// One per row of CORDIS's organization.csv: an organisation in a project in
+// one role, which the four columns of the subject identify together.
+Participations : OrganisationRole from ParticipationRow
+    @subject          = "https://cordis.example/participation/{ParticipationRow.project}/{ParticipationRow.organisation}/{ParticipationRow.role}/{ParticipationRow.order}"
+    roleLabel         = ParticipationRow.role
+    order             = ParticipationRow.order
+    ecContribution    = ParticipationRow.ecContribution
+    netEcContribution = ParticipationRow.netEcContribution
+    totalCost         = ParticipationRow.totalCost
+    sme               = ParticipationRow.sme
+    ended             = ParticipationRow.ended
+    isRoleOf          = Organisation(ParticipationRow.organisation)
+    isInvolvedIn      = Project(ParticipationRow.project)

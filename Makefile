@@ -70,7 +70,7 @@ ifeq ($(DEMO),)
 	@echo "make demo DEMO=<name>|all [THEME=light|dark]"
 else
 	@command -v ffmpeg >/dev/null || { echo "make demo: needs ffmpeg on PATH (macOS: brew install ffmpeg)" >&2; exit 1; }
-	$(if $(DEMO_AI),docker compose -f docker-compose.yml -f e2e/demos/models.yml up -d --wait ai-gateway)
+	$(if $(DEMO_AI),AI_CHAT=local/ai/qwen3 docker compose -f compose.yaml -f compose.override.yaml -f e2e/demos/models.yml --profile local-models up -d --wait ai-models ai-gateway)
 	pnpm --filter @keasy/e2e exec playwright install chromium
 	DEMO_THEME=$(THEME) pnpm --filter @keasy/e2e demo $(if $(filter all,$(DEMO)),,--grep " $(DEMO): "); \
 	  status=$$?; $(if $(DEMO_AI),docker compose up -d --wait ai-gateway;) exit $$status

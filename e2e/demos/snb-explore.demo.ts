@@ -32,7 +32,7 @@ demo("snb-explore", "Dashboard over LDBC SNB: pick a type, click a bar, brush a 
       action: async () => (await (await dashboard.tile("Count by Person.gender")).chart()).pick({ y: "female" }),
       async check() {
         await expect.poll(() => bar.readout()).toMatch(/^778 of 1,528\b/);
-        expect((await bar.chips()).some((chip) => chip.startsWith("Person.gender"))).toBe(true);
+        expect((await bar.chips()).some((chip) => /\bPerson\.gender\b/.test(chip))).toBe(true);
       },
     },
     {
@@ -50,7 +50,7 @@ demo("snb-explore", "Dashboard over LDBC SNB: pick a type, click a bar, brush a 
       action: () => page.getByRole("region", { name: "Filters" }).getByRole("button", { name: /Person\.gender/ }).first().hover(),
       async check() {
         const chips = await bar.chips();
-        expect(chips.filter((chip) => /^Person\.(gender|birthday)/.test(chip))).toHaveLength(2);
+        expect(chips.filter((chip) => /\bPerson\.(gender|birthday)\b/.test(chip))).toHaveLength(2);
       },
     },
   ],

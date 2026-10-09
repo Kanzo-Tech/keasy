@@ -60,7 +60,8 @@ test("the social network's dashboard over a hop draws every tile kind, and holds
   expect(kept).toBeGreaterThan(0);
   expect(kept).toBeLessThan(74_256);
   await (await (await dashboard.tile("Fit of reply against post")).chart()).settled();
-  await bar.remove("Comment.length");
+  // A clause chip reads its source first, here the relation: *Comment>replyOfPost>Post Comment.length …*.
+  await bar.remove(`${RELATION} Comment.length`);
   await expect.poll(() => bar.readout()).toMatch(new RegExp(`^${PATHS} paths`));
 
   // The filter chip: the 28,807 replies written in Firefox. The control's value list is the

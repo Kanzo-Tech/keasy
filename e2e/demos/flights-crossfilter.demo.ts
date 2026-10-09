@@ -52,8 +52,8 @@ demo("flights-crossfilter", "Crossfiltering over OpenFlights: a click, a brush, 
       action: () => graph.frame(),
       async check() {
         const chips = await bar.chips();
-        expect(chips.some((chip) => chip.startsWith("Airport.country"))).toBe(true);
-        expect(chips.some((chip) => chip.startsWith("Airport.lon"))).toBe(true);
+        expect(chips.some((chip) => /\bAirport\.country\b/.test(chip))).toBe(true);
+        expect(chips.some((chip) => /\bAirport\.lon\b/.test(chip))).toBe(true);
       },
     },
   ],

@@ -150,6 +150,8 @@ export class RulesPanel extends ComponentHarness {
         const transfer = new DataTransfer();
         transfer.items.add(new File([file.text], file.name, { type: file.type }));
         (element as HTMLInputElement).files = transfer.files;
+        // What a browser fires when a file is picked, in its order: Ark's FileUpload reads `input`.
+        element.dispatchEvent(new Event("input", { bubbles: true }));
         element.dispatchEvent(new Event("change", { bubbles: true }));
       },
       { name, text, type },

@@ -103,6 +103,12 @@ to drop on the graph's Rules panel in Discover. Most airports conform; 44 fail i
 an ICAO field that is not a four-letter ICAO code), and two kinds draw a warning: 29 with no time
 zone and 218 above 4,000 ft, where takeoff performance is limited.
 
+**A stack seeded before the examples moved** (when they were `infra/dev/seed/` and `snb.fossil`,
+`geo.fossil` at `infra/dev/`) keeps its old connections. The instance declares a connection only when
+none of that name exists, so **LDBC SNB** and **OpenFlights** still point at `ldbc/` and `geo/`, and
+**Dev shapes** stays in the list. Wipe the volume (`docker compose down -v`), run `make seed` and
+`make dev` again, and delete the old `infra/dev/seed/` folder, which nothing ignores any more.
+
 `s3.localhost` is load-bearing: Docker's DNS answers it inside the compose network
 and `*.localhost` is loopback on the host, so the endpoint the server is given
 (`AWS_ENDPOINT_URL_S3`, and the vended credential names) works from both sides. The issuer is `http://localhost:8080/realms/kanzo`, the one the

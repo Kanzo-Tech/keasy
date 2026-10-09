@@ -1,0 +1,15 @@
+# The models `make demo` records with, over the dev stack's own (kanzo-ui services/ai/compose.yml).
+# A demo shows what the model does, and the dev `chat` model (Hermes 3, 8B) writes a query and a table
+# of its own rather than calling the tool that runs it. Qwen3 calls the tool. Not a larger one: the
+# gateway ends a call whose first token takes over 20 s, and ai/qwen3.8 (17 GB) misses that with the
+# graph's schema in the prompt. `make demo` applies this to the gateway and puts the dev models back.
+# The context is bounded so its KV cache fits the GPU beside the dev models, and Qwen3's thinking is
+# off (`--reasoning-budget 0`): left on, it wrote 3.4K tokens of reasoning over two minutes before it
+# called the tool, which no demo can show.
+models:
+  chat:
+    model: ai/qwen3
+    context_size: 16384
+    runtime_flags:
+      - "--reasoning-budget"
+      - "0"

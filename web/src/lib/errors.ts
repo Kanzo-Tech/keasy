@@ -78,6 +78,9 @@ const registry: Partial<Record<ErrorCode | NoBodyCode | ClientCode | Code | Kanz
   "idp/unreachable": { title: "The identity provider could not be reached.", link: signIn },
   "ai/silent": { title: "The model stopped answering." },
   "ai/rate-limited": { title: "This workspace has used its AI budget for now. Try again later." },
+  // The gateway answered with an error: no model behind the alias, a provider's refusal, a hung
+  // upstream. Its own words are the detail.
+  "ai/unavailable": { title: "The model could not answer." },
   "llm/failed": { title: "The model call failed. Please try again." },
   "query/failed": {
     title: "Query execution failed. The AI may have generated invalid SQL. Try rephrasing your question.",
@@ -169,7 +172,7 @@ const isCoded = (err: unknown): err is Coded =>
 
 /**
  * Any thrown value with a code to branch on: one that carries a code is itself — a model call's
- * `AiError` (`ai/silent`, `ai/rate-limited`) included; anything else is `uncoded`, in its own words,
+ * `AiError` (`ai/silent`, `ai/rate-limited`, `ai/unavailable`) included; anything else is `uncoded`, in its own words,
  * its cause kept — a refusal the AI gateway answered, or a forward that never reached it.
  */
 export function coded(err: unknown, uncoded: ClientCode | ErrorCode = "web/unknown"): Coded {

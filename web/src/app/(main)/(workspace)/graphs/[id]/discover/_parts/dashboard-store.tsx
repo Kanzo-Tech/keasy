@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, use, useMemo, type ReactNode } from "react";
+import { createContext, use, useMemo, useState, type ReactNode } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useDebouncedCommit } from "@kanzo-tech/ui";
 import { type Dashboards, parseDashboards, type Relation } from "@kanzo-tech/ui/analytics";
@@ -8,6 +8,7 @@ import { $api, http, type Schemas } from "@/lib/api/client";
 import { queryClient } from "@/lib/api/query-client";
 import { toastError } from "@/lib/errors";
 import { useCorpus } from "@/lib/fossil/corpus";
+import { dashboardWrites } from "./dashboard-writes";
 
 /**
  * The graph's saved dashboards — one document, a spec per relation — as the page holds them: what
@@ -32,9 +33,11 @@ export type DashboardStore =
       edit?: {
         /** An edit in the editor, saved once editing pauses. */
         change: (next: Dashboards) => void;
-        /** A decision, saved now, with any pending edit it was made over; settles with the write. */
-        commit: (next: Dashboards) => Promise<unknown>;
-        /** *Add to the dashboard*: `next` saved now, and the Dashboard view turned to `relation`. */
+        /**
+         * *Add to the dashboard*: `next` saved now, with any pending edit it was made over, and the
+         * Dashboard view turned to `relation`. It settles with the write; its failure is the card's
+         * to draw, so the page does not toast it.
+         */
         add: (next: Dashboards, added: { relation: Relation }) => Promise<unknown>;
       };
     };
@@ -69,12 +72,13 @@ export function DashboardStoreProvider({ onAdded, children }: {
   const save = useMutation({
     mutationFn: async (spec: Dashboards) => (await http.PUT("/v1/graphs/{id}/dashboard", { ...init, body: { spec: { ...spec } } })).data,
     onSuccess: (written) => queryClient.setQueryData(read.queryKey, written),
-    onError: (err) => toastError(err, "Failed to save the dashboard"),
   });
+  // The editor's failed writes are toasted; an add's is drawn in its card (./dashboard-writes).
+  const [writes] = useState(() => dashboardWrites((err) => toastError(err, "Failed to save the dashboard")));
   const { draft, change, commit } = useDebouncedCommit(
     stored.spec,
     // Only ever a document: nothing commits before the read has settled, `undefined` included.
-    (spec: Dashboards | undefined) => (spec ? save.mutateAsync(spec) : Promise.resolve(undefined)),
+    (spec: Dashboards | undefined) => writes.write(() => (spec ? save.mutateAsync(spec) : Promise.resolve(undefined))),
     SAVE_MS,
   );
   const current = draft !== stored.spec ? draft : save.isPending ? save.variables : draft;
@@ -99,10 +103,9 @@ export function DashboardStoreProvider({ onAdded, children }: {
             edit: graph.data.can_modify
               ? {
                   change,
-                  commit,
                   add: (next, { relation }) => {
                     onAdded(relation);
-                    return commit(next);
+                    return writes.awaited(() => commit(next));
                   },
                 }
               : undefined,

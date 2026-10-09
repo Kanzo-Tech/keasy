@@ -1,9 +1,9 @@
 import { expect, type Route } from "@playwright/test";
 
-import { api, SOURCE } from "../support/api";
-import { start, stop, up } from "../support/compose";
+import { api, SOURCE } from "../support/stack/api";
+import { start, stop, up } from "../support/stack/compose";
 import { AI, ask, openPanel, sse, test, text } from "../support/fixtures";
-import { expectProblem } from "../support/problem";
+import { expectProblem } from "../support/stack/problem";
 
 const stream = (route: Route, body: string) =>
   route.fulfill({ status: 200, contentType: "text/event-stream", body });
@@ -67,6 +67,7 @@ test("15 a structured answer that does not parse fails the assistant's step, not
   await page.goto("/graphs/new");
   await page.getByText("Assistant", { exact: true }).click();
   // Ark draws the checkbox's control over its input.
+  // eslint-disable-next-line playwright/no-force-option -- Ark draws the control over its input; replaced by @kanzo-tech/testing in part 2
   await page.getByRole("checkbox", { name: `Select ${SOURCE}` }).check({ force: true });
   // In the dev stack TanStack's devtools button floats over the footer's corner.
   await page.addStyleTag({ content: ".tsqd-parent-container { display: none !important; }" });

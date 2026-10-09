@@ -90,6 +90,6 @@ export async function widenDock(page: Page, by: number) {
 
 /** Zoom the canvas onto what is in full colour, from the toolbar, when something is greyed out. */
 export async function frame(page: Page) {
-  const frame = page.getByRole("button", { name: "Frame what is in full colour" });
-  if (await frame.isVisible()) await frame.click();
+  const button = page.getByRole("button", { name: "Frame what is in full colour" });
+  if (await button.isVisible()) await button.click();
 }

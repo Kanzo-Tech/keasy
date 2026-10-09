@@ -1,5 +1,5 @@
 import { test } from "../support/fixtures";
-import { expectProblem } from "../support/problem";
+import { expectProblem } from "../support/stack/problem";
 
 // A browser with no WebGL at all: the graph fails in its canvas, by its code.
 test.use({ launchOptions: { args: ["--disable-webgl", "--disable-webgl2", "--disable-3d-apis"] } });

@@ -1,7 +1,7 @@
 import { expect, test as base, type Page } from "@playwright/test";
 
-import { createGraph } from "./api";
-import { signIn } from "./sign-in";
+import { createGraph } from "./stack/api";
+import { signIn } from "./auth/sign-in";
 
 /**
  * A graph the browser has run to completion, so its corpus opens in Discovery: the suite's shop, or

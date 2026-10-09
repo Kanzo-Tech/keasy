@@ -1,7 +1,8 @@
 import type { Page } from "@playwright/test";
 
+import { seedGraph } from "../support/seeds";
 import { showPanel } from "./geo";
-import { demo, demoGraph } from "./record";
+import { demo } from "./record";
 
 /**
  * Load both model aliases before the camera rolls. The gateway ends a call that sends nothing for 20 s,
@@ -20,6 +21,7 @@ async function warmUp(page: Page) {
         return response.status;
       }, model);
       if (status === 200) break;
+      // eslint-disable-next-line playwright/no-wait-for-timeout -- replaced by @kanzo-tech/testing in part 2
       await page.waitForTimeout(5000);
     }
   }
@@ -32,7 +34,7 @@ async function warmUp(page: Page) {
  */
 demo("snb-ask", "Ask over LDBC SNB: a plain question, its tile, and the answer as a filter", {
   async arrange(page) {
-    const id = await demoGraph(page, "LDBC Social Network", "snb");
+    const id = await seedGraph(page, "snb", { name: "Demo · LDBC Social Network", reuse: true });
     await page.goto(`/graphs/${id}/discover`);
     // Dispatched rather than clicked, as in snb-explore: the Graph view of 327K nodes never settles
     // a frame on a machine without a GPU.
@@ -57,12 +59,14 @@ demo("snb-ask", "Ask over LDBC SNB: a plain question, its tile, and the answer a
     const g = await gender.boundingBox();
     // The upper bar of two is `female`.
     await gender.click({ position: { x: g!.width * 0.45, y: g!.height * 0.3 } });
+    // eslint-disable-next-line playwright/no-wait-for-timeout -- replaced by @kanzo-tech/testing in part 2
     await page.waitForTimeout(900);
 
     await chapter("Ask about what's in view, in plain words");
     const box = page.getByPlaceholder("Ask about your data…").describe("the question");
     await box.click();
     await box.pressSequentially("Which browsers do they use most?", { delay: 35 });
+    // eslint-disable-next-line playwright/no-wait-for-timeout -- replaced by @kanzo-tech/testing in part 2
     await page.waitForTimeout(400);
     await box.press("Enter");
 
@@ -72,6 +76,7 @@ demo("snb-ask", "Ask over LDBC SNB: a plain question, its tile, and the answer a
     const answer = page.locator('[data-slot="answer-card"]').filter({ has: page.locator('[data-slot="answer-card-actions"]') }).last();
     await answer.waitFor({ timeout: 180_000 });
     await chapter("Every answer is a dashboard tile");
+    // eslint-disable-next-line playwright/no-wait-for-timeout -- replaced by @kanzo-tech/testing in part 2
     await page.waitForTimeout(900);
     await poster();
 
@@ -81,6 +86,7 @@ demo("snb-ask", "Ask over LDBC SNB: a plain question, its tile, and the answer a
     if (await filter.isVisible()) {
       await chapter("Send the answer back to the page as a filter");
       await filter.describe("filter to it").click();
+      // eslint-disable-next-line playwright/no-wait-for-timeout -- replaced by @kanzo-tech/testing in part 2
       await page.waitForTimeout(1400);
     }
   },

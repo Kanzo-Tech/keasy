@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 /** The repository root, where compose.yaml is. */
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 /** The stack the suite runs against: the dev stack (compose.yaml and compose.override.yaml, which
  * compose reads on its own) without the local models, as `make e2e` and CI bring it up. */

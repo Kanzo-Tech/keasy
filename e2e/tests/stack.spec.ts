@@ -1,9 +1,9 @@
 import { expect, test } from "../support/fixtures";
 
-import { api, createGraph, SOURCE } from "../support/api";
-import { stop, up, without } from "../support/compose";
-import { expectProblem } from "../support/problem";
-import { signIn } from "../support/sign-in";
+import { api, createGraph, SOURCE } from "../support/stack/api";
+import { stop, up, without } from "../support/stack/compose";
+import { expectProblem } from "../support/stack/problem";
+import { signIn } from "../support/auth/sign-in";
 
 test("03 a store that accepts and never answers ends the run as store/silent", async ({ page }) => {
   test.setTimeout(300_000);
@@ -93,6 +93,7 @@ test("25 signing out with Keycloak down ends the session and answers, never a st
       await page.goto(location);
       await expectProblem(page, "idp/unreachable", { within: 5_000 });
     } else {
+      // eslint-disable-next-line playwright/no-conditional-expect -- the sign-out lands on either answer, as the BFF reaches the IdP or not; each is checked
       expect(location).toMatch(/localhost:8080/);
     }
     expect((await page.request.get("/api/auth/session")).status()).toBe(401);

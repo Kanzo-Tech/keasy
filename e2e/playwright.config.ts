@@ -40,7 +40,7 @@ export default defineConfig({
   projects: [
     // Needs no stack: every audit scenario has a test by name.
     { name: "guard", testMatch: /coverage\.spec\.ts/ },
-    { name: "setup", testMatch: /auth\.setup\.ts/ },
+    { name: "setup", testMatch: /support\/auth\/auth\.setup\.ts/ },
     {
       name: "scenarios",
       testMatch: /tests\/.*\.spec\.ts/,

@@ -1,9 +1,9 @@
 import { expect, test } from "../support/fixtures";
 
-import { SOURCE } from "../support/api";
-import { stop, tickets, up, valkey } from "../support/compose";
-import { expectProblem } from "../support/problem";
-import { enterPassword, enterUsername, signIn } from "../support/sign-in";
+import { SOURCE } from "../support/stack/api";
+import { stop, tickets, up, valkey } from "../support/stack/compose";
+import { expectProblem } from "../support/stack/problem";
+import { enterPassword, enterUsername, signIn } from "../support/auth/sign-in";
 
 test.describe("signed out", () => {
   test.use({ storageState: { cookies: [], origins: [] } });

@@ -29,14 +29,14 @@ import { queryClient } from "@/lib/api/query-client";
 import { settled } from "@/lib/api/settled";
 import { toastError } from "@/lib/errors";
 import { useCorpus } from "@/lib/fossil/corpus";
-import { type Finding, type Rule, rulesOf, useReadRules, useRules } from "./rules-validation";
+import { type Finding, nodesOf, type Rule, rulesOf, useReadRules, useRules } from "./rules-validation";
 
 /**
  * The Rules panel — the graph's data-quality rules as one SHACL file, kept by the server. Nobody
  * edits a rule here: dropping a `.ttl` replaces the file, and a file rudof cannot read is refused
  * with its line and column while the previous one stays. rudof validates the corpus over the page's
- * subset; the findings are listed per rule, and Show — or Show what conforms — puts the vertices on
- * the page as the panel's one clause.
+ * subset; the findings are listed per rule, and Show — of one finding, of every violation or warning
+ * of a rule, or of what conforms — puts the vertices on the page as the panel's one clause.
  */
 export function RulesPanel() {
   const { graphId } = useCorpus();
@@ -167,6 +167,28 @@ function Findings({ text }: { text: string }) {
           </header>
           {rule.unchecked && !rule.off && <p className="border-t px-3 py-2 text-muted-foreground text-xs">{rule.unchecked}</p>}
           {rule.findings.length > 0 && (
+            <div className="flex flex-wrap gap-2 border-t px-3 py-2">
+              {SEVERITIES.map((severity) => {
+                const nodes = nodesOf(rule, severity.variant);
+                if (nodes.length === 0) return null;
+                const label = `${rule.name} · ${severity.plural}`;
+                const n = nodes.length.toLocaleString();
+                const what = nodes.length === 1 ? `the 1 ${severity.singular}` : `all ${n} ${severity.plural}`;
+                return (
+                  <Button
+                    aria-pressed={picked === label}
+                    key={severity.variant}
+                    onClick={() => toggle(label, () => show(nodes, label))}
+                    size="sm"
+                    variant={picked === label ? "secondary" : "outline"}
+                  >
+                    Show {what}
+                  </Button>
+                );
+              })}
+            </div>
+          )}
+          {rule.findings.length > 0 && (
             <DiagnosticList className="border-t p-2">
               {rule.findings.map((finding) => {
                 const label = `${rule.name}: ${finding.message}`;
@@ -206,6 +228,12 @@ function Findings({ text }: { text: string }) {
 }
 
 const WORD = { destructive: "Violation", warning: "Warning", info: "Note" } as const;
+
+/** The severities a rule shows at once: every vertex it flags as a violation, or as a warning. */
+const SEVERITIES = [
+  { variant: "destructive", singular: "violation", plural: "violations" },
+  { variant: "warning", singular: "warning", plural: "warnings" },
+] as const;
 
 /** The clause Show what conforms puts on the page. */
 const CONFORMS = "Conforms to the rules";

@@ -88,8 +88,8 @@ export async function widenDock(page: Page, by: number) {
   await page.mouse.up();
 }
 
-/** Zoom the canvas onto what is selected, from the toolbar, when something is. */
-export async function frameSelection(page: Page) {
-  const button = page.getByRole("button", { name: "Frame the selection" });
-  if (await button.isVisible()) await button.click();
+/** Zoom the canvas onto what is in full colour, from the toolbar, when something is greyed out. */
+export async function frame(page: Page) {
+  const frame = page.getByRole("button", { name: "Frame what is in full colour" });
+  if (await frame.isVisible()) await frame.click();
 }

@@ -14,9 +14,10 @@ import {
   MenuContent,
   MenuItem,
   MenuTrigger,
+  ShellDockItem,
+  ShellDockSwitcher,
   Show,
   Spinner,
-  Toggle,
   Tooltip,
   TooltipContent,
   TooltipTrigger,
@@ -443,10 +444,15 @@ function GraphStudio({ draft }: { draft?: Schemas["Graph"] }) {
           {" · "}
           {draftMutation.isPending ? "saving…" : saved ? "draft saved" : "unsaved changes"}
         </span>
-        <Toggle className="ms-auto" onPressedChange={setRailOpen} pressed={railOpen} size="sm">
-          <FolderTree />
-          Sources
-        </Toggle>
+        {/* The rail's one panel, switched as Discovery's dock is: pressed again, it collapses. */}
+        <ShellDockSwitcher
+          aria-label="Sources"
+          className="ms-auto"
+          onValueChange={(next) => setRailOpen(next === "sources")}
+          value={railOpen ? "sources" : null}
+        >
+          <ShellDockItem icon={FolderTree} label="Sources" value="sources" />
+        </ShellDockSwitcher>
       </div>
 
       <UnsavedChangesGuard dirty={dirty} />

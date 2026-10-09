@@ -17,16 +17,15 @@ const DASHBOARD = {
 const SPREAD = 300;
 
 /**
- * The Nobel timeline: every prize since 1901 on one time axis under the graph. A window brushed over
- * 1901–1929, when German universities led; played forward, the prizes go west in the 1940s; and the
- * 1990s on the dashboard, where 58 of 78 affiliations are American. Off camera: the timeline set to
- * the award's year (`date`, `xsd:gYear`), the layout spread, and the dashboard saved.
+ * The Nobel timeline: every prize since 1901 on one time axis under the graph, in bars of five years
+ * a brush snaps to. A window over 1900–1930, when German universities led; played forward, the prizes
+ * go west in the 1940s; and 1990–2000 on the dashboard, where 66 of 89 affiliations are American (the
+ * window is inclusive: 2000 is in it). Off camera: the timeline set to the award's year (`date`,
+ * `xsd:gYear`), the layout spread, and the dashboard saved.
  */
 demo("nobel-timeline", "Nobel prizes on a timeline: brush the early years, play it forward, read the 1990s", {
-  // The timeline publishes its window on the page's own crossfilter, where the dashboard's clients
-  // have no `date` column ("Binder Error: column date not found"). kanzo-ui gives the timeline a
-  // crossfilter of its own, joined to the page by identity, as the Dashboard's `publish`.
-  skip: "needs kanzo-ui's timeline on its own crossfilter",
+  // The timeline is mounted under the Graph view only, so its window leaves the page with it.
+  skip: "needs the timeline under both views, so its window survives the switch to Dashboard",
   async arrange({ page, env }) {
     const id = await seedGraph(page, "nobel", { name: "Demo · Nobel laureates", reuse: true });
     await saveDashboard(page, id, RELATION, DASHBOARD);
@@ -53,10 +52,10 @@ demo("nobel-timeline", "Nobel prizes on a timeline: brush the early years, play 
       },
     },
     {
-      subtitle: "Brush 1901–1929: German universities lead",
+      subtitle: "Brush 1900–1930: German universities lead",
       action: () => timeline.brush([new Date("1901-01-01"), new Date("1930-01-01")]),
       async check() {
-        expect(await timeline.range()).toMatch(/^1901 – 19(29|30)$/);
+        expect(await timeline.range()).toBe("1900 – 1930");
         expect((await bar.chips()).some((chip) => /\bdate\b/.test(chip))).toBe(true);
       },
     },
@@ -71,9 +70,14 @@ demo("nobel-timeline", "Nobel prizes on a timeline: brush the early years, play 
       check: async () => expect(await timeline.range()).toMatch(/^19[89]\d/),
     },
     {
-      subtitle: "The 1990s: 58 of 78 affiliations are American",
-      action: () => timeline.brush([new Date("1990-01-01"), new Date("2000-01-01")]),
-      check: async () => expect(await timeline.range()).toMatch(/^1990 – (1999|2000)$/),
+      subtitle: "1990–2000: 66 of 89 affiliations are American",
+      // A drag that starts inside the paused window moves it rather than drawing a new one: the
+      // window comes off the bar first.
+      async action() {
+        await bar.remove("date");
+        await timeline.brush([new Date("1990-01-01"), new Date("2000-01-01")]);
+      },
+      check: async () => expect(await timeline.range()).toBe("1990 – 2000"),
     },
     {
       subtitle: "One filter, every view",

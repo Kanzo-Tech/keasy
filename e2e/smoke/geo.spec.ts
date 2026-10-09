@@ -1,6 +1,6 @@
 import { fileURLToPath } from "node:url";
 
-import { switchPanel } from "../support/fixtures";
+import { discoverUrl } from "../support/fixtures";
 import { agreedCount, brush, expect, PLOT, saveDashboard, test } from "../support/smoke";
 
 /**
@@ -40,8 +40,7 @@ test("the flights graph opens in Graph view: every airport, and the routes betwe
 
 test("the flights dashboard draws every tile kind, and holds under a brush and a filter chip", async ({ page, geoGraph }) => {
   await saveDashboard(page, geoGraph, "Airport", DASHBOARD);
-  await page.goto(`/graphs/${geoGraph}/discover`);
-  await page.getByRole("radio", { name: "Dashboard" }).click();
+  await page.goto(discoverUrl(geoGraph, { view: "dashboard" }));
   const filters = page.getByRole("region", { name: "Filters" });
   await expect(filters).toContainText(`${AIRPORTS.toLocaleString("en-US")} Airport`, { timeout: 60_000 });
 
@@ -89,11 +88,9 @@ test("the flights dashboard draws every tile kind, and holds under a brush and a
 });
 
 test("the flights rules find what the seed lacks: IATA codes, four-letter ICAO codes, time zones, and flag high airports", async ({ page, geoGraph }) => {
-  await page.goto(`/graphs/${geoGraph}/discover`);
-  // From Dashboard view: on CI's software GPU the canvas's layout shares the CPU with rudof, and the
+  // Beside the dashboard: on CI's software GPU the canvas's layout shares the CPU with rudof, and the
   // check that takes ~10 s beside the dashboard took ~3 min beside the canvas.
-  await page.getByRole("radio", { name: "Dashboard" }).click();
-  await switchPanel(page, "Rules");
+  await page.goto(discoverUrl(geoGraph, { view: "dashboard", panel: "rules" }));
   // infra/dev/examples/openflights/rules.ttl, dropped on the panel as a person drops it.
   await page.locator('input[type="file"]').setInputFiles(fileURLToPath(new URL("../../infra/dev/examples/openflights/rules.ttl", import.meta.url)));
   await expect(page.getByText("Checked over all 3,218 nodes")).toBeVisible({ timeout: 60_000 });

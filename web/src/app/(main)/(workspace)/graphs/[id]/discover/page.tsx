@@ -55,6 +55,7 @@ import { CorpusProvider, corpusQuery, useCorpus, useJoinGraph } from "@/lib/foss
 import { GraphInfo } from "./_parts/graph-info";
 import { GraphSettings } from "./_parts/graph-settings";
 import { RulesPanel } from "./_parts/rules-panel";
+import { useDiscoverState, type PanelId, type ViewId } from "./_parts/discover-url";
 import { Boundary } from "@/components/boundary";
 import { ProblemView } from "@/components/problem-view";
 import { toastError } from "@/lib/errors";
@@ -67,7 +68,9 @@ import { settled } from "@/lib/api/settled";
  * one graph and one crossfilter, so a lasso on the canvas filters the dashboard and a rule pressed in
  * the dock lights the canvas. `FilterBar`, under the header, is every clause on the page in either
  * view, and the dashboard's filter controls in Dashboard. A dashboard tile is edited in the Format aside at the body's
- * end edge, beside the dock rather than in it, so the panel the reader had open stays open.
+ * end edge, beside the dock rather than in it, so the panel the reader had open stays open. The view
+ * and the dock's panel are the URL's (`./_parts/discover-url`), so a link opens the page as it was
+ * left; writing them replaces the URL in place, and neither view is remounted by it.
  */
 
 // vgplot evaluated during the prerender is a TDZ, so the dashboard loads client-only.
@@ -81,9 +84,7 @@ const PANELS = [
   { id: "ask", label: "Ask", icon: MessageCircleIcon },
   { id: "rules", label: "Rules", icon: ShieldCheckIcon },
   { id: "settings", label: "Settings", icon: Settings2Icon },
-] as const;
-
-type PanelId = (typeof PANELS)[number]["id"];
+] as const satisfies readonly { id: PanelId; label: string; icon: React.ComponentType }[];
 
 const PANEL_BODY: Record<PanelId, React.ComponentType> = {
   info: GraphInfo,
@@ -95,9 +96,7 @@ const PANEL_BODY: Record<PanelId, React.ComponentType> = {
 const VIEWS = [
   { id: "graph", label: "Graph", icon: NetworkIcon },
   { id: "dashboard", label: "Dashboard", icon: BarChart3Icon },
-] as const;
-
-type ViewId = (typeof VIEWS)[number]["id"];
+] as const satisfies readonly { id: ViewId; label: string; icon: React.ComponentType }[];
 
 export default function DiscoverPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -189,16 +188,15 @@ function Workspace() {
   const graph = useJoinGraph();
   const [relation, setRelation] = useState<Relation>(() => ({ root: graph.types[0]?.name ?? "", path: [] }));
   const table = useMemo(() => relationQuery(graph, relation), [graph, relation]);
-  const [active, setActive] = useState<PanelId>("info");
-  const [panelOpen, setPanelOpen] = useState(true);
+  const [{ view, panel }, setDiscover] = useDiscoverState();
+  const panelOpen = panel !== "none";
   // The dock's width while it is open; closed, it collapses to nothing and the main region stays
   // mounted where it is, so the dashboard keeps what the reader filtered.
   const [sizes, setSizes] = useState([72, 28]);
-  const [view, setView] = useState<ViewId>("graph");
   const [failure, setFailure] = useState<unknown>(undefined);
 
-  const ActiveBody = PANEL_BODY[active];
-  const activeLabel = PANELS.find((p) => p.id === active)?.label ?? "";
+  const ActiveBody = panelOpen ? PANEL_BODY[panel] : undefined;
+  const activeLabel = PANELS.find((p) => p.id === panel)?.label ?? "";
 
   return (
     <GraphFailure value={failure}>
@@ -225,8 +223,7 @@ function Workspace() {
           onValueChange={(d) => {
             const next = d.value[0] as ViewId | undefined;
             if (!next) return;
-            setView(next);
-            if (next === "dashboard") setPanelOpen(false);
+            setDiscover(next === "dashboard" ? { view: next, panel: "none" } : { view: next });
           }}
           size="sm"
           spacing={2}
@@ -252,7 +249,7 @@ function Workspace() {
       <ShellBody className="min-w-0">
         <Resizable
           className="min-h-0"
-          onCollapse={() => setPanelOpen(false)}
+          onCollapse={() => setDiscover({ panel: "none" })}
           // A collapse is not a width to come back to.
           onResize={(d) => d.size[1] > 0 && setSizes(d.size)}
           panels={[
@@ -276,7 +273,7 @@ function Workspace() {
           </ResizablePanel>
           <ResizableResizeTrigger hidden={!panelOpen} id="canvas:dock" withHandle />
           <ResizablePanel className="flex min-h-0 min-w-0 flex-col" id="dock">
-            {panelOpen && (
+            {ActiveBody && (
               <ShellAside
                 aria-label={`${activeLabel} panel`}
                 className="size-full min-h-0 border-s-0 bg-card"
@@ -287,7 +284,7 @@ function Workspace() {
                   <Button
                     aria-label="Close panel"
                     className="-me-1 ms-auto"
-                    onClick={() => setPanelOpen(false)}
+                    onClick={() => setDiscover({ panel: "none" })}
                     size="icon-sm"
                     variant="ghost"
                   >
@@ -296,7 +293,7 @@ function Workspace() {
                 </div>
                 <div className="min-h-0 flex-1">
                   {/* Keyed by panel, so a failed panel does not stay failed under the next one. */}
-                  <Boundary className="p-3" fallback={<Skeleton className="m-3 h-40" />} key={active}>
+                  <Boundary className="p-3" fallback={<Skeleton className="m-3 h-40" />} key={panel}>
                     <ActiveBody />
                   </Boundary>
                 </div>
@@ -315,16 +312,11 @@ function Workspace() {
           multiple={false}
           onValueChange={(d) => {
             const next = d.value[0] as PanelId | undefined;
-            if (next) {
-              setActive(next);
-              setPanelOpen(true);
-            } else {
-              setPanelOpen(false);
-            }
+            setDiscover({ panel: next ?? "none" });
           }}
           size="sm"
           spacing={2}
-          value={panelOpen ? [active] : []}
+          value={panelOpen ? [panel] : []}
         >
           {PANELS.map((p) => (
             <ToggleGroupItem aria-label={p.label} key={p.id} value={p.id}>

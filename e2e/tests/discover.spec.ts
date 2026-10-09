@@ -2,7 +2,7 @@ import { fileURLToPath } from "node:url";
 import { expect } from "@playwright/test";
 
 import { api, createGraph, MISSING } from "../support/api";
-import { openPanel, switchPanel, test } from "../support/fixtures";
+import { discoverUrl, openPanel, switchPanel, test } from "../support/fixtures";
 import { expectProblem } from "../support/problem";
 
 test("01 a graph that does not exist opens in discover as graph/not-found", async ({ page }) => {
@@ -19,7 +19,7 @@ test("02 a graph that has not completed opens in discover as graph/not-completed
 });
 
 test("17 a rules file rudof cannot read is rules/refused in the Rules panel, and nothing is saved", async ({ page, corpusGraph }) => {
-  await openPanel(page, corpusGraph, "Rules");
+  await openPanel(page, corpusGraph, "rules");
   // Dropped as a person drops it: the server reads it with rudof and refuses it where Turtle stops.
   await page.locator('input[type="file"]').setInputFiles({
     name: "broken.ttl",
@@ -31,9 +31,8 @@ test("17 a rules file rudof cannot read is rules/refused in the Rules panel, and
 });
 
 test("the tile editor is the Dashboard view's: Graph view hides it, and its draft comes back with Dashboard", async ({ page, corpusGraph }) => {
-  await page.goto(`/graphs/${corpusGraph}/discover`);
+  await page.goto(discoverUrl(corpusGraph, { view: "dashboard" }));
   const format = page.getByRole("complementary", { name: "Format" });
-  await page.getByRole("radio", { name: "Dashboard" }).click();
   await page.getByRole("button", { name: "Add tile" }).click({ timeout: 30_000 });
   const title = format.getByRole("textbox", { name: "Title" });
   await title.fill("Kept across views");
@@ -45,8 +44,35 @@ test("the tile editor is the Dashboard view's: Graph view hides it, and its draf
   await expect(title).toHaveValue("Kept across views");
 });
 
+test("the view and the dock's panel are the URL's: a link opens them, and pressing them writes it", async ({ page, corpusGraph }) => {
+  const rules = page.getByRole("complementary", { name: "Rules panel" });
+  await page.goto(discoverUrl(corpusGraph, { view: "dashboard", panel: "rules" }));
+  await expect(page.getByRole("radio", { name: "Dashboard" })).toBeChecked();
+  await expect(rules).toBeVisible();
+
+  // Graph keeps the panel the dock holds; the URL names only what differs from the bare page.
+  await page.getByRole("radio", { name: "Graph" }).click();
+  await expect(page).toHaveURL(/\/discover\?panel=rules$/);
+  await expect(rules).toBeVisible();
+
+  // Pressing the panel the dock holds collapses it, and a reload opens the page as it was left.
+  await switchPanel(page, "Rules");
+  await expect(page).toHaveURL(/\/discover\?panel=none$/);
+  await expect(rules).toBeHidden();
+  await page.reload();
+  await expect(page.getByRole("radio", { name: "Graph" })).toBeChecked();
+  await expect(page.locator('[data-slot="graph-counts"]')).toHaveText(/^20 nodes/, { timeout: 30_000 });
+  await expect(page.getByRole("complementary", { name: /panel$/ })).toBeHidden();
+
+  // Dashboard collapses the dock, as it always has: a dashboard is judged at full width.
+  await switchPanel(page, "Info");
+  await page.getByRole("radio", { name: "Dashboard" }).click();
+  await expect(page).toHaveURL(/\/discover\?view=dashboard$/);
+  await expect(page.getByRole("complementary", { name: "Info panel" })).toBeHidden();
+});
+
 test("rules are validated over the corpus's triples: what fails, what conforms, and over the page's subset", async ({ page, corpusGraph }) => {
-  await openPanel(page, corpusGraph, "Rules");
+  await openPanel(page, corpusGraph, "rules");
   // The suite's own rules over its fixtures (e2e/fixtures/vocab/shop.ttl), dropped as a person drops them.
   await page.locator('input[type="file"]').setInputFiles(fileURLToPath(new URL("../fixtures/vocab/shop.ttl", import.meta.url)));
   const counts = page.locator('[data-slot="graph-counts"]');

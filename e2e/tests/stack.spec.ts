@@ -33,7 +33,7 @@ test("04 a store that refuses to vend ends the run as store/refused", async ({ p
 
 test("05 with the API down every list shows a problem, not an empty state", async ({ page, browser, baseURL }) => {
   test.setTimeout(600_000);
-  await without(["server"], async () => {
+  await without(["acme-server"], async () => {
     for (const path of ["/graphs", "/connections", "/settings/credentials", "/"]) {
       await page.goto(path);
       await expectProblem(page, "bff/failed", { within: 35_000 });

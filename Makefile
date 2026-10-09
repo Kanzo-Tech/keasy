@@ -1,61 +1,34 @@
-# ── Dev loop: when do I rebuild? ───────────────────────────────────────────
-# The dev image is DEPS-ONLY; `server/src` + `web/src` are bind-mounted and
-# hot-reloaded inside the running container (cargo-watch / Next HMR). So:
+# keasy is one set of compose files (compose.yaml, the system): `make dev` runs it with
+# compose.override.yaml, `make deploy` with compose.prod.yaml and infra/prod/. Anything else is plain
+# `docker compose` — `docker compose logs -f web`, `docker compose restart acme-server` — which reads
+# the development files on its own.
 #
-#   • Edited keasy server/web code .......... NOTHING. cargo-watch/HMR picks it
-#                                             up live. (`make logs-server` to watch.)
-#   • Container wedged / env changed ........ `make restart` (no rebuild).
-#   • Changed server deps (Cargo.toml/lock)
-#     or the Dockerfile .................... `make dev` (rebuilds the image).
-#
-# Crates compile at runtime into the persistent `server-target` + `cargo-registry`
-# volumes, so only the first `up` (or one after `make clean`) pays a cold compile.
+# The dev image is deps-only: `server/src` and `web/src` are mounted and hot-reloaded (cargo-watch,
+# Next HMR), so editing code needs nothing. `make dev` again after changing dependencies or a
+# Dockerfile; crates compile into persistent volumes, so only the first `up` after `make clean` pays
+# a cold compile.
 
-.PHONY: help dev seed down logs restart clean ps api e2e demo deps deploy-platform deploy-auth deploy-instances
+SHELL := bash
+.PHONY: help dev seed clean api e2e demo deploy secrets secret key
 
 help: ## Show this help
-	@grep -E '^[a-zA-Z_%-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z_%-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
 
-# The platform's services (identity, the AI gateway) come from kanzo-ui, at the
-# release keasy is built against: the same tag its @kanzo-tech/* packages pin.
-KANZO_UI_REF ?= v0.33.0
+# ── Development ────────────────────────────────────────────────────────────
+# .env (optional, .env.example) is read by compose; here only to know whether an AI alias runs on
+# the local models — unset, or `local/…` — which are then pulled and served by Docker Model Runner.
+-include .env
+LOCAL_ALIASES := $(filter local/%,$(or $(AI_CHAT),local/) $(or $(AI_COMPLETE),local/))
 
-deps: ## Check out kanzo-ui's services at $(KANZO_UI_REF) into .deps/kanzo-ui
-	@if [ -d .deps/kanzo-ui/.git ]; then \
-	  git -C .deps/kanzo-ui fetch --quiet --depth 1 origin tag $(KANZO_UI_REF) && git -C .deps/kanzo-ui checkout --quiet $(KANZO_UI_REF); \
-	else \
-	  git -c advice.detachedHead=false clone --quiet --depth 1 --branch $(KANZO_UI_REF) https://github.com/Kanzo-Tech/ui.git .deps/kanzo-ui; \
-	fi
-
-dev: deps ## Start/rebuild dev env (only needed for dep/Dockerfile changes — code hot-reloads)
-	docker compose up --build -d
+dev: ## Start or rebuild the dev stack, and wait until the web answers
+	docker compose $(if $(LOCAL_ALIASES),--profile local-models) up -d --build --wait --wait-timeout 1800
+	@echo "keasy: http://acme.localhost:3000"
 
 seed: ## Fetch the dev graphs (LDBC SNB SF0.1, ~17 MB; OpenFlights, ~3.5 MB; checksummed) for the next `make dev` to upload
 	sh infra/dev/seed.sh
 
-down: ## Stop all services
-	docker compose down
-
-logs: ## Tail all service logs
-	docker compose logs -f
-
-logs-%: ## Tail logs for one service (e.g., make logs-server)
-	docker compose logs -f $*
-
-restart: ## Restart all services
-	docker compose restart
-
-restart-%: ## Restart one service (e.g., make restart-web)
-	docker compose restart $*
-
 clean: ## Nuclear reset: remove containers, volumes, images
-	docker compose down -v --rmi local --remove-orphans
-
-shell-%: ## Open shell in container (e.g., make shell-server)
-	docker compose exec $* sh
-
-ps: ## Show running services
-	docker compose ps
+	docker compose --profile local-models --profile faults down -v --rmi local --remove-orphans
 
 # ── The API contract ───────────────────────────────────────────────────────
 # The server's routes publish the spec; `api/` (@keasy/api) holds it and the
@@ -65,12 +38,12 @@ api: ## Regenerate api/openapi.json and api/src/schema.d.ts from the server's ro
 	pnpm --filter @keasy/api generate
 
 # ── The end-to-end suite ───────────────────────────────────────────────────
-# Brings the stack up without models (e2e/compose.yml, as CI does), then runs every
-# failure scenario against it on :3000 — the only origin Keycloak admits, so it
-# runs from the main checkout, not a worktree. Scenarios stop and start services
+# Brings the dev stack up without the local models (no scenario needs one, and CI's runners have
+# no Model Runner), then runs every failure scenario against it on :3000 — the only origin Keycloak
+# admits, so it runs from the main checkout, not a worktree. Scenarios stop and start services
 # themselves, and leave them running.
-e2e: deps seed ## Run the e2e suite against the compose stack (main checkout only: Keycloak admits :3000)
-	docker compose -f docker-compose.yml -f e2e/compose.yml up -d --wait --wait-timeout 1800 web
+e2e: seed ## Run the e2e suite against the compose stack (main checkout only: Keycloak admits :3000)
+	docker compose up -d --wait --wait-timeout 1800 web
 	pnpm --filter @keasy/e2e exec playwright install chromium
 	pnpm --filter @keasy/e2e test
 
@@ -103,36 +76,36 @@ else
 	  status=$$?; $(if $(DEMO_AI),docker compose up -d --wait ai-gateway;) exit $$status
 endif
 
-# ── Prod / Swarm deploy — Terraform owns everything (see infra/terraform/README.md) ──
-# platform (Traefik + Keycloak + Postgres + AI gateway) → auth (the kanzo realm + keasy's
-# client) → instances (keasy per organization).
-# Adding a tenant = its organization in realm.tfvars, an entry in instances/terraform.tfvars,
-# then deploy-auth, deploy-instances.
-#
-# The tfvars and the state of the realm and auth roots are operator-local, in $(DEPLOY_DIR)
-# (gitignored): realm.tfvars (organizations, and apis = { ai-gateway = "…" }), auth.tfvars
-# (redirect_uris — each organization's origin — and backchannel_logout_url =
-# "http://keasy-web:3000/api/auth/backchannel-logout"). platform and instances keep theirs
-# beside them (terraform.tfvars, gitignored).
-DEPLOY_DIR ?= $(CURDIR)/infra/terraform/.operator
-TF_PLATFORM = terraform -chdir=infra/terraform/platform
-KC_ADMIN_PASSWORD = $$($(TF_PLATFORM) output -raw kc_admin_password)
+# ── A deployment (infra/prod/README.md) ────────────────────────────────────
+# Run on the server, from a checkout. The secrets are decrypted into the environment of the one
+# command that needs them — never onto the disk — with the age key in SOPS_AGE_KEY_FILE.
+export SOPS_AGE_KEY_FILE ?= $(HOME)/.config/sops/age/keys.txt
+SOPS := infra/prod/sops
+PROD := -f compose.yaml -f compose.prod.yaml $(addprefix -f ,$(wildcard infra/prod/orgs/*.yaml)) --env-file infra/prod/prod.env
+# A decryption that fails stops the deploy, and so does a missing password: the platform's compose
+# files fall back to development's passwords, which a deployment must never start with.
+SECRETS := secrets=$$($(SOPS) -d --input-type dotenv --output-type dotenv /dev/stdin < infra/prod/secrets.sops.env) || exit 1; \
+	while IFS= read -r line; do [ -n "$$line" ] && export "$$line"; done <<<"$$secrets"; \
+	: "$${KC_ADMIN_PASSWORD:?}" "$${KC_DB_PASSWORD:?}" "$${AI_DB_PASSWORD:?}";
 
-# $(call tf-apply,<root>,<name>,<extra args>): init with its state in $(DEPLOY_DIR), apply.
-define tf-apply
-	TF_DATA_DIR=$(DEPLOY_DIR)/$(2).terraform terraform -chdir=$(1) init -input=false -reconfigure -backend-config=path=$(DEPLOY_DIR)/$(2).tfstate
-	TF_DATA_DIR=$(DEPLOY_DIR)/$(2).terraform terraform -chdir=$(1) apply -var-file=$(DEPLOY_DIR)/$(2).tfvars $(3)
-endef
+# With the docker-rollout plugin, the web is replaced first with no gap — the new one beside the old
+# behind Traefik until it is healthy — and `up` then finds it current. Without it, `up` restarts it.
+# A server is always stopped before its replacement starts: SQLite takes one writer.
+deploy: secrets ## Bring the deployment to what infra/prod/ says: models, organizations, version
+	@$(SECRETS) \
+	if docker rollout --help >/dev/null 2>&1 && [ -n "$$(docker compose $(PROD) ps -q web)" ]; then docker rollout $(PROD) web; fi; \
+	docker compose $(PROD) up -d --wait --remove-orphans
 
-deploy-platform: ## Phase 1 — apply the platform (reads platform/terraform.tfvars: kc_hostname, acme_email, ai_*)
-	$(TF_PLATFORM) init -input=false
-	$(TF_PLATFORM) apply
+secrets: ## Generate the deployment's secrets that do not exist yet (a new organization's key among them)
+	infra/prod/secrets.sh
 
-deploy-auth: deps ## Phase 2 — apply kanzo-ui's realm (organizations), then keasy's client (infra/auth)
-	$(call tf-apply,.deps/kanzo-ui/services/auth/realm,realm,-var kc_admin_password="$(KC_ADMIN_PASSWORD)")
-	$(call tf-apply,infra/auth,auth,-var kc_admin_password="$(KC_ADMIN_PASSWORD)")
+secret: ## Set one of the deployment's secrets, e.g. `make secret NAME=ANTHROPIC_API_KEY` (asks for its value)
+	@infra/prod/secrets.sh set $(NAME)
 
-deploy-instances: ## Phase 3 — apply keasy per organization (instances/terraform.tfvars + the auth secret)
-	terraform -chdir=infra/terraform/instances init -input=false
-	terraform -chdir=infra/terraform/instances apply \
-	  -var oidc_client_secret="$$(TF_DATA_DIR=$(DEPLOY_DIR)/auth.terraform terraform -chdir=infra/auth output -raw client_secret)"
+key: ## Create your age key, if you have none, and print the public half to add to infra/prod/.sops.yaml
+	@if [ ! -f "$(SOPS_AGE_KEY_FILE)" ]; then \
+	  mkdir -p "$$(dirname "$(SOPS_AGE_KEY_FILE)")"; \
+	  docker run --rm alpine:3.22 sh -c 'apk add -q age >/dev/null && age-keygen 2>/dev/null' > "$(SOPS_AGE_KEY_FILE)"; \
+	  chmod 600 "$(SOPS_AGE_KEY_FILE)"; \
+	fi
+	@sed -n 's/^# public key: //p' "$(SOPS_AGE_KEY_FILE)"

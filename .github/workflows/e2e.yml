@@ -41,10 +41,6 @@ jobs:
       - name: Resolve the dev hostnames
         run: echo "127.0.0.1 s3.localhost" | sudo tee -a /etc/hosts
 
-      # kanzo-ui's identity and AI services, at the release the compose includes.
-      - name: Check out the platform services
-        run: make deps
-
       # The dev seeds the smoke runs on, as `make seed` fetches them: pinned by digest, so the cache
       # is keyed on the scripts that pin them. `s3-init` uploads them as the stack comes up.
       - uses: actions/cache@v4
@@ -55,9 +51,10 @@ jobs:
       - name: Fetch the dev seeds
         run: make seed
 
-      # Without models: the runners have no Docker Model plugin and no scenario needs one.
+      # The dev stack — the platform included from kanzo-ui at KANZO_UI_REF — without the local
+      # models: the runners have no Docker Model Runner and no scenario needs one.
       - name: Bring up the stack
-        run: docker compose -f docker-compose.yml -f e2e/compose.yml up -d --build --wait --wait-timeout 3600 web
+        run: docker compose up -d --build --wait --wait-timeout 3600 web
 
       - run: pnpm --filter @keasy/e2e exec playwright install --with-deps chromium
 
@@ -69,7 +66,7 @@ jobs:
 
       - name: Stack logs
         if: failure()
-        run: docker compose -f docker-compose.yml -f e2e/compose.yml --profile faults logs --no-color > compose.log
+        run: docker compose --profile faults logs --no-color > compose.log
 
       - uses: actions/upload-artifact@v4
         if: failure()

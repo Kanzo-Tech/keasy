@@ -1,0 +1,26 @@
+# One organization: its declaration in the realm, its server, its data and its credential-sealing
+# key, and its host on the web. Adding an organization is a copy of this file with its own alias
+# (the file name, the service, the volume, the secret, the route) then `make secrets && make deploy`.
+x-organization: { alias: acme, name: Acme Corporation, domain: acme.com }
+
+services:
+  acme-server:
+    extends: { file: compose.server.yaml, service: server }
+    environment:
+      KEASY_ORG_ALIAS: acme
+      KEASY_WORKSPACE_NAME: Acme Corporation
+    secrets: [{ source: acme-secret-key, target: secret-key }]
+    volumes: [acme-data:/var/lib/keasy]
+
+  web:
+    labels:
+      traefik.http.routers.acme.rule: Host(`acme.${KEASY_DOMAIN}`)
+
+volumes:
+  acme-data:
+
+secrets:
+  # The AEAD key for the organization's stored credentials. It exists nowhere but here: lose it and
+  # its keasy.db cannot be read.
+  acme-secret-key:
+    environment: KEASY_SECRET_KEY_ACME

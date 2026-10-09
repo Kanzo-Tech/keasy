@@ -29,6 +29,17 @@ const eslintConfig = defineConfig([
       "playwright/expect-expect": ["warn", { assertFunctionNames: ASSERTIONS }],
     },
   },
+  {
+    // A demo is declared, not written as a test: `demo()` (demos/record/recorder.ts) makes the test,
+    // and each step's check runs inside it, in order — the plugin sees the checks' `expect`s outside a
+    // `test(...)` it can find. And a demo whose example or feature is not on main yet is skipped by
+    // its `skip` reason, which is a condition.
+    files: ["demos/**/*.ts"],
+    rules: {
+      "playwright/no-standalone-expect": "off",
+      "playwright/no-skipped-test": ["warn", { allowConditional: true }],
+    },
+  },
   globalIgnores(["node_modules/**", "playwright-report/**", "test-results/**", ".auth/**", "demos/out/**"]),
 ]);
 

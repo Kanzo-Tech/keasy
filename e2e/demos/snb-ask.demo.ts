@@ -1,93 +1,68 @@
-import type { Page } from "@playwright/test";
+import { expect } from "@playwright/test";
+import type { TileHarness } from "@kanzo-tech/testing";
 
+import { DiscoverPage } from "../support/app";
 import { seedGraph } from "../support/seeds";
-import { showPanel } from "./geo";
-import { demo } from "./record";
+import { demo, model } from "./record";
+
+const QUESTION = "Which browsers do they use most?";
 
 /**
- * Load both model aliases before the camera rolls. The gateway ends a call that sends nothing for 20 s,
- * and a model's first call after loading can take longer than that; the load goes on in Model Runner
- * all the same, so a call that times out is tried again until one answers.
+ * Ask over LDBC SNB: the page filtered to women, a question in plain words about what is in view, the
+ * answer as a chart over those women, and the answer added to the dashboard.
+ *
+ * The model's words are replayed from `recordings/snb-ask.json` (record/model.ts): the `answer` tool
+ * it calls still runs on the page under its filter, so the chart's figures are DuckDB's on every take,
+ * and the check that Firefox reads 324 — the women's count, not everyone's 628 — still proves the
+ * answer is over what is in view. `LIVE=1` asks the model instead; `LIVE=1 RECORD=1` asks it and,
+ * once every check has passed, keeps what it said as the recording.
  */
-async function warmUp(page: Page) {
-  for (const model of ["chat", "complete"]) {
-    for (let attempt = 0; attempt < 6; attempt++) {
-      const status = await page.evaluate(async (model) => {
-        const response = await fetch("/api/ai/chat/completions", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ model, messages: [{ role: "user", content: "Reply with: ok" }], max_tokens: 8, stream: false }),
-        });
-        return response.status;
-      }, model);
-      if (status === 200) break;
-      // eslint-disable-next-line playwright/no-wait-for-timeout -- replaced by @kanzo-tech/testing in part 2
-      await page.waitForTimeout(5000);
-    }
-  }
-}
-
-/**
- * Ask over LDBC SNB: a question in plain words, the answer as a dashboard tile, and the answer sent
- * back to the page as a filter. The answer is the model's (`make demo` records with the larger
- * one in `models.yml`), so it differs between runs; record again if one reads badly.
- */
-demo("snb-ask", "Ask over LDBC SNB: a plain question, its tile, and the answer as a filter", {
-  async arrange(page) {
+demo("snb-ask", "Ask over LDBC SNB: filter the page, ask about it, and add the answer to the dashboard", {
+  async arrange({ page, env }) {
+    const replay = await model(page, "snb-ask");
     const id = await seedGraph(page, "snb", { name: "Demo · LDBC Social Network", reuse: true });
-    await page.goto(`/graphs/${id}/discover`);
-    // Dispatched rather than clicked, as in snb-explore: the Graph view of 327K nodes never settles
-    // a frame on a machine without a GPU.
-    await page.getByRole("radio", { name: "Dashboard" }).dispatchEvent("click", undefined, { timeout: 120_000 });
-    await page.getByRole("heading", { name: /Count by / }).first().waitFor({ timeout: 60_000 });
-    // People in view, so "what's in view" is what the question is about.
-    await page.getByRole("combobox", { name: "Root type" }).click();
-    await page.getByRole("option", { name: "Person" }).click();
-    await page.getByRole("heading", { name: /Count by Person\.gender/ }).waitFor({ timeout: 60_000 });
-    await warmUp(page);
-    await showPanel(page, "Ask");
-    await page.getByPlaceholder("Ask about your data…").waitFor({ timeout: 60_000 });
+    // Opened on the dashboard with Ask docked: the Graph view would lay out 327K nodes first.
+    const discover = await DiscoverPage.open(page, env, id, { view: "dashboard", panel: "ask" });
+    await discover.relation("Person");
+    const dashboard = await discover.dashboard();
+    const ask = await discover.ask();
+    if (replay.live) await ask.warmUp();
+    const answers = await ask.composer();
+    return { replay, dashboard, answers, bar: await discover.filters(), answered: { tile: undefined as TileHarness | undefined } };
   },
 
-  async act({ page, chapter, poster }) {
-    // The same crossfilter as every chart: the question is asked over what the page has filtered.
-    await chapter("Filter the page: women only");
-    const gender = page
-      .locator("article")
-      .filter({ has: page.getByRole("heading", { name: "Count by Person.gender" }) })
-      .getByRole("img");
-    const g = await gender.boundingBox();
-    // The upper bar of two is `female`.
-    await gender.click({ position: { x: g!.width * 0.45, y: g!.height * 0.3 } });
-    // eslint-disable-next-line playwright/no-wait-for-timeout -- replaced by @kanzo-tech/testing in part 2
-    await page.waitForTimeout(900);
+  steps: ({ replay, dashboard, answers, bar, answered }) => [
+    {
+      subtitle: "Filter the page: women only",
+      action: async () => (await (await dashboard.tile("Count by Person.gender")).chart()).pick({ y: "female" }),
+      check: () => expect.poll(() => bar.readout()).toMatch(/^778 of 1,528\b/),
+    },
+    {
+      subtitle: "Ask about what's in view, in plain words",
+      // Resolves once a new answer card has begun.
+      action: () => answers.ask(QUESTION),
+      check: async () => expect(replay.unrecorded, "model calls the recording does not hold: capture it again").toEqual([]),
+    },
+    {
+      subtitle: "The answer is a chart, over the women in view",
+      action: async () => (answered.tile = await answers.answer()),
+      async check() {
+        const text = await answered.tile!.text();
+        expect(text).toContain("Firefox");
+        // 324 of the women; 628 would be everyone's — an answer that dropped the page's filter.
+        expect(text).toContain("324");
+        expect(text).not.toContain("628");
+      },
+      poster: true,
+    },
+    {
+      subtitle: "Add it to the dashboard",
+      // Resolves on the card's *✓ On the dashboard*, read from the dashboards the page handed back.
+      action: () => answers.addToDashboard(),
+      check: async () => void (await dashboard.tile(/browserUsed/)),
+    },
+  ],
 
-    await chapter("Ask about what's in view, in plain words");
-    const box = page.getByPlaceholder("Ask about your data…").describe("the question");
-    await box.click();
-    await box.pressSequentially("Which browsers do they use most?", { delay: 35 });
-    // eslint-disable-next-line playwright/no-wait-for-timeout -- replaced by @kanzo-tech/testing in part 2
-    await page.waitForTimeout(400);
-    await box.press("Enter");
-
-    // An answer that was read, which draws its actions; a refusal draws none. The model reads a
-    // refusal and answers again, so the step waits for the one that was read — and a take with none
-    // fails rather than recording "The answer failed".
-    const answer = page.locator('[data-slot="answer-card"]').filter({ has: page.locator('[data-slot="answer-card-actions"]') }).last();
-    await answer.waitFor({ timeout: 180_000 });
-    await chapter("Every answer is a dashboard tile");
-    // eslint-disable-next-line playwright/no-wait-for-timeout -- replaced by @kanzo-tech/testing in part 2
-    await page.waitForTimeout(900);
-    await poster();
-
-    // Not every answer can be a filter (one with no conditions and no bars to pick is not), so the
-    // step is recorded only when the card offers it.
-    const filter = answer.getByRole("button", { name: /^Filter to/ });
-    if (await filter.isVisible()) {
-      await chapter("Send the answer back to the page as a filter");
-      await filter.describe("filter to it").click();
-      // eslint-disable-next-line playwright/no-wait-for-timeout -- replaced by @kanzo-tech/testing in part 2
-      await page.waitForTimeout(1400);
-    }
-  },
+  // Only a take whose every check passed is kept as the recording (LIVE=1 RECORD=1).
+  passed: ({ replay }) => replay.keep(),
 });

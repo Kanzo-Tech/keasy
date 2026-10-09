@@ -1,4 +1,6 @@
-# The models `make demo` records with, over the dev stack's own (kanzo-ui services/ai/compose.yml).
+# The model `make demo` records with, over the dev stack's own (kanzo-ui services/ai/compose.dev.yaml):
+# `make demo` points `chat` at it (AI_CHAT=local/ai/qwen3), and this has the local-models profile pull
+# and configure it.
 # A demo shows what the model does, and the dev `chat` model (Hermes 3, 8B) writes a query and a table
 # of its own rather than calling the tool that runs it. Qwen3 calls the tool. Not a larger one: the
 # gateway ends a call whose first token takes over 20 s, and ai/qwen3.8 (17 GB) misses that with the

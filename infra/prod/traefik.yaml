@@ -1,0 +1,13 @@
+# Keycloak's route, at auth.<KEASY_DOMAIN>. Keycloak is the platform's service (kanzo-ui), included
+# rather than written here, so it is routed from this file instead of its own labels. The web's
+# routes are labels: one host per organization, each added by the organization's own file.
+http:
+  routers:
+    keycloak:
+      rule: Host(`auth.{{ env "KEASY_DOMAIN" }}`)
+      service: keycloak
+  services:
+    keycloak:
+      loadBalancer:
+        servers:
+          - url: http://keycloak:8080

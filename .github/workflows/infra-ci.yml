@@ -1,37 +1,45 @@
 name: infra-ci
 
+# The compose files are the whole system, in development and in a deployment: both must resolve —
+# the platform included from kanzo-ui at KANZO_UI_REF, every organization's file, every secret
+# named — before anything runs them.
 on:
   pull_request:
-    paths: ["infra/terraform/**", "infra/auth/**", ".github/workflows/infra-ci.yml"]
+    paths: ["compose*.yaml", "infra/**", ".github/workflows/infra-ci.yml"]
   push:
     branches: [main]
-    paths: ["infra/terraform/**", "infra/auth/**", ".github/workflows/infra-ci.yml"]
+    paths: ["compose*.yaml", "infra/**", ".github/workflows/infra-ci.yml"]
 
 concurrency:
   group: infra-ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  terraform:
-    name: terraform (${{ matrix.module }})
+  compose:
+    name: compose
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        # auth and platform use kanzo-ui's modules by git: init fetches them.
-        module: [terraform/platform, terraform/instances, auth]
-    defaults:
-      run:
-        working-directory: infra/${{ matrix.module }}
     steps:
       - uses: actions/checkout@v4
 
-      # The version the dev stack's provision service runs.
-      - uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: "1.14"
-          terraform_wrapper: false
+      - name: Development resolves
+        run: docker compose --profile local-models --profile faults config --quiet
 
-      - run: terraform fmt -check -diff
-      - run: terraform init -backend=false -input=false
-      - run: terraform validate
+      # The secrets' values are stand-ins: what is checked is that every one a file names is
+      # supplied — each organization's sealing key among them.
+      - name: A deployment resolves
+        run: |
+          orgs=(infra/prod/orgs/*.yaml)
+          {
+            for name in KC_ADMIN_PASSWORD KC_DB_PASSWORD AI_DB_PASSWORD KEASY_OIDC_CLIENT_SECRET KEASY_SESSION_SECRET; do
+              echo "$name=stand-in"
+            done
+            for org in "${orgs[@]}"; do
+              alias=$(basename "$org" .yaml)
+              echo "KEASY_SECRET_KEY_$(tr 'a-z-' 'A-Z_' <<<"$alias")=stand-in"
+            done
+          } > "$RUNNER_TEMP/secrets.env"
+          docker compose -f compose.yaml -f compose.prod.yaml $(printf -- '-f %s ' "${orgs[@]}") \
+            --env-file infra/prod/prod.env --env-file "$RUNNER_TEMP/secrets.env" config --quiet
+
+      - name: The scripts
+        run: shellcheck infra/prod/secrets.sh infra/prod/sops infra/dev/seed.sh

@@ -1,0 +1,8 @@
+# Who can decrypt the deployment's secrets: the age public key of everyone who deploys, and of the
+# server. `make key` prints yours; add it here, then `cd infra/prod && ./sops updatekeys secrets.sops.env`
+# re-encrypts the secrets for the new list. Removing a key and rotating what it could read is the
+# way someone loses access.
+creation_rules:
+  - path_regex: secrets\.sops\.env$
+    age: >-
+      age1replace-with-the-team-and-server-public-keys

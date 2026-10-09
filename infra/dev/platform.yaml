@@ -1,0 +1,61 @@
+# keasy's additions to the platform in development, applied to kanzo-ui's services where they are
+# included (compose.override.yaml). Nothing here names a path: a file listed beside an included one
+# resolves its paths where that one lives.
+services:
+  # keasy's roles on the groups the platform's development seed gives each organization — what an
+  # organization admin does in the console. Merged into kanzo-ui's seed (services/auth/seed, SEED_DIR).
+  auth-seed:
+    configs:
+      - source: keasy-roles
+        target: /seed.d/keasy.json
+
+  # A development stack started before keasy declared itself in compose.yaml registered keasy's
+  # client with a Terraform root of its own (`provision`, state in the `provision-state` volume).
+  # The realm registers it now: this moves those resources from that state into the realm's, once,
+  # so the realm carries on with the clients Keycloak already has instead of re-creating them. With
+  # nothing to move — a new stack, or one already moved — it does nothing.
+  realm-migrate:
+    image: hashicorp/terraform:${TERRAFORM_VERSION:-1.14}
+    restart: "no"
+    working_dir: /tmp
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - |
+        old=/provision/auth/terraform.tfstate
+        [ -s "$$old" ] || exit 0
+        move() { terraform state mv -lock=false -state="$$old" -state-out=/realm/terraform.tfstate "$$1" "$$2"; }
+        move module.keasy 'module.application["keasy"]'
+        move module.keasy_api 'module.application_api["keasy"]'
+        mv "$$old" "$$old.moved"
+    volumes:
+      - provision-state:/provision
+      - kanzo-auth-tfstate:/realm
+
+  auth-realm:
+    depends_on:
+      realm-migrate:
+        condition: service_completed_successfully
+
+configs:
+  keasy-roles:
+    content: |
+      {
+        "organizations": {
+          "acme": {
+            "groups": {
+              "Admins": { "keasy": ["admin"] },
+              "Data team": { "keasy": ["editor"] },
+              "Analysts": { "keasy": ["reader"] }
+            }
+          },
+          "globex": {
+            "groups": {
+              "Platform": { "keasy": ["admin"] },
+              "Readers": { "keasy": ["reader"] }
+            }
+          }
+        }
+      }
+
+volumes:
+  provision-state:

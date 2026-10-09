@@ -131,7 +131,8 @@ export class DiscoverPage extends ComponentHarness {
    * the docked panel is wider.
    */
   async widenDock(by: number): Promise<void> {
-    const handle = await this.env.until(async () => (await this.host.find({ role: "separator" }))[0], "the dock has no resize handle");
+    // The dock's own handle, by its slot: the header has a separator of its own, beside the sidebar's toggle.
+    const handle = await this.env.until(async () => (await this.host.find({ css: '[data-slot="resizable-resize-trigger"]' }))[0], "the dock has no resize handle");
     const panel = await this.env.until(async () => (await this.host.find({ role: "complementary", name: /panel$/ }))[0], "no panel is docked");
     const before = (await panel.rect()).width;
     const { x, y, width, height } = await handle.rect();

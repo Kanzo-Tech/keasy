@@ -23,8 +23,10 @@ export interface Lease {
   hold(): void;
   release(): void;
   /**
-   * `send`, asked again on a transient failure until the lease would have expired; past that the
-   * server's sweep owns the graph, and the last failure is thrown.
+   * The run's end: the heartbeat stops and its beat still out lands first, so the end is the last
+   * thing the server hears — a beat taken after it is refused `graph/ended`. Then `send`, asked again
+   * on a transient failure until the lease would have expired; past that the server's sweep owns the
+   * graph, and the last failure is thrown.
    */
   report<T>(send: () => Promise<T>): Promise<T>;
 }
@@ -59,26 +61,37 @@ export function lease(
 ): Lease {
   let renewed = now();
   let timer: ReturnType<typeof setInterval> | undefined;
+  // The beat still out, if any. One writer: a beat is not sent while another is out, and the end
+  // waits for it, as the server takes requests in any order.
+  let beating: Promise<void> | undefined;
   return {
     hold() {
       renewed = now();
       timer = setInterval(() => {
-        beat().then(
-          (signal) => {
-            renewed = now();
-            if (signal?.cancel_requested) onStopAsked();
-          },
-          (err: unknown) => {
-            // The graph ended without us (the sweep, or another tab): nothing left to hold.
-            if (!transient(err)) clearInterval(timer);
-          },
-        );
+        if (beating) return;
+        beating = beat()
+          .then(
+            (signal) => {
+              renewed = now();
+              if (signal?.cancel_requested) onStopAsked();
+            },
+            (err: unknown) => {
+              // The graph ended without us (the sweep, or another tab): nothing left to hold.
+              if (!transient(err)) clearInterval(timer);
+            },
+          )
+          .finally(() => {
+            beating = undefined;
+          });
       }, HEARTBEAT_MS);
     },
     release() {
       clearInterval(timer);
     },
     async report(send) {
+      clearInterval(timer);
+      // Settles either way: the beat's own handlers have had its answer.
+      await beating;
       for (let delay = 1_000; ; delay = Math.min(delay * 2, 8_000)) {
         try {
           return await send();

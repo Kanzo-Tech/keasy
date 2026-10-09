@@ -4,18 +4,22 @@ Federated workspace management platform — connect data, build catalogs, share 
 
 ## Quick start
 
-Needs Docker with Compose v2 and ~8 GB RAM (Keycloak + the first Rust compile).
+Needs Docker with Compose v2.20+ and ~8 GB RAM (Keycloak + the first Rust compile).
 
 ```bash
 make dev
 ```
 
-`make dev` first runs `make deps` (kanzo-ui's platform services, identity and the AI
-gateway, checked out into `.deps/kanzo-ui`). Open [http://acme.localhost:3000](http://acme.localhost:3000)
-and log in at Keycloak. The first
-`up` compiles the server's dependencies once; later ones reuse the cached volumes.
-Every dev value is a literal in `docker-compose.yml`; a local `.env` overrides the
-included services' variables (e.g. `KC_ADMIN_PASSWORD`), and `provision` follows it.
+`make dev` brings everything up and returns when the web answers: open
+[http://acme.localhost:3000](http://acme.localhost:3000) and log in at Keycloak. The first one takes
+a while — it compiles the server's dependencies and the web's first pages, and pulls the local
+models — and later ones reuse the cached volumes. The platform services, identity and the AI
+gateway, are kanzo-ui's, included by URL at `KANZO_UI_REF`; nothing is checked out.
+
+Every dev value is a literal in `compose.yaml` and `compose.override.yaml`, and a local `.env`
+overrides any of them ([`.env.example`](.env.example)). Anything past `make dev` is plain
+`docker compose`, which reads the development files on its own: `docker compose logs -f web`,
+`docker compose restart acme-server`, `docker compose exec web sh`, `docker compose down`.
 
 | What | Where |
 |------|-------|
@@ -24,15 +28,30 @@ included services' variables (e.g. `KC_ADMIN_PASSWORD`), and `provision` follows
 | API, for curl | `http://localhost:8081` |
 | AI gateway | `http://localhost:4000` — a token the realm issued for `ai-gateway` and one organization is its only credential; every request is logged to `ai-postgres` |
 
-AI runs on local models served by Docker Model Runner (Docker Desktop 4.40+,
-`docker desktop enable model-runner`): native on the host, on the Mac's GPU. The first `up`
-pulls them; until then everything but AI works.
+### AI in development
+
+By default both aliases run on local models served by Docker Model Runner (Docker Desktop 4.40+,
+`docker desktop enable model-runner`), on the host's GPU: `chat` on an 8B model, `complete` on a 3B.
+`make dev` pulls them the first time (~6.5 GB) and runs them with an 8192-token context, which fits
+a 16 GB laptop; until they are pulled everything but AI works. To use a provider instead — no
+download, any laptop — name it in `.env`:
+
+```sh
+AI_CHAT=anthropic/claude-sonnet-5-5
+AI_COMPLETE=anthropic/claude-haiku-4-5
+ANTHROPIC_API_KEY=sk-ant-…
+```
+
+`provider/model`, with the provider's usual key: `anthropic`, `openai`, `gemini`, `mistral`,
+`openrouter`, or `local` for Docker Model Runner. The same two variables choose the models in a
+deployment ([Deployment](#deployment)). When an alias fails, Ask says why — the gateway's status and
+reason (`ai/unavailable`) — rather than a timeout.
 
 ## Dev accounts
 
 The platform's seed users (kanzo-ui `services/auth/seed`), all with password `password`.
 This instance serves the `acme` organization. A role comes from the organization group
-the user is in, which `provision` maps onto keasy's roles (`infra/auth/dev-roles.sh`):
+the user is in, which the seed maps onto keasy's roles (`infra/dev/roles.yaml`):
 
 | User | acme (this instance) | globex | What it shows |
 |------|----------------------|--------|---------------|
@@ -43,8 +62,8 @@ the user is in, which `provision` maps onto keasy's roles (`infra/auth/dev-roles
 | `carla` | — | admin (*Platform*) | a member of another organization only: no role here |
 | `dan` | — | — | no organization at all |
 
-Roles nest: reader ⊂ editor ⊂ admin, composites in `infra/auth`, so a token carries the
-expanded set. Prod has no seed: people are invited into their organization from Keycloak,
+Roles nest: reader ⊂ editor ⊂ admin, composites in keasy's declaration (`compose.yaml`,
+`x-application`), so a token carries the expanded set. Prod has no seed: people are invited into their organization from Keycloak,
 and its admin maps keasy's roles onto the organization's groups.
 
 ## Dev data
@@ -160,8 +179,9 @@ Models are not a credential. Every call goes to the platform's **AI gateway**
 provider. The web forwards `/api/ai` to it (`KEASY_AI_URL`) as it forwards `/api/v1`, with
 the session's token exchanged for the `ai-gateway` audience and the organization the request
 addresses: that token is the gateway's only credential and names the organization it charges.
-No server holds a model key. Upstreams, their keys and the budget live in the gateway: in dev,
-kanzo-ui's compose on Docker Model Runner; in prod, `infra/terraform/platform/ai-profile.yaml`.
+No server holds a model key. Which model answers each alias, the providers' keys and the budget are
+the gateway's environment: `AI_CHAT` and `AI_COMPLETE`, in `.env` in development and in
+`infra/prod/prod.env` in a deployment.
 
 A **credential** (S3 or Azure) is who keasy is when it reaches a store; a
 **connection** puts one to use (a storage prefix — a source or the one sink). Both
@@ -173,7 +193,8 @@ An instance's look is declared, not edited: `KEASY_BRANDING_FILE` names a YAML
 file holding exactly what kanzo-ui's theme generator exports (`branding:` with
 `theme_css`, `families`, `default`, `lock`, and optionally `logo`), validated at
 boot and served publicly at `GET /v1/branding`. Without it every shipped theme is
-offered. Example: `infra/dev/branding.example.yml`; in prod, a tenant's `branding_file`.
+offered. Example: `infra/dev/branding.example.yml`; in a deployment, mounted from the
+organization's file (`infra/prod/README.md`).
 
 Stored credentials are sealed with `KEASY_SECRET_KEY`: 32 random bytes in base64
 (`openssl rand -base64 32`). The server refuses to start without one, and refuses
@@ -183,29 +204,37 @@ graph's SHACL rules): a stack started before it needs `docker compose down -v`.
 
 ## Deployment
 
-Docker Swarm, driven by Terraform — see [`infra/terraform/README.md`](infra/terraform/README.md).
-`make deploy-platform` brings up Traefik, Keycloak (on its own host), Postgres and the AI gateway;
-`make deploy-auth` applies kanzo-ui's `kanzo` realm (one organization per tenant) and keasy's
-client (`infra/auth`); and `make deploy-instances` one server + web + Valkey stack per organization
-(`infra/terraform/instances`). Images are published to GHCR by
-`.github/workflows/images.yml` on `v*` tags, after the server and web CI pass.
+The same compose files, on one server: `compose.yaml` with `compose.prod.yaml` — the platform as it
+runs in production, Traefik with Let's Encrypt in front — and one file per organization in
+`infra/prod/orgs/`. What a deployment says is versioned in `infra/prod/`: `prod.env` (the release,
+the domain, the models) and `secrets.sops.env`, encrypted with SOPS and age to the keys of whoever
+deploys. On the server:
+
+```sh
+git pull && make deploy
+```
+
+Changing a model, adding or removing an organization, moving to a new release: edit a line in
+`infra/prod/`, commit, `make deploy`. [`infra/prod/README.md`](infra/prod/README.md) is the guide.
+Images are published to GHCR by `.github/workflows/images.yml` on `v*` tags, after the server and
+web CI pass.
 
 ## Development
 
 | Target | What it does |
 |--------|--------------|
-| `make dev` | Start dev; rebuild only after dep or Dockerfile changes (code hot-reloads) |
-| `make down` | Stop everything |
-| `make clean` | Remove containers, volumes (Keycloak, provisioning state, data) and images |
-| `make logs` / `make logs-<svc>` | Tail logs |
-| `make restart` / `make restart-<svc>` | Restart without rebuilding |
-| `make shell-<svc>` | Shell in a container |
-| `make e2e` | The failure scenarios and the smoke over the dev seeds (`e2e/`, Playwright) against the stack without models (`e2e/compose.yml`, as CI); main checkout only, as Keycloak admits :3000 alone |
+| `make dev` | Start dev and wait until the web answers; again only after dep or Dockerfile changes (code hot-reloads) |
+| `make seed` | Fetch the dev graphs, for the next `make dev` to upload |
+| `make clean` | Remove containers, volumes (Keycloak, the realm's state, data) and images |
+| `make e2e` | The failure scenarios and the smoke over the dev seeds (`e2e/`, Playwright) against the stack without the local models, as CI; main checkout only, as Keycloak admits :3000 alone |
 | `make demo` | List the product demos; `DEMO=<name>` or `DEMO=all` records them (see [Demos](#demos)) |
+| `make api` | Regenerate the API contract ([API contract](#api-contract)) |
+| `make deploy`, `make secrets`, `make key` | A deployment ([`infra/prod/README.md`](infra/prod/README.md)) |
 
-`docker-compose.yml` is the dev stack and nothing else. It includes kanzo-ui's services
-and applies the same `infra/auth` root as prod, with its `dev.tfvars`.
-The Rust toolchain is pinned once, in `server/rust-toolchain.toml`.
+Everything else is `docker compose`, which reads `compose.yaml` and `compose.override.yaml` on its
+own. The platform's release is `KANZO_UI_REF`, in the `include:` of `compose.override.yaml` and
+`compose.prod.yaml`, and moves with `@kanzo-tech/*` in `web/package.json`; the Rust toolchain is
+pinned once, in `server/rust-toolchain.toml`.
 
 ## Demos
 
@@ -256,9 +285,12 @@ make api   # UPDATE_EXPECT=1 cargo test --test api openapi, then pnpm generate
 ```
 api/                @keasy/api: the committed spec, its generated types and the client
 e2e/                @keasy/e2e: one Playwright test per failure scenario, the smoke over the dev seeds, its fixtures, and the `faults` profile's servers
-infra/dev/          the S3 store's config and seed, and an example program, dev-only
-infra/auth/         keasy's client and roles in the platform realm (dev and prod)
-infra/terraform/    platform/ and instances/ — the Swarm deployment, and keasy's AI profile
+compose.yaml        keasy as it runs anywhere: the web, its sessions, its declaration in the realm
+compose.server.yaml one organization's server, which each organization's file extends
+compose.override.yaml  development: the platform in its dev shape, builds, the S3 store, the faults
+compose.prod.yaml   a deployment: the platform as deployed, Traefik, secrets from the environment
+infra/dev/          development's organization, secrets, roles, S3 config and seed examples
+infra/prod/         a deployment's values: prod.env, orgs/, secrets.sops.env, and its guide
 server/             Rust API (Dockerfile = release, Dockerfile.dev = cargo-watch)
   src/main.rs       configures from the environment and serves
   src/startup.rs    Application, AppState, the router and the spec it publishes

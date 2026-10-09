@@ -41,16 +41,59 @@ describe("the graph's lease", () => {
     expect(send).toHaveBeenCalledTimes(1);
   });
 
-  it("heartbeats every 15 s while held, and stops when released", () => {
+  it("heartbeats every 15 s while held, and stops when released", async () => {
     vi.useFakeTimers();
     const beat = vi.fn().mockResolvedValue(undefined);
     const held = lease("j", { beat });
     held.hold();
-    vi.advanceTimersByTime(45_000);
+    await vi.advanceTimersByTimeAsync(45_000);
     expect(beat).toHaveBeenCalledTimes(3);
     held.release();
-    vi.advanceTimersByTime(45_000);
+    await vi.advanceTimersByTimeAsync(45_000);
     expect(beat).toHaveBeenCalledTimes(3);
+    vi.useRealTimers();
+  });
+
+  it("reports the end only once the heartbeat has stopped and its beat in flight has landed", async () => {
+    vi.useFakeTimers();
+    // The server takes requests in any order: a beat that lands after the end is refused `graph/ended`.
+    const said: string[] = [];
+    let land!: () => void;
+    const beat = vi.fn(() => {
+      said.push("beat sent");
+      return new Promise<undefined>((resolve) => {
+        land = () => {
+          said.push("beat landed");
+          resolve(undefined);
+        };
+      });
+    });
+    const held = lease("j", { beat });
+    held.hold();
+    await vi.advanceTimersByTimeAsync(15_000);
+    expect(beat).toHaveBeenCalledTimes(1);
+
+    const send = vi.fn(async () => void said.push("end sent"));
+    const ended = held.report(send);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(send).not.toHaveBeenCalled();
+    land();
+    await ended;
+    // Nothing beats after the end, even while the page has not released the lease yet.
+    await vi.advanceTimersByTimeAsync(45_000);
+    expect(said).toEqual(["beat sent", "beat landed", "end sent"]);
+    held.release();
+    vi.useRealTimers();
+  });
+
+  it("sends one beat at a time: a beat still out is not doubled", async () => {
+    vi.useFakeTimers();
+    const beat = vi.fn(() => new Promise<undefined>(() => {}));
+    const held = lease("j", { beat });
+    held.hold();
+    await vi.advanceTimersByTimeAsync(45_000);
+    expect(beat).toHaveBeenCalledTimes(1);
+    held.release();
     vi.useRealTimers();
   });
 

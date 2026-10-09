@@ -54,11 +54,12 @@ export async function openPanel(page: Page, graphId: string, panel: "ask" | "rul
 
 /**
  * Put `panel` in the dock of the Discovery already open, as a reader does mid-way, keeping what the
- * page has picked. Pressing the panel the dock already holds closes it, so a test that only needs a
- * panel open opens it from the URL with `openPanel` or `discoverUrl`.
+ * page has picked. The footer's `ShellDockSwitcher` draws each panel as a radio named by its label.
+ * Pressing the panel the dock already holds closes it, so a test that only needs a panel open opens
+ * it from the URL with `openPanel` or `discoverUrl`.
  */
 export async function switchPanel(page: Page, panel: "Info" | "Ask" | "Rules" | "Settings") {
-  await page.getByRole("button", { name: panel, exact: true }).or(page.getByRole("radio", { name: panel })).first().click();
+  await page.getByRole("radio", { name: panel, exact: true }).click();
 }
 
 /** Ask the Ask panel `question`. */

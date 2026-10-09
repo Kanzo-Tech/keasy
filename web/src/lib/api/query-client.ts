@@ -2,7 +2,6 @@ import "client-only";
 
 import { ApiError } from "@keasy/api";
 import { MutationCache, QueryCache, QueryClient } from "@tanstack/react-query";
-import { releaseCorpora } from "@/lib/fossil/corpus-cache";
 
 let redirected = false;
 
@@ -19,8 +18,9 @@ let redirected = false;
  */
 const FRESH_MS = 30_000;
 
+// The corpora it holds are released by `releaseCorpora`, registered in `app/providers.tsx` with the
+// app's failure path, which imports the API client, and the API client imports this.
 const queryCache = new QueryCache({ onError: (error) => handleAuthError(error) });
-releaseCorpora(queryCache);
 
 export const queryClient = new QueryClient({
   queryCache,

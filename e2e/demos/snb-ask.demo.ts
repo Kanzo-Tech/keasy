@@ -21,6 +21,7 @@ async function warmUp(page: Page) {
         return response.status;
       }, model);
       if (status === 200) break;
+      // eslint-disable-next-line playwright/no-wait-for-timeout -- replaced by @kanzo-tech/testing in part 2
       await page.waitForTimeout(5000);
     }
   }
@@ -58,12 +59,14 @@ demo("snb-ask", "Ask over LDBC SNB: a plain question, its query and chart, and t
     const g = await gender.boundingBox();
     // The upper bar of two is `female`.
     await gender.click({ position: { x: g!.width * 0.45, y: g!.height * 0.3 } });
+    // eslint-disable-next-line playwright/no-wait-for-timeout -- replaced by @kanzo-tech/testing in part 2
     await page.waitForTimeout(900);
 
     await chapter("Ask about what's in view, in plain words");
     const box = page.getByPlaceholder("Ask about your data…").describe("the question");
     await box.click();
     await box.pressSequentially("Which browsers do they use most?", { delay: 35 });
+    // eslint-disable-next-line playwright/no-wait-for-timeout -- replaced by @kanzo-tech/testing in part 2
     await page.waitForTimeout(400);
     await box.press("Enter");
 
@@ -78,6 +81,7 @@ demo("snb-ask", "Ask over LDBC SNB: a plain question, its query and chart, and t
       .getByText("Running", { exact: true })
       .waitFor({ state: "hidden", timeout: 120_000 });
     await chapter("Every answer is a query, with its chart");
+    // eslint-disable-next-line playwright/no-wait-for-timeout -- replaced by @kanzo-tech/testing in part 2
     await page.waitForTimeout(900);
     await poster();
 
@@ -87,6 +91,7 @@ demo("snb-ask", "Ask over LDBC SNB: a plain question, its query and chart, and t
     if (await filter.isVisible()) {
       await chapter("Send the answer back to the page as a filter");
       await filter.describe("filter to it").click();
+      // eslint-disable-next-line playwright/no-wait-for-timeout -- replaced by @kanzo-tech/testing in part 2
       await page.waitForTimeout(1400);
     }
   },

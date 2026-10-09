@@ -91,6 +91,7 @@ export async function gliding<T>(page: Page, run: () => Promise<T>): Promise<T> 
   const { click, dragTo } = proto;
   const arrive = async (target: Locator, position?: { x: number; y: number }) => {
     await target.hover({ position });
+    // eslint-disable-next-line playwright/no-wait-for-timeout -- the cursor's glide is a CSS transition the page does not report; replaced by @kanzo-tech/testing in part 2
     await page.waitForTimeout(GLIDE);
   };
   proto.click = async function (this: Locator, options?: Parameters<Locator["click"]>[0]) {
@@ -111,6 +112,7 @@ export async function gliding<T>(page: Page, run: () => Promise<T>): Promise<T> 
   const patched: Pick<Mouse, "move" | "down" | "up"> = {
     async move(x, y, options) {
       await move(x, y, options);
+      // eslint-disable-next-line playwright/no-wait-for-timeout -- the cursor's glide is a CSS transition the page does not report; replaced by @kanzo-tech/testing in part 2
       if (!held) await page.waitForTimeout(GLIDE);
     },
     async down(options) {

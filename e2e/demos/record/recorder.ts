@@ -84,6 +84,7 @@ function themes(): readonly Theme[] {
 }
 
 export function demo(name: string, description: string, { arrange, act }: Demo) {
+  // eslint-disable-next-line playwright/expect-expect -- a demo records rather than asserts
   test(`${name}: ${description}`, async ({ browser, baseURL }) => {
     // A first run builds the dev server's pages and runs the graph; a recording is minutes, not seconds.
     test.setTimeout(20 * 60_000);
@@ -132,6 +133,7 @@ export function demo(name: string, description: string, { arrange, act }: Demo) 
               const start = (Date.now() - began) / 1000;
               await shown?.dispose();
               shown = await page.screencast.showOverlay(subtitle(text), { duration: ms });
+              // eslint-disable-next-line playwright/no-wait-for-timeout -- replaced by @kanzo-tech/testing in part 2
               await page.waitForTimeout(LEAD);
               chapters.push({ text, start, end: start + ms / 1000 });
             },

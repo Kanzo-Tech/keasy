@@ -93,6 +93,7 @@ test("25 signing out with Keycloak down ends the session and answers, never a st
       await page.goto(location);
       await expectProblem(page, "idp/unreachable", { within: 5_000 });
     } else {
+      // eslint-disable-next-line playwright/no-conditional-expect -- the sign-out lands on either answer, as the BFF reaches the IdP or not; each is checked
       expect(location).toMatch(/localhost:8080/);
     }
     expect((await page.request.get("/api/auth/session")).status()).toBe(401);

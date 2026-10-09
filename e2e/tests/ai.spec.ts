@@ -67,6 +67,7 @@ test("15 a structured answer that does not parse fails the assistant's step, not
   await page.goto("/graphs/new");
   await page.getByText("Assistant", { exact: true }).click();
   // Ark draws the checkbox's control over its input.
+  // eslint-disable-next-line playwright/no-force-option -- Ark draws the control over its input; replaced by @kanzo-tech/testing in part 2
   await page.getByRole("checkbox", { name: `Select ${SOURCE}` }).check({ force: true });
   // In the dev stack TanStack's devtools button floats over the footer's corner.
   await page.addStyleTag({ content: ".tsqd-parent-container { display: none !important; }" });

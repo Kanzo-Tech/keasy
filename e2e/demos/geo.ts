@@ -90,6 +90,6 @@ export async function widenDock(page: Page, by: number) {
 
 /** Zoom the canvas onto what is selected, from the toolbar, when something is. */
 export async function frameSelection(page: Page) {
-  const frame = page.getByRole("button", { name: "Frame the selection" });
-  if (await frame.isVisible()) await frame.click();
+  const button = page.getByRole("button", { name: "Frame the selection" });
+  if (await button.isVisible()) await button.click();
 }

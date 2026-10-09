@@ -120,6 +120,7 @@ export async function agreedCount(page: Page, { total, noun, figure }: { total: 
     .poll(
       async () => {
         const first = await read();
+        // eslint-disable-next-line playwright/no-wait-for-timeout -- measures that nothing happens over a window: the views hold one count across a second
         await page.waitForTimeout(1_000);
         const second = await read();
         if (typeof second === "number" && second === first) agreed = second;

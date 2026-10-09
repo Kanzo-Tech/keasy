@@ -12,6 +12,7 @@ demo("flights-crossfilter", "Crossfiltering over OpenFlights: a click, a brush, 
     await onMap(page, await seedGraph(page, "openflights", { name: "Demo · OpenFlights", reuse: true }));
     await page.getByRole("radio", { name: "Dashboard" }).dispatchEvent("click");
     await page.getByRole("heading", { name: /Count by Airport\.country/ }).waitFor({ timeout: 60_000 });
+    // eslint-disable-next-line playwright/no-wait-for-timeout -- replaced by @kanzo-tech/testing in part 2
     await page.waitForTimeout(900);
   },
 
@@ -26,6 +27,7 @@ demo("flights-crossfilter", "Crossfiltering over OpenFlights: a click, a brush, 
     const c = await country.boundingBox();
     // Bars are sorted by count, so the top one is the country with the most airports.
     await country.click({ position: { x: c!.width * 0.35, y: c!.height * 0.08 } });
+    // eslint-disable-next-line playwright/no-wait-for-timeout -- replaced by @kanzo-tech/testing in part 2
     await page.waitForTimeout(1100);
 
     await chapter("Drag across longitude — just the West");
@@ -37,15 +39,19 @@ demo("flights-crossfilter", "Crossfiltering over OpenFlights: a click, a brush, 
       targetPosition: { x: l!.width * 0.292, y: l!.height * 0.5 },
       steps: 20,
     });
+    // eslint-disable-next-line playwright/no-wait-for-timeout -- replaced by @kanzo-tech/testing in part 2
     await page.waitForTimeout(1100);
     await poster();
 
     await chapter("Switch to the graph — the same filter, on the map");
     await page.getByRole("radio", { name: "Graph" }).click();
+    // eslint-disable-next-line playwright/no-wait-for-timeout -- replaced by @kanzo-tech/testing in part 2
     await page.waitForTimeout(900);
+    // eslint-disable-next-line playwright/no-wait-for-timeout -- replaced by @kanzo-tech/testing in part 2
     await page.waitForTimeout(1400);
 
     await chapter("Every filter lands in the bar");
+    // eslint-disable-next-line playwright/no-wait-for-timeout -- replaced by @kanzo-tech/testing in part 2
     await page.waitForTimeout(900);
   },
 });

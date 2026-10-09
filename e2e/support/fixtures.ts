@@ -3,13 +3,19 @@ import { expect, test as base, type Page } from "@playwright/test";
 import { createGraph } from "./api";
 import { signIn } from "./sign-in";
 
-/** A graph the browser has run to completion, so its corpus opens in Discovery. */
-async function runToCompletion(page: Page): Promise<string> {
-  const id = await createGraph(page, { name: "e2e corpus" });
+/**
+ * A graph the browser has run to completion, so its corpus opens in Discovery: the suite's shop, or
+ * `script`, given `within` ms to run.
+ */
+export async function runToCompletion(
+  page: Page,
+  { name = "e2e corpus", script, within = 180_000 }: { name?: string; script?: string; within?: number } = {},
+): Promise<string> {
+  const id = await createGraph(page, { name, script });
   await page.goto(`/graphs/${id}`);
   // Opening the page runs nothing: the run is asked for.
   await page.getByRole("button", { name: "Run", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Explore" })).toBeEnabled({ timeout: 180_000 });
+  await expect(page.getByRole("button", { name: "Explore" })).toBeEnabled({ timeout: within });
   return id;
 }
 

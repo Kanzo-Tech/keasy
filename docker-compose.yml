@@ -181,7 +181,7 @@ services:
         aws s3api head-bucket --bucket keasy-dev 2>/dev/null || aws s3 mb s3://keasy-dev
         aws s3api put-bucket-cors --bucket keasy-dev --cors-configuration file:///etc/seaweedfs/cors.json
         aws s3 sync --no-progress /seed/vocab s3://keasy-dev/vocab
-        # The end-to-end suite's own fixtures (e2e/fixtures/): it never reads the dev seed.
+        # The failure scenarios' own fixtures (e2e/fixtures/); the smoke (e2e/smoke/) reads the dev seed.
         aws s3 sync --no-progress /e2e s3://keasy-dev/e2e
         if [ -f /seed/ldbc/.sha256 ]; then
           aws s3 sync --no-progress --exclude ".gitignore" --exclude ".sha256" /seed/ldbc s3://keasy-dev/ldbc

@@ -2,8 +2,8 @@ import { discoverUrl } from "../support/fixtures";
 import { agreedCount, brush, expect, PLOT, saveDashboard, test } from "../support/smoke";
 
 /**
- * The LDBC SNB dev graph (infra/dev/examples/snb/mapping.fossil over `make seed`'s SF0.1): 327,588
- * vertices of eight types. Every number below is the seed's, counted from infra/dev/examples/snb/data/,
+ * The LDBC SNB dev graph (infra/dev/examples/snb/mapping.fossil over `make seed`'s SF0.1): 341,661
+ * vertices of nine types. Every number below is the seed's, counted from infra/dev/examples/snb/data/,
  * which `make seed` pins by digest.
  */
 
@@ -11,7 +11,7 @@ import { agreedCount, brush, expect, PLOT, saveDashboard, test } from "../suppor
 const RELATION = "Comment>replyOfPost>Post";
 const PATHS = "74,256";
 
-// 327,588 vertices: every view of them takes longer than the shop's 20.
+// 341,661 vertices: every view of them takes longer than the shop's 20.
 test.describe.configure({ timeout: 300_000 });
 
 /** One tile of every kind and every chart mark, over a relation with a hop — a join. */
@@ -32,12 +32,12 @@ const DASHBOARD = {
 
 test("the social network opens in Graph view with every vertex", async ({ page, snbGraph }) => {
   await page.goto(`/graphs/${snbGraph}/discover`);
-  await expect(page.locator('[data-slot="graph-counts"]')).toHaveText(/^327\.6K nodes · /, { timeout: 120_000 });
+  await expect(page.locator('[data-slot="graph-counts"]')).toHaveText(/^341\.7K nodes · /, { timeout: 120_000 });
 });
 
 test("the social network's dashboard over a hop draws every tile kind, and holds under a brush and a filter chip", async ({ page, snbGraph }) => {
   await saveDashboard(page, snbGraph, RELATION, DASHBOARD);
-  // Opened on the dashboard: the canvas never draws 327.6K nodes on a software GPU first.
+  // Opened on the dashboard: the canvas never draws 341.7K nodes on a software GPU first.
   await page.goto(discoverUrl(snbGraph, { view: "dashboard" }));
 
   const relation = page.getByRole("group", { name: "Relation" });

@@ -1,0 +1,57 @@
+// Nobel laureates and every prize awarded to 2025 (`make seed`: nobelprize.org's
+// API v2.1, CC0, derived into six JSON files; data/NOTICE), mapped onto
+// shapes.shex.
+//
+// A dev graph whose time is on a relation: an award is a vertex between its
+// laureate and its category, with its year, so a timeline over `date` greys the
+// prizes of other years and the edges into them. The files are JSON, where a
+// year and a date are the text the API wrote, and the mapping says what each is:
+// `parse.year` and `parse.date`.
+
+type { Laureate, LaureateAward, Category, University, Country } := io.shex("@Nobel laureates shapes/shapes.shex")
+
+LaureateRow    := io.json("@Nobel laureates/laureates.json")
+AwardRow       := io.json("@Nobel laureates/awards.json")
+CategoryRow    := io.json("@Nobel laureates/categories.json")
+InstitutionRow := io.json("@Nobel laureates/institutions.json")
+AffiliationRow := io.json("@Nobel laureates/affiliations.json")
+CountryRow     := io.json("@Nobel laureates/countries.json")
+
+Countries : Country from CountryRow
+    @subject = "https://nobel.example/country/{CountryRow.id}"
+    name     = CountryRow.name
+
+Categories : Category from CategoryRow
+    @subject = "https://nobel.example/category/{CategoryRow.id}"
+    name     = CategoryRow.name
+
+Universities : University from InstitutionRow
+    @subject        = "https://nobel.example/institution/{InstitutionRow.id}"
+    name            = InstitutionRow.name
+    addressLocality = InstitutionRow.city
+    addressCountry  = Country(InstitutionRow.country)
+
+Laureates : Laureate from LaureateRow
+    @subject   = "https://nobel.example/laureate/{LaureateRow.id}"
+    name       = LaureateRow.name
+    gender     = LaureateRow.gender
+    birthday   = parse.date(LaureateRow.birthDate, "%Y-%m-%d")
+    birthPlace = Country(LaureateRow.country)
+
+Awards : LaureateAward from AwardRow
+    @subject   = "https://nobel.example/award/{AwardRow.id}"
+    date       = parse.year(AwardRow.year)
+    share      = parse.integer(AwardRow.share)
+    motivation = AwardRow.motivation
+    laureate   = Laureate(AwardRow.laureate)
+    category   = Category(AwardRow.category)
+
+// An affiliation is one more mapping of the award it belongs to, joined to
+// affiliations.json, so it writes what the type requires again.
+Affiliated : LaureateAward from AwardRow.join(AffiliationRow, on = AwardRow.id == AffiliationRow.award)
+    @subject   = "https://nobel.example/award/{AwardRow.id}"
+    date       = parse.year(AwardRow.year)
+    share      = parse.integer(AwardRow.share)
+    laureate   = Laureate(AwardRow.laureate)
+    category   = Category(AwardRow.category)
+    university = University(AffiliationRow.institution)

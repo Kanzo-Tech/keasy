@@ -2,6 +2,7 @@ import "client-only";
 
 import { ApiError } from "@keasy/api";
 import { MutationCache, QueryCache, QueryClient } from "@tanstack/react-query";
+import { releaseCorpora } from "@/lib/fossil/corpus-cache";
 
 let redirected = false;
 
@@ -18,8 +19,11 @@ let redirected = false;
  */
 const FRESH_MS = 30_000;
 
+const queryCache = new QueryCache({ onError: (error) => handleAuthError(error) });
+releaseCorpora(queryCache);
+
 export const queryClient = new QueryClient({
-  queryCache: new QueryCache({ onError: (error) => handleAuthError(error) }),
+  queryCache,
   mutationCache: new MutationCache({ onError: (error) => handleAuthError(error) }),
   defaultOptions: {
     queries: {

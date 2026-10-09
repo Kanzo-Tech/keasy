@@ -2,7 +2,6 @@
 
 import dynamic from "next/dynamic";
 import { createContext, use, useMemo, useState } from "react";
-import { useSuspenseQuery } from "@tanstack/react-query";
 import {
   BarChart3Icon,
   InfoIcon,
@@ -51,7 +50,7 @@ import {
 } from "@kanzo-tech/ui";
 import { HeaderEnd } from "@/app/(main)/_parts/header-end";
 import { AskPanel } from "./_parts/ask-panel";
-import { CorpusProvider, corpusQuery, useCorpus, useJoinGraph } from "@/lib/fossil/corpus";
+import { CorpusProvider, useCorpus, useJoinGraph } from "@/lib/fossil/corpus";
 import { GraphInfo } from "./_parts/graph-info";
 import { GraphSettings } from "./_parts/graph-settings";
 import { RulesPanel } from "./_parts/rules-panel";
@@ -59,7 +58,6 @@ import { useDiscoverState, type PanelId, type ViewId } from "./_parts/discover-u
 import { Boundary } from "@/components/boundary";
 import { ProblemView } from "@/components/problem-view";
 import { toastError } from "@/lib/errors";
-import { settled } from "@/lib/api/settled";
 
 /**
  * Discovery, composed as kanzo-ui's `workspace` showcase: the header picks what `ShellMain` shows
@@ -115,18 +113,11 @@ export default function DiscoverPage({ params }: { params: Promise<{ id: string 
         }
         frame={(failure) => <ShellMain className="p-4">{failure}</ShellMain>}
       >
-        <Opened id={id} />
+        <CorpusProvider graphId={id}>
+          <Workspace />
+        </CorpusProvider>
       </Boundary>
     </>
-  );
-}
-
-function Opened({ id }: { id: string }) {
-  const corpus = settled(useSuspenseQuery(corpusQuery(id)));
-  return (
-    <CorpusProvider value={corpus}>
-      <Workspace />
-    </CorpusProvider>
   );
 }
 

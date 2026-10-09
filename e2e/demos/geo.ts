@@ -70,7 +70,10 @@ export async function hideEdges(page: Page) {
 /** Pause the live layout from the graph's toolbar, if it is running. */
 export async function pauseLayout(page: Page) {
   const pause = page.getByRole("button", { name: "Pause the layout" });
-  if (await pause.isVisible()) await pause.click();
+  if (!(await pause.isVisible())) return;
+  // A map placement stops the layout on its own, so the button can be gone by the time it is clicked:
+  // that is the paused state already.
+  await pause.click({ timeout: 2000 }).catch(() => {});
 }
 
 /** Widen the dock by `by` pixels from its resize handle, so a panel's columns fit. */

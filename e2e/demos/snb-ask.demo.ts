@@ -66,7 +66,10 @@ demo("snb-ask", "Ask over LDBC SNB: a plain question, its query and chart, and t
     await page.waitForTimeout(400);
     await box.press("Enter");
 
-    const answer = page.locator('[data-slot="query-result"]').last();
+    // An answer with rows, which draws its toolbar; a refusal draws none. The model reads a refusal and
+    // writes the query again, so the step waits for the one that ran — and a take with none fails
+    // rather than recording "The query failed".
+    const answer = page.locator('[data-slot="query-result"]').filter({ has: page.locator('[data-slot="query-result-toolbar"]') }).last();
     await answer.waitFor({ timeout: 180_000 });
     // The card appears with its query still running; the step is its result.
     await page

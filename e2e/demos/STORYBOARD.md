@@ -98,10 +98,28 @@ depends on which relations the mapping writes as edges); read it off GraphCounts
 | 1 | A graph of airports, spread by its routes | `graph.run()` (woken, so the cloud moves on camera) | the transport reads *Pause the layout*; `graph.counts()` → `/3,218 nodes/` (or `3.2K`) |
 | 2 | Put it on a map: longitude across, latitude up | `settings.placement("Map", { x: "lon", y: "lat" })` then `graph.pause()` | `graph.frames()` grew; the placement radio *Map* is checked · **poster** |
 | 3 | Find anything — here, every airport in Spain | `search.add("country:Spain")` (Info → *Find anything in the graph* → type → *Add 40 to the subset*) | the add button read `Add 40 to the subset`; `bar.readout()` → `/^40 of 3,218\b/` |
-| 4 | Frame what you kept | `graph.frame()` | `graph.frame()` resolved (a frame drawn after the press); `bar.readout()` still `/^40 of 3,218\b/` |
+| 4 | Lasso the peninsula — the Canaries stay out | `graph.lasso(PENINSULA)` (the polygon below, in lon/lat) | `bar.readout()` → `/^31 of 3,218\b/` |
+| 5 | Frame what you kept | `graph.frame()` | `graph.frame()` resolved (a frame drawn after the press); `bar.readout()` still `/^31 of 3,218\b/` |
 
 The last step replaces *"The map keeps only what you picked"*: `frame()` frames what is in full
-colour since kanzo-ui #112, which is what the old take could not do (keasy #112's comment).
+colour since kanzo-ui #112, which is what the old take could not do (keasy #112's comment). Framing
+the 40 would take in the Canaries and the Atlantic down to Morocco's latitude, so step 4 lassoes the
+peninsula first, as decided.
+
+**The lasso, in data** (`x` = lon, `y` = lat, the Map placement's own axes):
+
+```ts
+const PENINSULA: [number, number][] = [
+  [-9.5, 44], [-1.7, 43.6], [-1.5, 43.2], [3.3, 42.3], [4.6, 40.2], [4.6, 38.5], [0.5, 38.3],
+  [-2, 36.5], [-5.2, 36.3], [-6.4, 36.4], [-7.4, 37.3], [-7.3, 38.5], [-6.6, 40.5], [-6.6, 41.8],
+  [-8.2, 41.9], [-9.3, 41.9],
+];
+```
+
+It follows the Portuguese border and the Pyrenees and takes in the Balearics, so it catches **31
+airports, every one of them Spanish** (28 on the peninsula, Palma, Ibiza and Menorca): the readout
+is 31 whether the lasso's clause is ANDed with the search's or stands alone. Left out of the 40: the
+8 Canaries and Melilla. No airport of Portugal, France, Andorra, Gibraltar or Morocco is inside.
 
 **Numbers** (`data/airports.csv`)
 
@@ -112,12 +130,13 @@ colour since kanzo-ui #112, which is what the old take could not do (keasy #112'
 | Airports in Spain | 40 | `select count(*) from a where country='Spain'` |
 | …of them in the Canaries | 8 (lat < 30) | `select count(*) from a where country='Spain' and lat<30` |
 | Spain's extent | lon −17.9 … 4.2, lat 27.8 … 43.6 | `select min(lat),max(lat),min(lon),max(lon) from a where country='Spain'` |
+| In the `PENINSULA` lasso | 31, all Spain (Melilla and the 8 Canaries out); extent lon −8.63 … 4.22, lat 36.67 … 43.56 | point-in-polygon (even–odd) over every airport's (lon, lat); DuckDB spatial: `select country, count(*) from a where ST_Contains(ST_GeomFromText('POLYGON((-9.5 44, …, -9.3 41.9, -9.5 44))'), ST_Point(lon, lat)) group by 1` |
 
 **Risks**
 
-- The frame takes in the Canary Islands, so the framed view is Iberia plus the Atlantic down to
-  Morocco's latitude, not a close-up of the peninsula. That is the truth of the data; if the user wants
-  the peninsula alone, step 4 becomes a lasso in data — `graph.lasso([[-10, 35], [5, 35], [5, 44.5], [-10, 44.5]])` — then `frame()`, at the cost of one more step.
+- `graph.lasso` takes data coordinates; with the Map placement those are lon/lat. If the harness
+  takes a closed ring, repeat the first point. A plain box (`[-10, 35]` … `[5, 44.5]`) is not a
+  substitute: it catches 57 airports, 13 of them in France, 5 in Algeria and 3 in Morocco.
 - The force layout needs the GPU (the demos project runs Chromium on it); the frame count in arrange
   is a state, but how spread 300 frames is depends on the machine. Tune once.
 
@@ -189,6 +208,35 @@ becomes the check of step 4 rather than a step of its own — the frame is the s
 
 *"Send the answer back as a filter"* is dropped as decided: the answer ends on the dashboard.
 
+**Replaying the model**
+
+kanzo-ui's workspace showcase (`docs/showcases/workspace/graph-view.tsx`, `GraphAsk`) shows Ask
+without a model: `dataAgent` runs over `mockModel` (`docs/lib/mock-model.ts`, the AI SDK's
+`MockLanguageModelV4`), a *recording* that matches the question to an intent and returns the
+`answer` tool call with that intent's tile, then reads its sentence off the rows the tool brought
+back. The language is canned; the tool still queries the corpus for real under the page's
+crossfilter. Swapping the recording for the gateway model is one line.
+
+keasy's model is behind the BFF, so the demo records at the network instead, with the same split —
+the model's words replayed, the `answer` tool run for real by the page:
+
+1. **Capture, once, from a good live run** — `make demo DEMO=snb-ask LIVE=1 RECORD=1`. In arrange,
+   `page.route(AI, async (route) => { const r = await route.fetch(); calls.push({ ask: lastUser(route.request()), body: await r.text() }); await route.fulfill({ response: r }); })`
+   (`AI` = `**/api/ai/chat/completions`, `support/fixtures.ts`). After the take's checks pass (the
+   tile says `Firefox`/`324`, the card is on the dashboard), write `calls` to
+   `e2e/demos/recordings/snb-ask.json`: one SSE body per model call, in order — the tool-call turn,
+   then the turn after the tool. A take whose checks fail writes nothing, so a refused query is
+   never recorded.
+2. **Replay, for the site take** (the default) — `page.route(AI, (route) => route.fulfill({ status: 200, contentType: "text/event-stream", body: next(route.request()) }))`,
+   where `next` serves the recorded bodies in order and throws when a request's last user message
+   is not the recorded one (the question changed: re-capture). `sse()`/`text()` in
+   `support/fixtures.ts` already build this stream format for the e2e tests.
+3. `ask.warmUp()` is skipped on replay (no model to load); it stays on `LIVE=1`.
+
+Because the tool runs on the page, the chart's numbers (Firefox 324 over the women in view) are
+still DuckDB's, and the check still fails if the recorded tool call drops the filter. Re-capture
+when the prompt, the tool's schema or the SNB example change.
+
 **Numbers**
 
 | Figure | Value | Query |
@@ -199,12 +247,8 @@ becomes the check of step 4 rather than a step of its own — the frame is the s
 
 **Risks**
 
-- **The model.** The answer is Qwen3's (`models.yml`) and differs between takes; a refused query
-  (the last take ended in one) makes `answer()` reject with the Problem's words — which is the point:
-  the take fails instead of recording it. Record until the check passes, or record the model: a
-  Playwright `page.route(AI, …)` replaying a captured SSE stream (`sse()`/`text()` in
-  `support/fixtures.ts` already build one) makes the take deterministic. Recommended for the site
-  take, with the live model kept for `make demo DEMO=snb-ask LIVE=1`.
+- **The model — decided: the site take replays a recorded answer; the live model stays covered by
+  the e2e tests** (`e2e/tests/ai.spec.ts` and the smoke runs). See *Replaying the model* below.
 - The check that the answer counts **women** (324, not 628) is what proves "over what's in view";
   a model that drops the filter fails it.
 - **keasy must wire `AnswerCard`'s `onAdd`.** kanzo-ui main has the AnswerCard with *Add to the
@@ -230,9 +274,15 @@ becomes the check of step 4 rather than a step of its own — the frame is the s
 | # | Subtitle | Action | Check |
 | --- | --- | --- | --- |
 | 1 | Every airport, checked against your rules | — (the panel is read) | `rules.rule("Airport").state()` → *2 violations · 2 warnings* |
-| 2 | 44 airports break a rule — show the codes that do | `rules.rule("Airport").show("An ICAO airport code is four letters.")` | its button reads `Showing 24`; `bar.readout()` → `/^24 of 3,218\b/` |
+| 2 | 44 airports break a rule — show them all | `rules.rule("Airport").showAll("violations")` (presses *Show all 44 violations*) | the button is pressed; `bar.readout()` → `/^44 of 3,218\b/` |
 | 3 | Amber warns: 218 airports above 4,000 ft | `rules.rule("Airport").show(/high-altitude airport/)` | button `Showing 218`; `bar.readout()` → `/^218 of 3,218\b/` · **poster** |
-| 4 | The Andes, the Rockies, Ethiopia, Tibet | `graph.frame()` | resolved |
+| 4 | The Rockies, the Andes, Iran, Ethiopia, Tibet | `graph.frame()` | resolved |
+
+Step 3 is the high-altitude finding (218), not *Show all 245 warnings*: the subtitle and the frame
+are about altitude, and the 29 airports without a time zone would add points that are not high. If
+a take wants the severity instead, step 3 is `showAll("warnings")` → `/^245 of 3,218\b/` and its
+subtitle *Amber warns: 245 airports, most of them high* — but step 4 then frames more than the
+mountains. Recommended: the finding. The subtitle of step 4 is 45 characters.
 
 **Numbers** (`data/airports.csv`; the rules are `rules.ttl`)
 
@@ -240,28 +290,27 @@ becomes the check of step 4 rather than a step of its own — the frame is the s
 | --- | --- | --- |
 | No IATA code (violation) | 20 | `select count(*) from a where iata is null` (none present-but-malformed: 0) |
 | ICAO not four letters (violation) | 24 | `select count(*) from a where icao is not null and not regexp_full_match(icao,'[A-Z]{4}')` |
-| Airports with a violation | 44 (the two sets are disjoint) | `… where iata is null or (icao is not null and not regexp_full_match(icao,'[A-Z]{4}'))` |
+| Airports with a violation | 44 (the two sets are disjoint) — *Show all 44 violations* | `… where iata is null or (icao is not null and not regexp_full_match(icao,'[A-Z]{4}'))` |
 | No time zone (warning) | 29 | `select count(*) from a where timezone is null` |
 | Above 4,000 ft (warning) | 218 | `select count(*) from a where altitude > 4000` |
+| Airports with a warning | 245 (29 + 218, two airports in both) — *Show all 245 warnings* | `… where timezone is null or altitude > 4000` |
 | …where | US 46 · China 29 · Mexico 15 · Iran 14 · Ethiopia 9 · Peru 8 · Colombia 8 · Mongolia 7 · Bolivia 6 · Turkey 6 | `select country, count(*) from a where altitude>4000 group by 1 order by 2 desc limit 10` |
 | …by region (boxes) | Rockies/US–Mexico west 48 · Andes 30 · Tibet/Qinghai 17 · Iran 14 · Mexican plateau 13 · Ethiopian highlands 9 · elsewhere 87 | `case when lon between -125 and -100 and lat>25 … end` over the same 218 |
 | Highest | Daocheng Yading 14,472 ft (China); El Alto, La Paz 13,355 ft | `select name, country, altitude from a order by altitude desc limit 5` |
 
-**Contradicts the plan — read before recording**
+**Was in the way — now settled**
 
-- **There is no "Show 44".** The panel groups findings by rule property and constraint
-  (`rulesOf` in `rules-validation.ts`), so the Airport rule lists two violations, *ICAO not four
-  letters* (24) and *no IATA code* (20), each with its own Show, and holds **one** clause at a time
-  ("the panel's one clause"). Showing 44 needs either a product change (a Show per severity, *Show
-  the 44 violations*) or the subtitle above, which names 44 and shows the 24. Recommended: the
-  product change, as Show-by-severity is what a reader expects; until then, step 2 as written.
+- **"Show 44" is a product change**, Kanzo-Tech/keasy#127: per rule, *Show all N violations* and
+  *Show all N warnings* publish the union of that severity's focus nodes as the panel's one clause
+  (`Airport · violations`). Over OpenFlights: 44 violations, 245 warnings. The demo needs it merged
+  and `RulesPanel`'s `rule(name).showAll("violations" | "warnings")` (presses *Show all N …*, waits
+  on `aria-pressed`).
 - The rule's badge counts **findings**, not airports (*2 violations · 2 warnings*), so no badge reads
-  44 or 218.
-- *"The Andes, the Rockies, Ethiopia, Tibet"* is true but not the whole of the 218: the largest
-  single country is the US (46), China is 29, and Mexico (15) and Iran (14) are as visible on the
-  frame as Ethiopia (9). A truer subtitle: *"The Rockies, the
-  Andes, Iran, Ethiopia, Tibet"* (46 chars). The frame of 218 points spread over four continents is
-  close to the world view; the step reads as "where they are" rather than a zoom.
+  44 or 218; the Show-all button is what names 44.
+- Step 4's subtitle names the regions the 218 sit in by weight: the Rockies and the US–Mexico west
+  (48), the Andes (30), Iran (14), the Ethiopian highlands (9), Tibet and Qinghai (17). The US (46),
+  China (29) and Mexico (15) lead by country. The frame of 218 points over four continents is close
+  to the world view; the step reads as "where they are" rather than a zoom.
 
 **Risks**
 
@@ -386,7 +435,7 @@ create view r  as select pa.*, o.country, o.activityType from pa join o on o.id 
 | --- | --- | --- | --- |
 | 1 | Every Nobel prize since 1901, on one time axis | — (the timeline is read) | `timeline.range()` → `null` (no window); `graph.counts()` names the whole graph |
 | 2 | Brush 1901–1929: German universities lead | `timeline.brush([new Date("1901-01-01"), new Date("1930-01-01")])` | `timeline.range()` → `/^1901 – 19(29|30)$/`; `bar.chips()` holds the `date` clause |
-| 3 | Play it forward — after 1945 the prizes go west | `timeline.play()`; `env.until(async () => /^19[89]\d/.test((await timeline.range()) ?? ""), "the window reached the 1980s")`; `timeline.pause()` | the button is not pressed after pause |
+| 3 | Play it forward — in the 1940s the prizes go west | `timeline.play()`; `env.until(async () => /^19[89]\d/.test((await timeline.range()) ?? ""), "the window reached the 1980s")`; `timeline.pause()` | the button is not pressed after pause |
 | 4 | The 1990s: 58 of 78 affiliations are American | `timeline.brush([new Date("1990-01-01"), new Date("2000-01-01")])`; `discover.view("Dashboard")` | `timeline.range()` was `/^1990 – 1999|2000$/`; `dashboard.tile("Count by Country.name")` top bar `USA` · **poster** |
 | 5 | One filter, every view | — | `bar.chips()` still holds the `date` clause on the dashboard |
 
@@ -413,8 +462,8 @@ create view x  as select aw.year::int y, i.country from af join aw on aw.id = af
 | 1990–1999 | 104 awards; 78 affiliations, USA 58, Germany 5, France 4 | `… where y between 1990 and 1999` |
 | US share by decade | 1900s 1/34 · 1920s 2/33 · 1930s 12/45 · 1940s 15/32 · 1950s 33/62 · 1990s 58/78 · 2000s 79/114 | `select y//10*10, count(*) filter (where country='usa'), count(*) from x group by 1` |
 
-The crossover is in the 1940s (15 of 32), not at 1945 exactly; *"after 1945"* is right for every
-decade after it (US ≥ 50 % from the 1940s on).
+The crossover is in the 1940s (US 15 of 32), so the subtitle says *"in the 1940s"*; the US holds
+≥ 50 % in every decade after it.
 
 **Risks**
 
@@ -442,7 +491,7 @@ Beyond the library harnesses (`GraphCanvasHarness`, `ChartHarness`, `TimelineHar
 | `DiscoverPage` (`support/app/discover.ts`) | `open(id, { view?, panel? })` (deep link, `discoverUrl`); `view("Graph" \| "Dashboard")` (the view switch through `DockHarness.with({ name: <its group name> })`); `relation(root, hops?)` (*Root type* select, *Hop* menu items `label → Type`); `widenDock(px)`; `onMap()` (the shared OpenFlights arrange); `hoverChip(field)` | `openGraphView`, `onMap`, `widenDock`, the `dispatchEvent("click")` on *Dashboard*. The relation is not in the URL, so it is a call |
 | `SettingsPanel` (`support/app/settings.ts`) | `placement("Map", { x, y })`; `marks("Legible")`; `edges("Hidden")`; `labels(n)`; `timeline(column)` | `placeOnMap`, `hideEdges`, `choose`; `timeline` is new (the *Timeline* select, `time-by`) |
 | `GraphSearch` (`support/app/search.ts`) | `add(query): Promise<number>` — opens *Find anything in the graph*, types, presses *Add N to the subset*, returns N | demo 2's inline steps |
-| `RulesPanel` (`support/app/rules.ts`) | `checked()` (the *Checked over …* line); `rule(name)` → `state()` (the badges), `show(message \| RegExp)` (presses *Show N*, waits for *Showing N*), `conforms()` | keasy's panel is `Diagnostic`s, not the library's `Findings`, so `FindingsHarness` does not drive it |
+| `RulesPanel` (`support/app/rules.ts`) | `checked()` (the *Checked over …* line); `rule(name)` → `state()` (the badges), `show(message \| RegExp)` (presses *Show N*, waits for *Showing N*), `showAll("violations" \| "warnings")` (presses *Show all N …*, waits on `aria-pressed`; keasy#127), `conforms()` | keasy's panel is `Diagnostic`s, not the library's `Findings`, so `FindingsHarness` does not drive it |
 | `AskPanel` (`support/app/ask.ts`) | `warmUp()`; `composer()` → `AnswerHarness.with({ name: "Ask about your data…" })` | `warmUp` in `snb-ask.demo.ts` |
 | seeds / API (`support/seeds.ts`, `support/stack/api.ts`) | `saveRules(id, example)`; `saveDashboard(id, relationKey, spec)` | rules PUT exists inline in flights-rules; the dashboard PUT is new (demos 6, 7) |
 
@@ -466,8 +515,8 @@ group is unnamed, naming it (*View*) is a one-line keasy change and the clean fi
    and `public/videos/{cordis,nobel}/{light,dark}.mp4` + `poster-{light,dark}.webp`, made as the
    handoff note says (ffmpeg `-crf 22 -g 30 -keyint_min 30 -sc_threshold 0 -movflags +faststart`;
    posters via sharp, 1600 wide).
-2. **Steps re-read for every tab** from the new chapters: Hidden patterns gains *Frame what you
-   kept*; Crossfilter loses *One filter, every chart* and gains *Frame what the filters keep*; Ask
+2. **Steps re-read for every tab** from the new chapters: Hidden patterns gains *Lasso the peninsula* and *Frame what
+   you kept*; Crossfilter loses *One filter, every chart* and gains *Frame what the filters keep*; Ask
    gains *Filter: women only* and *Add it to the dashboard*; Assessment loses *Or only the ones that
    pass* and gains the warning and the frame.
 3. Stat lines: the five existing ones stand. Assessment's *3,218 airports assessed* is right (3,218).
@@ -476,13 +525,12 @@ group is unnamed, naming it (*View*) is a one-line keasy change and the clean fi
 
 ## Anything in the data that contradicts a planned subtitle
 
-- **Assessment, "show the violations (44)"** — no single Show reaches 44: the two violations (24 ICAO,
-  20 IATA) are two findings and the panel holds one clause. Product change or reworded subtitle (above).
-- **Assessment, "the Andes, Rockies, Ethiopia, Tibet"** — true but partial: the US (46), China (29),
-  Mexico (15) and Iran (14) lead the 218; Ethiopia is 9.
-- **Hidden patterns, framing Spain** — the 40 include 8 airports in the Canaries, so the frame is not
-  the peninsula alone.
-- **Nobel, "Europe → US after 1945"** — the crossover is in the 1940s (US 15 of 32); before 1939
-  Europe held 85 % (112 of 132), after 1945 the US 61 % (425 of 697).
+- **Assessment, "show the violations (44)"** — settled by keasy#127 (*Show all 44 violations*);
+  warnings are 245 as a severity, 218 as the high-altitude finding the take shows.
+- **Assessment, "the Andes, Rockies, Ethiopia, Tibet"** — settled: *"The Rockies, the Andes, Iran,
+  Ethiopia, Tibet"*.
+- **Hidden patterns, framing Spain** — settled: the `PENINSULA` lasso (31, all Spanish) before the frame.
+- **Nobel, "Europe → US after 1945"** — settled: *"in the 1940s"* (US 15 of 32); before 1939 Europe
+  held 85 % (112 of 132), from 1946 the US 61 % (425 of 697).
 - **CORDIS, by programme / over time** — not telling enough for a step (flat over 2022–2026), and
   the programme is two hops away.

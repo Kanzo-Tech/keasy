@@ -11,7 +11,7 @@
 
 include:
   - path:
-      - https://github.com/Kanzo-Tech/ui.git#${KANZO_UI_REF:-v0.35.0}:services/compose.dev.yaml
+      - https://github.com/Kanzo-Tech/ui.git#${KANZO_UI_REF:-v0.36.1}:services/compose.dev.yaml
       # keasy's additions to the platform in development: its roles on the seeded groups, and moving a
       # realm applied before this layout onto it.
       - infra/dev/platform.yaml

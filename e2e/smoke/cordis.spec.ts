@@ -1,5 +1,6 @@
 import { fileURLToPath } from "node:url";
 
+import { discoverUrl } from "../support/fixtures";
 import { expect, test } from "../support/smoke";
 
 /**
@@ -21,7 +22,7 @@ test("the funding rules find what the seed lacks: countries and SME status, and 
   // Opened beside the dashboard (#116's ?view and ?panel), as the flights rules are: the Graph view
   // never mounts. Landing in it and clicking across left 206K nodes laying out on the CPU rudof needs,
   // and the check that takes ~4 s beside the dashboard had not ended after 23 min.
-  await page.goto(`/graphs/${cordisGraph}/discover?view=dashboard&panel=rules`);
+  await page.goto(discoverUrl(cordisGraph, { view: "dashboard", panel: "rules" }));
   // infra/dev/examples/cordis/rules.ttl, dropped on the panel as a person drops it.
   await page.locator('input[type="file"]').setInputFiles(fileURLToPath(new URL("../../infra/dev/examples/cordis/rules.ttl", import.meta.url)));
   await expect(page.getByText("Checked over all 206,629 nodes")).toBeVisible({ timeout: 240_000 });

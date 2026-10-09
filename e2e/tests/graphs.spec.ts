@@ -1,7 +1,7 @@
 import { expect, test } from "../support/fixtures";
 
-import { api, createGraph, expectRefusal, MISSING } from "../support/api";
-import { expectProblem } from "../support/problem";
+import { api, createGraph, expectRefusal, MISSING } from "../support/stack/api";
+import { expectProblem } from "../support/stack/problem";
 
 test("06 a 500 on the graph is shown as its code, and the poll stops", async ({ page }) => {
   // Running, with no tab running it, so the page polls it; the first read is real, the rest fail.
@@ -21,6 +21,7 @@ test("06 a 500 on the graph is shown as its code, and the poll stops", async ({ 
   await page.goto(`/graphs/${id}`);
   await expectProblem(page, "server/internal", { within: 10_000 });
   const after = asked;
+  // eslint-disable-next-line playwright/no-wait-for-timeout -- 06 measures that nothing happens over a window: no poll after the failure
   await page.waitForTimeout(7_000);
   expect(asked, "no poll after the failure").toBe(after);
 });
@@ -83,6 +84,7 @@ test("22 a draft that does not exist opens as graph/not-found, and nothing autos
   });
   await page.goto(`/graphs/new?draft=${MISSING}`);
   await expectProblem(page, "graph/not-found", { within: 10_000 });
+  // eslint-disable-next-line playwright/no-wait-for-timeout -- 22 measures that nothing happens over a window: no autosave of a missing draft
   await page.waitForTimeout(3_000);
   expect(saves).toBe(0);
 });

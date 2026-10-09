@@ -36,6 +36,8 @@ jobs:
 
       - run: pnpm --filter @keasy/e2e typecheck
 
+      - run: pnpm --filter @keasy/e2e lint
+
       # The issuer and the store are addressed as *.localhost from both sides; Chromium resolves
       # them to loopback itself, this makes curl and Node agree.
       - name: Resolve the dev hostnames

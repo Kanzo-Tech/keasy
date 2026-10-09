@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
 
-import { SCENARIOS } from "./support/scenarios";
+import { SCENARIOS } from "./support/stack/scenarios";
 
 const TESTS = join(dirname(fileURLToPath(import.meta.url)), "tests");
 

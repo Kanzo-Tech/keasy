@@ -1,8 +1,8 @@
 import { mkdirSync } from "node:fs";
 import { expect, test as setup } from "@playwright/test";
 
-import { api, CONNECTIONS } from "./support/api";
-import { signIn } from "./support/sign-in";
+import { api, CONNECTIONS } from "../stack/api";
+import { signIn } from "./sign-in";
 
 /** Sign in once per role and keep the session cookie for the scenarios: acme's seed accounts
  * (kanzo-ui services/auth/seed). The editor is the scenarios' default; it creates, as they do. */

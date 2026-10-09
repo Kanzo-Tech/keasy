@@ -1,13 +1,14 @@
-# Data-quality rules for the OpenFlights graph geo.fossil writes: a SHACL Core
-# shapes graph to drop on its Rules panel. The terms are geo.shex's, as the
-# corpus's `triples` view states them — schema.org for the airport and its
+# Data-quality rules for the OpenFlights graph mapping.fossil writes: a SHACL
+# Core shapes graph to drop on its Rules panel. The terms are shapes.shex's, as
+# the corpus's `triples` view states them — schema.org for the airport and its
 # codes, WGS 84 for its position, `of:` for the dataset's own.
 #
 # The shapes say what a scheduled-service airport should carry, not what
-# geo.shex requires, so the seed both conforms and falls short. Of the 3,218
+# shapes.shex requires, so the seed both conforms and falls short. Of the 3,218
 # airports, 20 have no IATA code; 24 have an ICAO field that is not a
 # four-letter ICAO code — Transport Canada identifiers such as CAJ4, and FAA
-# ones such as S31; and 29 have no time zone, which is a warning. Every
+# ones such as S31; 29 have no time zone, which is a warning; and 218 sit above
+# 4,000 ft, where takeoff performance is limited, which is a warning too. Every
 # position is in range and every route lands on an airport.
 
 @prefix sh:     <http://www.w3.org/ns/shacl#> .
@@ -63,6 +64,12 @@
     sh:minCount 1 ;
     sh:severity sh:Warning ;
     sh:message "The airport has no IANA time zone." ;
+  ] ;
+  sh:property [
+    sh:path of:altitude ;
+    sh:maxInclusive 4000 ;
+    sh:severity sh:Warning ;
+    sh:message "A high-altitude airport: takeoff performance is limited." ;
   ] ;
   sh:property [
     sh:path of:routeTo ;

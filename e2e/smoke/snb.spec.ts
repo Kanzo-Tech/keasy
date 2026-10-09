@@ -1,9 +1,9 @@
 import { agreedCount, brush, expect, PLOT, saveDashboard, test } from "../support/smoke";
 
 /**
- * The LDBC SNB dev graph (infra/dev/snb.fossil over `make seed`'s SF0.1): 327,588 vertices of eight
- * types. Every number below is the seed's, counted from infra/dev/seed/ldbc/, which `make seed` pins
- * by digest.
+ * The LDBC SNB dev graph (infra/dev/examples/snb/mapping.fossil over `make seed`'s SF0.1): 327,588
+ * vertices of eight types. Every number below is the seed's, counted from infra/dev/examples/snb/data/,
+ * which `make seed` pins by digest.
  */
 
 /** Comments that reply to a post, each with the post it replies to: 74,256 of the 151,043 comments. */

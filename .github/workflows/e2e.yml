@@ -46,11 +46,11 @@ jobs:
         run: make deps
 
       # The dev seeds the smoke runs on, as `make seed` fetches them: pinned by digest, so the cache
-      # is keyed on the script that pins them. `s3-init` uploads them as the stack comes up.
+      # is keyed on the scripts that pin them. `s3-init` uploads them as the stack comes up.
       - uses: actions/cache@v4
         with:
           path: infra/dev/.cache
-          key: dev-seed-${{ hashFiles('infra/dev/seed.sh') }}
+          key: dev-seed-${{ hashFiles('infra/dev/examples/*/fetch.sh') }}
 
       - name: Fetch the dev seeds
         run: make seed

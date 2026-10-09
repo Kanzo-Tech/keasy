@@ -1,5 +1,5 @@
 // LDBC Social Network Benchmark, SF0.1 — the Interactive v1 CsvCompositeMergeForeign
-// files as LDBC publishes them (`make seed`), mapped onto snb.shex.
+// files as LDBC publishes them (`make seed`), mapped onto shapes.shex.
 //
 // Every entity file carries its one-to-many relationships as foreign-key columns
 // (merge-foreign), so each of those edges is a property of the entity's mapping.
@@ -11,7 +11,7 @@
 // identifiers, so `Row.<field>` cannot spell them, and fossil has no way yet to
 // rename or reference a column whose header is not one.
 
-type { Place, Organisation, TagClass, Tag, Person, Forum, Post, Comment } := io.shex("@Dev shapes/snb.shex")
+type { Place, Organisation, TagClass, Tag, Person, Forum, Post, Comment } := io.shex("@LDBC SNB shapes/shapes.shex")
 
 PlaceRow        := io.csv("@LDBC SNB/static/place_0_0.csv", delimiter = "|")
 OrganisationRow := io.csv("@LDBC SNB/static/organisation_0_0.csv", delimiter = "|")

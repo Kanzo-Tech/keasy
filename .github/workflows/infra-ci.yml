@@ -42,4 +42,9 @@ jobs:
             --env-file infra/prod/prod.env --env-file "$RUNNER_TEMP/secrets.env" config --quiet
 
       - name: The scripts
-        run: shellcheck infra/prod/secrets.sh infra/prod/sops infra/dev/seed.sh
+        run: shellcheck infra/prod/secrets.sh infra/prod/sops infra/dev/seed.sh infra/dev/realm-migrate.test.sh
+
+      # A development stack from before compose.yaml declared keasy moves onto it by itself, whatever
+      # states it holds.
+      - name: realm-migrate, on every state a stack can hold
+        run: infra/dev/realm-migrate.test.sh

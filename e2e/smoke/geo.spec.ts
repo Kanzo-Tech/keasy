@@ -1,6 +1,6 @@
 import { fileURLToPath } from "node:url";
 
-import { switchPanel } from "../support/fixtures";
+import { discoverUrl } from "../support/fixtures";
 import { agreedCount, brush, expect, PLOT, saveDashboard, test } from "../support/smoke";
 
 /**
@@ -40,8 +40,7 @@ test("the flights graph opens in Graph view: every airport, and the routes betwe
 
 test("the flights dashboard draws every tile kind, and holds under a brush and a filter chip", async ({ page, geoGraph }) => {
   await saveDashboard(page, geoGraph, "Airport", DASHBOARD);
-  await page.goto(`/graphs/${geoGraph}/discover`);
-  await page.getByRole("radio", { name: "Dashboard" }).click();
+  await page.goto(discoverUrl(geoGraph, { view: "dashboard" }));
   const filters = page.getByRole("region", { name: "Filters" });
   await expect(filters).toContainText(`${AIRPORTS.toLocaleString("en-US")} Airport`, { timeout: 60_000 });
 
@@ -88,12 +87,43 @@ test("the flights dashboard draws every tile kind, and holds under a brush and a
   await expect(card("Airport rows").getByRole("row").filter({ hasNotText: "Airport.country" }).filter({ hasNotText: "Spain" })).toHaveCount(0);
 });
 
+test("leaving Discover with a dashboard filter in force logs nothing, and the page opens again", async ({ page, geoGraph }) => {
+  // A frame that comes late, as on a busy machine or in a tab in the background: Mosaic batches its
+  // queries behind `requestAnimationFrame`, so what a page queues on its way out runs well after it
+  // unmounts: a corpus detached as the page goes, rather than when the cache collects it, is gone
+  // under those queries.
+  await page.addInitScript(() => {
+    const frame = window.requestAnimationFrame.bind(window);
+    window.requestAnimationFrame = (run) => frame((t) => setTimeout(() => run(t), 250));
+  });
+  await saveDashboard(page, geoGraph, "Airport", DASHBOARD);
+  await page.goto(discoverUrl(geoGraph, { view: "dashboard" }));
+  const filters = page.getByRole("region", { name: "Filters" });
+  await expect(filters).toContainText(`${AIRPORTS.toLocaleString("en-US")} Airport`, { timeout: 60_000 });
+
+  await filters.getByRole("button", { name: /^Airport\.country:/ }).click();
+  await page.getByRole("textbox", { name: "Filter values" }).fill("United States");
+  await page.getByRole("option", { name: /^United States \d/ }).click();
+  await page.keyboard.press("Escape");
+  await expect(filters).toContainText(/^.*\d[\d,]* of 3,218 Airport/);
+  // The dashboard hidden, its clause still on the page, the canvas drawing what it keeps.
+  await page.getByRole("radio", { name: "Graph" }).click();
+  await expect(page.locator('[data-slot="graph-counts"]')).toHaveText(/ of 3\.2K nodes match/, { timeout: 60_000 });
+
+  // Leaving by a link unmounts the page in the browser: the dashboard withdraws its clause as it
+  // goes, and every client still connected asks again. Those queries must not outlive their clients
+  // and run once the corpus is detached (the guard fails the test on the `Catalog Error` they logged).
+  // A `goto` would reload the page and tear nothing down.
+  await page.getByRole("navigation", { name: "breadcrumb" }).getByRole("link", { name: "Graphs" }).click();
+  await expect(page.getByPlaceholder("Search graphs...")).toBeVisible();
+  await page.goBack();
+  await expect(page.locator('[data-slot="graph-counts"]')).toHaveText(/^3\.2K nodes · 36\.9K edges$/, { timeout: 60_000 });
+});
+
 test("the flights rules find what the seed lacks: IATA codes, four-letter ICAO codes, time zones, and flag high airports", async ({ page, geoGraph }) => {
-  await page.goto(`/graphs/${geoGraph}/discover`);
-  // From Dashboard view: on CI's software GPU the canvas's layout shares the CPU with rudof, and the
+  // Beside the dashboard: on CI's software GPU the canvas's layout shares the CPU with rudof, and the
   // check that takes ~10 s beside the dashboard took ~3 min beside the canvas.
-  await page.getByRole("radio", { name: "Dashboard" }).click();
-  await switchPanel(page, "Rules");
+  await page.goto(discoverUrl(geoGraph, { view: "dashboard", panel: "rules" }));
   // infra/dev/examples/openflights/rules.ttl, dropped on the panel as a person drops it.
   await page.locator('input[type="file"]').setInputFiles(fileURLToPath(new URL("../../infra/dev/examples/openflights/rules.ttl", import.meta.url)));
   await expect(page.getByText("Checked over all 3,218 nodes")).toBeVisible({ timeout: 60_000 });

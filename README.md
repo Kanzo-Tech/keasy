@@ -237,18 +237,21 @@ make demo DEMO=snb-explore         # record one, light and dark
 make demo DEMO=all THEME=dark      # every demo, one side
 ```
 
-Each lands in `e2e/demos/out/` as `<demo>-<theme>.mp4` (H.264, 1080p) and `<demo>-<theme>.png`
-(the poster), gitignored. It needs `ffmpeg` on PATH (`brew install ffmpeg`), which turns
-Playwright's WebM into the MP4. The graph view lays out on the GPU, so record on a machine with
-one: without, it paints at a frame or two a second.
+Each lands in `e2e/demos/out/` as `<demo>-<theme>.mp4` (H.264, 1600×900), `<demo>-<theme>.png`
+(the poster) and `<demo>-<theme>.chapters.json` (each subtitle and when it shows), gitignored.
+The viewport is 1600×900 so the app's text reads once the video sits in a page. It needs `ffmpeg` on PATH (`brew install ffmpeg`), which turns
+Playwright's frames into the MP4. The demos project runs Chromium on the GPU (Metal on a Mac,
+`playwright.config.ts`), which the Graph view needs: in software it paints at a frame or two a second.
 
-`make demo` restarts the `web` container with `NEXT_PUBLIC_KEASY_DEMO=1`, which turns off Next's dev
-indicator and React Query's devtools, and puts it back when it is done.
+`make demo` touches no container for a graph demo: Next's dev indicator and React Query's devtools
+are hidden in the recording's browser. A demo that asks the model (`snb-ask`) swaps the AI gateway onto
+`e2e/demos/models.yml` for the recording and puts the dev models back after.
 
 **Adding a demo** is a file `e2e/demos/<name>.demo.ts` calling `demo(name, description, { arrange,
 act })` from `e2e/demos/record.ts`; `make demo` lists it from that title. `arrange` gets the page
 ready off camera (`demoGraph` finds or runs a dev graph); `act` is what is recorded, with
-`chapter(title)` for step titles and `poster()` where the still should be. The cursor and each
+`chapter(text)` for a subtitle saying what is happening (no title cards) and `poster()` where the
+still should be. The cursor and each
 action's title are Playwright's (`page.screencast.showActions`); `locator.describe("…")` is what a
 title reads. `snb-explore.demo.ts` is the worked example.
 

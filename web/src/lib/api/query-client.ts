@@ -18,8 +18,12 @@ let redirected = false;
  */
 const FRESH_MS = 30_000;
 
+// The corpora it holds are released by `releaseCorpora`, registered in `app/providers.tsx` with the
+// app's failure path, which imports the API client, and the API client imports this.
+const queryCache = new QueryCache({ onError: (error) => handleAuthError(error) });
+
 export const queryClient = new QueryClient({
-  queryCache: new QueryCache({ onError: (error) => handleAuthError(error) }),
+  queryCache,
   mutationCache: new MutationCache({ onError: (error) => handleAuthError(error) }),
   defaultOptions: {
     queries: {

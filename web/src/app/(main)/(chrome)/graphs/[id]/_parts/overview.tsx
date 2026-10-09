@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo } from "react";
-import { useSuspenseQuery } from "@tanstack/react-query";
 import { TableRefNode } from "@uwdata/mosaic-sql";
 import { useQueryRows } from "@kanzo-tech/ui/analytics";
 import {
@@ -29,8 +28,7 @@ import {
   TableRow,
 } from "@kanzo-tech/ui";
 import type { Schemas } from "@/lib/api/client";
-import { settled } from "@/lib/api/settled";
-import { CorpusProvider, corpusQuery, useCorpus } from "@/lib/fossil/corpus";
+import { CorpusProvider, useCorpus } from "@/lib/fossil/corpus";
 import { formatDate, formatGraphDuration } from "@/lib/ui/format";
 import { SchemaDiagram } from "./schema-diagram";
 import type { EdgeTable, VertexType } from "./schema-layout";
@@ -40,9 +38,8 @@ import type { EdgeTable, VertexType } from "./schema-layout";
  * vended for the graph. Suspends while it opens; keasy keeps no copy of it.
  */
 export function Overview({ graph }: { graph: Schemas["Graph"] }) {
-  const corpus = settled(useSuspenseQuery(corpusQuery(graph.id)));
   return (
-    <CorpusProvider value={corpus}>
+    <CorpusProvider graphId={graph.id}>
       <Holds graph={graph} />
     </CorpusProvider>
   );

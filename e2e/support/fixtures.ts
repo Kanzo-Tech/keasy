@@ -32,17 +32,32 @@ export function text(content: string, finish: string | null = null) {
   return { id: "e2e", object: "chat.completion.chunk", created: 0, model: "chat", choices: [{ index: 0, delta: { content }, finish_reason: finish }] };
 }
 
-/** Open a graph's Discovery on the dock panel `panel` (Info · Ask · Rules · Settings). */
-export async function openPanel(page: Page, graphId: string, panel: "Ask" | "Rules") {
-  await page.goto(`/graphs/${graphId}/discover`);
-  await switchPanel(page, panel);
+/**
+ * A graph's Discovery as its URL names it: the `view` in the main region and the dock's `panel`, or
+ * `none` for the dock collapsed. Left out, each is the page's default: Graph, and Info beside it —
+ * nothing beside a dashboard.
+ */
+export function discoverUrl(
+  graphId: string,
+  { view, panel }: { view?: "graph" | "dashboard"; panel?: "info" | "ask" | "rules" | "settings" | "none" } = {},
+): string {
+  const query = new URLSearchParams();
+  if (view) query.set("view", view);
+  if (panel) query.set("panel", panel);
+  return `/graphs/${graphId}/discover${query.size ? `?${query}` : ""}`;
+}
+
+/** Open a graph's Discovery, in Graph view, with `panel` in the dock. */
+export async function openPanel(page: Page, graphId: string, panel: "ask" | "rules") {
+  await page.goto(discoverUrl(graphId, { panel }));
 }
 
 /**
- * Put `panel` in the dock of the Discovery already open, keeping what the page has picked. Pressing
- * the panel the dock already holds closes it, and Discovery opens on Info.
+ * Put `panel` in the dock of the Discovery already open, as a reader does mid-way, keeping what the
+ * page has picked. Pressing the panel the dock already holds closes it, so a test that only needs a
+ * panel open opens it from the URL with `openPanel` or `discoverUrl`.
  */
-export async function switchPanel(page: Page, panel: "Info" | "Ask" | "Rules") {
+export async function switchPanel(page: Page, panel: "Info" | "Ask" | "Rules" | "Settings") {
   await page.getByRole("button", { name: panel, exact: true }).or(page.getByRole("radio", { name: panel })).first().click();
 }
 

@@ -1,3 +1,4 @@
+import { discoverUrl } from "../support/fixtures";
 import { agreedCount, brush, expect, PLOT, saveDashboard, test } from "../support/smoke";
 
 /**
@@ -36,9 +37,8 @@ test("the social network opens in Graph view with every vertex", async ({ page, 
 
 test("the social network's dashboard over a hop draws every tile kind, and holds under a brush and a filter chip", async ({ page, snbGraph }) => {
   await saveDashboard(page, snbGraph, RELATION, DASHBOARD);
-  await page.goto(`/graphs/${snbGraph}/discover`);
-  // The canvas draws 327.6K nodes on a software GPU: the switch is dispatched, not clicked through it.
-  await page.getByRole("radio", { name: "Dashboard" }).dispatchEvent("click");
+  // Opened on the dashboard: the canvas never draws 327.6K nodes on a software GPU first.
+  await page.goto(discoverUrl(snbGraph, { view: "dashboard" }));
 
   const relation = page.getByRole("group", { name: "Relation" });
   await relation.getByRole("combobox", { name: "Root type" }).click();

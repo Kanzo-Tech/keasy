@@ -1,0 +1,49 @@
+# Nobel laureates and their awards, as shapes: the input vocabulary of
+# mapping.fossil, over what `make seed` derives (data/; CC0, see its NOTICE).
+#
+# The prize a laureate won is a vertex — nobelprize.org's own Linked Data
+# vocabulary models it so, as `nobel:LaureateAward` between the laureate and the
+# category — and that is the W3C's n-ary relation pattern: a date on a relation
+# is a property of the relation's vertex. The award's year is `dcterms:date` as
+# an `xsd:gYear` (Dublin Core's W3CDTF admits a bare year), because
+# `nobel:year`'s declared range is `xsd:integer` and a year typed as a number is
+# not a time. The award points at its laureate (`nobel:laureate`), so the
+# relation is written where the award is. Persons are FOAF, places schema.org's `Country`, institutions
+# DBpedia's `University` as the vocabulary's `nobel:university` ranges over.
+
+PREFIX nobel:   <http://data.nobelprize.org/terms/>
+PREFIX dcterms: <http://purl.org/dc/terms/>
+PREFIX foaf:    <http://xmlns.com/foaf/0.1/>
+PREFIX schema:  <https://schema.org/>
+PREFIX dbo:     <http://dbpedia.org/ontology/>
+PREFIX xsd:     <http://www.w3.org/2001/XMLSchema#>
+
+nobel:Laureate {
+  foaf:name      xsd:string ;
+  foaf:gender    xsd:string ? ;
+  foaf:birthday  xsd:date ? ;
+  schema:birthPlace @schema:Country ?
+}
+
+nobel:LaureateAward {
+  dcterms:date     xsd:gYear ;
+  nobel:share      xsd:integer ;
+  nobel:motivation xsd:string ? ;
+  nobel:laureate   @nobel:Laureate ;
+  nobel:category   @nobel:Category ;
+  nobel:university @dbo:University *
+}
+
+nobel:Category {
+  foaf:name xsd:string
+}
+
+dbo:University {
+  foaf:name           xsd:string ;
+  schema:addressLocality xsd:string ? ;
+  schema:addressCountry  @schema:Country ?
+}
+
+schema:Country {
+  schema:name xsd:string
+}

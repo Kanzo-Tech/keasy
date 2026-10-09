@@ -24,7 +24,7 @@ dev: ## Start or rebuild the dev stack, and wait until the web answers
 	docker compose $(if $(LOCAL_ALIASES),--profile local-models) up -d --build --wait --wait-timeout 1800
 	@echo "keasy: http://acme.localhost:3000"
 
-seed: ## Fetch the dev graphs (LDBC SNB SF0.1, ~17 MB; OpenFlights, ~3.5 MB; checksummed) for the next `make dev` to upload
+seed: ## Fetch the dev graphs (LDBC SNB SF0.1, ~17 MB; OpenFlights, ~3.5 MB; Nobel laureates, ~4 MB; checksummed) for the next `make dev` to upload
 	sh infra/dev/seed.sh
 
 clean: ## Nuclear reset: remove containers, volumes, images

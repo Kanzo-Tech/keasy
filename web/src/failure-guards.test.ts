@@ -91,6 +91,8 @@ describe("the failure guards", () => {
       "web/src/app/(main)/_parts/trail.tsx",
       // Suggested questions: a failure leaves no pills, and the chat works the same (`@kanzo-tech/ai/data`).
       "web/src/app/(main)/(workspace)/graphs/[id]/discover/_parts/ask-panel.tsx",
+      // The saved dashboard, held for the whole page because Ask adds to it; a failed read is drawn in the Dashboard view, and the graph and the dock stay.
+      "web/src/app/(main)/(workspace)/graphs/[id]/discover/_parts/dashboard-store.tsx",
       // Follows the rules file and the page's subset; a file or a check that fails is shown in the findings' place.
       "web/src/app/(main)/(workspace)/graphs/[id]/discover/_parts/rules-validation.ts",
     ]);

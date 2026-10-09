@@ -130,7 +130,7 @@ export function useGraphKey(): string {
  * Every vertex of the corpus as one relation — its key, its `subject` (the `identity` column, the
  * IRI the corpus's RDF mapping makes of it) and its `type` — one `SELECT` per vertex table, unioned.
  * It is what a selection on the graph filters whatever the type, so it is the relation a panel scopes
- * by: the Ask agent's `scope`, and the rules' focus nodes read back as vertices.
+ * by: the Ask panel's subset count, and the rules' focus nodes read back as vertices.
  */
 export function useVertices(): Query {
   const { graphId } = useCorpus();

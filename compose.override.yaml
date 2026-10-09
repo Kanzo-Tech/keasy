@@ -1,0 +1,227 @@
+# Development, on top of compose.yaml — Compose reads this file on its own, so `docker compose
+# logs web`, `docker compose restart acme-server` and the rest need no flags. Every value is a dev
+# literal; a local .env overrides any variable (.env.example).
+#
+# The platform comes from kanzo-ui at KANZO_UI_REF, in its development shape: Keycloak on :8080 with
+# two organizations (acme, globex) and seeded people, the AI gateway on :4000 with both aliases on
+# local models (`make dev` pulls them unless .env names a provider for both).
+#
+# `*.localhost` is loopback on the host and a network alias here, so one URL works from the browser
+# and from a container: the S3 endpoint a vended credential names is addressed that way.
+
+include:
+  - path:
+      - https://github.com/Kanzo-Tech/ui.git#${KANZO_UI_REF:-v0.36.1}:services/compose.dev.yaml
+      # keasy's additions to the platform in development: its roles on the seeded groups, and moving a
+      # realm applied before this layout onto it.
+      - infra/dev/platform.yaml
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: web/Dockerfile.dev
+    pull_policy: build
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./web/src:/app/web/src
+      # The contract (@keasy/api) whole — spec, types and client — so `make api` reaches the running
+      # web; its node_modules stay the image's.
+      - ./api:/app/api
+      - /app/api/node_modules
+    environment:
+      # Development runs one organization's server, so every host reaches it.
+      KEASY_API_URL: http://acme-server:8080
+      # Set by `make demo` alone: the dev server without Next's dev indicator or React Query's
+      # devtools, which a recording would otherwise show (web/next.config.ts).
+      NEXT_PUBLIC_KEASY_DEMO: ${NEXT_PUBLIC_KEASY_DEMO:-}
+    # The first answer is Next compiling the sign-in route — minutes on a small machine after a clean
+    # start, which would otherwise look like a stack that never came up. `make dev` waits for it.
+    healthcheck:
+      timeout: 300s
+      retries: 30
+      start_period: 600s
+    depends_on:
+      acme-server:
+        condition: service_healthy
+
+  # acme's server, built from source and hot-reloaded: `server/src` is mounted and cargo-watch
+  # rebuilds on a change. Crates compile into the persistent `server-target` volume, so only the
+  # first `up` after `make clean` pays a cold compile.
+  acme-server:
+    extends:
+      file: compose.server.yaml
+      service: server
+    build:
+      context: ./server
+      dockerfile: Dockerfile.dev
+    pull_policy: build
+    # Published for curl only; the app reaches the API through the web's `/api/v1`.
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./server/src:/src/server/src
+      - keasy-data:/var/lib/keasy
+      - ./infra/dev/bootstrap.json:/etc/keasy/bootstrap.json:ro
+      - server-target:/src/server/target
+      - cargo-registry:/usr/local/cargo/registry
+    environment:
+      RUST_LOG: debug
+      KEASY_ORG_ALIAS: acme
+      KEASY_WORKSPACE_NAME: Acme Corporation
+      # The dev S3 credential, its data and shapes sources and the sink, in the API's own request
+      # format.
+      KEASY_BOOTSTRAP_FILE: /etc/keasy/bootstrap.json
+      # The dev store answers S3 and STS on one port, as the AWS SDKs read it.
+      AWS_ENDPOINT_URL_S3: http://s3.localhost:9000
+      AWS_ENDPOINT_URL_STS: http://s3.localhost:9000
+    secrets:
+      - source: acme-secret-key
+        target: secret-key
+    healthcheck:
+      retries: 30
+      # The first `up` after `make clean` compiles every dependency.
+      start_period: 900s
+    depends_on:
+      auth-realm:
+        condition: service_completed_successfully
+      # The seeded people and keasy's roles on their groups, before anyone signs in.
+      auth-seed:
+        condition: service_completed_successfully
+      s3-init:
+        condition: service_completed_successfully
+
+  # The dev S3 store: SeaweedFS, one process. Static keys in s3.json; iam.json
+  # declares the role the server's vend assumes (STS AssumeRole with a session
+  # policy, on this same endpoint). The bucket's CORS is cors.json, put by
+  # s3-init: the server default exposes no Content-Range, and the browser's
+  # ranged reads (fossil's object_store) fail without it.
+  # chrislusf/seaweedfs:4.48 is sha256:4e61d15fd35994cb1e43e1e553dff106794841fd9a99ade2fc8c8bfce4d7872d
+  s3:
+    image: chrislusf/seaweedfs:4.48
+    command:
+      - mini
+      - -s3.port=9000
+      - -s3.port.iceberg=0
+      - -s3.port.lance=0
+      - -s3.config=/etc/seaweedfs/s3.json
+      - -s3.iam.config=/etc/seaweedfs/iam.json
+      - -admin.ui=false
+      - -webdav=false
+    ports:
+      - "9000:9000"
+    networks:
+      default:
+        aliases:
+          - s3.localhost
+    volumes:
+      - s3-data:/data
+      - ./infra/dev/seaweedfs:/etc/seaweedfs:ro
+    healthcheck:
+      test: ["CMD", "wget", "-qO", "/dev/null", "http://127.0.0.1:9000/healthz"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
+
+  # Idempotent, so a re-`up` converges. Each example in infra/dev/examples/
+  # goes to examples/<name>/ in the bucket: its shapes, which are in git, to
+  # shapes/, and its data, which `make seed` fetches into its data/ (LDBC SNB
+  # SF0.1, the OpenFlights and CORDIS subsets, the Nobel laureates), to data/ — without the data
+  # the bucket holds the shapes alone, and this says so.
+  s3-init:
+    image: amazon/aws-cli:2.37.8
+    restart: "no"
+    environment:
+      AWS_ACCESS_KEY_ID: keasy-admin
+      AWS_SECRET_ACCESS_KEY: keasy-admin-secret
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_ENDPOINT_URL: http://s3:9000
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - |
+        aws s3api head-bucket --bucket keasy-dev 2>/dev/null || aws s3 mb s3://keasy-dev
+        aws s3api put-bucket-cors --bucket keasy-dev --cors-configuration file:///etc/seaweedfs/cors.json
+        aws s3 cp --no-progress /examples/snb/shapes.shex s3://keasy-dev/examples/snb/shapes/shapes.shex
+        aws s3 cp --no-progress /examples/openflights/shapes.shex s3://keasy-dev/examples/openflights/shapes/shapes.shex
+        aws s3 cp --no-progress /examples/cordis/shapes.shex s3://keasy-dev/examples/cordis/shapes/shapes.shex
+        aws s3 cp --no-progress /examples/nobel/shapes.shex s3://keasy-dev/examples/nobel/shapes/shapes.shex
+        # The failure scenarios' own fixtures (e2e/fixtures/); the smoke (e2e/smoke/) reads the dev seed.
+        aws s3 sync --no-progress /e2e s3://keasy-dev/e2e
+        if [ -f /examples/snb/data/.sha256 ]; then
+          aws s3 sync --no-progress --exclude ".gitignore" --exclude ".sha256" /examples/snb/data s3://keasy-dev/examples/snb/data
+        else
+          echo "s3-init: no LDBC SNB seed — run \`make seed\`, then \`make dev\`"
+        fi
+        if [ -f /examples/openflights/data/.sha256 ]; then
+          aws s3 sync --no-progress --exclude ".gitignore" --exclude ".sha256" /examples/openflights/data s3://keasy-dev/examples/openflights/data
+        else
+          echo "s3-init: no OpenFlights seed — run \`make seed\`, then \`make dev\`"
+        fi
+        if [ -f /examples/cordis/data/.sha256 ]; then
+          aws s3 sync --no-progress --exclude ".gitignore" --exclude ".sha256" /examples/cordis/data s3://keasy-dev/examples/cordis/data
+        else
+          echo "s3-init: no CORDIS seed — run \`make seed\`, then \`make dev\`"
+        fi
+        if [ -f /examples/nobel/data/.sha256 ]; then
+          aws s3 sync --no-progress --exclude ".gitignore" --exclude ".sha256" /examples/nobel/data s3://keasy-dev/examples/nobel/data
+        else
+          echo "s3-init: no Nobel laureates seed — run \`make seed\`, then \`make dev\`"
+        fi
+        aws s3 ls --recursive s3://keasy-dev
+    volumes:
+      - ./infra/dev/examples:/examples:ro
+      - ./e2e/fixtures:/e2e:ro
+      - ./infra/dev/seaweedfs/cors.json:/etc/seaweedfs/cors.json:ro
+    depends_on:
+      s3:
+        condition: service_healthy
+
+  # ── The `faults` profile: what the end-to-end suite breaks things with (e2e/) ──
+  # Neither starts with `make dev`, nor with `make e2e`: the suite starts and
+  # stops each around the one scenario that needs it.
+
+  # A store that accepts every connection and never answers. Shares the S3
+  # store's alias, so with `s3` stopped every vend and read the server makes to
+  # `s3.localhost:9000` meets silence instead (scenario 3). Never up beside
+  # `s3`: Docker's DNS would answer the alias with both.
+  s3-silent:
+    profiles: [faults]
+    image: python:3.12-alpine
+    command: ["python", "-u", "/faults/silent.py", "9000"]
+    volumes:
+      - ./e2e/faults:/faults:ro
+    networks:
+      default:
+        aliases:
+          - s3.localhost
+
+  # The AI gateway, silent: accepts the web's forward and never answers. Shares
+  # the gateway's name, so with `ai-gateway` stopped the BFF's `/api/ai` forward
+  # meets silence instead (scenario 13). Never up beside `ai-gateway`.
+  ai-gateway-silent:
+    profiles: [faults]
+    image: python:3.12-alpine
+    command: ["python", "-u", "/faults/silent.py", "4000"]
+    volumes:
+      - ./e2e/faults:/faults:ro
+    networks:
+      default:
+        aliases:
+          - ai-gateway
+
+# Development secrets, as files: the same names a deployment takes from its environment.
+secrets:
+  keasy-oidc:
+    file: ./infra/dev/secrets/keasy-oidc
+  keasy-session:
+    file: ./infra/dev/secrets/keasy-session
+  acme-secret-key:
+    file: ./infra/dev/secrets/acme-secret-key
+
+volumes:
+  keasy-data:
+  server-target:
+  cargo-registry:
+  s3-data:

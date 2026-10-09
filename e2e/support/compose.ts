@@ -2,20 +2,18 @@ import { execFileSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-/** The repository root, where docker-compose.yml is. */
+/** The repository root, where compose.yaml is. */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
-/** The stack the suite runs against: the dev stack without models (e2e/compose.yml), as `make e2e`
- * and CI bring it up. Every call names the same files, so compose sees one project. */
-const FILES = ["-f", "docker-compose.yml", "-f", "e2e/compose.yml"];
-
+/** The stack the suite runs against: the dev stack (compose.yaml and compose.override.yaml, which
+ * compose reads on its own) without the local models, as `make e2e` and CI bring it up. */
 function compose(...args: string[]) {
-  execFileSync("docker", ["compose", ...FILES, ...args], { cwd: ROOT, stdio: "inherit" });
+  execFileSync("docker", ["compose", ...args], { cwd: ROOT, stdio: "inherit" });
 }
 
 /** `valkey-cli` against the stack's session store, and what it printed. */
 export function valkey(...args: string[]): string {
-  return execFileSync("docker", ["compose", ...FILES, "exec", "-T", "valkey", "valkey-cli", ...args], {
+  return execFileSync("docker", ["compose", "exec", "-T", "valkey", "valkey-cli", ...args], {
     cwd: ROOT,
     encoding: "utf8",
   });

@@ -17,6 +17,7 @@ import {
   GraphLegend,
   GraphRoot,
   GraphStatus,
+  GraphTimeline,
   GraphToolbar,
   useGraphPrefs,
   useGraphState,
@@ -38,6 +39,8 @@ import {
   ResizableResizeTrigger,
   ShellAside,
   ShellBody,
+  ShellDockItem,
+  ShellDockSwitcher,
   ShellFooter,
   ShellMain,
   Show,
@@ -50,6 +53,7 @@ import {
 } from "@kanzo-tech/ui";
 import { HeaderEnd } from "@/app/(main)/_parts/header-end";
 import { AskPanel } from "./_parts/ask-panel";
+import { DashboardStoreProvider } from "./_parts/dashboard-store";
 import { CorpusProvider, useCorpus, useJoinGraph } from "@/lib/fossil/corpus";
 import { GraphInfo } from "./_parts/graph-info";
 import { GraphSettings } from "./_parts/graph-settings";
@@ -61,14 +65,16 @@ import { toastError } from "@/lib/errors";
 
 /**
  * Discovery, composed as kanzo-ui's `workspace` showcase: the header picks what `ShellMain` shows
- * (Graph · Dashboard), the footer strip picks which panel the dock holds (Info · Ask · Rules ·
- * Settings) and collapses it when the active icon is pressed again. Both views and every panel read
- * one graph and one crossfilter, so a lasso on the canvas filters the dashboard and a rule pressed in
- * the dock lights the canvas. `FilterBar`, under the header, is every clause on the page in either
- * view, and the dashboard's filter controls in Dashboard. A dashboard tile is edited in the Format aside at the body's
- * end edge, beside the dock rather than in it, so the panel the reader had open stays open. The view
- * and the dock's panel are the URL's (`./_parts/discover-url`), so a link opens the page as it was
- * left; writing them replaces the URL in place, and neither view is remounted by it.
+ * (Graph · Dashboard), the footer's `ShellDockSwitcher` picks which panel the dock holds (Info · Ask ·
+ * Rules · Settings) and collapses it when the active icon is pressed again. Both views and every
+ * panel read one graph and one crossfilter, so a lasso on the canvas filters the dashboard and a rule
+ * pressed in the dock lights the canvas. `FilterBar`, under the header, is every clause on the page
+ * and the dashboard's filters, with the dashboard's relation as its readout, in either view. The
+ * saved dashboard is the page's (`./_parts/dashboard-store`), because the Ask panel adds answers to
+ * it. A dashboard tile is edited in the Format aside at the body's end edge, beside the dock rather
+ * than in it, so the panel the reader had open stays open. The view and the dock's panel are the
+ * URL's (`./_parts/discover-url`), so a link opens the page as it was left; writing them replaces the
+ * URL in place, and neither view is remounted by it.
  */
 
 // vgplot evaluated during the prerender is a TDZ, so the dashboard loads client-only.
@@ -127,19 +133,29 @@ export default function DiscoverPage({ params }: { params: Promise<{ id: string 
  */
 const GraphFailure = createContext<unknown>(undefined);
 
+/**
+ * The Graph view: the canvas, and under it the timeline over the column Settings → Timeline chose,
+ * in a strip of its own so the brush never covers the legend. With no column chosen `GraphTimeline`
+ * draws nothing and the canvas takes the whole region.
+ */
 function GraphRegion() {
   const failed = useGraphState((s) => s.status === "failed");
   const failure = use(GraphFailure);
   return (
-    <GraphCanvas className="absolute inset-0">
-      <GraphToolbar className="absolute end-2 top-2 z-10" />
-      <GraphLegend className="absolute start-2 bottom-2 z-10" />
-      <Show when={failed && failure !== undefined}>
-        <div className="absolute inset-0 z-20 grid place-items-center p-6">
-          <ProblemView className="w-full max-w-xl" error={failure} />
-        </div>
-      </Show>
-    </GraphCanvas>
+    <div className="absolute inset-0 flex flex-col">
+      <div className="relative min-h-0 flex-1">
+        <GraphCanvas className="absolute inset-0">
+          <GraphToolbar className="absolute end-2 top-2 z-10" />
+          <GraphLegend className="absolute start-2 bottom-2 z-10" />
+          <Show when={failed && failure !== undefined}>
+            <div className="absolute inset-0 z-20 grid place-items-center p-6">
+              <ProblemView className="w-full max-w-xl" error={failure} />
+            </div>
+          </Show>
+        </GraphCanvas>
+      </div>
+      <GraphTimeline className="shrink-0 border-t" />
+    </div>
   );
 }
 
@@ -191,6 +207,7 @@ function Workspace() {
 
   return (
     <GraphFailure value={failure}>
+    <DashboardStoreProvider onAdded={setRelation}>
     <GraphRoot
       coordinator={coordinator}
       filterBy={crossfilter}
@@ -229,12 +246,12 @@ function Workspace() {
         </ToggleGroup>
       </HeaderEnd>
 
-      {/* The readout is the view's: the dashboard's relation in Dashboard, and in Graph none, because
-          what the clauses leave of the graph is the footer's GraphCounts and the legend's rows. */}
+      {/* The readout is the dashboard's relation in either view: the dashboard filters the graph
+          while it is hidden, and its filters stay in the bar to change. */}
       <FilterBar
         className="shrink-0 border-b px-3 py-1.5"
         rowNoun={relation.path.length ? "paths" : relation.root}
-        table={view === "dashboard" ? table : undefined}
+        table={table}
       />
 
       <ShellBody className="min-w-0">
@@ -253,8 +270,8 @@ function Workspace() {
             <ShellMain className="relative size-full min-h-0 bg-background">
               {view === "graph" && <GraphRegion />}
               {/* Hidden, not unmounted, in Graph view: its filters keep filtering the page and stay in
-                  the bar as removable chips (their editing controls leave it until Dashboard is
-                  shown), and its charts ask nothing until it is shown again. */}
+                  the bar as they are drawn in Dashboard, and its charts ask nothing until it is
+                  shown again. */}
               <MosaicClients enabled={view === "dashboard"}>
                 <div className="size-full min-h-0" hidden={view !== "dashboard"}>
                   <DashboardView onRelationChange={setRelation} relation={relation} table={table} />
@@ -297,26 +314,19 @@ function Workspace() {
 
       <ShellFooter className="h-8 flex-row items-center justify-between px-2">
         <CorpusStatus />
-        {/* Single-select and deselectable: clicking the active icon again collapses the dock. */}
-        <ToggleGroup
+        {/* Pressing the open panel's icon again collapses the dock. */}
+        <ShellDockSwitcher
           aria-label="Panels"
-          multiple={false}
-          onValueChange={(d) => {
-            const next = d.value[0] as PanelId | undefined;
-            setDiscover({ panel: next ?? "none" });
-          }}
-          size="sm"
-          spacing={2}
-          value={panelOpen ? [panel] : []}
+          onValueChange={(next) => setDiscover({ panel: next ?? "none" })}
+          value={panelOpen ? panel : null}
         >
           {PANELS.map((p) => (
-            <ToggleGroupItem aria-label={p.label} key={p.id} value={p.id}>
-              <p.icon />
-            </ToggleGroupItem>
+            <ShellDockItem icon={p.icon} key={p.id} label={p.label} value={p.id} />
           ))}
-        </ToggleGroup>
+        </ShellDockSwitcher>
       </ShellFooter>
     </GraphRoot>
+    </DashboardStoreProvider>
     </GraphFailure>
   );
 }

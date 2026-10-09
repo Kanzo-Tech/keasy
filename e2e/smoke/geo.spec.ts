@@ -148,4 +148,10 @@ test("the flights rules find what the seed lacks: IATA codes, four-letter ICAO c
   // Show puts the finding's airports on the page.
   await finding("The airport has no IANA time zone.").getByRole("button", { name: "Show 29" }).click();
   await expect(page.locator('[data-slot="graph-counts"]')).toHaveText(/^29 of 3\.2K nodes match/);
+
+  // Show all is every airport one severity flags, each once: 20 + 24 violations share no airport,
+  // and two of the 29 without a time zone are high too, so 29 + 218 warnings are 245 airports.
+  await expect(airport.getByRole("button", { name: "Show all 245 warnings" })).toBeVisible();
+  await airport.getByRole("button", { name: "Show all 44 violations" }).click();
+  await expect(page.locator('[data-slot="graph-counts"]')).toHaveText(/^44 of 3\.2K nodes match/);
 });

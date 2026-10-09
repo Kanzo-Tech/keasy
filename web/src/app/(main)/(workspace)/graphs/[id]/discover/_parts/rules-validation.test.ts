@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { initSync, Shapes, type ValidationReport } from "@kanzo-tech/rudof-wasm";
 import { beforeAll, describe, expect, it } from "vitest";
-import { rulesOf } from "./rules-validation";
+import { nodesOf, type Rule, rulesOf } from "./rules-validation";
 
 beforeAll(() => {
   const wasm = createRequire(import.meta.url).resolve("@kanzo-tech/rudof-wasm").replace(/rudof_wasm\.js$/, "rudof_wasm_bg.wasm");
@@ -69,5 +69,30 @@ describe("a report, filed under the rules of the file", () => {
 
     expect(rules.Forum.findings.map((finding) => finding.nodes)).toEqual([["https://example.org/f1"]]);
     expect(rules.Person.findings).toEqual([]);
+  });
+});
+
+describe("a rule's findings of one severity, shown at once", () => {
+  const finding = (variant: "destructive" | "warning", nodes: string[]) => ({ id: nodes.join(), variant, message: "", where: "", nodes });
+  const rule: Rule = {
+    id: "airport",
+    name: "Airport",
+    checks: "",
+    off: false,
+    findings: [
+      finding("destructive", ["a1", "a2"]),
+      finding("destructive", ["a3"]),
+      finding("warning", ["a2", "a4"]),
+      finding("warning", ["a4", "a5"]),
+    ],
+  };
+
+  it("is the union of their focus nodes, each node once", () => {
+    expect(nodesOf(rule, "destructive")).toEqual(["a1", "a2", "a3"]);
+    expect(nodesOf(rule, "warning")).toEqual(["a2", "a4", "a5"]);
+  });
+
+  it("is nothing for a severity the rule has no finding of", () => {
+    expect(nodesOf(rule, "info")).toEqual([]);
   });
 });

@@ -1,0 +1,10 @@
+Contains data from the Nobel Prize API (https://www.nobelprize.org/about/developer-zone-2/),
+api.nobelprize.org v2.1, offered under the Creative Commons Zero (CC0) licence by its terms
+of use: https://www.nobelprize.org/about/terms-of-use-for-api-nobelprize-org-and-data-nobelprize-org/
+Source: nobelprize.org. No endorsement by Nobel Prize Outreach is implied.
+
+The six JSON files in this folder are derived from the API's laureates endpoint: every
+laureate with a prize awarded to 2025, their awards, categories, the institutions they were
+affiliated with when awarded, and the countries of birth and of those institutions. They are
+not committed: infra/dev/examples/nobel/fetch.sh derives them, and it is the full description
+of how — a projection of the API's fields, nothing altered.

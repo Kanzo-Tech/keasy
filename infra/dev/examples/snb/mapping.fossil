@@ -4,14 +4,16 @@
 // Every entity file carries its one-to-many relationships as foreign-key columns
 // (merge-foreign), so each of those edges is a property of the entity's mapping.
 //
-// Not mapped yet: the ten many-to-many files (person_knows_person, *_hasTag_tag,
+// person_knows_person is a vertex per row, `Knowing`, between the two people
+// with the date they met: the timeline under the graph reads that date. Its
+// header, `Person.id|Person.id|creationDate`, names one column twice, and the
+// second is `Person.id_1`, as DuckDB names it.
+//
+// Not mapped yet: the nine other many-to-many files (*_hasTag_tag,
 // forum_hasMember_person, person_likes_*, person_hasInterest_tag,
-// person_studyAt/workAt_organisation) and post.csv's `Forum.id` column. Their
-// headers are `Person.id|Tag.id`, `Person.id|Person.id`, … — names that are not
-// identifiers, so `Row.<field>` cannot spell them, and fossil has no way yet to
-// rename or reference a column whose header is not one.
+// person_studyAt/workAt_organisation) and post.csv's `Forum.id` column.
 
-type { Place, Organisation, TagClass, Tag, Person, Forum, Post, Comment } := io.shex("@LDBC SNB shapes/shapes.shex")
+type { Place, Organisation, TagClass, Tag, Person, Forum, Post, Comment, Knowing } := io.shex("@LDBC SNB shapes/shapes.shex")
 
 PlaceRow        := io.csv("@LDBC SNB/static/place_0_0.csv", delimiter = "|")
 OrganisationRow := io.csv("@LDBC SNB/static/organisation_0_0.csv", delimiter = "|")
@@ -21,6 +23,7 @@ PersonRow       := io.csv("@LDBC SNB/dynamic/person_0_0.csv", delimiter = "|")
 ForumRow        := io.csv("@LDBC SNB/dynamic/forum_0_0.csv", delimiter = "|")
 PostRow         := io.csv("@LDBC SNB/dynamic/post_0_0.csv", delimiter = "|")
 CommentRow      := io.csv("@LDBC SNB/dynamic/comment_0_0.csv", delimiter = "|")
+KnowsRow        := io.csv("@LDBC SNB/dynamic/person_knows_person_0_0.csv", delimiter = "|")
 
 // The roots of the two hierarchies (continents, `Thing`) have no parent, and a
 // mapping writes an edge for every row it reads: the roots are their own
@@ -104,3 +107,9 @@ Comments : Comment from CommentRow
     isLocatedIn    = Place(CommentRow.place)
     replyOfPost    = Post(CommentRow.replyOfPost)
     replyOfComment = Comment(CommentRow.replyOfComment)
+
+Knowings : Knowing from KnowsRow
+    @subject     = "https://ldbc-snb.example/knowing/{KnowsRow."Person.id"}-{KnowsRow."Person.id_1"}"
+    creationDate = KnowsRow.creationDate
+    knower       = Person(KnowsRow."Person.id")
+    known        = Person(KnowsRow."Person.id_1")

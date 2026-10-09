@@ -21,7 +21,7 @@ export const SCENARIOS: Record<number, string> = {
   13: "provider silent mid-stream — now: the AI gateway accepts and never answers",
   14: "provider error event mid-stream",
   15: "model answers non-JSON — now: a structured answer that does not parse",
-  16: "invalid SQL from the model",
+  16: "invalid SQL from the model — now: an answer outside the spec",
   17: "a rule that fails",
   18: "run too large",
   19: "tab closed mid-run",

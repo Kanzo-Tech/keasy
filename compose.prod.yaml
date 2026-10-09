@@ -1,0 +1,57 @@
+# A deployment, on top of compose.yaml: the platform as it runs in production, the edge, and the
+# secrets from the environment. One host, its state in Docker volumes. `make deploy` runs
+#
+#   docker compose -f compose.yaml -f compose.prod.yaml -f infra/prod/orgs/<each>.yaml \
+#                  --env-file infra/prod/prod.env up -d --wait --remove-orphans
+#
+# with infra/prod/secrets.sops.env decrypted into its environment, never onto the disk. An
+# organization is one file in infra/prod/orgs/: removing it and deploying stops its server and keeps
+# its data volume. infra/prod/README.md is the operator's guide.
+
+include:
+  - https://github.com/Kanzo-Tech/ui.git#${KANZO_UI_REF:-v0.36.1}:services/compose.yaml
+
+services:
+  # The edge: TLS for every host, from Let's Encrypt. Keycloak's route is infra/prod/traefik.yaml;
+  # each organization's file adds its host to the web's.
+  traefik:
+    image: traefik:v3.7
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedByDefault=false
+      - --providers.file.filename=/etc/traefik/routes.yaml
+      - --entrypoints.web.address=:80
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.websecure.asDefault=true
+      - --entrypoints.websecure.http.tls.certresolver=le
+      - --certificatesresolvers.le.acme.email=${ACME_EMAIL:?ACME_EMAIL is the Let's Encrypt account (infra/prod/prod.env)}
+      - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
+      - --certificatesresolvers.le.acme.tlschallenge=true
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      KEASY_DOMAIN: ${KEASY_DOMAIN}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./infra/prod/traefik.yaml:/etc/traefik/routes.yaml:ro
+      - traefik-acme:/letsencrypt
+    restart: unless-stopped
+
+  web:
+    labels:
+      traefik.enable: "true"
+      traefik.http.services.web.loadbalancer.server.port: "3000"
+
+# The deployment's secrets, from the environment `make deploy` decrypts infra/prod/secrets.sops.env
+# into. Each organization's sealing key is declared in its own file.
+secrets:
+  keasy-oidc:
+    environment: KEASY_OIDC_CLIENT_SECRET
+  keasy-session:
+    environment: KEASY_SESSION_SECRET
+
+volumes:
+  traefik-acme:

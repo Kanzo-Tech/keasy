@@ -4,30 +4,23 @@ import { Suspense, useMemo } from "react";
 import { experimental_streamedQuery as streamedQuery, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Sparkles } from "lucide-react";
 import { count, Query } from "@uwdata/mosaic-sql";
-import { useChartQuery, useClauses, useMosaic } from "@kanzo-tech/ui/analytics";
-import { corpusReferences, usePick } from "@kanzo-tech/graph";
-import { Badge, Button, EmptyDescription, EmptyHeader, EmptyIndicator, EmptyRoot } from "@kanzo-tech/ui";
+import { useChartQuery, useClauses, useMosaic, type JoinGraph } from "@kanzo-tech/ui/analytics";
+import { Badge, EmptyDescription, EmptyHeader, EmptyIndicator, EmptyRoot } from "@kanzo-tech/ui";
 import { Chat, ChatSkeleton, useAgentChat } from "@kanzo-tech/ai";
-import {
-  dataAgent,
-  dataSuggestions,
-  describeSchema,
-  QueryResult,
-  type DataSchema,
-  type DataScope,
-  type QueryOutput,
-} from "@kanzo-tech/ai/data";
+import { AnswerCard, answerRelationsOf, dataAgent, dataSuggestions, readAnswerRelations, type AnswerRelation } from "@kanzo-tech/ai/data";
 import { problemCopy, ProblemView } from "@/components/problem-view";
 import { gateway } from "@/lib/ai";
 import { settled } from "@/lib/api/settled";
 import { coded } from "@/lib/errors";
-import { corpusKey, ONCE, useCorpus, useGraphKey, useVertices } from "@/lib/fossil/corpus";
+import { corpusKey, ONCE, useCorpus, useJoinGraph, useVertices } from "@/lib/fossil/corpus";
+import { useDashboardStore } from "./dashboard-store";
 
 /**
- * The Ask panel — `@kanzo-tech/ai/data` over the graph: `describeSchema` with the joins the corpus
- * declares (`corpusReferences`), `dataAgent` on the page's coordinator under the page's selection,
- * `dataSuggestions` as the pills, and each answer a `QueryResult` whose actions take it back to the
- * page. Nothing here writes SQL; the panel only says what the page is.
+ * The Ask panel — `@kanzo-tech/ai/data` over the graph: `readAnswerRelations` over the corpus's join
+ * graph, `dataAgent` on the page's coordinator under the page's crossfilter, `dataSuggestions` as the
+ * pills, and each answer an `AnswerCard` — the dashboard tile it is, which *Filter to it* narrows the
+ * page to and *Add to the dashboard* adds to the Dashboard view's saved document. Nothing here
+ * writes SQL, and neither does the model: it names a relation, conditions and a tile.
  */
 export function AskPanel() {
   return (
@@ -45,45 +38,45 @@ function AskEmpty() {
           <Sparkles />
         </EmptyIndicator>
         <EmptyDescription className="text-xs">
-          Ask about the graph. Every answer is a query over what is in view.
+          Ask about the graph. Every answer is a tile over what is in view.
         </EmptyDescription>
       </EmptyHeader>
     </EmptyRoot>
   );
 }
 
-/** The catalog as the model reads it, once per graph: the corpus's own tables, and the joins only it knows. */
-function useSchema(): DataSchema {
+/**
+ * What may be asked about, as the model reads it, once per graph: each type alone and through each
+ * of its hops (`answerRelationsOf`, as the `RelationPicker` first offers them), their fields and their
+ * common values.
+ */
+function useRelations(graph: JoinGraph): AnswerRelation[] {
   const { graphId } = useCorpus();
   const { coordinator } = useMosaic();
   return settled(
     useSuspenseQuery({
-      queryKey: [...corpusKey(graphId), "schema"],
-      queryFn: async ({ signal }) =>
-        describeSchema(coordinator, {
-          catalog: graphId,
-          exclude: ["fossil_tables", "fossil_columns"],
-          references: await corpusReferences(coordinator, graphId),
-          signal,
-        }),
+      queryKey: [...corpusKey(graphId), "answer-relations"],
+      queryFn: ({ signal }) => readAnswerRelations(coordinator, graph, answerRelationsOf(graph), { signal }),
       ...ONCE,
     }),
   );
 }
 
 /**
- * Questions to start from, cached per graph and per scope: a filter changed is a different question
+ * Questions to start from, cached per graph and per filter: a filter changed is a different question
  * to ask. Streamed, so the pills land one by one; a failure is drawn in their place, with a retry,
  * and the chat works the same. A few short questions are a completion: `gateway("complete")`.
  */
-function useStarters(schema: DataSchema, scope: DataScope) {
+function useStarters(graph: JoinGraph, relations: readonly AnswerRelation[]) {
   const { graphId } = useCorpus();
-  // Re-rendered on every clause, so the key below is the scope as it is now.
-  useClauses(scope.selection);
+  const { crossfilter } = useMosaic();
+  // Re-rendered on every clause, so the key below is the filter as it is now.
+  useClauses(crossfilter);
   const starters = useQuery({
-    queryKey: [...corpusKey(graphId), "starters", String(scope.selection.predicate(null) ?? "")],
+    queryKey: [...corpusKey(graphId), "starters", String(crossfilter.predicate(null) ?? "")],
     queryFn: streamedQuery({
-      streamFn: ({ signal }) => dataSuggestions({ model: gateway("complete"), schema, scope, abortSignal: signal }),
+      streamFn: ({ signal }) =>
+        dataSuggestions({ model: gateway("complete"), graph, relations, selection: crossfilter, abortSignal: signal }),
     }),
     staleTime: Infinity,
     retry: false,
@@ -98,27 +91,14 @@ function useStarters(schema: DataSchema, scope: DataScope) {
 }
 
 /**
- * An answer that carries the graph's key, added to the page's subset as the answer's own clause — a
- * semi-join on identity, so the graph, the dashboard and the rules follow. Pressed again, it takes
- * the clause back.
+ * *Add to the dashboard*, for whoever may edit it: the page's saved document, which the card reads
+ * *✓ On the dashboard* off, and the write of the next one, which the card waits on and whose failure
+ * it draws. Nothing while the document has not been read, or for a reader who may not change it.
  */
-function AnswerActions({ answer }: { answer: QueryOutput }) {
-  const key = useGraphKey();
-  const subset = usePick(`ask ${answer.sql}`);
-  if (!answer.rows[0] || !(key in answer.rows[0])) return null;
-  const ids = [...new Set(answer.rows.map((row) => Number(row[key])).filter(Number.isFinite))];
-  const added = subset.picked !== null;
-  return (
-    <Button
-      aria-pressed={added}
-      disabled={!added && ids.length === 0}
-      onClick={() => subset.pick(added ? null : ids, "Ask")}
-      size="sm"
-      variant="ghost"
-    >
-      {added ? "✓ In the subset" : "Add to the subset"}
-    </Button>
-  );
+function useAdding() {
+  const store = useDashboardStore();
+  if (store.status !== "ready" || !store.edit) return {};
+  return { dashboards: store.current, onAdd: store.edit.add };
 }
 
 /**
@@ -138,16 +118,16 @@ function SubsetPill({ vertices }: { vertices: Query }) {
 
 function AskChat() {
   const { coordinator, crossfilter } = useMosaic();
-  const key = useGraphKey();
   const vertices = useVertices();
-  const schema = useSchema();
-  const scope = useMemo<DataScope>(() => ({ selection: crossfilter, table: vertices }), [crossfilter, vertices]);
+  const graph = useJoinGraph();
+  const relations = useRelations(graph);
   const agent = useMemo(
-    () => dataAgent({ model: gateway("chat"), coordinator, schema, scope, key }),
-    [coordinator, schema, scope, key],
+    () => dataAgent({ model: gateway("chat"), coordinator, graph, relations, selection: crossfilter }),
+    [coordinator, graph, relations, crossfilter],
   );
   const chat = useAgentChat(agent);
-  const starters = useStarters(schema, scope);
+  const starters = useStarters(graph, relations);
+  const adding = useAdding();
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -163,13 +143,7 @@ function AskChat() {
         suggesting={starters.suggesting}
         suggestions={starters.proposals}
         tools={{
-          query: (part, { stopped }) => (
-            <QueryResult
-              actions={(answer) => <AnswerActions answer={answer} />}
-              part={part}
-              stopped={stopped}
-            />
-          ),
+          answer: (part, { stopped }) => <AnswerCard copy={problemCopy} graph={graph} part={part} stopped={stopped} {...adding} />,
         }}
         translations={{ placeholder: "Ask about your data…" }}
       />

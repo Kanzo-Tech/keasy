@@ -1,7 +1,7 @@
 //! Who may call a handler, read off the verified token.
 //!
 //! Three roles, `reader ⊂ editor ⊂ admin`, and the hierarchy is not here: it is
-//! declared once as Keycloak composite roles (`infra/auth`), and the token
+//! declared once as Keycloak composite roles (`compose.yaml`, `x-application`), and the token
 //! carries the expanded set, so an admin's token says admin, editor and reader.
 //! A handler states the least role it admits by taking [`Reader`], [`Editor`]
 //! or [`Admin`], and asks [`Caller::may_modify`] before changing what someone

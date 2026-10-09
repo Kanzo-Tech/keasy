@@ -50,22 +50,21 @@ fn the_spellings_are_published_with_their_rule() {
     }
 }
 
-/// The roles the spec publishes are the ones keasy registers on its client
-/// (`infra/auth/main.tf`), in the order their composites nest.
+/// The roles the spec publishes are the ones keasy registers on its client (`compose.yaml`, its
+/// `x-application`), in the order their composites nest.
 #[test]
 fn the_published_roles_are_the_registered_ones() {
-    let terraform = std::fs::read_to_string(
-        Path::new(env!("CARGO_MANIFEST_DIR")).join("../infra/auth/main.tf"),
-    )
-    .unwrap();
-    let block = terraform
-        .split("roles = {")
+    let compose =
+        std::fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join("../compose.yaml"))
+            .unwrap();
+    let block = compose
+        .split("\n        roles:\n")
         .nth(1)
-        .and_then(|rest| rest.split("\n  }").next())
         .expect("a roles block");
     let registered: Vec<_> = block
         .lines()
-        .filter_map(|l| l.trim().split_once(" = {").map(|(name, _)| name.trim()))
+        .take_while(|l| l.starts_with("          "))
+        .filter_map(|l| l.trim().split_once(": {").map(|(name, _)| name))
         .map(serde_json::Value::from)
         .collect();
     assert_eq!(schema("Role")["enum"], serde_json::Value::from(registered));

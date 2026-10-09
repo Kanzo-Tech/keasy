@@ -91,6 +91,14 @@ test("rules are validated over the corpus's triples: what fails, what conforms, 
   await expect.poll(() => discover.counts()).toMatch(/^2 of 20 nodes match/);
   await shipping.hide();
 
+  // Show all puts every vertex a rule flags at one severity on the page: here the same two people.
+  const people = await rules.rule("Person");
+  expect(await people.offersShowAll("warnings")).toBe(false);
+  expect(await people.showAll("violations")).toBe(2);
+  await expect.poll(() => discover.counts()).toMatch(/^2 of 20 nodes match/);
+  await people.hideAll("violations");
+  await expect.poll(() => discover.counts()).toMatch(/^20 nodes/);
+
   // What conforms is rudof's Shape Fragment, read back by its subjects: six people and every order.
   await rules.conforms();
   await expect.poll(() => discover.counts()).toMatch(/^18 of 20 nodes match/);

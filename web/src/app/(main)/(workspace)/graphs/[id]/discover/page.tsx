@@ -17,6 +17,7 @@ import {
   GraphLegend,
   GraphRoot,
   GraphStatus,
+  GraphTimeline,
   GraphToolbar,
   useGraphPrefs,
   useGraphState,
@@ -132,19 +133,29 @@ export default function DiscoverPage({ params }: { params: Promise<{ id: string 
  */
 const GraphFailure = createContext<unknown>(undefined);
 
+/**
+ * The Graph view: the canvas, and under it the timeline over the column Settings → Timeline chose,
+ * in a strip of its own so the brush never covers the legend. With no column chosen `GraphTimeline`
+ * draws nothing and the canvas takes the whole region.
+ */
 function GraphRegion() {
   const failed = useGraphState((s) => s.status === "failed");
   const failure = use(GraphFailure);
   return (
-    <GraphCanvas className="absolute inset-0">
-      <GraphToolbar className="absolute end-2 top-2 z-10" />
-      <GraphLegend className="absolute start-2 bottom-2 z-10" />
-      <Show when={failed && failure !== undefined}>
-        <div className="absolute inset-0 z-20 grid place-items-center p-6">
-          <ProblemView className="w-full max-w-xl" error={failure} />
-        </div>
-      </Show>
-    </GraphCanvas>
+    <div className="absolute inset-0 flex flex-col">
+      <div className="relative min-h-0 flex-1">
+        <GraphCanvas className="absolute inset-0">
+          <GraphToolbar className="absolute end-2 top-2 z-10" />
+          <GraphLegend className="absolute start-2 bottom-2 z-10" />
+          <Show when={failed && failure !== undefined}>
+            <div className="absolute inset-0 z-20 grid place-items-center p-6">
+              <ProblemView className="w-full max-w-xl" error={failure} />
+            </div>
+          </Show>
+        </GraphCanvas>
+      </div>
+      <GraphTimeline className="shrink-0 border-t" />
+    </div>
   );
 }
 

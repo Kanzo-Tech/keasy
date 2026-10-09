@@ -2,8 +2,8 @@ import { DiscoverPage, saveDashboard } from "../support/app";
 import { agreedCount, expect, test } from "../support/smoke";
 
 /**
- * The LDBC SNB dev graph (infra/dev/examples/snb/mapping.fossil over `make seed`'s SF0.1): 327,588
- * vertices of eight types. Every number below is the seed's, counted from infra/dev/examples/snb/data/,
+ * The LDBC SNB dev graph (infra/dev/examples/snb/mapping.fossil over `make seed`'s SF0.1): 341,661
+ * vertices of nine types. Every number below is the seed's, counted from infra/dev/examples/snb/data/,
  * which `make seed` pins by digest.
  */
 
@@ -11,7 +11,7 @@ import { agreedCount, expect, test } from "../support/smoke";
 const RELATION = "Comment>replyOfPost>Post";
 const PATHS = "74,256";
 
-// 327,588 vertices: every view of them takes longer than the shop's 20.
+// 341,661 vertices: every view of them takes longer than the shop's 20.
 test.describe.configure({ timeout: 300_000 });
 
 /** One tile of every kind and every chart mark, over a relation with a hop — a join. */
@@ -32,13 +32,13 @@ const DASHBOARD = {
 
 test("the social network opens in Graph view with every vertex", async ({ page, env, snbGraph }) => {
   const discover = await DiscoverPage.open(page, env, snbGraph);
-  // 327.6K nodes on a software GPU: the counts are read off the footer, not after the canvas has drawn.
-  await expect.poll(() => discover.counts(), { timeout: 120_000 }).toMatch(/^327\.6K nodes · /);
+  // 341.7K nodes on a software GPU: the counts are read off the footer, not after the canvas has drawn.
+  await expect.poll(() => discover.counts(), { timeout: 120_000 }).toMatch(/^341\.7K nodes · /);
 });
 
 test("the social network's dashboard over a hop draws every tile kind, and holds under a brush and a filter chip", async ({ page, env, snbGraph }) => {
   await saveDashboard(page, snbGraph, RELATION, DASHBOARD);
-  // Opened on the dashboard: the canvas never draws 327.6K nodes on a software GPU first.
+  // Opened on the dashboard: the canvas never draws 341.7K nodes on a software GPU first.
   const discover = await DiscoverPage.open(page, env, snbGraph, { view: "dashboard" });
   await discover.relation("Comment", ["replyOfPost → Post"]);
   const bar = await discover.filters();

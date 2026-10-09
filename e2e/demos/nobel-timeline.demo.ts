@@ -2,7 +2,7 @@ import { expect } from "@playwright/test";
 import { TimelineHarness } from "@kanzo-tech/testing";
 
 import { DiscoverPage, saveDashboard } from "../support/app";
-import { hasExample, seedGraph } from "../support/seeds";
+import { seedGraph } from "../support/seeds";
 import { categories } from "./charts";
 import { demo } from "./record";
 
@@ -17,20 +17,12 @@ const DASHBOARD = {
 const SPREAD = 300;
 
 /**
- * The timeline needs keasy#128 (a timeline under the graph, the *Timeline* setting) and the Nobel
- * example keasy#119; neither is on main yet. When both are, this is empty and the demo records.
- */
-const WAITING = [!hasExample("nobel") && "the Nobel example (keasy#119)", "the timeline under the graph (keasy#128)"].filter(Boolean);
-
-/**
  * The Nobel timeline: every prize since 1901 on one time axis under the graph. A window brushed over
  * 1901–1929, when German universities led; played forward, the prizes go west in the 1940s; and the
  * 1990s on the dashboard, where 58 of 78 affiliations are American. Off camera: the timeline set to
  * the award's year (`date`, `xsd:gYear`), the layout spread, and the dashboard saved.
  */
 demo("nobel-timeline", "Nobel prizes on a timeline: brush the early years, play it forward, read the 1990s", {
-  skip: WAITING.length > 0 && `needs ${WAITING.join(" and ")} on main`,
-
   async arrange({ page, env }) {
     const id = await seedGraph(page, "nobel", { name: "Demo · Nobel laureates", reuse: true });
     await saveDashboard(page, id, RELATION, DASHBOARD);

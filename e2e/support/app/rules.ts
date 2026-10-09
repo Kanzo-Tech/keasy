@@ -115,6 +115,19 @@ export class Rule extends ComponentHarness {
     }
     return count(await nameOf(button));
   }
+
+  /** Presses *Show all N violations* (or *warnings*) again, which takes those vertices off the page. */
+  async hideAll(severity: "violations" | "warnings"): Promise<void> {
+    const button = await this.one({ role: "button", name: SHOW_ALL(severity) }, `the rule offers no Show all ${severity}`);
+    if (!(await pressed(button))) return;
+    await button.click();
+    await this.env.until(async () => !(await pressed(button)), `Show all ${severity} is still pressed`);
+  }
+
+  /** Whether the rule offers *Show all* for `severity`: it does only when something has that severity. */
+  async offersShowAll(severity: "violations" | "warnings"): Promise<boolean> {
+    return (await this.host.find({ role: "button", name: SHOW_ALL(severity) })).length > 0;
+  }
 }
 
 /**

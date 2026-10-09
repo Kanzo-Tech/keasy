@@ -156,4 +156,11 @@ test("the flights rules find what the seed lacks: IATA codes, four-letter ICAO c
   // Show puts the finding's airports on the page.
   expect(await airport.show("The airport has no IANA time zone.")).toBe(29);
   await expect.poll(() => discover.counts()).toMatch(/^29 of 3\.2K nodes match/);
+
+  // Show all is every airport one severity flags, each once: 20 + 24 violations share no airport,
+  // and two of the 29 without a time zone are high too, so 29 + 218 warnings are 245 airports.
+  expect(await airport.showAll("warnings")).toBe(245);
+  await expect.poll(() => discover.counts()).toMatch(/^245 of 3\.2K nodes match/);
+  expect(await airport.showAll("violations")).toBe(44);
+  await expect.poll(() => discover.counts()).toMatch(/^44 of 3\.2K nodes match/);
 });

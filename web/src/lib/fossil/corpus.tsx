@@ -65,6 +65,14 @@ export function corpusQuery(graphId: string) {
     queryFn: async ({ signal }): Promise<Opened> => {
       const attachedTo = await engine({ signal });
       const attachment = await attach(graphId, { engine: attachedTo, host, signal });
+      // The cache gave up on this attach while it was out — the entry removed, reset, or its last
+      // reader gone — and drops what it resolves to, so no `removed` event will ever carry it.
+      // `attach` rejects on an abort only when a step fails, so one that ran to the end lands here:
+      // it is given back now, or nothing ever would.
+      if (signal.aborted) {
+        await attachment.detach();
+        signal.throwIfAborted();
+      }
       return { graphId, attachment, coordinator: attachedTo.coordinator };
     },
     ...ONCE,

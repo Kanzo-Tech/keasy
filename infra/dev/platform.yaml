@@ -22,8 +22,16 @@ services:
     command:
       - |
         old=/provision/auth/terraform.tfstate
+        new=/realm/terraform.tfstate
         [ -s "$$old" ] || exit 0
-        move() { terraform state mv -lock=false -state="$$old" -state-out=/realm/terraform.tfstate "$$1" "$$2"; }
+        has() { [ -s "$$1" ] && terraform state list -state="$$1" "$$2" 2>/dev/null | grep -q .; }
+        # A move whose destination the realm already holds — a realm re-created since — is skipped:
+        # what the old state says of it is stale, and the old state is retired all the same.
+        move() {
+          if has "$$new" "$$2"; then echo "realm-migrate: $$2 is already the realm's"; return 0; fi
+          has "$$old" "$$1" || return 0
+          terraform state mv -lock=false -state="$$old" -state-out="$$new" "$$1" "$$2"
+        }
         move module.keasy 'module.application["keasy"]'
         move module.keasy_api 'module.application_api["keasy"]'
         mv "$$old" "$$old.moved"

@@ -24,8 +24,6 @@ const SPREAD = 300;
  * `xsd:gYear`), the layout spread, and the dashboard saved.
  */
 demo("nobel-timeline", "Nobel prizes on a timeline: brush the early years, play it forward, read the 1990s", {
-  // The timeline is mounted under the Graph view only, so its window leaves the page with it.
-  skip: "needs the timeline under both views (keasy#133), so its window survives the switch to Dashboard",
   async arrange({ page, env }) {
     const id = await seedGraph(page, "nobel", { name: "Demo · Nobel laureates", reuse: true });
     await saveDashboard(page, id, RELATION, DASHBOARD);

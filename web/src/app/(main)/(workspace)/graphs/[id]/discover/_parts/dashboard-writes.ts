@@ -1,30 +1,37 @@
+import { useDebouncedCommit } from "@kanzo-tech/ui";
+import type { Dashboards } from "@kanzo-tech/ui/analytics";
+
+export interface DashboardWritesOptions {
+  /** Writes a document. The writes must land in the order they were made: the store's mutation is scoped. */
+  write: (next: Dashboards) => Promise<unknown>;
+  /** Says a failed write nobody waits on: the editor's. */
+  report: (error: unknown) => void;
+  /** The editor's pause before it writes. */
+  delay: number;
+}
+
 /**
- * Who says a failed dashboard write: whoever waits on it. The editor's writes run after its pause,
- * when nobody waits, so the page says their failure (a toast). *Add to the dashboard* is awaited by
- * `AnswerCard`, which draws a rejection in the card, so the page says nothing more — said twice, one
- * failure reads as two.
+ * The two ways the saved dashboards are written, each owning its failure.
  *
- * Both reach the server through `useDebouncedCommit`'s one `onCommit`, which cannot tell them apart,
- * so the add marks its commit as awaited for the call. `onCommit` runs synchronously inside
- * `commit`, which is what makes the mark exact.
+ * - **`change`**, the editor's: the draft now, the write once editing pauses. Nobody waits on that
+ *   write, so its failure is reported here.
+ * - **`add`**, *Add to the dashboard*'s: written now, and the promise handed back to `AnswerCard`,
+ *   which draws the failure — so it is not reported here too. A pending edit is written first
+ *   (`flush`), so it is not dropped, and its later write cannot land over the add's. `next` was
+ *   built from the draft, so it holds the edit as well.
  */
-export function dashboardWrites(report: (error: unknown) => void) {
-  let awaited = false;
-  return {
-    /** `onCommit`'s write: `write()`, its failure reported unless the commit is awaited. */
-    write<R>(write: () => Promise<R>): Promise<R> {
-      const written = write();
-      if (!awaited) written.catch(report);
-      return written;
+export function useDashboardWrites(stored: Dashboards | undefined, { write, report, delay }: DashboardWritesOptions) {
+  const { draft, change, flush } = useDebouncedCommit(
+    stored,
+    // Only ever a document: nothing commits before the read has settled.
+    (spec: Dashboards | undefined) => {
+      if (spec) write(spec).catch(report);
     },
-    /** `commit` run by a caller that waits on the write and says its failure itself. */
-    awaited<R>(commit: () => R): R {
-      awaited = true;
-      try {
-        return commit();
-      } finally {
-        awaited = false;
-      }
-    },
+    delay,
+  );
+  const add = (next: Dashboards): Promise<unknown> => {
+    flush();
+    return write(next);
   };
+  return { draft, change, add };
 }

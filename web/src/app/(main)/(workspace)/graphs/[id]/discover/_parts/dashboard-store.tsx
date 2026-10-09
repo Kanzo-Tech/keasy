@@ -1,14 +1,13 @@
 "use client";
 
-import { createContext, use, useMemo, useState, type ReactNode } from "react";
+import { createContext, use, useMemo, type ReactNode } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { useDebouncedCommit } from "@kanzo-tech/ui";
 import { type Dashboards, parseDashboards, type Relation } from "@kanzo-tech/ui/analytics";
 import { $api, http, type Schemas } from "@/lib/api/client";
 import { queryClient } from "@/lib/api/query-client";
 import { toastError } from "@/lib/errors";
 import { useCorpus } from "@/lib/fossil/corpus";
-import { dashboardWrites } from "./dashboard-writes";
+import { useDashboardWrites } from "./dashboard-writes";
 
 /**
  * The graph's saved dashboards — one document, a spec per relation — as the page holds them: what
@@ -70,17 +69,17 @@ export function DashboardStoreProvider({ onAdded, children }: {
   }, [saved.data]);
 
   const save = useMutation({
+    // One at a time, in the order they were made: an edit flushed before an add lands before it.
+    scope: { id: `dashboard ${graphId}` },
     mutationFn: async (spec: Dashboards) => (await http.PUT("/v1/graphs/{id}/dashboard", { ...init, body: { spec: { ...spec } } })).data,
     onSuccess: (written) => queryClient.setQueryData(read.queryKey, written),
   });
   // The editor's failed writes are toasted; an add's is drawn in its card (./dashboard-writes).
-  const [writes] = useState(() => dashboardWrites((err) => toastError(err, "Failed to save the dashboard")));
-  const { draft, change, commit } = useDebouncedCommit(
-    stored.spec,
-    // Only ever a document: nothing commits before the read has settled, `undefined` included.
-    (spec: Dashboards | undefined) => writes.write(() => (spec ? save.mutateAsync(spec) : Promise.resolve(undefined))),
-    SAVE_MS,
-  );
+  const { draft, change, add: addNow } = useDashboardWrites(stored.spec, {
+    write: (spec) => save.mutateAsync(spec),
+    report: (err) => toastError(err, "Failed to save the dashboard"),
+    delay: SAVE_MS,
+  });
   const current = draft !== stored.spec ? draft : save.isPending ? save.variables : draft;
 
   const error = saved.error ?? graph.error ?? stored.error;
@@ -105,7 +104,7 @@ export function DashboardStoreProvider({ onAdded, children }: {
                   change,
                   add: (next, { relation }) => {
                     onAdded(relation);
-                    return writes.awaited(() => commit(next));
+                    return addNow(next);
                   },
                 }
               : undefined,

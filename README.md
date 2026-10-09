@@ -84,7 +84,7 @@ at scale factor 0.1 — the official Interactive v1 `CsvCompositeMergeForeign` a
 not in git; fetch it once, before `make dev`:
 
 ```bash
-make seed   # downloads, checks the SHA-256s, unpacks into infra/dev/examples/snb/data/ and openflights/data/
+make seed   # downloads, checks the SHA-256s, unpacks into infra/dev/examples/<name>/data/
 ```
 
 The same `make seed` fetches a second, geographic graph: [OpenFlights](https://openflights.org/data)
@@ -95,6 +95,16 @@ placement (x = `lon`, y = `lat`) draws it as a map. The data is © OpenFlights u
 [ODbL](https://opendatacommons.org/licenses/odbl/1-0/) — `infra/dev/examples/openflights/data/NOTICE` is the
 attribution, and it travels to the bucket with the files. It is derived on your machine and not
 committed: the subset's own digest is pinned, so every machine derives the same bytes.
+
+And a third, whose time is on a relation: the [Nobel laureates](https://www.nobelprize.org/about/developer-zone-2/)
+and every prize awarded to 2025, from nobelprize.org's API (CC0), derived into six JSON files
+(470 KB, needs `python3`). Each prize a laureate won is a vertex between the laureate and the
+category — the API's own Linked Data vocabulary models it so, as `nobel:LaureateAward` — and it
+carries its year as an `xsd:gYear`, so a timeline over it plays the prizes forward and greys the
+edges into the years it leaves out. The API is live, so the download is not pinned and the
+derivation is: prizes to 2025, every list sorted, the digests of the six files; a correction
+upstream fails `make seed` rather than changing the graph. `infra/dev/examples/nobel/data/NOTICE`
+names the source.
 
 Without them the bucket holds the shapes alone and `s3-init` says to run `make seed`.
 The failure scenarios do not need it: `s3-init` also mirrors the suite's own
@@ -107,7 +117,7 @@ Each example is one folder under `infra/dev/examples/<name>/`: `fetch.sh` (what 
 for it), `shapes.shex`, `mapping.fossil` and the gitignored `data/` it fetches. In the bucket it is
 `examples/<name>/data/` and `examples/<name>/shapes/`. At boot the instance declares, over them, a
 data source and a vocabulary connection per example — **LDBC SNB** and **LDBC SNB shapes**,
-**OpenFlights** and **OpenFlights shapes** — and the sink, **Workspace output** (`output/`). Access
+**OpenFlights** and **OpenFlights shapes**, **Nobel laureates** and **Nobel laureates shapes** — and the sink, **Workspace output** (`output/`). Access
 is proved before each connection row is written, and an existing sink is never overwritten. Each
 example's program reads its own two connections; paste one into the studio to map its graph into
 `output/`:
@@ -116,6 +126,7 @@ example's program reads its own two connections; paste one into the studio to ma
 |---------|-------|
 | `infra/dev/examples/snb/mapping.fossil` | LDBC SNB SF0.1 onto its `shapes.shex` |
 | `infra/dev/examples/openflights/mapping.fossil` | OpenFlights onto its `shapes.shex`: 3,218 `Airport` vertices with `lat`/`lon`, 36,906 `routeTo` edges |
+| `infra/dev/examples/nobel/mapping.fossil` | The Nobel laureates onto its `shapes.shex`: 1,018 `Laureate`, 1,026 `LaureateAward` with their year as `xsd:gYear`, 6 `Category`, 379 `University`, 86 `Country` |
 
 `infra/dev/examples/openflights/rules.ttl` is rules for the OpenFlights graph: a SHACL shapes graph
 to drop on the graph's Rules panel in Discover. Most airports conform; 44 fail it (no IATA code, or

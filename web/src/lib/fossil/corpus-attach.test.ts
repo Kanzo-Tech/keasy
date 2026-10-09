@@ -18,7 +18,8 @@ const out: Out[] = [];
 
 vi.mock("@kanzo-tech/ui/analytics", () => ({ engine: async () => ({ coordinator: {} }) }));
 vi.mock("@/lib/fossil/host", () => ({ host: {} }));
-vi.mock("@/lib/errors", () => ({ toastError: vi.fn() }));
+const toastError = vi.fn();
+vi.mock("@/lib/errors", () => ({ toastError }));
 vi.mock("@fossil-lang/corpus", () => ({
   attach: () =>
     new Promise((resolve) => {
@@ -28,15 +29,18 @@ vi.mock("@fossil-lang/corpus", () => ({
 }));
 
 const { CancelledError, QueryClient, QueryObserver } = await import("@tanstack/react-query");
-const { releaseCorpora } = await import("./corpus-cache");
+const { RELEASE_FAILED, releaseCorpora } = await import("./corpus-cache");
 const { corpusKey, corpusQuery } = await import("./corpus");
 
 const GRAPH = "00000000-0000-4000-8000-000000000001";
 type Client = InstanceType<typeof QueryClient>;
 
+/** What failed to detach, as the app's failure path would hear it. */
+const onFailure = vi.fn();
+
 function cache() {
   const queryClient = new QueryClient();
-  releaseCorpora(queryClient.getQueryCache());
+  releaseCorpora(queryClient.getQueryCache(), { onFailure });
   return queryClient;
 }
 
@@ -66,8 +70,16 @@ function reader(queryClient: Client) {
 }
 
 afterEach(() => {
+  // A failure no test asked for is not hidden by the reporter.
+  expect(onFailure.mock.calls.length + toastError.mock.calls.length, "failures reported").toBe(reported);
+  reported = 0;
   out.length = 0;
+  onFailure.mockClear();
+  toastError.mockClear();
 });
+
+/** How many failures the running test expects reported. */
+let reported = 0;
 
 describe("an attach in flight", () => {
   it("is detached when it lands after the cache removed its entry", async () => {
@@ -158,5 +170,47 @@ describe("an attachment the entry holds", () => {
     second.land();
     await vi.waitFor(() => expect(second.detach).toHaveBeenCalledTimes(1));
     expect(first.detach).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("a detach that fails", () => {
+  const refused = new Error("DETACH refused");
+
+  it("reaches the failure path once when the cache releases the entry", async () => {
+    const queryClient = cache();
+    const first = await attached(queryClient);
+    first.detach.mockRejectedValueOnce(refused);
+    queryClient.removeQueries({ queryKey: corpusKey(GRAPH) });
+    await vi.waitFor(() => expect(onFailure).toHaveBeenCalledTimes(1));
+    expect(onFailure).toHaveBeenCalledWith(refused);
+    queryClient.clear();
+    await Promise.resolve();
+    expect(onFailure).toHaveBeenCalledTimes(1);
+    reported = 1;
+  });
+
+  it("reaches the failure path once when a replaced attachment is released", async () => {
+    const queryClient = cache();
+    const first = await attached(queryClient);
+    first.detach.mockRejectedValueOnce(refused);
+    const refetched = queryClient.refetchQueries({ queryKey: corpusKey(GRAPH) });
+    (await attachOut(2)).land();
+    await refetched;
+    await vi.waitFor(() => expect(onFailure).toHaveBeenCalledTimes(1));
+    expect(onFailure).toHaveBeenCalledWith(refused);
+    reported = 1;
+  });
+
+  it("of an attach the cache gave up on, is said once, with the release's title", async () => {
+    const queryClient = cache();
+    const { opened, first } = await attaching(queryClient);
+    first.detach.mockRejectedValueOnce(refused);
+    queryClient.removeQueries({ queryKey: corpusKey(GRAPH) });
+    await expect(opened).rejects.toBeInstanceOf(CancelledError);
+    first.land();
+    await vi.waitFor(() => expect(toastError).toHaveBeenCalledTimes(1));
+    expect(toastError).toHaveBeenCalledWith(refused, RELEASE_FAILED);
+    expect(onFailure).not.toHaveBeenCalled();
+    reported = 1;
   });
 });

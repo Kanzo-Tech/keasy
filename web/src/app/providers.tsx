@@ -12,6 +12,11 @@ import { queryClient } from "@/lib/api/query-client";
 import { auth } from "@/lib/api/session";
 import type { Branding } from "@/lib/branding";
 import { BrandingProvider } from "@/lib/branding-context";
+import { toastError } from "@/lib/errors";
+import { RELEASE_FAILED, releaseCorpora } from "@/lib/fossil/corpus-cache";
+
+// The query cache detaches the corpora it holds; one that does not detach is said, with its code.
+releaseCorpora(queryClient.getQueryCache(), { onFailure: (err) => toastError(err, RELEASE_FAILED) });
 
 /**
  * Cookie-backed rather than localStorage: `themeScript()` reads the same source before hydration,

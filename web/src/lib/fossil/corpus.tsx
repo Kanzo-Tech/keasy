@@ -16,7 +16,7 @@ import {
 } from "@kanzo-tech/ui/analytics";
 import { settled } from "@/lib/api/settled";
 import { toastError } from "@/lib/errors";
-import { corpusKey } from "@/lib/fossil/corpus-cache";
+import { corpusKey, RELEASE_FAILED } from "@/lib/fossil/corpus-cache";
 import { host } from "@/lib/fossil/host";
 
 /** Everything read off a corpus is read once, and dropped with the page. */
@@ -48,7 +48,7 @@ type Opened = Corpus & { coordinator: Coordinator };
  * The attach, cached under {@link corpusKey}: every reader of one graph shares one attachment, and
  * it lives the way any cached read does. Each page that reads the corpus observes this query; when
  * the last one goes, the cache waits {@link CORPUS_GC_MS} and removes the entry, and its removal is
- * what detaches it (`releaseCorpora`, registered where the cache is made). A page that unmounts does
+ * what detaches it (`releaseCorpora`, registered beside the app's query client). A page that unmounts does
  * not detach anything itself: Mosaic still runs what it queued on the way out — the re-queries a
  * withdrawn filter asks for, the pre-aggregator's tables — and those must find the corpus attached.
  *
@@ -69,8 +69,9 @@ export function corpusQuery(graphId: string) {
       // reader gone — and drops what it resolves to, so no `removed` event will ever carry it.
       // `attach` rejects on an abort only when a step fails, so one that ran to the end lands here:
       // it is given back now, or nothing ever would.
+      // Nothing waits on this query any more, so a detach that fails is said here, by the failure path.
       if (signal.aborted) {
-        await attachment.detach();
+        await attachment.detach().catch((err: unknown) => toastError(err, RELEASE_FAILED));
         signal.throwIfAborted();
       }
       return { graphId, attachment, coordinator: attachedTo.coordinator };

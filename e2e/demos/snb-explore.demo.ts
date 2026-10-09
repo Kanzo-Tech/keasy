@@ -1,3 +1,4 @@
+import { discoverUrl } from "../support/fixtures";
 import { demo, demoGraph } from "./record";
 
 /**
@@ -7,10 +8,9 @@ import { demo, demoGraph } from "./record";
 demo("snb-explore", "Dashboard over LDBC SNB: pick a type, click a bar, brush a range", {
   async arrange(page) {
     const id = await demoGraph(page, "LDBC Social Network", "snb");
-    await page.goto(`/graphs/${id}/discover`);
-    // Dispatched rather than clicked: Discovery opens on the Graph view, and while it lays out 327K
-    // nodes a pointer click waits for a stable frame that a machine without a GPU never paints.
-    await page.getByRole("radio", { name: "Dashboard" }).dispatchEvent("click", undefined, { timeout: 120_000 });
+    // Opened on the dashboard: the Graph view would lay out 327K nodes first, on a machine without a
+    // GPU too.
+    await page.goto(discoverUrl(id, { view: "dashboard" }));
     await page.getByRole("heading", { name: /Count by Place\.type/ }).waitFor({ timeout: 60_000 });
   },
 

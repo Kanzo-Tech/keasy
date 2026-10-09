@@ -233,9 +233,11 @@ act })` from `e2e/demos/record/`; `make demo` lists it from that title. `arrange
 ready off camera (`seedGraph` from `e2e/support/seeds.ts`, with `reuse`, finds or runs a dev
 example's graph); `act` is what is recorded, with
 `chapter(text)` for a subtitle saying what is happening (no title cards) and `poster()` where the
-still should be. The cursor and each
-action's title are Playwright's (`page.screencast.showActions`); `locator.describe("…")` is what a
-title reads. `snb-explore.demo.ts` is the worked example.
+still should be. The cursor is the page's own (`e2e/demos/record/cursor.ts`): an overlay injected
+into the recording's browser that follows the real pointer events, glides to each target before the
+action lands and rings where a button goes down. Every `Locator.click` and `dragTo`, and `page.mouse`
+moves (for a lasso or a brush drawn point by point), wait out that glide while a demo records, so the
+cursor arrives before the page answers. `snb-explore.demo.ts` is the worked example.
 
 ## API contract
 

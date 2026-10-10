@@ -22,8 +22,8 @@ import { useDashboardStore } from "./dashboard-store";
  * filters it, and its tiles publish to the page as one semi-join on the root's key, so a brush here
  * greys out the canvas. The graph keeps one saved document, a spec per relation; a relation nobody
  * has edited draws the automatic one; the document is the page's (`./dashboard-store`), because the
- * Ask panel adds its answers to it too. The relation is the page's: its `FilterBar` counts the same
- * rows, and draws this dashboard's filters.
+ * Ask panel adds its answers to it too. The relation is the page's, and its `FilterBar` draws this
+ * dashboard's filters.
  */
 export interface DashboardViewProps {
   relation: Relation;

@@ -23,10 +23,10 @@ demo("flights-rules", "Rules over OpenFlights on the map: the findings, every vi
     await discover.widenDock(280);
     // rudof in the browser over 3,218 airports: the environment's two minutes cover it.
     expect(await rules.checked()).toMatch(/^Checked over all 3,218 nodes$/);
-    return { graph, airport: await rules.rule("Airport"), bar: await discover.filters() };
+    return { graph, airport: await rules.rule("Airport") };
   },
 
-  steps: ({ graph, airport, bar }) => [
+  steps: ({ graph, airport }) => [
     {
       subtitle: "Every airport, checked against your rules",
       check: async () => expect(await airport.state()).toBe("2 violations · 2 warnings"),
@@ -34,18 +34,18 @@ demo("flights-rules", "Rules over OpenFlights on the map: the findings, every vi
     {
       subtitle: "44 airports break a rule — show them all",
       action: () => airport.showAll("violations"),
-      check: () => expect.poll(() => bar.readout()).toMatch(/^44 of 3,218\b/),
+      check: () => expect.poll(() => graph.counts()).toMatch(/^44 of 3\.2K nodes match/),
     },
     {
       subtitle: "Amber warns: 218 airports above 4,000 ft",
       action: () => airport.show(/high-altitude airport/),
-      check: () => expect.poll(() => bar.readout()).toMatch(/^218 of 3,218\b/),
+      check: () => expect.poll(() => graph.counts()).toMatch(/^218 of 3\.2K nodes match/),
       poster: true,
     },
     {
       subtitle: "The Rockies, the Andes, Iran, Ethiopia, Tibet",
       action: () => graph.frame(),
-      check: () => expect.poll(() => bar.readout()).toMatch(/^218 of 3,218\b/),
+      check: () => expect.poll(() => graph.counts()).toMatch(/^218 of 3\.2K nodes match/),
     },
   ],
 });

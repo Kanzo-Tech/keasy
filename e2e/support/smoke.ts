@@ -72,39 +72,51 @@ export const test = base.extend<{ quiet: void }, { geoGraph: string; snbGraph: s
 
 const compact = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 });
 /** A count as a figure reads it: in full under ten thousand, compact above (kanzo-ui's `ChartStat`). */
-const figured = (n: number) => (n >= 10_000 ? compact.format(n) : n.toLocaleString("en-US"));
+export const figured = (n: number) => (n >= 10_000 ? compact.format(n) : n.toLocaleString("en-US"));
+/** What a figure reads, as a number: exact under ten thousand, to its last digit above (*28.8K* is 28,800). */
+export const counted = (figure: string) => {
+  const [, digits, unit] = /^([\d,.]+)([KMB]?)$/.exec(figure) ?? [];
+  const scale = { "": 1, K: 1e3, M: 1e6, B: 1e9 }[unit ?? ""] ?? Number.NaN;
+  return Math.round(Number(digits?.replace(/,/g, "") ?? Number.NaN) * scale);
+};
+/** A figure as the footer reads the same count: compact at every size. */
+const footed = (figure: string) => compact.format(counted(figure));
 
 /**
- * What a filter left of the dashboard's relation, once every view agrees on it: the bar's readout
- * (`kept of total noun`), the `count` figure titled `figure` (compact from ten thousand), and the
- * footer's matching nodes — the relation's roots, which are its rows when each root has one path.
+ * What a filter left of the dashboard's relation, once every view agrees on it: the `count` figure
+ * titled `figure` and the footer's matching nodes — the relation's roots, which are its rows when each
+ * root has one path. Returned as the figure reads it, exact under ten thousand (`counted` reads it).
  *
  * A harness's brush resolves on the release, and `settled()` once nothing on the dashboard is
  * querying, so what the views read then is the range the drag ended on: they are read until they
  * agree, never held across a second to see that they stay.
  */
-export async function agreedCount(discover: DiscoverPage, { total, noun, figure }: { total: number; noun: string; figure: string }) {
-  const dashboard = await discover.dashboard();
-  const bar = await discover.filters();
+export async function agreedCount(discover: DiscoverPage, { figure }: { figure: string }): Promise<string> {
   const read = async () => {
-    await dashboard.settled();
-    const shown = new RegExp(`^([\\d,]+) of ${total.toLocaleString("en-US")} ${noun}$`).exec(await bar.readout())?.[1];
-    const counted = (await (await dashboard.tile(figure)).text()).replace(figure, "").trim();
-    const matching = (await discover.counts()).split(" of ")[0];
-    const kept = Number(shown?.replace(/,/g, "") ?? Number.NaN);
-    return shown !== undefined && counted === figured(kept) && matching === compact.format(kept)
-      ? kept
-      : `readout ${shown}, figure ${counted}, nodes ${matching}`;
+    const shown = await discover.figure(figure);
+    const matching = /^(\S+) of \S+ nodes match/.exec(await discover.counts())?.[1];
+    return matching !== undefined && footed(shown) === matching ? { shown } : `figure ${shown}, nodes ${matching}`;
   };
-  let agreed = Number.NaN;
+  let agreed = "";
   await expect
     .poll(async () => {
       const answer = await read();
-      if (typeof answer === "number") agreed = answer;
-      return answer;
+      if (typeof answer === "string") return answer;
+      agreed = answer.shown;
+      return true;
     }, { timeout: 60_000 })
-    .toEqual(expect.any(Number));
+    .toBe(true);
   return agreed;
+}
+
+/**
+ * What the dashboard's relation counts with no filter on the page: the `count` figure titled
+ * `figure`, or *filtered* while the footer still matches some nodes and not others. Polled for the
+ * relation's size: `expect.poll(() => unfiltered(discover, "Airports")).toBe("3,218")`.
+ */
+export async function unfiltered(discover: DiscoverPage, figure: string): Promise<string> {
+  const footer = await discover.counts();
+  return footer.includes(" match") ? `filtered: ${footer}` : discover.figure(figure);
 }
 
 export { expect };

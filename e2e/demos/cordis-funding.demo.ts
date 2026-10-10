@@ -44,10 +44,10 @@ demo("cordis-funding", "EU research funding over CORDIS: who gets Horizon Europe
     const dashboard = await discover.dashboard();
     const rules = await discover.rules();
     await rules.checked();
-    return { dashboard, rules, bar: await discover.filters() };
+    return { discover, dashboard, rules };
   },
 
-  steps: ({ dashboard, rules, bar }) => {
+  steps: ({ discover, dashboard, rules }) => {
     const total = async () => (await dashboard.tile("Total ecContribution")).text();
     const countries = async () => categories(await dashboard.tile(/by Organisation\.country/));
     return [
@@ -62,7 +62,8 @@ demo("cordis-funding", "EU research funding over CORDIS: who gets Horizon Europe
         subtitle: "Coordinators: one seat in six, 43% of the money",
         action: async () => (await (await dashboard.tile(/by OrganisationRole\.roleLabel/)).chart()).pick({ y: "coordinator" }),
         async check() {
-          await expect.poll(() => bar.readout()).toMatch(/^23,451 of 145,274\b/);
+          // 23,451 of the 145,274 participations, as a figure reads it.
+          await expect.poll(() => discover.figure("Rows")).toBe("23.5K");
           expect(await total()).toMatch(/26\.8/);
         },
       },
@@ -70,7 +71,7 @@ demo("cordis-funding", "EU research funding over CORDIS: who gets Horizon Europe
         subtitle: "Universities coordinate six projects in ten",
         action: async () => (await (await dashboard.tile(/by Organisation\.activityType/)).chart()).pick({ y: "HES" }),
         async check() {
-          await expect.poll(() => bar.readout()).toMatch(/^14,088 of 145,274\b/);
+          await expect.poll(() => discover.figure("Rows")).toBe("14.1K");
           expect(await total()).toMatch(/12\.5/);
         },
         poster: true,

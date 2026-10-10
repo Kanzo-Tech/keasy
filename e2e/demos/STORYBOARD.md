@@ -19,9 +19,10 @@ hide edges and labels and use legible marks; a demo starts from a configured sta
 `env` is `await playwright(page)`, made **before** the first `page.goto` (the hook registers charts
 and canvases as they mount). `bar` is `await env.harness(FilterBarHarness)`. `discover`, `settings`,
 `search`, `rules`, `ask` are the keasy page objects listed at the end
-([Page objects](#the-keasy-page-objects-the-demos-need)). A readout is written as its leading words
-(`/^132 of 3,218\b/`): the noun after the total (*Airport*, *airports*) is the page's and is pinned on
-the first run.
+([Page objects](#the-keasy-page-objects-the-demos-need)). The filter bar has no readout: what the
+filters keep is read from the dashboard's count figure, `discover.figure("Rows")` (in full under ten
+thousand, compact above: `"778"`, `"23.5K"`), or in the Graph view from the footer's GraphCounts,
+`graph.counts()` → `/^132 of 3\.2K nodes match/` (compact, the total being every node).
 
 Every number below was computed from the example's CSV/JSON with DuckDB; the query is under each
 demo's **Numbers**. The OpenFlights and SNB queries run in `infra/dev/examples/<name>/data` after
@@ -46,9 +47,9 @@ demo's **Numbers**. The OpenFlights and SNB queries run in `infra/dev/examples/<
 
 | # | Subtitle | Action | Check |
 | --- | --- | --- | --- |
-| 1 | Pick what to explore | `await discover.relation("Person")` | `dashboard.tile("Count by Person.gender")` resolves; `bar.readout()` → no filter yet (1,528 Person) |
-| 2 | Every column gets a chart — click a bar to filter | `(await (await dashboard.tile("Count by Person.gender")).chart()).pick({ y: "female" })` | `bar.readout()` → `/^778 of 1,528\b/`; `bar.chips()` contains `Person.gender …female` |
-| 3 | Drag across time to narrow it further | `(await (await dashboard.tile("Count by Person.birthday")).chart()).brush({ x: [new Date("1985-01-01"), new Date("1990-01-01")] })` | `bar.readout()` → `/^391 of 1,528\b/` · **poster** |
+| 1 | Pick what to explore | `await discover.relation("Person")` | `dashboard.tile("Count by Person.gender")` resolves; `discover.figure("Rows")` → `"1,528"` and `discover.counts()` matches nothing: no filter yet |
+| 2 | Every column gets a chart — click a bar to filter | `(await (await dashboard.tile("Count by Person.gender")).chart()).pick({ y: "female" })` | `discover.figure("Rows")` → `"778"`; `discover.counts()` → `/^778 of /`; `bar.chips()` contains `Person.gender …female` |
+| 3 | Drag across time to narrow it further | `(await (await dashboard.tile("Count by Person.birthday")).chart()).brush({ x: [new Date("1985-01-01"), new Date("1990-01-01")] })` | `discover.figure("Rows")` → `"391"` · **poster** |
 | 4 | Every filter lands in the bar | hover the `Person.gender` chip (page: `bar` has no hover; `page.getByRole("button", { name: /Person\.gender/ }).hover()` stays in the spec as the one raw call, or `discover.hoverChip("Person.gender")`) | `bar.chips()` has two entries: gender and birthday |
 
 The brush is written in data now: *born 1985–1989*, where today's take drags 30 %→62 % of the width
@@ -69,8 +70,8 @@ depends on which relations the mapping writes as edges); read it off GraphCounts
 
 **Risks**
 
-- The birthday histogram's brush may snap to its bins. If the readout reads other than 391, the bins
-  are what it counted: take the check from `bar.readout()` once and pin it, the subtitle names no number.
+- The birthday histogram's brush may snap to its bins. If the figure reads other than 391, the bins
+  are what it counted: take the check from `discover.figure("Rows")` once and pin it, the subtitle names no number.
 - The `Person.gender` chip text is the page's (`Person.gender: female`?) — pinned on the first run.
 
 ---
@@ -97,9 +98,9 @@ depends on which relations the mapping writes as edges); read it off GraphCounts
 | --- | --- | --- | --- |
 | 1 | A graph of airports, spread by its routes | `graph.run()` (woken, so the cloud moves on camera) | the transport reads *Pause the layout*; `graph.counts()` → `/3,218 nodes/` (or `3.2K`) |
 | 2 | Put it on a map: longitude across, latitude up | `settings.placement("Map", { x: "lon", y: "lat" })` then `graph.pause()` | `graph.frames()` grew; the placement radio *Map* is checked · **poster** |
-| 3 | Find anything — here, every airport in Spain | `search.add("country:Spain")` (Info → *Find anything in the graph* → type → *Add 40 to the subset*) | the add button read `Add 40 to the subset`; `bar.readout()` → `/^40 of 3,218\b/` |
-| 4 | Lasso the peninsula — the Canaries stay out | `graph.lasso(PENINSULA)` (the polygon below, in lon/lat) | `bar.readout()` → `/^31 of 3,218\b/` |
-| 5 | Frame what you kept | `graph.frame()` | `graph.frame()` resolved (a frame drawn after the press); `bar.readout()` still `/^31 of 3,218\b/` |
+| 3 | Find anything — here, every airport in Spain | `search.add("country:Spain")` (Info → *Find anything in the graph* → type → *Add 40 to the subset*) | the add button read `Add 40 to the subset`; `graph.counts()` → `/^40 of 3\.2K nodes match/` |
+| 4 | Lasso the peninsula — the Canaries stay out | `graph.lasso(PENINSULA)` (the polygon below, in lon/lat) | `graph.counts()` → `/^31 of 3\.2K nodes match/` |
+| 5 | Frame what you kept | `graph.frame()` | `graph.frame()` resolved (a frame drawn after the press); `graph.counts()` still `/^31 of 3\.2K nodes match/` |
 
 The last step replaces *"The map keeps only what you picked"*: `frame()` frames what is in full
 colour since kanzo-ui #112, which is what the old take could not do (keasy #112's comment). Framing
@@ -117,7 +118,7 @@ const PENINSULA: [number, number][] = [
 ```
 
 It follows the Portuguese border and the Pyrenees and takes in the Balearics, so it catches **31
-airports, every one of them Spanish** (28 on the peninsula, Palma, Ibiza and Menorca): the readout
+airports, every one of them Spanish** (28 on the peninsula, Palma, Ibiza and Menorca): the count
 is 31 whether the lasso's clause is ANDed with the search's or stands alone. Left out of the 40: the
 8 Canaries and Melilla. No airport of Portugal, France, Andorra, Gibraltar or Morocco is inside.
 
@@ -158,9 +159,9 @@ is 31 whether the lasso's clause is ANDed with the search's or stands alone. Lef
 
 | # | Subtitle | Action | Check |
 | --- | --- | --- | --- |
-| 1 | Click a country — every chart follows | `(await (await dashboard.tile(/Count by Airport\.country/)).chart()).pick({ y: "United States" })` | `bar.readout()` → `/^551 of 3,218\b/`; `dashboard.settled()` |
-| 2 | Drag across longitude — just the West | `(await (await dashboard.tile(/Count by Airport\.lon$/)).chart()).brush({ x: [-125, -100] })` | `bar.readout()` → `/^132 of 3,218\b/` · **poster** |
-| 3 | Switch to the graph — the same filter, on the map | `discover.view("Graph")`; `graph.ready()` | `bar.readout()` still `/^132 of 3,218\b/`; `graph.counts()` → `/^132 of/` |
+| 1 | Click a country — every chart follows | `(await (await dashboard.tile(/Count by Airport\.country/)).chart()).pick({ y: "United States" })` | `discover.figure("Rows")` → `"551"`; `dashboard.settled()` |
+| 2 | Drag across longitude — just the West | `(await (await dashboard.tile(/Count by Airport\.lon$/)).chart()).brush({ x: [-125, -100] })` | `discover.figure("Rows")` → `"132"` · **poster** |
+| 3 | Switch to the graph — the same filter, on the map | `discover.view("Graph")`; `graph.ready()` | `graph.counts()` → `/^132 of 3\.2K nodes match/` |
 | 4 | Frame what the filters keep | `graph.frame()` | resolved; `bar.chips()` has the country and the lon clauses |
 
 The old opening chapter *"One filter, every chart"* (a subtitle with no action under it) goes: the
@@ -178,7 +179,7 @@ becomes the check of step 4 rather than a step of its own — the frame is the s
 **Risks**
 
 - Whether the lon brush filters by its extent or by the bins it covers: by extent it is 132; read the
-  readout on the first run and pin it.
+  figure on the first run and pin it.
 - `graph.counts()` reads GraphCounts' sentence; with a type filter it may read *132 of 3.2K nodes
   match*. Match the leading figure only.
 
@@ -201,7 +202,7 @@ becomes the check of step 4 rather than a step of its own — the frame is the s
 
 | # | Subtitle | Action | Check |
 | --- | --- | --- | --- |
-| 1 | Filter the page: women only | `(await (await dashboard.tile("Count by Person.gender")).chart()).pick({ y: "female" })` | `bar.readout()` → `/^778 of 1,528\b/` |
+| 1 | Filter the page: women only | `(await (await dashboard.tile("Count by Person.gender")).chart()).pick({ y: "female" })` | `discover.figure("Rows")` → `"778"` |
 | 2 | Ask about what's in view, in plain words | `answer.ask("Which browsers do they use most?")` | a new answer card began (the method's own wait) |
 | 3 | The answer is a chart, over the women in view | `tile = await answer.answer()` | `tile.text()` contains `Firefox` and `324` (not `628`, the count over everyone) · **poster** |
 | 4 | Add it to the dashboard | `answer.addToDashboard()` | the card reads *✓ On the dashboard*; `dashboard.tile(/browserUsed/)` resolves |
@@ -274,8 +275,8 @@ when the prompt, the tool's schema or the SNB example change.
 | # | Subtitle | Action | Check |
 | --- | --- | --- | --- |
 | 1 | Every airport, checked against your rules | — (the panel is read) | `rules.rule("Airport").state()` → *2 violations · 2 warnings* |
-| 2 | 44 airports break a rule — show them all | `rules.rule("Airport").showAll("violations")` (presses *Show all 44 violations*) | the button is pressed; `bar.readout()` → `/^44 of 3,218\b/` |
-| 3 | Amber warns: 218 airports above 4,000 ft | `rules.rule("Airport").show(/high-altitude airport/)` | button `Showing 218`; `bar.readout()` → `/^218 of 3,218\b/` · **poster** |
+| 2 | 44 airports break a rule — show them all | `rules.rule("Airport").showAll("violations")` (presses *Show all 44 violations*) | the button is pressed; `graph.counts()` → `/^44 of 3\.2K nodes match/` |
+| 3 | Amber warns: 218 airports above 4,000 ft | `rules.rule("Airport").show(/high-altitude airport/)` | button `Showing 218`; `graph.counts()` → `/^218 of 3\.2K nodes match/` · **poster** |
 | 4 | The Rockies, the Andes, Iran, Ethiopia, Tibet | `graph.frame()` | resolved |
 
 Step 3 is the high-altitude finding (218), not *Show all 245 warnings*: the subtitle and the frame
@@ -361,8 +362,8 @@ role and the EU contribution) — €62.55B in all. Candidates, and what the dat
 | # | Subtitle | Action | Check |
 | --- | --- | --- | --- |
 | 1 | €62.5 billion of Horizon Europe — who gets it? | — (the dashboard is read) | stat *Total ecContribution* reads `62.5B` (or `62.55B`); the country chart's top bar is `DE` |
-| 2 | Coordinators: one seat in six, 43% of the money | `(await (await dashboard.tile(/by OrganisationRole\.roleLabel/)).chart()).pick({ y: "coordinator" })` | `bar.readout()` → `/^23,451 of 145,274\b/`; total reads `26.8B` |
-| 3 | Universities coordinate six projects in ten | `(await (await dashboard.tile(/by Organisation\.activityType/)).chart()).pick({ y: "HES" })` | `bar.readout()` → `/^14,088 of 145,274\b/`; total reads `12.5B` · **poster** |
+| 2 | Coordinators: one seat in six, 43% of the money | `(await (await dashboard.tile(/by OrganisationRole\.roleLabel/)).chart()).pick({ y: "coordinator" })` | `discover.figure("Rows")` → `"23.5K"` (23,451 of 145,274); total reads `26.8B` |
+| 3 | Universities coordinate six projects in ten | `(await (await dashboard.tile(/by Organisation\.activityType/)).chart()).pick({ y: "HES" })` | `discover.figure("Rows")` → `"14.1K"` (14,088 of 145,274); total reads `12.5B` · **poster** |
 | 4 | Germany and the Netherlands lead them | — (the country chart, now over university coordinators, is read) | the top two bars are `DE` (€1.88B) and `NL` (€1.40B) |
 | 5 | A rule finds 12,525 projects that declare a cost of 0 | `rules.rule("Project").show(/total cost of 0/)` | its button reads `Showing 12,525` |
 
@@ -488,7 +489,7 @@ Beyond the library harnesses (`GraphCanvasHarness`, `ChartHarness`, `TimelineHar
 
 | Page object | Methods | Replaces / why |
 | --- | --- | --- |
-| `DiscoverPage` (`support/app/discover.ts`) | `open(id, { view?, panel? })` (deep link, `discoverUrl`); `view("Graph" \| "Dashboard")` (the view switch through `DockHarness.with({ name: <its group name> })`); `relation(root, hops?)` (*Root type* select, *Hop* menu items `label → Type`); `widenDock(px)`; `onMap()` (the shared OpenFlights arrange); `hoverChip(field)` | `openGraphView`, `onMap`, `widenDock`, the `dispatchEvent("click")` on *Dashboard*. The relation is not in the URL, so it is a call |
+| `DiscoverPage` (`support/app/discover.ts`) | `open(id, { view?, panel? })` (deep link, `discoverUrl`); `view("Graph" \| "Dashboard")` (the view switch through `DockHarness.with({ name: <its group name> })`); `relation(root, hops?)` (*Root type* select, *Hop* menu items `label → Type`); `widenDock(px)`; `onMap()` (the shared OpenFlights arrange); `figure(title)` (a figure tile's value); `counts()` (the footer's GraphCounts, in either view); `hoverChip(field)` | `openGraphView`, `onMap`, `widenDock`, the `dispatchEvent("click")` on *Dashboard*. The relation is not in the URL, so it is a call |
 | `SettingsPanel` (`support/app/settings.ts`) | `placement("Map", { x, y })`; `marks("Legible")`; `edges("Hidden")`; `labels(n)`; `timeline(column)` | `placeOnMap`, `hideEdges`, `choose`; `timeline` is new (the *Timeline* select, `time-by`) |
 | `GraphSearch` (`support/app/search.ts`) | `add(query): Promise<number>` — opens *Find anything in the graph*, types, presses *Add N to the subset*, returns N | demo 2's inline steps |
 | `RulesPanel` (`support/app/rules.ts`) | `checked()` (the *Checked over …* line); `rule(name)` → `state()` (the badges), `show(message \| RegExp)` (presses *Show N*, waits for *Showing N*), `showAll("violations" \| "warnings")` (presses *Show all N …*, waits on `aria-pressed`; keasy#127), `conforms()` | keasy's panel is `Diagnostic`s, not the library's `Findings`, so `FindingsHarness` does not drive it |

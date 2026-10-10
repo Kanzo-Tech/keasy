@@ -172,6 +172,18 @@ export class DiscoverPage extends ComponentHarness {
     return counts.text();
   }
 
+  /**
+   * What the Dashboard view's figure titled `title` reads — its value alone, without its label or a
+   * trend's delta — once nothing in the tile is loading. A count reads in full under ten thousand and
+   * compact above (kanzo-ui's `ChartStat`): *778*, *23.5K*. The automatic dashboard's count is *Rows*.
+   */
+  async figure(title: string | RegExp): Promise<string> {
+    const tile = await (await this.dashboard()).tile(title);
+    await tile.settled();
+    const value = await this.env.until(async () => (await tile.host.find({ css: '[data-slot="stat-value"]' }))[0], `the tile ${title} is not a figure`);
+    return (await value.text()).trim();
+  }
+
   /** A docked panel, by the name the dock gives it: *Rules panel*. */
   static docked(panel: Panel): HarnessQuery<DiscoverPanel> {
     return { type: DiscoverPanel, by: { role: "complementary", name: `${panel} panel` } };

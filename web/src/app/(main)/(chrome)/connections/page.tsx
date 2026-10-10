@@ -43,7 +43,7 @@ import { toastError } from "@/lib/errors";
 import { blocked } from "@/lib/permissions";
 import { Boundary, Loading } from "@/components/boundary";
 import { settled } from "@/lib/api/settled";
-import { PAGE_TABLE_HEIGHT } from "@/lib/ui/table-heights";
+import { PAGE_TABLE } from "@/lib/ui/table-heights";
 
 /** A tab: a storage connection's kind. */
 type Tab = "data" | "vocab";
@@ -192,7 +192,7 @@ function Connections({ tab }: { tab: Tab }) {
       )}
     </EmptyRoot>
   ) : (
-    <DataTableRoot table={table}>
+    <DataTableRoot className={PAGE_TABLE.root} table={table}>
       <DataTableToolbar>
         <DataTableSearch column="name" placeholder="Search connections..." />
         <div className="ms-auto flex items-center gap-2">
@@ -208,7 +208,8 @@ function Connections({ tab }: { tab: Tab }) {
         </div>
       </DataTableToolbar>
       <DataTableContent<Connection>
-        maxHeight={PAGE_TABLE_HEIGHT}
+        className={PAGE_TABLE.content}
+          maxHeight={PAGE_TABLE.maxHeight}
         stickyHeader
         empty="No connections match this filter."
         onRowClick={(conn) => router.push(`/connections/${encodeURIComponent(conn.name)}`)}

@@ -69,7 +69,7 @@ import { toastError } from "@/lib/errors";
  * Rules · Settings) and collapses it when the active icon is pressed again. Both views and every
  * panel read one graph and one crossfilter, so a lasso on the canvas filters the dashboard and a rule
  * pressed in the dock lights the canvas. `FilterBar`, under the header, is every clause on the page
- * and the dashboard's filters, with the dashboard's relation as its readout, in either view. The
+ * and the dashboard's filters, in either view, without a readout. The
  * saved dashboard is the page's (`./_parts/dashboard-store`), because the Ask panel adds answers to
  * it. A dashboard tile is edited in the Format aside at the body's end edge, beside the dock rather
  * than in it, so the panel the reader had open stays open. The view and the dock's panel are the
@@ -237,13 +237,9 @@ function Workspace() {
         </ToggleGroup>
       </HeaderEnd>
 
-      {/* The readout is the dashboard's relation in either view: the dashboard filters the graph
-          while it is hidden, and its filters stay in the bar to change. */}
-      <FilterBar
-        className="shrink-0 border-b px-3 py-1.5"
-        rowNoun={relation.path.length ? "paths" : relation.root}
-        table={table}
-      />
+      {/* The dashboard's filters stay in the bar to change in either view: the dashboard filters the
+          graph while it is hidden. No readout: the dashboard's count tile and the footer count. */}
+      <FilterBar className="shrink-0 border-b px-3 py-1.5" />
 
       <ShellBody className="min-w-0">
         <Resizable

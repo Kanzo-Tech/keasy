@@ -23,15 +23,17 @@ demo("snb-explore", "Dashboard over LDBC SNB: pick a type, click a bar, brush a 
       action: () => discover.relation("Person"),
       async check() {
         await dashboard.tile("Count by Person.gender");
-        // 1,528 people, and no filter yet.
-        await expect.poll(() => bar.readout()).toMatch(/^1,528\b/);
+        // 1,528 people, and no filter yet: the footer matches every node.
+        await expect.poll(() => discover.figure("Rows")).toBe("1,528");
+        expect(await discover.counts()).not.toMatch(/ match/);
       },
     },
     {
       subtitle: "Every column gets a chart — click a bar to filter",
       action: async () => (await (await dashboard.tile("Count by Person.gender")).chart()).pick({ y: "female" }),
       async check() {
-        await expect.poll(() => bar.readout()).toMatch(/^778 of 1,528\b/);
+        await expect.poll(() => discover.figure("Rows")).toBe("778");
+        await expect.poll(() => discover.counts()).toMatch(/^778 of /);
         expect((await bar.chips()).some((chip) => /\bPerson\.gender\b/.test(chip))).toBe(true);
       },
     },
@@ -41,7 +43,7 @@ demo("snb-explore", "Dashboard over LDBC SNB: pick a type, click a bar, brush a 
         (await (await dashboard.tile("Count by Person.birthday")).chart()).brush({ x: [new Date("1985-01-01"), new Date("1990-01-01")] }),
       // Women born 1985–1989. A histogram may snap the brush to its bins: if it reads otherwise, the
       // bins are what it counted — pin the figure from the first take.
-      check: () => expect.poll(() => bar.readout()).toMatch(/^391 of 1,528\b/),
+      check: () => expect.poll(() => discover.figure("Rows")).toBe("391"),
       poster: true,
     },
     {

@@ -1,6 +1,6 @@
 import { DiscoverPage, saveDashboard } from "../support/app";
 import { discoverUrl } from "../support/fixtures";
-import { agreedCount, expect, test } from "../support/smoke";
+import { agreedCount, counted, expect, figured, test, unfiltered } from "../support/smoke";
 
 /**
  * The LDBC SNB dev graph (infra/dev/examples/snb/mapping.fossil over `make seed`'s SF0.1): 341,661
@@ -10,7 +10,7 @@ import { agreedCount, expect, test } from "../support/smoke";
 
 /** Comments that reply to a post, each with the post it replies to: 74,256 of the 151,043 comments. */
 const RELATION = "Comment>replyOfPost>Post";
-const PATHS = "74,256";
+const PATHS = 74_256;
 
 // 341,661 vertices: every view of them takes longer than the shop's 20.
 test.describe.configure({ timeout: 300_000 });
@@ -45,7 +45,7 @@ test("the social network's dashboard over a hop draws every tile kind, and holds
   const discover = await DiscoverPage.open(page, env, snbGraph, { view: "dashboard" });
   await discover.relation("Comment", ["replyOfPost → Post"]);
   const bar = await discover.filters();
-  await expect.poll(() => bar.readout(), { timeout: 60_000 }).toMatch(new RegExp(`^${PATHS} paths`));
+  await expect.poll(() => unfiltered(discover, "Replies"), { timeout: 60_000 }).toBe(figured(PATHS));
 
   // Each tile reads a join of 74,256 paths: more than a type's table takes (the smoke's harnesses wait 60 s).
   const dashboard = await discover.dashboard();
@@ -59,13 +59,13 @@ test("the social network's dashboard over a hop draws every tile kind, and holds
   // A brush on reply length, from 100 to 300 characters — past the bin of the shortest, as most
   // replies are under a hundred: every other tile reads the paths it keeps.
   await (await (await dashboard.tile("By reply length")).chart()).brush({ x: [100, 300] });
-  const kept = await agreedCount(discover, { total: 74_256, noun: "paths", figure: "Replies" });
+  const kept = counted(await agreedCount(discover, { figure: "Replies" }));
   expect(kept).toBeGreaterThan(0);
-  expect(kept).toBeLessThan(74_256);
+  expect(kept).toBeLessThan(PATHS);
   await (await (await dashboard.tile("Fit of reply against post")).chart()).settled();
   // A clause chip reads its source first, here the relation: *Comment>replyOfPost>Post Comment.length …*.
   await bar.remove(`${RELATION} Comment.length`);
-  await expect.poll(() => bar.readout()).toMatch(new RegExp(`^${PATHS} paths`));
+  await expect.poll(() => unfiltered(discover, "Replies")).toBe(figured(PATHS));
 
   // The filter chip: the 28,807 replies written in Firefox. The control's value list is the
   // library's and has no harness method yet, so it is driven by its roles.
@@ -73,5 +73,5 @@ test("the social network's dashboard over a hop draws every tile kind, and holds
   // Each value with its count over the whole relation.
   await page.getByRole("option", { name: "Firefox 28807", exact: true }).click();
   await page.keyboard.press("Escape");
-  expect(await agreedCount(discover, { total: 74_256, noun: "paths", figure: "Replies" })).toBe(28_807);
+  expect(await agreedCount(discover, { figure: "Replies" })).toBe(figured(28_807));
 });

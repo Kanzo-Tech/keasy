@@ -1,6 +1,6 @@
 import { DiscoverPage, saveDashboard } from "../support/app";
 import { rules } from "../support/seeds";
-import { agreedCount, expect, test } from "../support/smoke";
+import { agreedCount, counted, expect, figured, test, unfiltered } from "../support/smoke";
 
 /**
  * The OpenFlights dev graph (infra/dev/examples/openflights/mapping.fossil over `make seed`'s subset):
@@ -9,8 +9,8 @@ import { agreedCount, expect, test } from "../support/smoke";
  */
 
 const AIRPORTS = 3218;
-/** The readout with no filter on the page: every airport, none of them kept out. */
-const UNFILTERED = /^3,218 Airport/;
+/** The `count` figure with no filter on the page: every airport, none of them kept out. */
+const UNFILTERED = figured(AIRPORTS);
 
 // The suite's first visits to the views compile them in the dev server, and the seed is 160 times
 // the shop.
@@ -45,7 +45,7 @@ test("the flights dashboard draws every tile kind, and holds under a brush and a
   const discover = await DiscoverPage.open(page, env, geoGraph, { view: "dashboard" });
   const dashboard = await discover.dashboard();
   const bar = await discover.filters();
-  await expect.poll(() => bar.readout()).toMatch(UNFILTERED);
+  await expect.poll(() => unfiltered(discover, "Airports")).toBe(UNFILTERED);
 
   // What the editor offers is what this dashboard has one of: a kind or a mark added to kanzo-ui's
   // dashboard fails here until the smoke draws it too.
@@ -67,14 +67,14 @@ test("the flights dashboard draws every tile kind, and holds under a brush and a
   // A brush on the altitude histogram, from 4,000 to 8,000 ft: every other tile reads the airports it
   // keeps, the fit pre-aggregated, and the bar names it as a chip.
   await (await (await dashboard.tile("By altitude")).chart()).brush({ x: [4000, 8000] });
-  const kept = await agreedCount(discover, { total: AIRPORTS, noun: "Airport", figure: "Airports" });
+  const kept = counted(await agreedCount(discover, { figure: "Airports" }));
   expect(kept).toBeGreaterThan(0);
   expect(kept).toBeLessThan(AIRPORTS);
   await (await (await dashboard.tile("Altitude against latitude")).chart()).settled();
   // A clause chip reads its source, then its field and range: *Airport Airport.altitude 3976.6 – 7990.0*.
   expect((await bar.chips()).some((chip) => chip.startsWith("Airport Airport.altitude "))).toBe(true);
   await bar.remove("Airport Airport.altitude");
-  await expect.poll(() => bar.readout()).toMatch(UNFILTERED);
+  await expect.poll(() => unfiltered(discover, "Airports")).toBe(UNFILTERED);
 
   // The dashboard's filter chip: the 40 airports in Spain. The control's value list is the library's
   // and has no harness method yet, so it is driven by its roles.
@@ -83,7 +83,7 @@ test("the flights dashboard draws every tile kind, and holds under a brush and a
   // Each value with its count over the whole relation.
   await page.getByRole("option", { name: "Spain 40", exact: true }).click();
   await page.keyboard.press("Escape");
-  expect(await agreedCount(discover, { total: AIRPORTS, noun: "Airport", figure: "Airports" })).toBe(40);
+  expect(await agreedCount(discover, { figure: "Airports" })).toBe(figured(40));
   // The table pages through the 40, every one of them in Spain.
   const table = await dashboard.tile("Airport rows");
   expect(await table.text()).toContain("1–25 of 40");
@@ -104,13 +104,13 @@ test("leaving Discover with a dashboard filter in force logs nothing, and the pa
   const discover = await DiscoverPage.open(page, env, geoGraph, { view: "dashboard" });
   await discover.dashboard();
   const bar = await discover.filters();
-  await expect.poll(() => bar.readout()).toMatch(UNFILTERED);
+  await expect.poll(() => unfiltered(discover, "Airports")).toBe(UNFILTERED);
 
   await bar.open("Airport.country");
   await page.getByRole("textbox", { name: "Filter values" }).fill("United States");
   await page.getByRole("option", { name: /^United States \d/ }).click();
   await page.keyboard.press("Escape");
-  await expect.poll(() => bar.readout()).toMatch(/^[\d,]+ of 3,218 Airport$/);
+  expect(counted(await agreedCount(discover, { figure: "Airports" }))).toBeLessThan(AIRPORTS);
   // The dashboard hidden, its clause still on the page, the canvas drawing what it keeps.
   await discover.view("Graph");
   await expect.poll(() => discover.counts()).toMatch(/ of 3\.2K nodes match/);

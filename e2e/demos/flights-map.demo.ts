@@ -43,10 +43,10 @@ demo("flights-map", "OpenFlights put on a map: the force layout's scatter, then 
     await settings.edges("Hidden");
     await settings.labels("None");
     await discover.panel("Info");
-    return { discover, graph, settings, bar: await discover.filters() };
+    return { discover, graph, settings };
   },
 
-  steps: ({ discover, graph, settings, bar }) => [
+  steps: ({ discover, graph, settings }) => [
     {
       subtitle: "A graph of airports, spread by its routes",
       // Woken, so the cloud is moving when the map takes over.
@@ -67,18 +67,18 @@ demo("flights-map", "OpenFlights put on a map: the force layout's scatter, then 
     {
       subtitle: "Find anything — here, every airport in Spain",
       action: async () => (await discover.search()).add("country:Spain", 40),
-      check: () => expect.poll(() => bar.readout()).toMatch(/^40 of 3,218\b/),
+      check: () => expect.poll(() => graph.counts()).toMatch(/^40 of 3\.2K nodes match/),
     },
     {
       subtitle: "Lasso the peninsula — the Canaries stay out",
       action: () => graph.lasso(PENINSULA, { in: "data" }),
-      check: () => expect.poll(() => bar.readout()).toMatch(/^31 of 3,218\b/),
+      check: () => expect.poll(() => graph.counts()).toMatch(/^31 of 3\.2K nodes match/),
     },
     {
       subtitle: "Frame what you kept",
       // Resolves on a frame drawn after the press: the camera moved onto what is in full colour.
       action: () => graph.frame(),
-      check: () => expect.poll(() => bar.readout()).toMatch(/^31 of 3,218\b/),
+      check: () => expect.poll(() => graph.counts()).toMatch(/^31 of 3\.2K nodes match/),
     },
   ],
 });

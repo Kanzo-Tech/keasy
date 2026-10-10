@@ -28,14 +28,14 @@ demo("snb-ask", "Ask over LDBC SNB: filter the page, ask about it, and add the a
     const ask = await discover.ask();
     if (replay.live) await ask.warmUp();
     const answers = await ask.composer();
-    return { replay, dashboard, answers, bar: await discover.filters(), answered: { tile: undefined as TileHarness | undefined } };
+    return { replay, discover, dashboard, answers, answered: { tile: undefined as TileHarness | undefined } };
   },
 
-  steps: ({ replay, dashboard, answers, bar, answered }) => [
+  steps: ({ replay, discover, dashboard, answers, answered }) => [
     {
       subtitle: "Filter the page: women only",
       action: async () => (await (await dashboard.tile("Count by Person.gender")).chart()).pick({ y: "female" }),
-      check: () => expect.poll(() => bar.readout()).toMatch(/^778 of 1,528\b/),
+      check: () => expect.poll(() => discover.figure("Rows")).toBe("778"),
     },
     {
       subtitle: "Ask about what's in view, in plain words",

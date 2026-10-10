@@ -81,6 +81,12 @@ const registry: Partial<Record<ErrorCode | NoBodyCode | ClientCode | Code | Kanz
   // The gateway answered with an error: no model behind the alias, a provider's refusal, a hung
   // upstream. Its own words are the detail.
   "ai/unavailable": { title: "The model could not answer." },
+  // Even narrowed to the relations the question names, this graph's description does not fit the
+  // window the model was started with; nothing was sent.
+  "ai/context": {
+    title: "This graph is too large to ask about with this model.",
+    detail: "Ask about fewer kinds of things at once, or use a model with a larger context.",
+  },
   "llm/failed": { title: "The model call failed. Please try again." },
   "query/failed": {
     title: "Query execution failed. The AI may have generated invalid SQL. Try rephrasing your question.",

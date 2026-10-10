@@ -32,6 +32,7 @@ import { CorpusProvider, useCorpus } from "@/lib/fossil/corpus";
 import { formatDate, formatGraphDuration } from "@/lib/ui/format";
 import { SchemaDiagram } from "./schema-diagram";
 import type { EdgeTable, VertexType } from "./schema-layout";
+import { PART_TABLE_HEIGHT } from "@/lib/ui/table-heights";
 
 /**
  * What a completed graph's corpus holds, as the corpus itself says it — opened with a read credential
@@ -122,7 +123,7 @@ function Holds({ graph }: { graph: Schemas["Graph"] }) {
       </Part>
 
       <Part title="Vertices">
-        <Table>
+        <Table maxHeight={PART_TABLE_HEIGHT} stickyHeader>
           <TableHeader>
             <TableRow>
               <TableHead>Type</TableHead>
@@ -146,7 +147,7 @@ function Holds({ graph }: { graph: Schemas["Graph"] }) {
           </Button>
         </CollapsibleTrigger>
         <CollapsibleContent className="pt-3">
-          <Table>
+          <Table maxHeight={PART_TABLE_HEIGHT} stickyHeader>
             <TableHeader>
               <TableRow>
                 <TableHead>Relation</TableHead>

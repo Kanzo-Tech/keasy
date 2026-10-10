@@ -38,6 +38,7 @@ import { getProviderIcon } from "@/lib/ui/provider-icons";
 import { toastError } from "@/lib/errors";
 import { Boundary, Loading } from "@/components/boundary";
 import { settled } from "@/lib/api/settled";
+import { PAGE_TABLE_HEIGHT } from "@/lib/ui/table-heights";
 
 export default function CredentialsPage() {
   return (
@@ -179,6 +180,8 @@ function Credentials() {
         </div>
       </DataTableToolbar>
       <DataTableContent<Credential>
+        maxHeight={PAGE_TABLE_HEIGHT}
+        stickyHeader
         empty="No credentials match this filter."
         onRowClick={(c) => router.push(`/settings/credentials/${encodeURIComponent(c.name)}`)}
       />

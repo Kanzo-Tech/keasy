@@ -10,12 +10,19 @@
 # not a time. The award points at its laureate (`nobel:laureate`), so the
 # relation is written where the award is. Persons are FOAF, places schema.org's `Country`, institutions
 # DBpedia's `University` as the vocabulary's `nobel:university` ranges over.
+#
+# A position is the W3C WGS 84 Basic Geo vocabulary's, decimal degrees, as
+# OpenFlights' shapes have it: an institution's is its city's, and an award's is
+# its first affiliation's city, so the prizes can be placed on a map and a
+# timeline over `date` lights them where they were won. Both are optional: a
+# prize with no affiliation (most of Literature and Peace) has no place.
 
 PREFIX nobel:   <http://data.nobelprize.org/terms/>
 PREFIX dcterms: <http://purl.org/dc/terms/>
 PREFIX foaf:    <http://xmlns.com/foaf/0.1/>
 PREFIX schema:  <https://schema.org/>
 PREFIX dbo:     <http://dbpedia.org/ontology/>
+PREFIX geo:     <http://www.w3.org/2003/01/geo/wgs84_pos#>
 PREFIX xsd:     <http://www.w3.org/2001/XMLSchema#>
 
 nobel:Laureate {
@@ -31,7 +38,9 @@ nobel:LaureateAward {
   nobel:motivation xsd:string ? ;
   nobel:laureate   @nobel:Laureate ;
   nobel:category   @nobel:Category ;
-  nobel:university @dbo:University *
+  nobel:university @dbo:University * ;
+  geo:lat          xsd:double ? ;
+  geo:long         xsd:double ?
 }
 
 nobel:Category {
@@ -41,7 +50,9 @@ nobel:Category {
 dbo:University {
   foaf:name           xsd:string ;
   schema:addressLocality xsd:string ? ;
-  schema:addressCountry  @schema:Country ?
+  schema:addressCountry  @schema:Country ? ;
+  geo:lat                xsd:double ? ;
+  geo:long               xsd:double ?
 }
 
 schema:Country {

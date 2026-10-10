@@ -24,12 +24,13 @@ needs() {
 
 url="https://api.nobelprize.org/2.1/laureates?limit=2000"
 # What the derivation below writes: 1,018 laureates, 1,026 awards, 6
-# categories, 379 institutions, 847 affiliations, 86 countries.
+# categories, 379 institutions, 847 affiliations, 86 countries; 749 awards
+# and 370 institutions with a position.
 pins="
 laureates.json    ea4de2622640308824b76742d46e86dccd83e6a4aa5a6239e9c80ec791d0137d
-awards.json       a8d177d17974390e23f22fd8a032375375ec2303fdfac10c93d8db205664b2ad
+awards.json       e2da24dc87388392338e4b52c7b4d1954fba0d165673384d3322e265dfa7e265
 categories.json   9f146a1a7f02c2d7d447383b3032c9f71a5145f1746222148963078ba0197141
-institutions.json c443bc3e8868a04a6946190af139b060a15e664c5c1ea4987b231a31f430c301
+institutions.json 1a4c1dc5dddb6308adb6b8530b827cb22d9661066287ac125dd0f4bf16793fb7
 affiliations.json 044b6131f4274b42af57288335fc83d299dfdd44ed7110f76703e2d09221a240
 countries.json    210e57c03fb48999ff5cadee25b53cbe655f05ba610b038c2752944db9e8033e
 "
@@ -53,7 +54,12 @@ rm -f "$out"/*.json "$out/.sha256"
 # the API's present-day ones (`countryNow`, `cityNow`), so a country is one
 # country across the century. A person's birthplace is a country; an
 # organisation's founding place is not one. `portion` (`1`, `1/2`, `1/3`, `1/4`)
-# becomes its denominator, the vocabulary's `nobel:share`.
+# becomes its denominator, the vocabulary's `nobel:share`. A position is the
+# present-day city's (`cityNow`'s `latitude` and `longitude`, WGS 84 decimal
+# degrees, as numbers): an institution's is its city's, and an
+# award's is its FIRST affiliation's city as the API lists them — 84 awards have
+# two or more, and an award has one place on a map. An award with no
+# affiliation, or whose first has no city on record, has no position.
 python3 - "$cache/nobel-laureates.json" "$out" <<'PY'
 import json, re, sys, unicodedata
 
@@ -69,6 +75,11 @@ def slug(text):
 
 def full_date(date):
     return date if date and re.fullmatch(r"\d{4}-\d\d-\d\d", date) and "-00" not in date else None
+
+def position(affiliation):
+    city = (affiliation or {}).get("cityNow") or {}
+    # Numbers, not the API's strings: a position is numeric, as the Map placement reads it.
+    return (float(city["latitude"]), float(city["longitude"])) if city.get("latitude") and city.get("longitude") else (None, None)
 
 def country(place):
     name = en((place or {}).get("countryNow"))
@@ -98,6 +109,7 @@ for l in json.load(open(source, encoding="utf-8"))["laureates"]:
         category = slug(en(p["category"]))
         categories[category] = en(p["category"])
         award = f"{p['awardYear']}-{category}-{l['id']}"
+        lat, lon = position((p.get("affiliations") or [None])[0])
         awards.append({
             "id": award,
             "laureate": l["id"],
@@ -105,6 +117,8 @@ for l in json.load(open(source, encoding="utf-8"))["laureates"]:
             "year": p["awardYear"],
             "share": p["portion"].split("/")[-1],
             "motivation": en(p.get("motivation")),
+            "lat": lat,
+            "lon": lon,
         })
         for a in p.get("affiliations", []):
             name = en(a.get("nameNow")) or en(a.get("name"))
@@ -112,7 +126,8 @@ for l in json.load(open(source, encoding="utf-8"))["laureates"]:
                 continue
             place = country(a)
             institution = slug(f"{name} {en(a.get('cityNow')) or ''}")
-            institutions[institution] = {"id": institution, "name": name, "city": en(a.get("cityNow")), "country": place}
+            lat, lon = position(a)
+            institutions[institution] = {"id": institution, "name": name, "city": en(a.get("cityNow")), "country": place, "lat": lat, "lon": lon}
             if place:
                 countries[place] = en(a["countryNow"])
             affiliations.append({"award": award, "institution": institution})

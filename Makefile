@@ -58,7 +58,9 @@ e2e: seed ## Run the e2e suite against the compose stack (main checkout only: Ke
 # `docker compose build web` first: the web image carries next.config.ts, which reads the switch.
 # Only a demo that asks the model swaps the gateway onto e2e/demos/models.yml, and puts it back after:
 # every `compose up` configures the project's models, which takes Model Runner a minute or more once
-# they have changed, and the graph demos call none. They touch no container at all: the dev server's
+# they have changed, and the graph demos call none. Its model's window, AI_CHAT_CONTEXT, is declared
+# here once: Model Runner starts Qwen3 with it, and the web is recreated with it too, so Ask fits its
+# prompts into that window; both are put back after. They touch no container at all: the dev server's
 # own furniture is hidden in the recording's browser (e2e/demos/record.ts) rather than by restarting
 # the web with NEXT_PUBLIC_KEASY_DEMO.
 DEMO_AI = $(filter all %-ask,$(DEMO))
@@ -70,10 +72,10 @@ ifeq ($(DEMO),)
 	@echo "make demo DEMO=<name>|all [THEME=light|dark]"
 else
 	@command -v ffmpeg >/dev/null || { echo "make demo: needs ffmpeg on PATH (macOS: brew install ffmpeg)" >&2; exit 1; }
-	$(if $(DEMO_AI),AI_CHAT=local/ai/qwen3 docker compose -f compose.yaml -f compose.override.yaml -f e2e/demos/models.yml --profile local-models up -d --wait ai-models ai-gateway)
+	$(if $(DEMO_AI),AI_CHAT=local/ai/qwen3 AI_CHAT_CONTEXT=16384 docker compose -f compose.yaml -f compose.override.yaml -f e2e/demos/models.yml --profile local-models up -d --wait ai-models ai-gateway web)
 	pnpm --filter @keasy/e2e exec playwright install chromium
 	DEMO_THEME=$(THEME) pnpm --filter @keasy/e2e demo $(if $(filter all,$(DEMO)),,--grep " $(DEMO): "); \
-	  status=$$?; $(if $(DEMO_AI),docker compose up -d --wait ai-gateway;) exit $$status
+	  status=$$?; $(if $(DEMO_AI),docker compose up -d --wait ai-gateway web;) exit $$status
 endif
 
 # ── A deployment (infra/prod/README.md) ────────────────────────────────────

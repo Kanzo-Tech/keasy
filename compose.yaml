@@ -31,6 +31,10 @@ services:
       KEASY_API_URL: http://{tenant}-server:8080
       # The gateway's OpenAI-compatible API, the only path on which it resolves an alias.
       KEASY_AI_URL: http://ai-gateway:4000/v1
+      # Each alias's context window, as the platform declares it beside its model (kanzo-ui
+      # services/ai): Ask fits its prompts into it. Unset, it is passed no budget.
+      KEASY_AI_CHAT_CONTEXT: ${AI_CHAT_CONTEXT:-}
+      KEASY_AI_COMPLETE_CONTEXT: ${AI_COMPLETE_CONTEXT:-}
     secrets: [keasy-oidc, keasy-session]
     # Healthy once the sign-in route answers: what a rolling update waits for before it lets the old
     # web go, and what `make dev` waits for.

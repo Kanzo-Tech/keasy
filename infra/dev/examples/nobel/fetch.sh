@@ -28,9 +28,9 @@ url="https://api.nobelprize.org/2.1/laureates?limit=2000"
 # and 370 institutions with a position.
 pins="
 laureates.json    ea4de2622640308824b76742d46e86dccd83e6a4aa5a6239e9c80ec791d0137d
-awards.json       deb1f923c4ff3b2543127a353abe030f558fb3d3610ad2fdfb5783bfcab2c8e4
+awards.json       e2da24dc87388392338e4b52c7b4d1954fba0d165673384d3322e265dfa7e265
 categories.json   9f146a1a7f02c2d7d447383b3032c9f71a5145f1746222148963078ba0197141
-institutions.json 93cde88e8313a2925ebf7a9ea45c2237c555e50a589382c186fd0a363ef6e6ae
+institutions.json 1a4c1dc5dddb6308adb6b8530b827cb22d9661066287ac125dd0f4bf16793fb7
 affiliations.json 044b6131f4274b42af57288335fc83d299dfdd44ed7110f76703e2d09221a240
 countries.json    210e57c03fb48999ff5cadee25b53cbe655f05ba610b038c2752944db9e8033e
 "
@@ -56,7 +56,7 @@ rm -f "$out"/*.json "$out/.sha256"
 # organisation's founding place is not one. `portion` (`1`, `1/2`, `1/3`, `1/4`)
 # becomes its denominator, the vocabulary's `nobel:share`. A position is the
 # present-day city's (`cityNow`'s `latitude` and `longitude`, WGS 84 decimal
-# degrees, as the API spells them): an institution's is its city's, and an
+# degrees, as numbers): an institution's is its city's, and an
 # award's is its FIRST affiliation's city as the API lists them — 84 awards have
 # two or more, and an award has one place on a map. An award with no
 # affiliation, or whose first has no city on record, has no position.
@@ -78,7 +78,8 @@ def full_date(date):
 
 def position(affiliation):
     city = (affiliation or {}).get("cityNow") or {}
-    return (city["latitude"], city["longitude"]) if city.get("latitude") and city.get("longitude") else (None, None)
+    # Numbers, not the API's strings: a position is numeric, as the Map placement reads it.
+    return (float(city["latitude"]), float(city["longitude"])) if city.get("latitude") and city.get("longitude") else (None, None)
 
 def country(place):
     name = en((place or {}).get("countryNow"))

@@ -7,7 +7,14 @@
 // prizes of other years and the edges into them. The files are JSON, where a
 // year and a date are the text the API wrote, and the mapping says what each is:
 // `parse.year` and `parse.date`.
+//
+// A position on the awards and the institutions: `lon` and `lat` are WGS 84
+// decimal degrees, numeric, for Discover's Map placement (x = lon, y = lat). An
+// award is placed at its first affiliation's city, which fetch.sh picks, so the
+// award's row carries it and `Affiliated` writes none.
 
+@rename(LaureateAward, "http://www.w3.org/2003/01/geo/wgs84_pos#long" as lon)
+@rename(University, "http://www.w3.org/2003/01/geo/wgs84_pos#long" as lon)
 type { Laureate, LaureateAward, Category, University, Country } := io.shex("@Nobel laureates shapes/shapes.shex")
 
 LaureateRow    := io.json("@Nobel laureates/laureates.json")
@@ -30,6 +37,8 @@ Universities : University from InstitutionRow
     name            = InstitutionRow.name
     addressLocality = InstitutionRow.city
     addressCountry  = Country(InstitutionRow.country)
+    lat             = InstitutionRow.lat
+    lon             = InstitutionRow.lon
 
 Laureates : Laureate from LaureateRow
     @subject   = "https://nobel.example/laureate/{LaureateRow.id}"
@@ -45,6 +54,8 @@ Awards : LaureateAward from AwardRow
     motivation = AwardRow.motivation
     laureate   = Laureate(AwardRow.laureate)
     category   = Category(AwardRow.category)
+    lat        = AwardRow.lat
+    lon        = AwardRow.lon
 
 // An affiliation is one more mapping of the award it belongs to, joined to
 // affiliations.json, so it writes what the type requires again.

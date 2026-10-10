@@ -53,7 +53,7 @@ async function guardedSeed(browser: Browser, name: string, example: Example, wit
   return id;
 }
 
-export const test = base.extend<{ quiet: void }, { geoGraph: string; snbGraph: string; cordisGraph: string }>({
+export const test = base.extend<{ quiet: void }, { geoGraph: string; snbGraph: string; cordisGraph: string; nobelGraph: string }>({
   // A view over the seeds — a 74K-row join, rudof over 3,218 airports — takes longer than a component.
   harnessTimeout: 60_000,
   quiet: [
@@ -71,6 +71,8 @@ export const test = base.extend<{ quiet: void }, { geoGraph: string; snbGraph: s
   // CORDIS Horizon Europe: 206,629 vertices of four types — projects, organisations, the
   // participations between them, and funding schemes.
   cordisGraph: [async ({ browser }, use) => use(await guardedSeed(browser, "smoke CORDIS", "cordis", 600_000)), { scope: "worker", timeout: 660_000 }],
+  // Nobel laureates: 2,515 vertices — laureates, their awards, categories, institutions, countries.
+  nobelGraph: [async ({ browser }, use) => use(await guardedSeed(browser, "smoke Nobel laureates", "nobel", 300_000)), { scope: "worker", timeout: 360_000 }],
 });
 
 const compact = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 });

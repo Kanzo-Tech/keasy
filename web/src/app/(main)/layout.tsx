@@ -3,6 +3,8 @@ import { forbidden, redirect } from "next/navigation";
 import { parseSidebarCookie, SIDEBAR_COOKIE_NAME, SidebarProvider } from "@kanzo-tech/ui";
 import { AuthError, can } from "@kanzo-tech/auth";
 import { auth } from "@/lib/auth/server";
+import { modelWindows } from "@/lib/model-windows";
+import { ModelWindowsProvider } from "@/lib/model-windows-context";
 import { PROBLEM_PAGE } from "@/lib/routes";
 import { Shell } from "./shell";
 
@@ -26,7 +28,9 @@ export default async function MainLayout({
 
   return (
     <SidebarProvider className="h-dvh min-h-0 overflow-hidden" defaultOpen={defaultOpen}>
-      <Shell>{children}</Shell>
+      <ModelWindowsProvider value={modelWindows()}>
+        <Shell>{children}</Shell>
+      </ModelWindowsProvider>
     </SidebarProvider>
   );
 }

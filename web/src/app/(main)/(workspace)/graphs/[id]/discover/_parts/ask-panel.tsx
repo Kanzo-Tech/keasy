@@ -12,6 +12,7 @@ import { problemCopy, ProblemView } from "@/components/problem-view";
 import { gateway } from "@/lib/ai";
 import { settled } from "@/lib/api/settled";
 import { coded } from "@/lib/errors";
+import { useModelContext } from "@/lib/model-windows-context";
 import { corpusKey, ONCE, useCorpus, useJoinGraph, useVertices } from "@/lib/fossil/corpus";
 import { useDashboardStore } from "./dashboard-store";
 import { startersQuery } from "./starters";
@@ -71,13 +72,14 @@ function useRelations(graph: JoinGraph): AnswerRelation[] {
 function useStarters(graph: JoinGraph, relations: readonly AnswerRelation[]) {
   const { graphId } = useCorpus();
   const { crossfilter } = useMosaic();
+  const context = useModelContext("complete");
   // Re-rendered on every clause, so the key below is the filter as it is now.
   useClauses(crossfilter);
   const starters = useQuery({
     queryKey: [...corpusKey(graphId), "starters", String(crossfilter.predicate(null) ?? "")],
     // Each request replaces the last, and one cut short by a filter change leaves nothing behind.
     queryFn: startersQuery(({ signal }) =>
-      dataSuggestions({ model: gateway("complete"), graph, relations, selection: crossfilter, abortSignal: signal }),
+      dataSuggestions({ model: gateway("complete"), graph, relations, selection: crossfilter, context, abortSignal: signal }),
     ),
     staleTime: Infinity,
     retry: false,
@@ -120,12 +122,13 @@ function SubsetPill({ vertices }: { vertices: Query }) {
 function AskChat() {
   const { crossfilter } = useMosaic();
   const { engine } = useCorpus();
+  const context = useModelContext("chat");
   const vertices = useVertices();
   const graph = useJoinGraph();
   const relations = useRelations(graph);
   const agent = useMemo(
-    () => dataAgent({ model: gateway("chat"), engine, graph, relations, selection: crossfilter }),
-    [engine, graph, relations, crossfilter],
+    () => dataAgent({ model: gateway("chat"), engine, graph, relations, selection: crossfilter, context }),
+    [engine, graph, relations, crossfilter, context],
   );
   const chat = useAgentChat(agent);
   const starters = useStarters(graph, relations);

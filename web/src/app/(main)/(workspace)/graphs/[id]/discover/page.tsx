@@ -277,7 +277,7 @@ function Workspace() {
                   Graph view. A strip of its own, so the brush never covers the legend; with no
                   column chosen it draws nothing. */}
               <div className="shrink-0" hidden={view !== "graph"}>
-                <GraphTimeline className="border-t" />
+                <GraphTimeline />
               </div>
             </ShellMain>
           </ResizablePanel>

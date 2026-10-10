@@ -8,6 +8,7 @@ import {
   RelationPicker,
   relationIdentities,
   relationKey,
+  relationRootKey,
   semiJoinOf,
   type TableExpr,
 } from "@kanzo-tech/ui/analytics";
@@ -46,7 +47,7 @@ function SavedDashboard({ relation, onRelationChange, table }: DashboardViewProp
 
   const key = relationKey(graph, relation);
   const identities = useMemo(() => relationIdentities(graph, relation), [graph, relation]);
-  const publish = useMemo(() => semiJoinOf(identities[0].column, table, { label: key }), [identities, table, key]);
+  const publish = useMemo(() => semiJoinOf(relationRootKey(graph, relation), table, { label: key }), [graph, relation, table, key]);
 
   // The document is read once; a failed read is shown in place of the dashboard, not replaced by
   // the automatic one an edit would then overwrite.

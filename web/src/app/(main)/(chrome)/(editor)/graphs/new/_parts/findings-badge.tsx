@@ -2,50 +2,53 @@
 
 import { useMemo } from "react";
 import {
+  type DescribePlace,
   type Finding,
-  type FindingCounts,
+  FindingRow,
+  FindingsBadge as Badge,
   FindingsContent,
-  FindingsGoTo,
   FindingsGroup,
   FindingsRoot,
-  FindingsTrigger,
+  type FindingSeverity,
+  type FindingTally,
+  PopoverHeader,
+  tallyFindings,
 } from "@kanzo-tech/ui";
 import type { Diagnostic } from "@fossil-lang/types";
-import { ProblemItem } from "@/components/problem-view";
+import { copyOf } from "@/lib/errors";
 
-/** LSP severity: 1 error, 2 warning, 3 information, 4 hint — as kanzo-ui's variants, a hint a note. */
-const VARIANT = { 1: "destructive", 2: "warning", 3: "info", 4: "info" } as const;
-const SEVERITY = { 1: "error", 2: "warning", 3: "info", 4: "info" } as const;
+/** LSP severity: 1 error, 2 warning, 3 information, 4 hint — as kanzo-ui's severities, a hint a note. */
+const SEVERITY = { 1: "violation", 2: "warning", 3: "info", 4: "info" } as const satisfies Record<number, FindingSeverity>;
+
+/** The compiler's words for a severity: an error, not a violation. */
+const LABELS = { severity: { violation: "Error", warning: "Warning", info: "Note" } };
+
+const GROUPS = [
+  { severity: "violation", title: "Errors" },
+  { severity: "warning", title: "Warnings" },
+  { severity: "info", title: "Notes" },
+] as const;
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
 /** Errors and warnings side by side; notes are named only when they are all there is. */
-function tally({ destructive, warning, info }: FindingCounts): string {
-  const parts = [destructive && plural(destructive, "error"), warning && plural(warning, "warning")].filter(Boolean);
-  return parts.length ? parts.join(" · ") : info ? plural(info, "note") : "Valid";
+function tally(t: FindingTally | undefined): string {
+  if (!t) return "Valid";
+  const parts = [t.violation && plural(t.violation, "error"), t.warning && plural(t.warning, "warning")].filter(Boolean);
+  return parts.length ? parts.join(" · ") : t.info ? plural(t.info, "note") : "Valid";
 }
 
-interface CompilerFinding extends Finding {
-  row: Diagnostic;
-}
-
-/** A finding as the one failure view shows it: its code, its line and title, its message and help. */
-function problemOf(row: Diagnostic) {
+/** A diagnostic as one result: keasy's title for its code when it has one, the compiler's otherwise. */
+function findingOf(row: Diagnostic): Finding<Diagnostic> {
+  const copy = copyOf(row.code, row.data);
   return {
-    code: row.code,
-    title: `Line ${row.range.start.line + 1} · ${row.title}`,
-    message: row.message,
-    help: row.help,
     severity: SEVERITY[row.severity],
-    data: row.data,
+    message: copy?.detail ?? row.message,
+    rule: { id: row.code, label: copy?.title ?? row.title },
+    place: row,
+    help: row.help,
   };
 }
-
-const item = ({ row }: CompilerFinding) => (
-  <ProblemItem error={problemOf(row)}>
-    <FindingsGoTo variant="outline">Go to line</FindingsGoTo>
-  </ProblemItem>
-);
 
 /**
  * The compiler's tally, and the findings behind it: pressing it lists every finding, errors first
@@ -63,31 +66,32 @@ export function FindingsBadge({
   onSelect: (finding: Diagnostic) => void;
 }) {
   const listed = useMemo(
-    () =>
-      [...findings]
-        .sort((a, b) => a.range.start.line - b.range.start.line)
-        .map((row, i): CompilerFinding => ({ id: String(i), variant: VARIANT[row.severity], row })),
+    () => [...findings].sort((a, b) => a.range.start.line - b.range.start.line).map(findingOf),
     [findings],
   );
+  const describe: DescribePlace<Diagnostic> = (row) => ({
+    where: `Line ${row.range.start.line + 1}`,
+    action: { label: "Go to line", run: () => onSelect(row) },
+  });
 
   return (
-    <FindingsRoot
-      findings={listed}
-      onOpenChange={(d) => onOpenChange(d.open)}
-      onSelect={(f) => onSelect(f.row)}
-      open={open}
-    >
-      <FindingsTrigger size="lg">{tally}</FindingsTrigger>
-      <FindingsContent description="What the compiler found in the program.">
-        <FindingsGroup title="Errors" variant="destructive">
-          {item}
-        </FindingsGroup>
-        <FindingsGroup title="Warnings" variant="warning">
-          {item}
-        </FindingsGroup>
-        <FindingsGroup title="Notes" variant="info">
-          {item}
-        </FindingsGroup>
+    <FindingsRoot labels={LABELS} onOpenChange={(d) => onOpenChange(d.open)} open={open} tally={tallyFindings(listed)}>
+      <Badge size="lg">{tally}</Badge>
+      <FindingsContent
+        empty={<p className="text-muted-foreground text-sm">The compiler found nothing in the program.</p>}
+        header={<PopoverHeader description="What the compiler found in the program." title="Findings" />}
+      >
+        {GROUPS.map(({ severity, title }) => {
+          const rows = listed.filter((f) => f.severity === severity);
+          if (rows.length === 0) return null;
+          return (
+            <FindingsGroup key={severity} tally={tallyFindings(rows)} title={title}>
+              {rows.map((finding, i) => (
+                <FindingRow describe={describe} finding={finding} key={i} />
+              ))}
+            </FindingsGroup>
+          );
+        })}
       </FindingsContent>
     </FindingsRoot>
   );

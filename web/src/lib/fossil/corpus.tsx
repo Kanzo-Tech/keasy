@@ -11,7 +11,7 @@ import {
   engine,
   useMosaic,
   useQueryRows,
-  type Coordinator,
+  type Engine,
   type JoinGraph,
 } from "@kanzo-tech/ui/analytics";
 import { settled } from "@/lib/api/settled";
@@ -39,10 +39,10 @@ export const CORPUS_GC_MS = 5 * 60_000;
 export interface Corpus {
   graphId: string;
   attachment: Attachment;
+  /** The page's one engine, the corpus attached to it: what reads outside the coordinator's queue, as the Ask agent does. */
+  engine: Engine;
 }
 
-/** The corpus, and the coordinator of the engine it was attached to — the one `MosaicProvider` hands down. */
-type Opened = Corpus & { coordinator: Coordinator };
 
 /**
  * The attach, cached under {@link corpusKey}: every reader of one graph shares one attachment, and
@@ -62,7 +62,7 @@ type Opened = Corpus & { coordinator: Coordinator };
 export function corpusQuery(graphId: string) {
   return queryOptions({
     queryKey: corpusKey(graphId),
-    queryFn: async ({ signal }): Promise<Opened> => {
+    queryFn: async ({ signal }): Promise<Corpus> => {
       const attachedTo = await engine({ signal });
       const attachment = await attach(graphId, { engine: attachedTo, host, signal });
       // The cache gave up on this attach while it was out — the entry removed, reset, or its last
@@ -74,7 +74,7 @@ export function corpusQuery(graphId: string) {
         await attachment.detach().catch((err: unknown) => toastError(err, RELEASE_FAILED));
         signal.throwIfAborted();
       }
-      return { graphId, attachment, coordinator: attachedTo.coordinator };
+      return { graphId, attachment, engine: attachedTo };
     },
     ...ONCE,
     gcTime: CORPUS_GC_MS,
@@ -97,10 +97,10 @@ function chartFailed(error: unknown) {
  * attached while the page is on screen, so every page that reads a corpus reads it through this.
  */
 export function CorpusProvider({ graphId, children }: { graphId: string; children: ReactNode }) {
-  const { coordinator, ...corpus } = settled(useSuspenseQuery(corpusQuery(graphId)));
+  const corpus = settled(useSuspenseQuery(corpusQuery(graphId)));
   return (
     <CorpusContext value={corpus}>
-      <MosaicProvider coordinator={coordinator} onFailure={chartFailed}>
+      <MosaicProvider coordinator={corpus.engine.coordinator} onFailure={chartFailed}>
         {children}
       </MosaicProvider>
     </CorpusContext>

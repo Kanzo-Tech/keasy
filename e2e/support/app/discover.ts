@@ -5,6 +5,7 @@ import {
   DockHarness,
   FilterBarHarness,
   GraphCanvasHarness,
+  RelationPickerHarness,
   type By,
   type HarnessEnvironment,
   type HarnessQuery,
@@ -12,7 +13,6 @@ import {
 
 import { discoverUrl } from "../fixtures";
 import { AskPanel } from "./ask";
-import { chooseOption } from "./controls";
 import { RulesPanel } from "./rules";
 import { GraphSearch } from "./search";
 import { SettingsPanel } from "./settings";
@@ -110,19 +110,14 @@ export class DiscoverPage extends ComponentHarness {
   }
 
   /**
-   * Picks the dashboard's relation: its root type in *Root type*, then each hop from *Hop*'s menu by
-   * its label, `"replyOfPost → Post"`. The relation is not in the URL, so it is picked, not linked.
+   * Picks the dashboard's relation: its root type, then each hop by its step as `relationKey` writes
+   * it (`">replyOfPost>Post"`, `"<isLocatedIn<Comment"`), through the library's `RelationPickerHarness`.
+   * The relation is not in the URL, so it is picked, not linked.
    */
   async relation(root: string, hops: readonly string[] = []): Promise<void> {
-    const group = await this.env.until(async () => (await this.host.find({ role: "group", name: "Relation" }))[0], "the dashboard has no Relation");
-    await chooseOption(this.env, group, "Root type", root);
-    for (const hop of hops) {
-      const button = await this.env.until(async () => (await group.find({ role: "button", name: "Hop" }))[0], "the relation offers no Hop");
-      await button.click();
-      const item = await this.env.until(async () => (await this.env.root.find({ role: "menuitem", name: hop }))[0], `Hop offers no ${hop}`);
-      await item.click();
-      await this.env.until(async () => (await this.env.root.find({ role: "menuitem" })).length === 0, `the Hop menu did not close on ${hop}`);
-    }
+    const picker = await this.env.harness(RelationPickerHarness);
+    await picker.pick(root);
+    for (const hop of hops) await picker.add(hop);
   }
 
   /**

@@ -96,6 +96,9 @@ test("rules are validated over the corpus's triples: what fails, what conforms, 
   // Show puts the finding's vertices on the page as its clause.
   expect(await shipping.show()).toBe(2);
   await expect.poll(() => discover.counts()).toMatch(/^2 of 20 nodes match/);
+  // The rules' own clause is no filter of theirs: the check is not out of date for it.
+  expect(await rules.stale()).toBeNull();
+  expect(await rules.tally()).toBe("2 violations");
   await shipping.hide();
 
   // Show all puts every vertex a rule flags at one severity on the page: here the same two people.
@@ -109,6 +112,7 @@ test("rules are validated over the corpus's triples: what fails, what conforms, 
   // What conforms is rudof's Shape Fragment, read back by its subjects: six people and every order.
   await rules.conforms();
   await expect.poll(() => discover.counts()).toMatch(/^18 of 20 nodes match/);
+  expect(await rules.stale()).toBeNull();
   await rules.conforms(false);
   await expect.poll(() => discover.counts()).toMatch(/^20 nodes/);
   await rules.close();
@@ -119,7 +123,8 @@ test("rules are validated over the corpus's triples: what fails, what conforms, 
   await expect.poll(() => discover.counts()).toMatch(/^4 of 20 nodes match/);
   const subset = await discover.rules();
   expect(await subset.stale()).toBe("Filter changed since the last check");
-  expect(await subset.tally()).toBe("2 violations");
+  // The tally is kept, and its name says it is out of date.
+  expect(await subset.tally()).toBe("2 violations, out of date");
   expect(await subset.check()).toMatch(/^Checked over the selection: 4 of 20 nodes/);
   expect(await subset.stale()).toBeNull();
   const person = await subset.rule("Person");

@@ -416,8 +416,9 @@ create view r  as select pa.*, o.country, o.activityType from pa join o on o.id 
 - **Hero tab:** `nobel` · label **Nobel timeline**
 - **Stat line:** *1,026 Nobel prizes since 1901 — play them forward in time*
 - **Example / seed:** `nobel` (PR #119) · `seedGraph(page, "nobel", { name: "Demo · Nobel laureates", reuse: true })`
-- **Depends on:** `GraphTimeline` (kanzo-ui #143, in v0.35.0) and the setting `time-by`, labelled
-  **Timeline** in the graph's Settings.
+- **Depends on:** `GraphTimeline` on its own crossfilter, its brush snapped to five-year bars
+  (kanzo-ui #152, v0.37.0; keasy #132), under both views (keasy #133); the setting `time-by`,
+  labelled **Timeline** in the graph's Settings.
 
 **Arrange (off camera)**
 
@@ -434,12 +435,10 @@ create view r  as select pa.*, o.country, o.activityType from pa join o on o.id 
 | # | Subtitle | Action | Check |
 | --- | --- | --- | --- |
 | 1 | Every Nobel prize since 1901, on one time axis | — (the timeline is read) | `timeline.range()` → `null` (no window); `graph.counts()` names the whole graph |
-| 2 | Brush 1901–1929: German universities lead | `timeline.brush([new Date("1901-01-01"), new Date("1930-01-01")])` | `timeline.range()` → `/^1901 – 19(29|30)$/`; `bar.chips()` holds the `date` clause |
-| 3 | Play it forward — in the 1940s the prizes go west | `timeline.play()`; `env.until(async () => /^19[89]\d/.test((await timeline.range()) ?? ""), "the window reached the 1980s")`; `timeline.pause()` | the button is not pressed after pause |
-| 4 | The 1990s: 58 of 78 affiliations are American | `timeline.brush([new Date("1990-01-01"), new Date("2000-01-01")])`; `discover.view("Dashboard")` | `timeline.range()` was `/^1990 – 1999|2000$/`; `dashboard.tile("Count by Country.name")` top bar `USA` · **poster** |
-| 5 | One filter, every view | — | `bar.chips()` still holds the `date` clause on the dashboard |
-
-Steps 4–5 can merge (the dashboard is the "one filter everywhere" proof): four steps.
+| 2 | Brush 1900–1930: German universities lead | `timeline.brush([1900, 1930])` (the axis is the year as a number) | `timeline.range()` → `/^19(00\|01) – 19(29\|30)$/` (a harness drag lands on pixels, a hand's snaps to bars); `bar.chips()` holds the `date` clause |
+| 3 | Play it forward — in the 1940s the prizes go west | `timeline.play()`; poll the window's start year to ≥ 1950; `timeline.pause()` | the start year is ≥ 1950 (a bar a tick, a tenth of a second each: where it stops varies) |
+| 4 | 1990–2000: 66 of 89 affiliations are American | `bar.remove("date")` (a drag inside the paused window would move it), then `timeline.brush([1990, 2000])` | `timeline.range()` → `"1990 – 2000"` |
+| 5 | One filter, every view | `discover.view("Dashboard")`; `discover.relation("LaureateAward", ["university → University", "addressCountry → Country"])` (the Dashboard opens on the first type) | `dashboard.tile("Count by Country.name")` top bar `USA`; `bar.chips()` still holds the `date` clause · **poster** |
 
 **Numbers** (`nobel/data`, JSON)
 
@@ -460,6 +459,8 @@ create view x  as select aw.year::int y, i.country from af join aw on aw.id = af
 | 1939–1945 | no prizes 1940–1942; USA 7, Germany 4, UK 3 | `select count(*) from aw where year between 1940 and 1942` → 0 |
 | 1946–2025 | 697 affiliations, USA 425 (61 %), UK 74, Germany 41 | `select count(*), count(*) filter (where country='usa') from x where y >= 1946` |
 | 1990–1999 | 104 awards; 78 affiliations, USA 58, Germany 5, France 4 | `… where y between 1990 and 1999` |
+| 1900–1930, the take's window | Germany 29, UK 16, France 15, Netherlands 6 (by university the Sorbonne leads, 6) | `… where y between 1900 and 1930` (the window is inclusive) |
+| 1990–2000, the take's window | 117 awards; 89 affiliations, USA 66, Germany 5, UK 4 | `… where y between 1990 and 2000` |
 | US share by decade | 1900s 1/34 · 1920s 2/33 · 1930s 12/45 · 1940s 15/32 · 1950s 33/62 · 1990s 58/78 · 2000s 79/114 | `select y//10*10, count(*) filter (where country='usa'), count(*) from x group by 1` |
 
 The crossover is in the 1940s (US 15 of 32), so the subtitle says *"in the 1940s"*; the US holds
@@ -467,12 +468,11 @@ The crossover is in the 1940s (US 15 of 32), so the subtitle says *"in the 1940s
 
 **Risks**
 
-- The window's `aria-valuetext` format (*1950 – 1960*, end inclusive or exclusive) is the timeline's;
-  the regexes above accept both; pin on the first run.
-- Playback is a clock: the subtitle leads it and the step ends on a state (the range reaching the
-  1980s), but how far it travels while the camera waits depends on the play speed.
-- *"58 of 78 affiliations"* counts affiliation rows (an award with two universities counts twice);
-  the dashboard relation's rows are the same rows, but if the page counts awards it reads otherwise.
+- The window is inclusive (`BETWEEN`): 1990–2000 holds 2000, hence *66 of 89*, not 1990–1999's 58 of 78.
+- Playback is a clock: the subtitle leads it and the step ends on a state (the start past 1950), but
+  the 1940s pass in about 0.3 s on camera.
+- *"66 of 89 affiliations"* counts affiliation rows (an award with two universities counts twice);
+  the dashboard relation's rows are the same rows.
 - `Timeline: date` assumes the setting's value is the bare column name; if it is `LaureateAward.date`
   the title follows. The `TimelineHarness.with({ title: /^Timeline: / })` form avoids it.
 - Nobel's PR #119 is another session's; this storyboard only reads it.

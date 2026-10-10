@@ -5,6 +5,7 @@ import { useMutation } from "@tanstack/react-query";
 import { FileIcon, ShieldCheckIcon, UploadIcon } from "lucide-react";
 import {
   Button,
+  cn,
   type FindingPlace,
   type FindingTally,
   FileUpload,
@@ -28,7 +29,7 @@ import { queryClient } from "@/lib/api/query-client";
 import { settled } from "@/lib/api/settled";
 import { toastError } from "@/lib/errors";
 import { useCorpus } from "@/lib/fossil/corpus";
-import { nodesOf, type Rule, rulesOf, tallyOf, useReadRules, useRules } from "./rules-validation";
+import { groupKey, type Rule, rulesOf, type Stale, tallyOf, useReadRules, useRules } from "./rules-validation";
 
 /**
  * The graph's rules as a badge in the filter bar — the recipe editor's findings badge, read in Graph
@@ -83,11 +84,13 @@ export function RulesBadge() {
   );
 }
 
-function Badge({ children }: { children: string }) {
+/** The badge: the shield, the words, and — while the last check is out of date — that it is, dashed. */
+function Badge({ children, stale }: { children: string; stale?: Stale }) {
   return (
-    <FindingsBadge className="gap-1" size="sm">
+    <FindingsBadge className={cn("gap-1", stale && "border-dashed opacity-70")} data-stale={stale} size="sm" title={stale && STALE[stale]}>
       <ShieldCheckIcon aria-hidden className="size-3" />
       {children}
+      {stale && <span className="sr-only">, out of date</span>}
     </FindingsBadge>
   );
 }
@@ -122,20 +125,32 @@ function tallyWords(tally: FindingTally): string {
 /** The clause *Show what conforms* puts on the page. */
 const CONFORMS = "Conforms to the rules";
 
-/** The rules file, read and checked over the page's subset: the badge's tally, and the popover's groups. */
+/** Why the last check is out of date, as the popover says it. */
+const STALE: Record<Stale, string> = {
+  filter: "Filter changed since the last check",
+  rules: "Rules changed since the last check",
+};
+
+/**
+ * The rules file, read, and checked when asked: the badge's tally — kept, and marked out of date,
+ * once a filter or the file moves past it — and the popover's groups.
+ */
 function Checked({ saved, can_manage, refused }: { saved: Schemas["Rules"]; can_manage: boolean; refused: Error | null }) {
   const { rules: read, failure: unreadable } = useReadRules(saved.shapes);
-  const { checked, failure, picked, withdraw, show, conforming } = useRules(read);
+  const rulesCheck = useRules(read, saved.shapes);
+  const { checked, checking, failure, stale, picked, withdraw, show, conforming } = rulesCheck;
   const rules = read && checked ? rulesOf(read.model, checked.findings) : undefined;
   const tally = rules ? tallyOf(rules) : undefined;
   const words =
-    unreadable !== undefined || failure !== undefined
-      ? "Rules not checked"
-      : !tally
+    unreadable !== undefined
+      ? "Rules unreadable"
+      : checking
         ? "Checking rules…"
-        : tally.total === 0
-          ? "Conforms to the rules"
-          : tallyWords(tally);
+        : !tally
+          ? "Not checked"
+          : tally.total === 0
+            ? "Conforms to the rules"
+            : tallyWords(tally);
 
   const failed = (err: unknown) => toastError(err, "The graph could not show them");
   const toggle = (label: string, publish: () => Promise<void>) =>
@@ -147,18 +162,22 @@ function Checked({ saved, can_manage, refused }: { saved: Schemas["Rules"]; can_
     ) : failure !== undefined ? (
       <ProblemView error={failure} uncoded="query/failed" />
     ) : !rules ? (
-      <Skeleton className="h-32" />
+      checking ? (
+        <Skeleton className="h-32" />
+      ) : (
+        <p className="text-muted-foreground text-sm">Not checked yet. Check validates what the page holds now.</p>
+      )
     ) : undefined;
 
   return (
     <FindingsRoot tally={tally}>
-      <Badge>{words}</Badge>
+      <Badge stale={stale}>{words}</Badge>
       <FindingsContent
         empty={problem ?? <AllConform rules={rules ?? []} />}
         header={
           <RulesHeader
             can_manage={can_manage}
-            checked={checked}
+            check={read ? rulesCheck : undefined}
             conforms={{ pressed: picked === CONFORMS, toggle: () => toggle(CONFORMS, () => conforming(CONFORMS)) }}
             count={read?.model.nodeShapes.length}
             refused={refused}
@@ -166,35 +185,35 @@ function Checked({ saved, can_manage, refused }: { saved: Schemas["Rules"]; can_
           />
         }
       >
-        {rules?.map((rule) => (
-          <FindingsGroup key={rule.id} tally={rule.tally} title={rule.name}>
-            <RuleState rule={rule} />
-            {(["violation", "warning"] as const).map((severity) => {
-              const nodes = nodesOf(rule.groups, severity);
-              if (nodes.length === 0) return null;
-              const label = `${rule.name} · ${NOUN[severity][1]}`;
-              const what = nodes.length === 1 ? `the 1 ${NOUN[severity][0]}` : `all ${nodes.length.toLocaleString()} ${NOUN[severity][1]}`;
-              return (
-                <ShowAll key={severity} pressed={picked === label} toggle={() => toggle(label, () => show(nodes, label))}>
-                  Show {what}
-                </ShowAll>
-              );
-            })}
-            {rule.groups.map((group) => {
-              const label = `${rule.name}: ${group.message}`;
-              const nodes = nodesOf([group]);
-              const n = nodes.length.toLocaleString();
-              return (
-                <FindingGroupRow
-                  action={{ label: picked === label ? `Showing ${n}` : `Show ${n}`, run: () => toggle(label, () => show(nodes, label)) }}
-                  describe={(place) => describe(place, rule, show, failed)}
-                  group={group}
-                  key={`${group.rule.id}|${group.places[0]?.path ?? ""}|${group.severity}`}
-                />
-              );
-            })}
-          </FindingsGroup>
-        ))}
+        {problem === undefined &&
+          rules?.map((rule) => (
+            <FindingsGroup key={rule.id} tally={rule.tally} title={rule.name}>
+              <RuleState rule={rule} />
+              {(["violation", "warning"] as const).map((severity) => {
+                const n = checked?.flagged[rule.id]?.[severity] ?? 0;
+                if (n === 0) return null;
+                const label = `${rule.name} · ${NOUN[severity][1]}`;
+                const what = n === 1 ? `the 1 ${NOUN[severity][0]}` : `all ${n.toLocaleString()} ${NOUN[severity][1]}`;
+                return (
+                  <ShowAll key={severity} pressed={picked === label} toggle={() => toggle(label, () => rulesCheck.showSeverity(rule, severity, label))}>
+                    Show {what}
+                  </ShowAll>
+                );
+              })}
+              {rule.groups.map((group) => {
+                const label = `${rule.name}: ${group.message}`;
+                const n = group.vertices.toLocaleString();
+                return (
+                  <FindingGroupRow
+                    action={{ label: picked === label ? `Showing ${n}` : `Show ${n}`, run: () => toggle(label, () => rulesCheck.showGroup(group, label)) }}
+                    describe={(place) => describe(place, rule, show, failed)}
+                    group={group}
+                    key={groupKey(group)}
+                  />
+                );
+              })}
+            </FindingsGroup>
+          ))}
       </FindingsContent>
     </FindingsRoot>
   );
@@ -261,21 +280,27 @@ interface RulesHeaderProps {
   count: number | undefined;
   can_manage: boolean;
   refused: Error | null;
-  checked: { inScope: number; total: number } | undefined;
+  /** The check, once the file is read: what it was over, whether it runs, and its controls. */
+  check: Pick<ReturnType<typeof useRules>, "checked" | "checking" | "stale" | "check" | "stop"> | undefined;
   conforms: { pressed: boolean; toggle: () => void };
 }
 
 /**
  * Above the list, not scrolling with it: the file — its name, its rules, who saved it, the file back,
- * *Replace…* — a drop zone for the next one, what the rules were checked over, and *Show what conforms*.
+ * *Replace…* — a drop zone for the next one, then the check: what it was over and whether a filter
+ * or the file has moved past it, *Check* (*Check again*, *Stop* while it runs), and *Show what
+ * conforms*.
  */
-function RulesHeader({ saved, count, can_manage, refused, checked, conforms }: RulesHeaderProps) {
+function RulesHeader({ saved, count, can_manage, refused, check, conforms }: RulesHeaderProps) {
   const popover = usePopover();
-  const scope = checked
-    ? checked.inScope === checked.total
-      ? `Checked over all ${checked.total.toLocaleString()} nodes`
-      : `Checked over the selection: ${checked.inScope.toLocaleString()} of ${checked.total.toLocaleString()} nodes`
-    : undefined;
+  const checked = check?.checked;
+  const scope = check?.checking
+    ? "Checking what the page holds…"
+    : checked
+      ? checked.inScope === checked.total
+        ? `Checked over all ${checked.total.toLocaleString()} nodes`
+        : `Checked over the selection: ${checked.inScope.toLocaleString()} of ${checked.total.toLocaleString()} nodes`
+      : "Not checked";
   return (
     <PopoverHeader className="gap-2 border-b">
       <FileUploadDropzone className="items-stretch gap-1 border-0 p-0 text-start" disableClick>
@@ -311,9 +336,23 @@ function RulesHeader({ saved, count, can_manage, refused, checked, conforms }: R
           <p className="text-muted-foreground text-xs">Nothing changed: the graph keeps {saved.name}.</p>
         </>
       )}
-      {scope && (
-        <div className="flex items-center gap-2">
-          <p className="min-w-0 flex-1 text-muted-foreground text-xs">{scope}</p>
+      {check && (
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="min-w-0 flex-1">
+            <p className="text-muted-foreground text-xs" data-slot="rules-scope">{scope}</p>
+            {check.stale && !check.checking && (
+              <p className="text-warning text-xs" data-slot="rules-stale">{STALE[check.stale]}</p>
+            )}
+          </div>
+          {check.checking ? (
+            <Button className="shrink-0" onClick={check.stop} size="sm" variant="outline">
+              Stop
+            </Button>
+          ) : (
+            <Button className="shrink-0" onClick={() => void check.check()} size="sm" variant={checked && !check.stale ? "outline" : "default"}>
+              {checked ? "Check again" : "Check"}
+            </Button>
+          )}
           <Button
             aria-pressed={conforms.pressed}
             className="shrink-0"

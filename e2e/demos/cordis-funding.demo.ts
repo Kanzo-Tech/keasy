@@ -43,7 +43,7 @@ demo("cordis-funding", "EU research funding over CORDIS: who gets Horizon Europe
     await discover.relation("OrganisationRole", [">isRoleOf>Organisation"]);
     const dashboard = await discover.dashboard();
     const rules = await discover.rules();
-    await rules.checked();
+    await rules.check();
     return { discover, dashboard, rules };
   },
 

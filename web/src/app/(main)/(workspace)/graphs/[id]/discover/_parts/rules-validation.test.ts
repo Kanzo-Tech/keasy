@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
-import { initSync, type RdfFindingGroup, type RdfFindingGroups, Shapes } from "@kanzo-tech/rudof-wasm";
+import { initSync, Shapes } from "@kanzo-tech/rudof-wasm";
 import { beforeAll, describe, expect, it } from "vitest";
-import { nodesOf, rulesOf, tallyOf } from "./rules-validation";
+import { type Checked, groupKey, type KeptGroup, nodesOf, rulesOf, tallyOf } from "./rules-validation";
 
 beforeAll(() => {
   const wasm = createRequire(import.meta.url).resolve("@kanzo-tech/rudof-wasm").replace(/rudof_wasm\.js$/, "rudof_wasm_bg.wasm");
@@ -24,7 +24,7 @@ ex:CommentRule a sh:NodeShape ; sh:targetClass ex:Comment ; sh:deactivated true 
 const iri = (value: string) => ({ termType: "NamedNode", value });
 
 /** A group as rudof's `validateGroups` answers it: `count` results at `places`, filed by `sourceShape`. */
-const group = (shape: { termType: string; value: string }, severity: RdfFindingGroup["severity"], focus: string[], count = focus.length): RdfFindingGroup => {
+const group = (shape: { termType: string; value: string }, severity: KeptGroup["severity"], focus: string[], count = focus.length): KeptGroup => {
   const rule = { id: `${shape.value}|MinCount`, label: "email · MinCount" };
   const places = focus.map((node) => ({ focus: iri(node), path: "<https://example.org/email>" }));
   return {
@@ -36,13 +36,14 @@ const group = (shape: { termType: string; value: string }, severity: RdfFindingG
     sample: places.slice(0, 3).map((place) => ({ severity, message: "Less than 1 values", rule, place })),
     sourceShape: shape,
     sourceConstraintComponent: "http://www.w3.org/ns/shacl#MinCountConstraintComponent",
+    vertices: places.length,
   };
 };
 
 describe("rudof's groups, filed under the rules of the file", () => {
   it("files a property shape's groups under the node shape that holds it, and tallies each rule by its results", () => {
     const model = Shapes.parse(RULES).model();
-    const checked: RdfFindingGroups = {
+    const checked: Checked["findings"] = {
       conforms: false,
       // Two people, one of them failing twice: three results at two places.
       groups: [group(iri("https://example.org/email"), "violation", ["https://example.org/p1", "https://example.org/p2"], 3)],
@@ -63,7 +64,7 @@ describe("rudof's groups, filed under the rules of the file", () => {
     const model = Shapes.parse(RULES).model();
     // `model()` names a blank node `_:` and its label; the group's term carries the label alone.
     const title = model.nodeShapes.find((shape) => shape.id === "https://example.org/ForumRule")?.properties[0]?.id ?? "";
-    const checked: RdfFindingGroups = {
+    const checked: Checked["findings"] = {
       conforms: false,
       groups: [group({ termType: "BlankNode", value: title.replace(/^_:/, "") }, "violation", ["https://example.org/f1"])],
       unchecked: [],
@@ -76,8 +77,17 @@ describe("rudof's groups, filed under the rules of the file", () => {
 
   it("drops a group whose shape is in no rule of the file", () => {
     const model = Shapes.parse(RULES).model();
-    const checked: RdfFindingGroups = { conforms: false, groups: [group(iri("https://example.org/elsewhere"), "warning", ["x"])], unchecked: [] };
+    const checked: Checked["findings"] = { conforms: false, groups: [group(iri("https://example.org/elsewhere"), "warning", ["x"])], unchecked: [] };
     expect(tallyOf(rulesOf(model, checked)).total).toBe(0);
+  });
+});
+
+describe("a group, known again by a later check of one subset", () => {
+  it("is its rule, its path and its severity, whatever its places", () => {
+    const shape = iri("https://example.org/email");
+    const kept: KeptGroup = { ...group(shape, "violation", ["a1"]), places: [] };
+    expect(groupKey(kept)).toBe(groupKey(group(shape, "violation", ["a1", "a2"])));
+    expect(groupKey(group(shape, "violation", ["a1"]))).not.toBe(groupKey(group(shape, "warning", ["a1"])));
   });
 });
 

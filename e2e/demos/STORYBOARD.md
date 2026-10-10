@@ -268,7 +268,7 @@ when the prompt, the tool's schema or the SNB example change.
 
 1. `env`; seed; `api(page, "PUT", /v1/graphs/${id}/rules, { name: "geo.ttl", shapes })` (as today).
 2. `discover.open(id, { panel: "none" })`; `graph.ready()`; `graph.pause()`; `settings`: Map, lon/lat, Legible, Hidden edges, no labels (the shared `onMap`, as a page-object method `discover.onMap()`); then the dock is closed: the rules are the filter bar's badge.
-3. `rules.checked()` → `/^Checked over all 3,218 nodes$/`.
+3. `rules.check()` (presses *Check*: the rules validate only when asked) → `/^Checked over all 3,218 nodes$/`.
 
 **Steps**
 
@@ -355,7 +355,7 @@ role and the EU contribution) — €62.55B in all. Candidates, and what the dat
    - chart *Count by OrganisationRole.roleLabel*.
    The column names and the relation key are the page's (`relationKey`, `alias.name`): pin them by
    saving the spec once from the UI and reading `GET /v1/graphs/{id}/dashboard`.
-4. `page.goto(discoverUrl(id, { view: "dashboard" }))`; `discover.relation("OrganisationRole", ["isRoleOf → Organisation"])`; `dashboard.settled()`; `rules.checked()` resolves.
+4. `page.goto(discoverUrl(id, { view: "dashboard" }))`; `discover.relation("OrganisationRole", ["isRoleOf → Organisation"])`; `dashboard.settled()`; `rules.check()` resolves (presses *Check*).
 
 ### Steps
 
@@ -399,10 +399,9 @@ create view r  as select pa.*, o.country, o.activityType from pa join o on o.id 
 - **The relation is not in the URL**: picking the root and the hop is a page-object call
   (`discover.relation`), done off camera.
 - **Rules over 206.6K vertices in the browser**: the first check may take long; arrange waits on
-  `rules.checked()`. The panel checks *the page's subset*: after steps 2–3 it re-checks over the
-  selection. The clauses are on OrganisationRole and Organisation, and a clause leaves other types
-  whole, so the Project finding should still read 12,525 — verify on the first run; if it does not,
-  move step 5 first.
+  `rules.check()`. Rules validate on demand (*Check*), so steps 2–3 do not re-check: the badge
+  keeps the whole corpus's tally, marked *Filter changed since the last check*, and step 5's *Show
+  12,525* finds that group's projects again over what the check was over — the whole corpus.
 - **No Graph step.** The graph has ~206.6K vertices, 145K of them participations with no position, so
   a Map placement leaves most of the graph unplaced; the force layout of that size is the timing risk
   the SNB demos already avoid. Optional sixth step, gated on a GPU timing check: *"The same filter on

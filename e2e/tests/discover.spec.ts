@@ -81,9 +81,12 @@ test("rules are validated over the corpus's triples: what fails, what conforms, 
   // The suite's own rules over its fixtures (e2e/fixtures/vocab/shop.ttl), dropped on the badge's popover as a person drops them.
   await rules.drop("shop.ttl", readFileSync(new URL("../fixtures/vocab/shop.ttl", import.meta.url), "utf8"));
 
+  // Nothing validates by itself: the badge says so until Check is pressed.
+  await expect.poll(() => rules.tally()).toBe("Not checked");
+
   // Over the whole corpus: the two people outside GB and US break the Person rule; every order
   // keeps its own.
-  await expect.poll(() => rules.checked(), { timeout: 30_000 }).toMatch(/^Checked over all 20 nodes/);
+  expect(await rules.check()).toMatch(/^Checked over all 20 nodes/);
   // The badge reads the tally in either view: here, the two people.
   await expect.poll(() => rules.tally()).toBe("2 violations");
   const shipping = await (await rules.rule("Person")).finding("Ships only to GB and US");
@@ -109,12 +112,15 @@ test("rules are validated over the corpus's triples: what fails, what conforms, 
   await rules.conforms(false);
   await expect.poll(() => discover.counts()).toMatch(/^20 nodes/);
 
-  // A subset picked elsewhere on the page is what the rules check: the four people in the US, all
-  // of whom the Person rule admits.
+  // A subset picked elsewhere on the page leaves the last check behind, and keeps its tally until
+  // Check again: then the rules check the four people in the US, all of whom the Person rule admits.
   expect(await (await discover.search()).add("country:US", 4)).toBe(4);
   await expect.poll(() => discover.counts()).toMatch(/^4 of 20 nodes match/);
   const subset = await discover.rules();
-  await expect.poll(() => subset.checked(), { timeout: 30_000 }).toMatch(/^Checked over the selection: 4 of 20 nodes/);
+  expect(await subset.stale()).toBe("Filter changed since the last check");
+  expect(await subset.tally()).toBe("2 violations");
+  expect(await subset.check()).toMatch(/^Checked over the selection: 4 of 20 nodes/);
+  expect(await subset.stale()).toBeNull();
   const person = await subset.rule("Person");
   await expect.poll(() => person.state()).toBe("In order");
 });

@@ -14,8 +14,9 @@ const NOUN: Record<Severity, string> = { violation: "violation", warning: "warni
 
 /**
  * **The rules' badge** — kanzo-ui's `FindingsBadge` at the end of the filter bar, named by its tally
- * (*2 violations · 2 warnings*, *Conforms to the rules*, *No rules*), and the popover it opens: the
- * file, what the rules were checked over, and each rule a region of `FindingGroupRow`s. Every read
+ * (*2 violations · 2 warnings*, *Conforms to the rules*, *Not checked*, *No rules*), and the popover
+ * it opens: the file, *Check*, what the last check was over, and each rule a region of
+ * `FindingGroupRow`s. Nothing validates until *Check* is pressed. Every read
  * opens the popover, and every Show closes it, as a person's press does.
  */
 export class RulesBadge extends FindingsBadgeHarness {
@@ -38,11 +39,39 @@ export class RulesBadge extends FindingsBadgeHarness {
     );
   }
 
-  /** What the rules were checked over, once they have been: *Checked over all 3,218 nodes*. */
+  /**
+   * Presses *Check* (or *Check again*) and waits for the check to end: rules validate only when
+   * asked. Resolves with what they were checked over, *Checked over all 3,218 nodes*.
+   */
+  async check(): Promise<string> {
+    await this.start();
+    return this.checked();
+  }
+
+  /** Presses *Check* (or *Check again*) and returns at once: a long check is waited on by the caller. */
+  async start(): Promise<void> {
+    const dialog = await this.open();
+    const button = await this.one({ role: "button", name: /^Check( again)?$/ }, "the rules offer no Check", dialog);
+    await button.click();
+    // React commits a press's update before the event returns: the line reads *Checking…* from here,
+    // so `checked()` waits for this check, not the last one.
+  }
+
+  /** What the last check was over, once one has ended: *Checked over all 3,218 nodes*. */
   async checked(): Promise<string> {
     const dialog = await this.open();
-    const line = await this.one({ text: CHECKED }, "the rules have not been checked", dialog);
-    return line.text();
+    return this.env.until(async () => {
+      const [scope] = await dialog.find({ css: '[data-slot="rules-scope"]' });
+      const text = scope ? await scope.text() : "";
+      return CHECKED.test(text) ? text : null;
+    }, "the rules have not been checked");
+  }
+
+  /** Why the last check is out of date — *Filter changed since the last check* — or `null`. */
+  async stale(): Promise<string | null> {
+    const dialog = await this.open();
+    const [line] = await dialog.find({ css: '[data-slot="rules-stale"]' });
+    return line ? line.text() : null;
   }
 
   /** The rule named `name`: a region of the popover, found again on every read. */

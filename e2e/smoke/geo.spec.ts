@@ -134,7 +134,7 @@ test("the flights rules find what the seed lacks: IATA codes, four-letter ICAO c
   const panel = await discover.rules();
   // infra/dev/examples/openflights/rules.ttl, dropped on the badge as a person drops it.
   await panel.drop("rules.ttl", rules("openflights"));
-  expect(await panel.checked()).toMatch(/^Checked over all 3,218 nodes/);
+  expect(await panel.check()).toMatch(/^Checked over all 3,218 nodes/);
 
   const airport = await panel.rule("Airport");
   // airports.csv: 20 rows with an empty `iata`; 24 whose `icao` is not four capitals (CAJ4, S31, VA1P,

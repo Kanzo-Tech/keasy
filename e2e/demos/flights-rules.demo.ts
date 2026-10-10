@@ -24,7 +24,7 @@ demo("flights-rules", "Rules over OpenFlights on the map: the findings, every vi
     await (await discover.dock()).close();
     const rules = await discover.rules();
     // rudof in the browser over 3,218 airports: the environment's two minutes cover it.
-    expect(await rules.checked()).toMatch(/^Checked over all 3,218 nodes$/);
+    expect(await rules.check()).toMatch(/^Checked over all 3,218 nodes$/);
     return { graph, airport: await rules.rule("Airport") };
   },
 

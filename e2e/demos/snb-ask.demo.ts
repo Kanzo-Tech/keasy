@@ -12,9 +12,9 @@ const QUESTION = "Which browsers do they use most?";
  * answer as a chart over those women, and the answer added to the dashboard.
  *
  * The model's words are replayed from `recordings/snb-ask.json` (record/model.ts): the `answer` tool
- * it calls still runs on the page under its filter, so the chart's figures are DuckDB's on every take,
- * and the check that Firefox reads 324 — the women's count, not everyone's 628 — still proves the
- * answer is over what is in view. `LIVE=1` asks the model instead; `LIVE=1 RECORD=1` asks it and,
+ * it calls still runs on the page under its filter, so the chart is DuckDB's on every take. The check
+ * that the reply reads Firefox 324 — the women's count, not everyone's 628 — proves, on the take that
+ * captures it, that the answer is over what is in view. `LIVE=1` asks the model instead; `LIVE=1 RECORD=1` asks it and,
  * once every check has passed, keeps what it said as the recording.
  */
 demo("snb-ask", "Ask over LDBC SNB: filter the page, ask about it, and add the answer to the dashboard", {
@@ -28,10 +28,10 @@ demo("snb-ask", "Ask over LDBC SNB: filter the page, ask about it, and add the a
     const ask = await discover.ask();
     if (replay.live) await ask.warmUp();
     const answers = await ask.composer();
-    return { replay, discover, dashboard, answers, answered: { tile: undefined as TileHarness | undefined } };
+    return { replay, discover, dashboard, ask, answers, answered: { tile: undefined as TileHarness | undefined } };
   },
 
-  steps: ({ replay, discover, dashboard, answers, answered }) => [
+  steps: ({ replay, discover, dashboard, ask, answers, answered }) => [
     {
       subtitle: "Filter the page: women only",
       action: async () => (await (await dashboard.tile("Count by Person.gender")).chart()).pick({ y: "female" }),
@@ -47,11 +47,13 @@ demo("snb-ask", "Ask over LDBC SNB: filter the page, ask about it, and add the a
       subtitle: "The answer is a chart, over the women in view",
       action: async () => (answered.tile = await answers.answer()),
       async check() {
-        const text = await answered.tile!.text();
-        expect(text).toContain("Firefox");
-        // 324 of the women; 628 would be everyone's — an answer that dropped the page's filter.
-        expect(text).toContain("324");
-        expect(text).not.toContain("628");
+        expect(await answered.tile!.text()).toContain("Firefox");
+        // A chart draws its bars, not their figures: the figures are in the reply, which the model
+        // writes from the tool's result. 324 of the women; 628 would be everyone's — an answer that
+        // dropped the page's filter.
+        const reply = await ask.host.text();
+        expect(reply).toContain("324");
+        expect(reply).not.toContain("628");
       },
       poster: true,
     },

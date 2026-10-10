@@ -6,7 +6,7 @@ import { playwright, type HarnessEnvironment } from "@kanzo-tech/testing";
 
 import { CURSOR, GLIDE, gliding } from "./cursor";
 import { encode, ffmpeg } from "./encode";
-import { hold, readingTime } from "./pace";
+import { hold, PACE, readingTime } from "./pace";
 
 /**
  * A product demo: a Playwright test that records a story, step by step. `make demo` lists them by
@@ -18,8 +18,10 @@ import { hold, readingTime } from "./pace";
  * page object's, in data (a brush over 1985–1989, a lasso in lon/lat), and it resolves on the state it
  * caused. The check asserts what must be true after it, so a take whose page did something else fails
  * rather than recording it. `hold` is the only time a demo spends on the clock, and it is the
- * viewer's: the subtitle is left up for its reading time (`readingTime`), counted from when it
- * appeared, so a slow action does not add to it.
+ * viewer's: the subtitle is read while it leads its action (`LEAD`), and the rest of its reading time
+ * (`readingTime`) is held once the action's result is on screen. The action's own time is watched,
+ * not read, so it never eats into that: counted from when the subtitle appeared, a slow action left
+ * the result no time to be seen, and the takes read too fast.
  *
  * The subtitles are the Screencast API's `showOverlay` (`subtitle`). The cursor is the page's own
  * (`CURSOR`): the API's `showActions` also draws a box round each target and a title for each action,
@@ -58,7 +60,7 @@ const FURNITURE = () => {
 };
 
 /** How long a subtitle is up before its step's action starts: it leads, the cursor follows. */
-const LEAD = 700;
+const LEAD = 700 * PACE;
 
 /** A subtitle: one line, dark, at the foot of the frame, the same on either theme. */
 function subtitle(text: string): string {
@@ -141,6 +143,9 @@ export function demo<T>(name: string, description: string, { arrange, steps, pas
         encode(frames, shot, `${file}.mp4`);
         writeFileSync(`${file}.chapters.json`, `${JSON.stringify(chapters, null, 2)}\n`);
       } finally {
+        // A request still routed when the take ends (a model's suggestions, streaming) would throw from
+        // its handler once the context is gone, and fail the next take: the routes go first.
+        await page.unrouteAll({ behavior: "ignoreErrors" });
         // A failed take leaves nothing behind: its frames are hundreds of JPEGs.
         await context.close();
         rmSync(frames, { recursive: true, force: true });
@@ -174,7 +179,6 @@ async function take(
     for (const step of steps) {
       // The subtitle leads its step, and stays until the next replaces it.
       await shown?.dispose();
-      const up = Date.now();
       const last = chapters.at(-1);
       if (last) last.end = now();
       chapters.push({ text: step.subtitle, start: now(), end: now() });
@@ -183,7 +187,9 @@ async function take(
       await step.action?.();
       await step.check();
       if (step.poster) await page.screenshot({ path: poster });
-      await hold(readingTime(step.subtitle) - (Date.now() - up));
+      // The action's own time is not reading time: the words are read while they lead it, and what
+      // they caused stays on screen for the rest of their reading time once it is there.
+      await hold(readingTime(step.subtitle) - LEAD);
     }
   });
   await shown?.dispose();

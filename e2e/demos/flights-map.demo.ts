@@ -67,18 +67,18 @@ demo("flights-map", "OpenFlights put on a map: the force layout's scatter, then 
     {
       subtitle: "Find anything — here, every airport in Spain",
       action: async () => (await discover.search()).add("country:Spain", 40),
-      check: () => expect.poll(() => graph.counts()).toMatch(/^40 of 3\.2K nodes match/),
+      check: () => expect.poll(() => graph.counts()).toMatch(/^40 match · 3\.2K of 3\.2K placed/),
     },
     {
       subtitle: "Lasso the peninsula — the Canaries stay out",
       action: () => graph.lasso(PENINSULA, { in: "data" }),
-      check: () => expect.poll(() => graph.counts()).toMatch(/^31 of 3\.2K nodes match/),
+      check: () => expect.poll(() => graph.counts()).toMatch(/^31 match · 3\.2K of 3\.2K placed/),
     },
     {
       subtitle: "Frame what you kept",
       // Resolves on a frame drawn after the press: the camera moved onto what is in full colour.
       action: () => graph.frame(),
-      check: () => expect.poll(() => graph.counts()).toMatch(/^31 of 3\.2K nodes match/),
+      check: () => expect.poll(() => graph.counts()).toMatch(/^31 match · 3\.2K of 3\.2K placed/),
     },
   ],
 });

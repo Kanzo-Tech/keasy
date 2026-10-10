@@ -30,10 +30,11 @@ demo("flights-crossfilter", "Crossfiltering over OpenFlights: a click, a brush, 
     },
     {
       subtitle: "Drag across longitude — just the West",
-      action: async () => (await (await dashboard.tile(/Count by Airport\.lon$/)).chart()).brush({ x: [-125, -100] }),
-      // US airports between 125°W and 100°W. A brush that snaps to the histogram's bins reads otherwise:
-      // pin the figure from the first take.
-      check: () => expect.poll(() => discover.figure("Rows")).toBe("132"),
+      action: async () => (await (await dashboard.tile(/Count by Airport\.lon$/)).chart()).brush({ x: [-128, -98.98] }),
+      // US airports west of 98.98°W. Both edges sit in gaps of the data — the west one in the 7° between
+      // southeast Alaska and the Pacific coast, the east one 0.49° from the nearest airport — so a drag a pixel off
+      // still reads the same figure.
+      check: () => expect.poll(() => discover.figure("Rows")).toBe("135"),
       poster: true,
     },
     {
@@ -43,7 +44,7 @@ demo("flights-crossfilter", "Crossfiltering over OpenFlights: a click, a brush, 
         await graph.ready();
       },
       async check() {
-        await expect.poll(() => graph.counts()).toMatch(/^132 of 3\.2K nodes match/);
+        await expect.poll(() => graph.counts()).toMatch(/^135 match · 3\.2K of 3\.2K placed/);
       },
     },
     {

@@ -74,10 +74,14 @@ export class RulesBadge extends FindingsBadgeHarness {
     return line ? line.text() : null;
   }
 
-  /** Closes the popover, if it is open, as a second press on the badge does. */
+  /**
+   * Closes the popover, if it is open, with Escape, as a person does: it is modal, so the badge
+   * under its layer takes no click until it has closed.
+   */
   async close(): Promise<void> {
-    if ((await this.host.attribute("aria-expanded")) !== "true") return;
-    await this.host.click();
+    const [dialog] = await this.env.root.find({ role: "dialog" });
+    if (!dialog) return;
+    await dialog.press("Escape");
     await this.env.until(async () => (await this.openDialogs()) === 0, "the rules did not close");
   }
 

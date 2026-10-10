@@ -7,12 +7,13 @@
 //! is what a response carries: the same fields minus every value, so a value
 //! cannot reach a response because no response type has a field to hold it.
 
+use crate::authentication::permission::{Can, Kind, Securable};
 use crate::authentication::role::Caller;
 use secrecy::SecretString;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use super::{Provenance, ValidationReport};
+use super::{Actor, Provenance, ValidationReport};
 
 fn us_east_1() -> String {
     "us-east-1".into()
@@ -116,20 +117,37 @@ pub struct SecretView {
     pub spec: SecretSpecView,
     /// The connections that use this secret.
     pub used_by: Vec<String>,
+    /// Who owns it: its creator, or the workspace for what the instance
+    /// declares. Its owner or an admin manages it.
+    pub owner: Actor,
     #[serde(flatten)]
     pub provenance: Provenance,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub validation: Option<ValidationReport>,
-    /// Whether the caller may change or delete it: its creator or an admin.
-    /// Any editor may use it in a connection; its value is never returned.
+    /// What the caller may do to it: test it (any editor) and manage it (its
+    /// owner or an admin). Its value is never returned to anyone.
+    pub can: Can,
+    /// `can.manage`, under its old name.
     #[serde(default)]
+    #[schema(deprecated)]
     pub can_modify: bool,
 }
 
+impl Securable for SecretView {
+    fn kind(&self) -> Kind {
+        Kind::Secret
+    }
+
+    fn owner(&self) -> &Actor {
+        &self.owner
+    }
+}
+
 impl SecretView {
-    /// The secret as `caller` sees it: [`Self::can_modify`] filled in.
+    /// The secret as `caller` sees it: [`Self::can`] filled in.
     pub fn seen_by(mut self, caller: &Caller) -> Self {
-        self.can_modify = caller.may_modify(&self.provenance.created_by.id);
+        self.can = caller.can(&self);
+        self.can_modify = self.can.manage;
         self
     }
 }
@@ -138,8 +156,19 @@ impl SecretView {
 pub struct Credential {
     pub name: String,
     pub spec: SecretSpec,
+    pub owner: Actor,
     pub provenance: Provenance,
     pub validation: Option<ValidationReport>,
+}
+
+impl Securable for Credential {
+    fn kind(&self) -> Kind {
+        Kind::Secret
+    }
+
+    fn owner(&self) -> &Actor {
+        &self.owner
+    }
 }
 
 impl Credential {
@@ -148,8 +177,10 @@ impl Credential {
             name: self.name.clone(),
             spec: self.spec.view(),
             used_by,
+            owner: self.owner.clone(),
             provenance: self.provenance.clone(),
             validation: self.validation.clone(),
+            can: Can::default(),
             can_modify: false,
         }
     }

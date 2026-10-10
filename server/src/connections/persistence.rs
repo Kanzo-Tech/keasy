@@ -3,20 +3,23 @@
 use rusqlite::{Connection, OptionalExtension, params};
 
 use crate::database::{
-    DbError, DbResult, constraint, json_column, json_column_opt, provenance_columns,
+    DbError, DbResult, constraint, json_column, json_column_opt, owner_columns, provenance_columns,
 };
 use crate::domain::{Actor, ConnectionView, ValidationReport};
 
-const COLUMNS: &str = "name, credential, target, created_by, created_by_name, created_at, \
-                       updated_by, updated_by_name, updated_at, validation";
+const COLUMNS: &str = "name, credential, target, owner, owner_name, created_by, \
+                       created_by_name, created_at, updated_by, updated_by_name, updated_at, \
+                       validation";
 
 fn row(r: &rusqlite::Row<'_>) -> rusqlite::Result<ConnectionView> {
     Ok(ConnectionView {
         name: r.get("name")?,
         secret: r.get("credential")?,
         target: json_column(r, "target")?,
+        owner: owner_columns(r)?,
         provenance: provenance_columns(r)?,
         validation: json_column_opt(r, "validation")?,
+        can: Default::default(),
         can_modify: false,
     })
 }
@@ -40,16 +43,21 @@ fn refused(connection: &ConnectionView, e: rusqlite::Error) -> DbError {
     }
 }
 
-/// Store `connection` as it stands, created by `by`; its timestamps are the store's.
+/// Store `connection` as it stands, created by `by` and owned as
+/// [`Actor::as_owner`] says; its timestamps are the store's.
 pub fn insert(conn: &Connection, connection: &ConnectionView, by: &Actor) -> DbResult<()> {
+    let owner = by.as_owner();
     conn.execute(
         "INSERT INTO connections
-             (name, credential, target, created_by, created_by_name, created_at, validation)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+             (name, credential, target, owner, owner_name, created_by, created_by_name,
+              created_at, validation)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
         params![
             connection.name,
             connection.secret,
             serde_json::to_string(&connection.target)?,
+            owner.id,
+            owner.name,
             by.id,
             by.name,
             crate::domain::now_iso8601(),
@@ -179,6 +187,7 @@ pub(crate) mod tests {
         ValidationReport {
             at: "now".into(),
             results: Vec::new(),
+            by: None,
         }
     }
 
@@ -209,8 +218,10 @@ pub(crate) mod tests {
             name: name.into(),
             secret: credential.into(),
             target,
+            owner: user(),
             provenance: Provenance::created(user()),
             validation: None,
+            can: Default::default(),
             can_modify: false,
         }
     }

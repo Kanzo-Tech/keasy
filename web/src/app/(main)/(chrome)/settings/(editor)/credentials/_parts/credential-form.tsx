@@ -46,7 +46,9 @@ import { schemaOf, type JsonSchema } from "@/lib/api/spec";
 import { UnsavedChangesGuard } from "@/lib/ui/unsaved-changes-guard";
 import { $api, type Inputs, invalidate } from "@/lib/api/client";
 import { CLOUDS, cloudOf, type Credential } from "@/lib/connections";
+import { blocked } from "@/lib/permissions";
 import { requiredName } from "@/lib/resource-name";
+import { Blocked } from "@/components/blocked";
 import { Boundary, Loading } from "@/components/boundary";
 import { ProblemView } from "@/components/problem-view";
 import { settled } from "@/lib/api/settled";
@@ -375,9 +377,11 @@ function Form({ credential }: { credential?: Credential }) {
           <Button asChild size="sm" variant="outline">
             <Link href="/settings/credentials">Cancel</Link>
           </Button>
-          <Button disabled={credential?.can_modify === false} isLoading={sending} size="sm" type="submit">
-            {credential ? "Validate and rotate" : "Validate and save"}
-          </Button>
+          <Blocked reason={credential && blocked(credential, "manage", "credential")}>
+            <Button disabled={credential?.can.manage === false} isLoading={sending} size="sm" type="submit">
+              {credential ? "Validate and rotate" : "Validate and save"}
+            </Button>
+          </Blocked>
         </SectionFooter>
         <form.Subscribe selector={(state) => state.isDirty}>
           {(dirty) => <UnsavedChangesGuard dirty={dirty && !credential && !sending} />}

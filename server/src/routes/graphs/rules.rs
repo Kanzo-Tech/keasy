@@ -11,10 +11,11 @@ use shacl::ir::{IRError, IRSchema};
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
+use crate::authentication::permission::Action;
 use crate::authentication::role::{Editor, Reader};
 use crate::domain::Rules;
 use crate::error::{ErrorBody, ErrorCode, Refusal};
-use crate::graphs::{any, changeable, rules};
+use crate::graphs::{any, permitted, rules};
 use crate::startup::AppState;
 
 /// The most a saved shapes graph may weigh, in UTF-8 bytes of Turtle: the
@@ -65,7 +66,7 @@ pub async fn put_rules(
     Path(id): Path<String>,
     Json(payload): Json<PutRulesRequest>,
 ) -> Result<Json<Rules>, Refusal> {
-    changeable(&*state.db.read().await, &caller, &id)?;
+    permitted(&*state.db.read().await, &caller, &id, Action::Manage)?;
     let size = payload.shapes.len();
     if size > MAX_SHAPES_BYTES {
         return Err(Refusal::new(

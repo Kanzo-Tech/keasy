@@ -110,6 +110,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /**
+         * What lies under a source is used, not read: an editor lists it, as an
+         *     editor is vended a credential to read it. A reader reads curated outputs.
+         */
         get: operations["list_connection_files"];
         put?: never;
         post?: never;
@@ -128,7 +132,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** LIST a source, WRITE and DELETE under the sink. */
+        /**
+         * LIST a source, WRITE and DELETE under the sink. Any editor tests a source,
+         *     an admin the sink: testing operates a connection, it does not change it, so
+         *     who asked is kept on the report and never as who updated the connection.
+         */
         post: operations["validate_connection"];
         delete?: never;
         options?: never;
@@ -216,7 +224,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Start a run, with the caller as its runner: of a graph never run, or again —
+         * Start a run, with the caller as its runner — any editor runs any graph:
+         *     running is operating it, not changing it. Of a graph never run, or again —
          *     over the last run's output, in the same folder. One compare-and-set on the
          *     stored status, so of two runs asked at once one starts and the other is
          *     `graph/already-running`. The run's lease starts now.
@@ -261,8 +270,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Ask a run to stop, from wherever it is watched: its runner may, and an
-         *     admin. Cooperative — the browser running it hears it in the answer to its
+         * Ask a run to stop, from wherever it is watched: its runner may, the graph's
+         *     owner and an admin. Cooperative — the browser running it hears it in the answer to its
          *     next report and ends the run `cancelled`; if that browser is gone, the
          *     sweep ends it `graph/abandoned` once the lease lapses.
          */
@@ -304,8 +313,8 @@ export interface paths {
         get: operations["list_secrets"];
         put?: never;
         /**
-         * An editor creates one, for a source or, as an admin, for the sink; any editor
-         *     may use it in a connection, and its creator or an admin changes it.
+         * An editor creates one, and owns it; any editor may use it in a connection
+         *     and test it, and its owner or an admin changes it.
          */
         post: operations["create_secret"];
         delete?: never;
@@ -343,7 +352,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Probe the secret through every connection that uses it. */
+        /**
+         * Probe the secret through every connection that uses it. Any editor may:
+         *     testing operates the secret, it does not change it, so who asked is kept on
+         *     the report and never as who updated the secret.
+         */
         post: operations["validate_secret"];
         delete?: never;
         options?: never;
@@ -382,7 +395,7 @@ export interface components {
          * @enum {string}
          */
         Access: "read" | "write";
-        /** @description Someone who wrote a resource. */
+        /** @description Someone who wrote a resource, or owns one. */
         Actor: {
             /** @description The Keycloak `sub`: what authorization compares. */
             id: string;
@@ -416,6 +429,16 @@ export interface components {
             /** @description A theme stylesheet to inline on every page. */
             theme_css?: string | null;
         };
+        /**
+         * @description What the caller may do to an object beyond reading it, worked out for each
+         *     response: the interface draws what this says and does not re-derive it.
+         */
+        Can: {
+            /** @description Change, rename or delete it; a graph's rules and dashboard. */
+            manage: boolean;
+            /** @description Test it, or run it (again). */
+            operate: boolean;
+        };
         Check: {
             message?: string | null;
             operation: components["schemas"]["Operation"];
@@ -425,11 +448,21 @@ export interface components {
         ConnectionKind: "data" | "vocab";
         ConnectionView: components["schemas"]["Provenance"] & {
             /**
-             * @description Whether the caller may change or delete it: the sink is an admin's,
-             *     any other connection its creator's or an admin's.
+             * @description What the caller may do to it: test it (any editor; the sink, an admin)
+             *     and manage it (its owner or an admin; the sink, an admin).
+             */
+            can: components["schemas"]["Can"];
+            /**
+             * @deprecated
+             * @description `can.manage`, under its old name.
              */
             can_modify?: boolean;
             name: string;
+            /**
+             * @description Who owns it: its creator, or the workspace for what the instance
+             *     declares. Its owner or an admin manages it; the sink is an admin's.
+             */
+            owner: components["schemas"]["Actor"];
             secret: string;
             target: components["schemas"]["StorageTarget"];
             validation?: null | components["schemas"]["ValidationReport"];
@@ -549,14 +582,20 @@ export interface components {
         };
         Graph: components["schemas"]["Provenance"] & {
             /**
-             * @description Whether the caller may change, run or delete this graph, worked out for
-             *     each response: the interface draws what this says and does not
-             *     re-derive it.
+             * @description What the caller may do to it: run it (again) — any editor — and manage
+             *     it — its owner or an admin. Worked out for each response: the
+             *     interface draws what this says and does not re-derive it.
+             */
+            can: components["schemas"]["Can"];
+            /**
+             * @deprecated
+             * @description `can.manage`, under its old name.
              */
             can_modify?: boolean;
             /**
-             * @description Whether the caller may stop the run under way — its runner, or an
-             *     admin — worked out for each response; false when nothing runs.
+             * @description Whether the caller may stop the run under way — its runner, the
+             *     graph's owner or an admin — worked out for each response; false when
+             *     nothing runs.
              */
             can_stop?: boolean;
             /**
@@ -579,6 +618,11 @@ export interface components {
              *     it: worked out for each response; unset for a draft with no folder.
              */
             output?: string | null;
+            /**
+             * @description Who owns the graph — with an admin, the one who may change or delete
+             *     it, and its rules and dashboard. Its creator, to begin with.
+             */
+            owner: components["schemas"]["Actor"];
             /**
              * @description Why a `Failed` run failed, as the browser that ran it reported it: a
              *     problem (`{ code, title, detail, data, … }`), stored verbatim and
@@ -756,11 +800,21 @@ export interface components {
         };
         SecretView: components["schemas"]["Provenance"] & {
             /**
-             * @description Whether the caller may change or delete it: its creator or an admin.
-             *     Any editor may use it in a connection; its value is never returned.
+             * @description What the caller may do to it: test it (any editor) and manage it (its
+             *     owner or an admin). Its value is never returned to anyone.
+             */
+            can: components["schemas"]["Can"];
+            /**
+             * @deprecated
+             * @description `can.manage`, under its old name.
              */
             can_modify?: boolean;
             name: string;
+            /**
+             * @description Who owns it: its creator, or the workspace for what the instance
+             *     declares. Its owner or an admin manages it.
+             */
+            owner: components["schemas"]["Actor"];
             spec: components["schemas"]["SecretSpecView"];
             /** @description The connections that use this secret. */
             used_by: string[];
@@ -807,6 +861,7 @@ export interface components {
         /** @description One probe of a credential or a connection, check by check. */
         ValidationReport: {
             at: string;
+            by?: null | components["schemas"]["Actor"];
             results: components["schemas"]["Check"][];
         };
         /**
@@ -999,7 +1054,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            /** @description A sink by anyone but an admin */
+            /** @description A sink by anyone but an admin, or on a secret the caller may not use */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -1088,7 +1143,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Not the caller's to delete */
+            /** @description Neither its owner nor an admin; the sink, anyone but an admin */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -1142,7 +1197,7 @@ export interface operations {
                     "application/json": components["schemas"]["ConnectionView"];
                 };
             };
-            /** @description Not the caller's to change */
+            /** @description Neither its owner nor an admin; the sink, anyone but an admin; or a secret the caller may not use */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -1259,7 +1314,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description The probe's report, stored with the connection */
+            /** @description The probe's report, stored with the connection and naming who asked for it */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -1268,7 +1323,7 @@ export interface operations {
                     "application/json": components["schemas"]["ValidationReport"];
                 };
             };
-            /** @description Not the caller's to change */
+            /** @description The sink, tested by anyone but an admin */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -1401,6 +1456,15 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Neither its owner nor an admin (`rbac/forbidden`) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
             /** @description Graph not found */
             404: {
                 headers: {
@@ -1448,6 +1512,15 @@ export interface operations {
             };
             /** @description The name or folder is misspelled (`data.field`) */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Neither its owner nor an admin (`rbac/forbidden`) */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1686,15 +1759,6 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            /** @description Neither its creator nor an admin (`rbac/forbidden`) */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
             /** @description Graph not found */
             404: {
                 headers: {
@@ -1799,7 +1863,7 @@ export interface operations {
                     "application/json": components["schemas"]["Graph"];
                 };
             };
-            /** @description Neither its runner nor an admin (`rbac/forbidden`) */
+            /** @description Neither its runner, its owner nor an admin (`rbac/forbidden`) */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -1855,6 +1919,15 @@ export interface operations {
             };
             /** @description The name or folder is missing or misspelled (`data.field`) */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Neither its owner nor an admin (`rbac/forbidden`) */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2013,7 +2086,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Neither its creator nor an admin */
+            /** @description Neither its owner nor an admin */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -2067,7 +2140,7 @@ export interface operations {
                     "application/json": components["schemas"]["SecretView"];
                 };
             };
-            /** @description Neither its creator nor an admin */
+            /** @description Neither its owner nor an admin */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -2117,22 +2190,13 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description The probe's report, stored with the secret */
+            /** @description The probe's report, stored with the secret and naming who asked for it */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["ValidationReport"];
-                };
-            };
-            /** @description Neither its creator nor an admin */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
             /** @description No such secret */

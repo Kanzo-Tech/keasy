@@ -99,7 +99,7 @@ export function DashboardStoreProvider({ onAdded, children }: {
             status: "ready",
             saved: saved.data,
             current,
-            edit: graph.data.can_modify
+            edit: graph.data.can.manage
               ? {
                   change,
                   add: (next, { relation }) => {

@@ -93,7 +93,7 @@ pub async fn save(
     if !report.passed() {
         return Err(Refusal::probe_failed(report.failures(), Vec::new()));
     }
-    connection.validation = Some(report);
+    connection.validation = Some(report.taken_by(by));
 
     let conn = db.write().await;
     match name {
@@ -116,8 +116,10 @@ pub async fn create(
         name,
         secret,
         target,
+        owner: by.as_owner(),
         provenance: Provenance::created(by.clone()),
         validation: None,
+        can: Default::default(),
         can_modify: false,
     };
     save(db, None, connection, by, endpoints).await

@@ -24,9 +24,6 @@ import {
   SectionTitleGroup,
   Spinner,
   Status,
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
   toast,
 } from "@kanzo-tech/ui";
 import { useSession } from "@kanzo-tech/auth";
@@ -35,8 +32,10 @@ import { useMutation } from "@tanstack/react-query";
 import { http, invalidate, type Schemas } from "@/lib/api/client";
 import { copyOf, toastError } from "@/lib/errors";
 import { formatDate } from "@/lib/ui/format";
+import { Blocked, BlockedMenuItem } from "@/components/blocked";
 import { Provenance } from "@/components/provenance";
 import { type Primary, primaryAction, runProblem, STATUS } from "@/lib/graphs";
+import { blocked } from "@/lib/permissions";
 import { lower, WORDS } from "@/lib/vocabulary";
 import { folderSlug } from "@/app/(main)/(chrome)/(editor)/graphs/new/_parts/folder";
 import { markInterrupted, startRun, useLiveRun } from "./use-browser-graph-runner";
@@ -65,24 +64,6 @@ function useSecondsSince(iso: string | undefined, live: boolean): number | undef
     return () => clearInterval(timer);
   }, [live]);
   return iso ? Math.max(0, Math.round((now - new Date(iso).getTime()) / 1_000)) : undefined;
-}
-
-/**
- * A control that cannot be used now, said why: a disabled button takes no pointer, so the tooltip
- * sits on a wrapper (as the studio's Create does).
- */
-export function Blocked({ reason, children }: { reason?: string; children: React.ReactNode }) {
-  if (!reason) return children;
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <span className="inline-flex" role="presentation" tabIndex={0}>
-          {children}
-        </span>
-      </TooltipTrigger>
-      <TooltipContent>{reason}</TooltipContent>
-    </Tooltip>
-  );
 }
 
 /** A value the header shows, and copies whole. */
@@ -251,17 +232,16 @@ export function GraphHeader({ id }: { id: string }) {
                   <Copy />
                   Duplicate
                 </MenuItem>
-                {graph.can_modify && (
-                  <MenuItem
-                    disabled={graph.status === "running"}
-                    onSelect={() => setDeleting(true)}
-                    value="delete"
-                    variant="destructive"
-                  >
-                    <Trash2 />
-                    {graph.status === "running" ? "Delete (stop the run first)" : "Delete"}
-                  </MenuItem>
-                )}
+                <BlockedMenuItem
+                  disabled={graph.status === "running"}
+                  onSelect={() => setDeleting(true)}
+                  reason={blocked(graph, "manage", lower(WORDS.graph))}
+                  value="delete"
+                  variant="destructive"
+                >
+                  <Trash2 />
+                  {graph.status === "running" ? "Delete (stop the run first)" : "Delete"}
+                </BlockedMenuItem>
               </MenuContent>
             </Menu>
           )}

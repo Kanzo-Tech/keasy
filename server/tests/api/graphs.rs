@@ -32,11 +32,12 @@ async fn a_graph_goes_to_the_sink_or_is_refused() {
     assert_eq!(graph["sink_connection"], json!("sink"));
 }
 
-/// The work in a workspace is shared: everyone lists and reads a graph. Its
-/// creator or an admin changes, runs and deletes it; another editor is refused
-/// with `rbac/forbidden` — the graph exists for them, it is not theirs to change.
+/// The work in a workspace is shared: everyone lists and reads a graph, and
+/// every editor runs it. Its owner or an admin changes and deletes it; another
+/// editor is refused with `rbac/forbidden` — the graph exists for them, it is
+/// not theirs to change.
 #[tokio::test]
-async fn a_graph_is_read_by_all_and_changed_by_its_creator_or_an_admin() {
+async fn a_graph_is_read_by_all_run_by_editors_and_changed_by_its_owner_or_an_admin() {
     let app = spawn_app().await;
     let mine = app.token_for("u-1", EDITOR);
     let theirs = app.token_for("u-2", EDITOR);
@@ -53,26 +54,25 @@ async fn a_graph_is_read_by_all_and_changed_by_its_creator_or_an_admin() {
             json!({ "script": "x", "sink_connection": "sink" }),
         )
         .await;
-    assert_eq!(graph["can_modify"], true);
+    assert_eq!(graph["can"], json!({ "operate": true, "manage": true }));
+    assert_eq!(graph["owner"]["id"], "u-1");
     let id = graph["id"].as_str().unwrap().to_string();
     let path = format!("/v1/graphs/{id}");
 
-    for (who, token, can_modify) in [
-        ("another editor", &theirs, false),
-        ("a reader", &reader, false),
-        ("an admin", &admin, true),
+    for (who, token, operate, manage) in [
+        ("another editor", &theirs, true, false),
+        ("a reader", &reader, false, false),
+        ("an admin", &admin, true, true),
     ] {
         let (_, listed) = app
             .send(Method::GET, "/v1/graphs", token, json!(null))
             .await;
         assert_eq!(listed.as_array().unwrap().len(), 1, "{who} lists it");
-        assert_eq!(listed[0]["can_modify"], can_modify, "{who}");
+        let can = json!({ "operate": operate, "manage": manage });
+        assert_eq!(listed[0]["can"], can, "{who}");
+        assert_eq!(listed[0]["can_modify"], manage, "{who}: the old name");
         let (status, read) = app.send(Method::GET, &path, token, json!(null)).await;
-        assert_eq!(
-            (status, read["can_modify"].as_bool()),
-            (StatusCode::OK, Some(can_modify)),
-            "{who}"
-        );
+        assert_eq!((status, &read["can"]), (StatusCode::OK, &can), "{who}");
     }
 
     for (verb, route, body) in [
@@ -82,7 +82,6 @@ async fn a_graph_is_read_by_all_and_changed_by_its_creator_or_an_admin() {
             format!("{path}/submit"),
             json!({ "folder": "f" }),
         ),
-        (Method::POST, format!("{path}/run"), json!(null)),
         (Method::DELETE, path.clone(), json!(null)),
     ] {
         let (status, body) = app.send(verb.clone(), &route, &theirs, body).await;
@@ -708,7 +707,8 @@ async fn a_run_reports_forward_and_every_end_is_dated() {
 
 /// Running is asked for, once: the caller becomes the runner, and of two runs
 /// asked at once one starts and the other is `graph/already-running`. A draft
-/// is submitted before it runs; a graph is run by who may change it.
+/// is submitted before it runs; a graph is run by any editor — running
+/// operates it — and never by a reader.
 #[tokio::test]
 async fn a_graph_runs_once_at_a_time_for_whoever_started_it() {
     let app = spawn_app().await;
@@ -733,13 +733,14 @@ async fn a_graph_runs_once_at_a_time_for_whoever_started_it() {
     );
 
     let id = app.submitted(&mine).await;
-    let (status, body) = app.run(&theirs, &id).await;
+    let reader = app.token_for("u-3", READER);
     assert_eq!(
-        (status, body["code"].as_str()),
-        (StatusCode::FORBIDDEN, Some("rbac/forbidden"))
+        app.run(&reader, &id).await.0,
+        StatusCode::FORBIDDEN,
+        "a reader runs nothing"
     );
 
-    let ((first, a), (second, b)) = tokio::join!(app.run(&mine, &id), app.run(&admin, &id));
+    let ((first, a), (second, b)) = tokio::join!(app.run(&theirs, &id), app.run(&admin, &id));
     let mut answers = [(first, a), (second, b)];
     answers.sort_by_key(|(status, _)| *status);
     assert_eq!(answers[0].0, StatusCode::OK, "{:?}", answers);
@@ -749,7 +750,8 @@ async fn a_graph_runs_once_at_a_time_for_whoever_started_it() {
     );
     let started = &answers[0].1;
     assert_eq!(started["status"], "running");
-    assert!(started["runner"]["id"] == "u-1" || started["runner"]["id"] == "u-9");
+    assert!(started["runner"]["id"] == "u-2" || started["runner"]["id"] == "u-9");
+    assert_eq!(started["owner"]["id"], "u-1", "running it does not take it");
     assert_eq!(started["can_stop"], true, "the runner may stop its run");
 }
 

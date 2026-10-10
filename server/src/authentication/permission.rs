@@ -203,8 +203,9 @@ mod tests {
             (Kind::Graph, &other, [true, true, true, false]),
             (Kind::Graph, &admin, [true, true, true, true]),
         ];
-        for (kind, who, expected) in table {
-            assert_eq!(cells(kind, who), expected, "{kind:?} for {}", who.user_id);
+        // Each row is named by its place in the table, never by a caller's id.
+        for (row, (kind, who, expected)) in table.into_iter().enumerate() {
+            assert_eq!(cells(kind, who), expected, "row {row}: {kind:?}");
         }
     }
 

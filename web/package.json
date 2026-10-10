@@ -34,7 +34,7 @@
     "@kanzo-tech/llm": "^0.37.0",
     "@kanzo-tech/mosaic": "^0.37.0",
     "@kanzo-tech/navigation": "^0.37.0",
-    "@kanzo-tech/rudof-wasm": "^0.4.2",
+    "@kanzo-tech/rudof-wasm": "^0.4.3",
     "@kanzo-tech/theme": "^0.37.0",
     "@kanzo-tech/ui": "^0.37.0",
     "@keasy/api": "workspace:*",

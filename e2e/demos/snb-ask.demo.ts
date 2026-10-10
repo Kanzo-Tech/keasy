@@ -28,11 +28,11 @@ async function warmUp(page: Page) {
 }
 
 /**
- * Ask over LDBC SNB: a question in plain words, the answer as a query with its chart, and the answer
- * sent back to the page as a filter. The answer is the model's (`make demo` records with the larger
+ * Ask over LDBC SNB: a question in plain words, the answer as a dashboard tile, and the answer sent
+ * back to the page as a filter. The answer is the model's (`make demo` records with the larger
  * one in `models.yml`), so it differs between runs; record again if one reads badly.
  */
-demo("snb-ask", "Ask over LDBC SNB: a plain question, its query and chart, and the answer as a filter", {
+demo("snb-ask", "Ask over LDBC SNB: a plain question, its tile, and the answer as a filter", {
   async arrange(page) {
     const id = await seedGraph(page, "snb", { name: "Demo · LDBC Social Network", reuse: true });
     await page.goto(`/graphs/${id}/discover`);
@@ -70,22 +70,17 @@ demo("snb-ask", "Ask over LDBC SNB: a plain question, its query and chart, and t
     await page.waitForTimeout(400);
     await box.press("Enter");
 
-    // An answer with rows, which draws its toolbar; a refusal draws none. The model reads a refusal and
-    // writes the query again, so the step waits for the one that ran — and a take with none fails
-    // rather than recording "The query failed".
-    const answer = page.locator('[data-slot="query-result"]').filter({ has: page.locator('[data-slot="query-result-toolbar"]') }).last();
+    // An answer that was read, which draws its actions; a refusal draws none. The model reads a
+    // refusal and answers again, so the step waits for the one that was read — and a take with none
+    // fails rather than recording "The answer failed".
+    const answer = page.locator('[data-slot="answer-card"]').filter({ has: page.locator('[data-slot="answer-card-actions"]') }).last();
     await answer.waitFor({ timeout: 180_000 });
-    // The card appears with its query still running; the step is its result.
-    await page
-      .getByRole("complementary", { name: "Ask panel" })
-      .getByText("Running", { exact: true })
-      .waitFor({ state: "hidden", timeout: 120_000 });
-    await chapter("Every answer is a query, with its chart");
+    await chapter("Every answer is a dashboard tile");
     // eslint-disable-next-line playwright/no-wait-for-timeout -- replaced by @kanzo-tech/testing in part 2
     await page.waitForTimeout(900);
     await poster();
 
-    // Not every answer can be a filter (an aggregate over no column the page has is not), so the
+    // Not every answer can be a filter (one with no conditions and no bars to pick is not), so the
     // step is recorded only when the card offers it.
     const filter = answer.getByRole("button", { name: /^Filter to/ });
     if (await filter.isVisible()) {

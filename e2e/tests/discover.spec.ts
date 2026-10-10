@@ -89,6 +89,15 @@ test("rules are validated over the corpus's triples: what fails, what conforms, 
   await expect(counts).toHaveText(/^2 of 20 nodes match/);
   await person.getByRole("button", { name: "Showing 2" }).click();
 
+  // Show all puts every vertex a rule flags at one severity on the page: here the same two people.
+  await expect(person.getByRole("button", { name: "Show all 2 violations" })).toBeVisible();
+  await expect(person.getByRole("button", { name: /warning/ })).toHaveCount(0);
+  await person.getByRole("button", { name: "Show all 2 violations" }).click();
+  await expect(counts).toHaveText(/^2 of 20 nodes match/);
+  await expect(person.getByRole("button", { name: "Show all 2 violations" })).toHaveAttribute("aria-pressed", "true");
+  await person.getByRole("button", { name: "Show all 2 violations" }).click();
+  await expect(counts).toHaveText(/^20 nodes/);
+
   // What conforms is rudof's Shape Fragment, read back by its subjects: six people and every order.
   await page.getByRole("button", { name: "Show what conforms" }).click();
   await expect(counts).toHaveText(/^18 of 20 nodes match/);

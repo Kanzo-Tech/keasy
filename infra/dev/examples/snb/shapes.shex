@@ -8,8 +8,16 @@
 #
 # `email` and `language` on a Person are the CsvComposite columns: every value
 # of the multi-valued attribute in one field, `;`-separated.
+#
+# `knows` carries the date the two met, and a date on a relation is a vertex
+# between its ends — the W3C's n-ary relation pattern — because a shape cannot
+# declare a property of an edge before SHACL 1.2's reifier shapes. The
+# specification has no class for it, so `Knowing` and its two ends are this
+# example's own terms, under `kx:` — a `.example` namespace (RFC 2606) — and
+# the date is the specification's `creationDate`.
 
 PREFIX snb: <http://www.ldbc.eu/ldbc_socialnet/1.0/vocabulary/>
+PREFIX kx:  <https://ldbc-snb.example/vocab#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
 snb:Place {
@@ -49,7 +57,6 @@ snb:Person {
   snb:language     xsd:string ? ;
   snb:email        xsd:string ? ;
   snb:isLocatedIn  @snb:Place ;
-  snb:knows        @snb:Person * ;
   snb:hasInterest  @snb:Tag * ;
   snb:studyAt      @snb:Organisation * ;
   snb:workAt       @snb:Organisation * ;
@@ -90,4 +97,10 @@ snb:Comment {
   snb:replyOfPost    @snb:Post ? ;
   snb:replyOfComment @snb:Comment ? ;
   snb:hasTag         @snb:Tag *
+}
+
+kx:Knowing {
+  snb:creationDate xsd:dateTime ;
+  kx:knower        @snb:Person ;
+  kx:known         @snb:Person
 }

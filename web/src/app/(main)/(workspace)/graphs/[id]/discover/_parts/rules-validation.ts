@@ -230,3 +230,11 @@ export function rulesOf(model: ShapeModelJson, report: ValidationReport): Rule[]
   for (const rule of rules) rule.findings.sort((a, b) => worst(a) - worst(b) || b.nodes.length - a.nodes.length);
   return rules;
 }
+
+/**
+ * The focus nodes of a rule's findings of one severity, each once: a node that fails two of its
+ * constraints is one vertex on the page.
+ */
+export function nodesOf(rule: Rule, variant: Finding["variant"]): string[] {
+  return [...new Set(rule.findings.filter((f) => f.variant === variant).flatMap((f) => f.nodes))];
+}

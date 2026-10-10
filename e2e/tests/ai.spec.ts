@@ -1,6 +1,6 @@
 import { expect, type Route } from "@playwright/test";
 
-import { SOURCE } from "../support/stack/api";
+import { api, SOURCE } from "../support/stack/api";
 import { start, stop, up } from "../support/stack/compose";
 import { AI, ask, openPanel, sse, test, text } from "../support/fixtures";
 import { expectProblem } from "../support/stack/problem";
@@ -8,15 +8,15 @@ import { expectProblem } from "../support/stack/problem";
 const stream = (route: Route, body: string) =>
   route.fulfill({ status: 200, contentType: "text/event-stream", body });
 
-test("11 an AI gateway that is down fails the answer in Ask as llm/failed", async ({ page, corpusGraph }) => {
+test("11 an AI gateway that is down fails the answer in Ask as ai/unavailable", async ({ page, corpusGraph }) => {
   test.setTimeout(180_000);
   stop("ai-gateway");
   try {
     await openPanel(page, corpusGraph, "ask");
     await ask(page, "How many people are there?");
-    // The BFF's forward cannot reach it and answers 500 with no code of its own: the failure is
-    // the model call's, in keasy's words.
-    await expectProblem(page, "llm/failed", { within: 20_000 });
+    // The BFF's forward cannot reach it and answers 500 with no code of its own: `@kanzo-tech/llm`
+    // names an error answer from the gateway's side `ai/unavailable`.
+    await expectProblem(page, "ai/unavailable", { within: 20_000 });
   } finally {
     start("ai-gateway");
   }
@@ -34,7 +34,7 @@ test("12 a provider refusal the gateway relays is shown, not an empty answer", a
   );
   await openPanel(page, corpusGraph, "ask");
   await ask(page, "How many people are there?");
-  await expectProblem(page, "llm/failed", { within: 15_000 });
+  await expectProblem(page, "ai/unavailable", { within: 15_000 });
 });
 
 test("13 an AI gateway that accepts and never answers is ai/silent", async ({ page, corpusGraph }) => {
@@ -76,17 +76,18 @@ test("15 a structured answer that does not parse fails the assistant's step, not
   await expectProblem(page, "llm/failed", { within: 20_000 });
 });
 
-test("16 SQL the engine refuses reaches the answer card, and the model reads the engine's words", async ({ page, corpusGraph }) => {
-  // What the model is handed back after the refusal: the engine's own words.
-  let readBack = "";
-  await page.route(AI, (route) => {
+/**
+ * The Ask agent as a mocked model: the suggested questions are a call of their own, with no tools,
+ * and get none; the agent's first step calls `answer` with `input`; its second, which carries the
+ * tool's result back, says `then` and stops. `onReadBack` hears what the model was handed.
+ */
+function answering(input: unknown, then: string, onReadBack: (body: string) => void = () => {}) {
+  return (route: Route) => {
     const body = route.request().postData() ?? "";
-    // The suggested questions are a call of their own, with no tools: the panel offers none here.
     if (!body.includes('"tools"')) return stream(route, sse(text("[]"), text("", "stop")));
-    // The agent's second step carries the tool's result back.
     if (body.includes('"role":"tool"')) {
-      readBack = body;
-      return stream(route, sse(text("The query did not run."), text("", "stop")));
+      onReadBack(body);
+      return stream(route, sse(text(then), text("", "stop")));
     }
     const call = {
       id: "e2e",
@@ -98,9 +99,7 @@ test("16 SQL the engine refuses reaches the answer card, and the model reads the
           index: 0,
           delta: {
             role: "assistant",
-            tool_calls: [
-              { index: 0, id: "call_1", type: "function", function: { name: "query", arguments: '{"sql":"SELEC 1"}' } },
-            ],
+            tool_calls: [{ index: 0, id: "call_1", type: "function", function: { name: "answer", arguments: JSON.stringify(input) } }],
           },
           finish_reason: null,
         },
@@ -108,10 +107,47 @@ test("16 SQL the engine refuses reaches the answer card, and the model reads the
     };
     const done = { ...call, choices: [{ index: 0, delta: {}, finish_reason: "tool_calls" }] };
     return stream(route, sse(call, done));
-  });
+  };
+}
+
+test("16 an answer the spec does not admit fails in its card, and the model reads why", async ({ page, corpusGraph }) => {
+  // The model names a field Person does not have; the tool's input is checked before anything runs,
+  // and what the model is handed back is the check's own words.
+  let readBack = "";
+  await page.route(
+    AI,
+    answering(
+      {
+        relation: { root: "Person", path: [] },
+        where: [{ field: "Person.shoeSize", in: ["42"] }],
+        show: { kind: "stat", measure: { op: "count" } },
+      },
+      "That field is not in the graph.",
+      (body) => (readBack = body),
+    ),
+  );
+  await openPanel(page, corpusGraph, "ask");
+  await ask(page, "How many people wear a 42?");
+  // The refusal is the tool's answer, drawn in its card, and it names the field that is not there.
+  const card = page.locator('[data-slot="answer-card"]');
+  await expect(card.getByText("The answer failed")).toBeVisible({ timeout: 20_000 });
+  await expect(card).toContainText("Person.shoeSize is not a field of Person");
+  await expect.poll(() => readBack).toMatch(/Person\.shoeSize is not a field of Person/);
+});
+
+test("an answer added to the dashboard is saved as a tile of its relation", async ({ page, corpusGraph }) => {
+  const title = `Asked ${Date.now()}`;
+  await page.route(
+    AI,
+    answering({ relation: { root: "Person", path: [] }, show: { kind: "stat", measure: { op: "count" }, title } }, "That is everyone."),
+  );
   await openPanel(page, corpusGraph, "ask");
   await ask(page, "How many people are there?");
-  // The statement gate's refusal is the tool's answer, drawn in its card; the model reads DuckDB's words.
-  await expect(page.locator('[data-slot="query-result"] [data-code="query/refused"]')).toBeVisible({ timeout: 20_000 });
-  await expect.poll(() => readBack).toMatch(/syntax error/i);
+  const card = page.locator('[data-slot="answer-card"]');
+  await card.getByRole("button", { name: "Add to the dashboard" }).click({ timeout: 30_000 });
+  await expect(card.getByRole("button", { name: "✓ On the dashboard" })).toBeDisabled();
+  // Written at once, not after the editor's pause: an addition is a decision, not typing.
+  await expect
+    .poll(async () => JSON.stringify((await api(page, "GET", `/v1/graphs/${corpusGraph}/dashboard`)).body), { timeout: 10_000 })
+    .toContain(title);
 });

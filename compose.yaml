@@ -1,0 +1,94 @@
+# keasy, as it runs anywhere: the one web that serves every organization, its session store, and
+# keasy's registration with the platform realm. The platform itself — identity and the AI gateway —
+# is kanzo-ui's, included by the environment's overlay at the release keasy is built against:
+#
+#   docker compose up                                  development: compose.override.yaml, read on its own
+#   make deploy                                        a deployment: compose.prod.yaml + infra/prod/
+#
+# Each organization runs its own server (compose.server.yaml), one compose file per organization.
+# The variables below are the same in every environment; development's values are the defaults,
+# a deployment's are in infra/prod/prod.env.
+
+name: keasy
+
+services:
+  # The relying party for every organization: it holds the client secret, seals the session cookie,
+  # reads the organization from the host (<alias>.<KEASY_DOMAIN>), and forwards /api/v1 to that
+  # organization's server and /api/ai to the gateway, each with a token exchanged for it and that
+  # organization.
+  web:
+    image: ghcr.io/kanzo-tech/keasy-web:${KEASY_VERSION:-dev}
+    environment:
+      KEASY_BASE_DOMAIN: ${KEASY_DOMAIN:-localhost}
+      KEASY_OIDC_ISSUER_URL: ${KC_HOSTNAME:-http://localhost:8080}/realms/${KC_REALM:-kanzo}
+      KEASY_OIDC_INTERNAL_BASE_URL: http://keycloak:8080
+      KEASY_OIDC_CLIENT_ID: keasy
+      KEASY_OIDC_CLIENT_SECRET_FILE: /run/secrets/keasy-oidc
+      # Seals the session cookie, which carries only a ticket into Valkey.
+      KEASY_SESSION_SECRET_FILE: /run/secrets/keasy-session
+      KEASY_SESSION_STORE_URL: redis://valkey:6379
+      # The server of the organization a request addresses: each answers as <alias>-server.
+      KEASY_API_URL: http://{tenant}-server:8080
+      # The gateway's OpenAI-compatible API, the only path on which it resolves an alias.
+      KEASY_AI_URL: http://ai-gateway:4000/v1
+    secrets: [keasy-oidc, keasy-session]
+    # Healthy once the sign-in route answers: what a rolling update waits for before it lets the old
+    # web go, and what `make dev` waits for.
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/api/auth/signin',{redirect:'manual'}).then(r=>process.exit(r.status<500?0:1),()=>process.exit(1))"]
+      interval: 10s
+      timeout: 10s
+      retries: 6
+      start_period: 30s
+    depends_on:
+      valkey:
+        condition: service_healthy
+      auth-realm:
+        condition: service_completed_successfully
+      ai-gateway:
+        condition: service_started
+    restart: unless-stopped
+
+  # The web's session store: tokens behind the cookie's ticket. No volume — losing it signs people
+  # out, nothing more.
+  valkey:
+    image: valkey/valkey:8.1-alpine
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  # keasy, registered with the platform realm (kanzo-ui services/auth/realm/declarations.tf): its
+  # client and roles, and the environment's organizations.
+  auth-realm:
+    configs:
+      - source: keasy-application
+        target: /declarations/keasy/application.yaml
+    secrets: [keasy-oidc]
+    volumes:
+      - ${KEASY_ORGANIZATIONS:-./infra/dev/orgs}:/declarations/keasy/organizations:ro
+
+configs:
+  keasy-application:
+    content: |
+      x-application:
+        client_id: keasy
+        description: keasy — a Backend-For-Frontend for every organization. The browser never holds a token.
+        # The API every organization's server validates `aud` against.
+        api: keasy-api
+        # The platform's AI gateway, which the web exchanges the session's token for too.
+        apis: [ai-gateway]
+        # One web for every organization, at <alias>.<domain>.
+        origin: ${KEASY_ORIGIN:-http://{organization}.localhost:3000}
+        callback: /api/auth/callback
+        # A sign-out at Keycloak ends the web's sessions too, whichever organization they were opened in.
+        backchannel_logout: http://web:3000/api/auth/backchannel-logout
+        client_secret_file: /run/secrets/keasy-oidc
+        # The hierarchy, declared once. Tokens carry it expanded, and the server and the web ask
+        # only whether a role is present (server/src/authentication/role.rs).
+        roles:
+          reader: { description: "Reads everything in the workspace: graphs, outputs, connections." }
+          editor: { description: "Builds graphs, connections and secrets; changes what they made.", composites: [reader] }
+          admin: { description: "Configures the workspace and changes anything in it.", composites: [editor] }

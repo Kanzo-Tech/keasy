@@ -1,0 +1,4 @@
+# The organization development serves (its server is compose.override.yaml's acme-server). The
+# development realm declares acme and globex itself (kanzo-ui services/auth/dev); this is keasy's
+# own declaration of the one it runs, in the shape a deployment's organizations take.
+x-organization: { alias: acme, name: Acme Corporation, domain: acme.test }

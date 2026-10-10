@@ -63,7 +63,7 @@ export const test = base.extend<{ quiet: void }, { geoGraph: string; snbGraph: s
   ],
   // OpenFlights: 3,218 airports and the 36,906 direct routes between them.
   geoGraph: [async ({ browser }, use) => use(await guardedSeed(browser, "smoke OpenFlights", "openflights", 300_000)), { scope: "worker", timeout: 360_000 }],
-  // LDBC SNB SF0.1: 327,588 vertices of eight types.
+  // LDBC SNB SF0.1: 341,661 vertices of nine types.
   snbGraph: [async ({ browser }, use) => use(await guardedSeed(browser, "smoke LDBC SNB", "snb", 900_000)), { scope: "worker", timeout: 960_000 }],
 });
 

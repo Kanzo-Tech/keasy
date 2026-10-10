@@ -29,7 +29,11 @@ vi.mock("@/lib/api/query-client", async () => {
   const { QueryClient } = await import("@tanstack/react-query");
   const { releaseCorpora } = await import("./corpus-cache");
   const queryClient = new QueryClient();
-  releaseCorpora(queryClient.getQueryCache());
+  releaseCorpora(queryClient.getQueryCache(), {
+    onFailure: (err) => {
+      throw err;
+    },
+  });
   return { queryClient };
 });
 vi.mock("@/lib/fossil/host", () => ({ host: {} }));

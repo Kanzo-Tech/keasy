@@ -21,7 +21,6 @@ export type View = "Graph" | "Dashboard";
 export type Panel = "Info" | "Ask" | "Rules" | "Settings";
 
 /** `GraphCounts`' sentence — *3.2K nodes · 36.9K edges*, *29 of 3.2K nodes match · …* — the library's own pattern. */
-const COUNTS = /\bnodes\b.*\bedges\b/;
 
 /**
  * **Discover** — a graph's page: the view switch (*View*: Graph · Dashboard), the dock and its
@@ -167,7 +166,9 @@ export class DiscoverPage extends ComponentHarness {
    * does, while its figures are the corpus's from the first count.
    */
   async counts(): Promise<string> {
-    const counts = await this.env.until(async () => (await this.host.find({ text: COUNTS }))[0], "no GraphCounts on the page");
+    // By its slot, not its words: a text query walks every node of the page, and with the canvas
+    // holding the main thread on a software GPU one took 80 s on CI.
+    const counts = await this.env.until(async () => (await this.host.find({ css: '[data-slot="graph-counts"]' }))[0], "no GraphCounts on the page");
     return counts.text();
   }
 

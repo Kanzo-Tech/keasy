@@ -299,9 +299,9 @@ mod tests {
         let named = caller("u-m", EDITOR);
         let member = in_groups(caller("u-x", EDITOR), &["g-other", "g-research"]);
         let outsider = in_groups(caller("u-y", EDITOR), &["g-other"]);
-        for who in [&named, &member] {
-            assert!(who.may(Action::Manage, &graph), "{}", who.user_id);
-            assert!(!who.may(Action::Transfer, &graph), "{}", who.user_id);
+        for (who, caller) in [("named", &named), ("a member", &member)] {
+            assert!(caller.may(Action::Manage, &graph), "{who}");
+            assert!(!caller.may(Action::Transfer, &graph), "{who}");
         }
         assert!(!outsider.may(Action::Manage, &graph));
     }
@@ -349,14 +349,18 @@ mod tests {
                 grant(PrincipalKind::User, "u-m", Relation::Manager),
             ],
         );
-        for who in [
-            caller("u-user", EDITOR),
-            in_groups(caller("u-x", EDITOR), &["g-data"]),
-            caller("u-m", EDITOR),
-            caller("u-owner", EDITOR),
-            caller("u-a", ADMIN),
+        // Each is named by its part, never by a caller's id.
+        for (who, caller) in [
+            ("a user", caller("u-user", EDITOR)),
+            (
+                "a group's member",
+                in_groups(caller("u-x", EDITOR), &["g-data"]),
+            ),
+            ("a manager", caller("u-m", EDITOR)),
+            ("its owner", caller("u-owner", EDITOR)),
+            ("an admin", caller("u-a", ADMIN)),
         ] {
-            assert!(who.may(Action::Use, &shared), "{}", who.user_id);
+            assert!(caller.may(Action::Use, &shared), "{who}");
         }
         assert!(!caller("u-y", EDITOR).may(Action::Use, &shared));
         assert!(!caller("u-user", READER).may(Action::Use, &shared));

@@ -232,7 +232,7 @@ async fn an_editor_builds_on_a_secret_the_workspace_owns() {
 }
 
 /// A workspace whose store answers, with a secret `key` that `u-1` owns.
-async fn owned_secret() -> TestApp {
+async fn keyed() -> TestApp {
     let app = spawn_app_with(Options {
         store: fake_s3().await,
         ..Options::default()
@@ -269,15 +269,15 @@ async fn connect(app: &TestApp, token: &str, name: &str) -> (StatusCode, serde_j
 /// the connections already made on it stay.
 #[tokio::test]
 async fn using_anothers_secret_takes_a_grant_to_them_or_their_group() {
-    let app = owned_secret().await;
+    let app = keyed().await;
     let owner = app.token_for("u-1", EDITOR);
     let bruno = app.token_for("u-2", EDITOR);
     let caro = app.token_grouped("u-3", EDITOR, &["g-data"]);
 
-    let (_, secret) = app
+    let (_, key) = app
         .send(Method::GET, "/v1/secrets/key", &bruno, json!(null))
         .await;
-    assert_eq!(secret["can"]["use"], false, "{secret}");
+    assert_eq!(key["can"]["use"], false);
     let (status, body) = connect(&app, &bruno, "denied").await;
     assert_eq!(
         (status, body["code"].as_str()),
@@ -311,11 +311,11 @@ async fn using_anothers_secret_takes_a_grant_to_them_or_their_group() {
         let (status, body) = connect(&app, token, name).await;
         assert_eq!(status, StatusCode::CREATED, "{who}: {body}");
     }
-    let (_, secret) = app
+    let (_, key) = app
         .send(Method::GET, "/v1/secrets/key", &bruno, json!(null))
         .await;
     assert_eq!(
-        secret["can"],
+        key["can"],
         json!({ "use": true, "operate": true, "manage": false, "transfer": false }),
         "a user uses it and changes nothing"
     );
@@ -345,7 +345,7 @@ async fn using_anothers_secret_takes_a_grant_to_them_or_their_group() {
 /// reader. Shared means listed: everyone who reads it sees with whom.
 #[tokio::test]
 async fn a_manager_changes_and_shares_and_does_not_transfer() {
-    let app = owned_secret().await;
+    let app = keyed().await;
     let owner = app.token_for("u-1", EDITOR);
     let (status, _) = connect(&app, &owner, "data").await;
     assert_eq!(status, StatusCode::CREATED);
@@ -503,7 +503,7 @@ async fn the_owner_or_an_admin_transfers_and_the_sink_stays_the_workspaces() {
 /// what is not a secret, a grant to the owner, a principal with no id.
 #[tokio::test]
 async fn a_grant_the_object_cannot_hold_is_refused() {
-    let app = owned_secret().await;
+    let app = keyed().await;
     let owner = app.token_for("u-1", EDITOR);
     let (status, _) = connect(&app, &owner, "data").await;
     assert_eq!(status, StatusCode::CREATED);

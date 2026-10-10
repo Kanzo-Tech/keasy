@@ -32,6 +32,7 @@ fn report(results: Vec<Check>) -> ValidationReport {
     ValidationReport {
         at: crate::domain::now_iso8601(),
         results,
+        by: None,
     }
 }
 

@@ -11,10 +11,11 @@ use serde::{Deserialize, Serialize};
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
+use crate::authentication::permission::Action;
 use crate::authentication::role::{Editor, Reader};
 use crate::domain::{Graph, GraphFolder, GraphStatus, ResourceName};
 use crate::error::{ErrorBody, ErrorCode, Refusal};
-use crate::graphs::{any, changeable, persistence, present, transition};
+use crate::graphs::{any, permitted, persistence, present, transition};
 use crate::startup::AppState;
 
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
@@ -182,6 +183,7 @@ pub async fn get_graph(
     responses(
         (status = 200, description = "The draft, edited", body = Graph),
         (status = 400, description = "The name or folder is misspelled (`data.field`)", body = ErrorBody),
+        (status = 403, description = "Neither its owner nor an admin (`rbac/forbidden`)", body = ErrorBody),
         (status = 404, description = "Graph not found", body = ErrorBody),
         (status = 409, description = "Not a draft: `graph/not-draft`", body = ErrorBody),
     )
@@ -192,7 +194,7 @@ pub async fn edit_draft(
     Path(id): Path<String>,
     Json(edits): Json<DraftEdits>,
 ) -> Result<impl IntoResponse, Refusal> {
-    changeable(&*state.db.read().await, &caller, &id)?;
+    permitted(&*state.db.read().await, &caller, &id, Action::Manage)?;
     let graph = transition(&state.db, &id, |graph| {
         graph.edit()?;
         edits.clone().apply(graph)
@@ -207,6 +209,7 @@ pub async fn edit_draft(
     responses(
         (status = 200, description = "The draft is now a graph to run, idle, under the same id", body = Graph),
         (status = 400, description = "The name or folder is missing or misspelled (`data.field`)", body = ErrorBody),
+        (status = 403, description = "Neither its owner nor an admin (`rbac/forbidden`)", body = ErrorBody),
         (status = 404, description = "Graph not found", body = ErrorBody),
         (status = 409, description = "Not a draft (`graph/not-draft`), or another graph writes to that folder already (`graph/folder-taken`; the graph stays a draft, unchanged)", body = ErrorBody),
     )
@@ -220,7 +223,7 @@ pub async fn submit_graph(
     Path(id): Path<String>,
     Json(edits): Json<DraftEdits>,
 ) -> Result<impl IntoResponse, Refusal> {
-    changeable(&*state.db.read().await, &caller, &id)?;
+    permitted(&*state.db.read().await, &caller, &id, Action::Manage)?;
     let graph = transition(&state.db, &id, |graph| {
         graph.edit()?;
         edits.clone().apply(graph)?;
@@ -235,12 +238,12 @@ pub async fn submit_graph(
     responses(
         (status = 200, description = "The graph runs, and the caller is its runner: the browser that asked runs the program and reports on it", body = Graph),
         (status = 400, description = "A draft, which is submitted before it runs", body = ErrorBody),
-        (status = 403, description = "Neither its creator nor an admin (`rbac/forbidden`)", body = ErrorBody),
         (status = 404, description = "Graph not found", body = ErrorBody),
         (status = 409, description = "It runs already (`graph/already-running`)", body = ErrorBody),
     )
 )]
-/// Start a run, with the caller as its runner: of a graph never run, or again —
+/// Start a run, with the caller as its runner — any editor runs any graph:
+/// running is operating it, not changing it. Of a graph never run, or again —
 /// over the last run's output, in the same folder. One compare-and-set on the
 /// stored status, so of two runs asked at once one starts and the other is
 /// `graph/already-running`. The run's lease starts now.
@@ -250,7 +253,7 @@ pub async fn run_graph(
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, Refusal> {
     crate::graphs::sweep(&state.db).await?;
-    changeable(&*state.db.read().await, &caller, &id)?;
+    permitted(&*state.db.read().await, &caller, &id, Action::Operate)?;
     let graph = transition(&state.db, &id, |graph| Ok(graph.run(caller.actor())?)).await?;
     Ok(Json(present(&*state.db.read().await, &caller, graph)?))
 }
@@ -306,13 +309,13 @@ pub async fn report_status(
     params(("id" = String, Path, description = "Graph ID")),
     responses(
         (status = 200, description = "The run is asked to stop: its runner aborts on its next report and reports `cancelled`", body = Graph),
-        (status = 403, description = "Neither its runner nor an admin (`rbac/forbidden`)", body = ErrorBody),
+        (status = 403, description = "Neither its runner, its owner nor an admin (`rbac/forbidden`)", body = ErrorBody),
         (status = 404, description = "Graph not found", body = ErrorBody),
         (status = 409, description = "Nothing runs (`graph/not-running`), or the run has ended (`graph/ended`)", body = ErrorBody),
     )
 )]
-/// Ask a run to stop, from wherever it is watched: its runner may, and an
-/// admin. Cooperative — the browser running it hears it in the answer to its
+/// Ask a run to stop, from wherever it is watched: its runner may, the graph's
+/// owner and an admin. Cooperative — the browser running it hears it in the answer to its
 /// next report and ends the run `cancelled`; if that browser is gone, the
 /// sweep ends it `graph/abandoned` once the lease lapses.
 pub async fn stop_graph(
@@ -329,6 +332,7 @@ pub async fn stop_graph(
     params(("id" = String, Path, description = "Graph ID")),
     responses(
         (status = 204, description = "Graph deleted"),
+        (status = 403, description = "Neither its owner nor an admin (`rbac/forbidden`)", body = ErrorBody),
         (status = 404, description = "Graph not found", body = ErrorBody),
         (status = 409, description = "Graph is still running", body = ErrorBody),
     )
@@ -339,7 +343,7 @@ pub async fn delete_graph(
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, Refusal> {
     crate::graphs::sweep(&state.db).await?;
-    changeable(&*state.db.read().await, &caller, &id)?.delete()?;
+    permitted(&*state.db.read().await, &caller, &id, Action::Manage)?.delete()?;
 
     persistence::delete(&*state.db.write().await, &id)?;
     Ok(StatusCode::NO_CONTENT)

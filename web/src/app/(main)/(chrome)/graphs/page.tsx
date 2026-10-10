@@ -16,7 +16,6 @@ import {
   EmptyIndicator,
   EmptyRoot,
   EmptyTitle,
-  MenuItem,
   SectionBody,
   SectionRoot,
   Skeleton,
@@ -38,7 +37,9 @@ import { Link, useRouter } from "@kanzo-tech/navigation/next";
 import { $api, invalidate, type Schemas } from "@/lib/api/client";
 import { hasRunningGraphs, pollWhile, STATUS } from "@/lib/graphs";
 import { toastError } from "@/lib/errors";
+import { blocked } from "@/lib/permissions";
 import { lower, WORDS } from "@/lib/vocabulary";
+import { BlockedMenuItem } from "@/components/blocked";
 import { Boundary, Loading } from "@/components/boundary";
 import { GRAPH_COLUMNS } from "@/components/graph-columns";
 import { settled } from "@/lib/api/settled";
@@ -90,15 +91,22 @@ function Graphs() {
       ...GRAPH_COLUMNS,
       actionsColumn<Graph>({
         label: (row) => `Actions for ${row.original.name ?? row.original.id}`,
+        // A reader is offered nothing; an editor is shown what this graph denies them, and why.
         menu: (row) =>
-          row.original.can_modify && row.original.status !== "running" ? (
-            <MenuItem onSelect={() => setDeleting(row.original)} value="delete" variant="destructive">
-              Delete
-            </MenuItem>
+          editor ? (
+            <BlockedMenuItem
+              disabled={row.original.status === "running"}
+              onSelect={() => setDeleting(row.original)}
+              reason={blocked(row.original, "manage", lower(WORDS.graph))}
+              value="delete"
+              variant="destructive"
+            >
+              {row.original.status === "running" ? "Delete (stop the run first)" : "Delete"}
+            </BlockedMenuItem>
           ) : null,
       }),
     ],
-    [],
+    [editor],
   );
   // TanStack's page reset is queued as a microtask from inside render, so a reset that lands before
   // this component first commits is a state update React refuses (the facet filter's row model is

@@ -181,9 +181,9 @@ forwards `/api/v1` to the server of the organization the request addresses
 Mappings run in the browser (DuckDB-WASM + `@fossil-lang/*`), and so does source
 introspection; the server hosts connections, vends credentials scoped to one prefix, graphs and the catalog,
 and never reads a data file. Every graph names a sink as its destination. The work
-is shared: everyone in the workspace reads every graph, and its creator or an admin
-changes it (roles `reader ⊂ editor ⊂ admin`, from the Keycloak organization the
-instance serves).
+is shared: everyone in the workspace reads every graph, every editor runs it, and its
+owner or an admin changes it (roles `reader ⊂ editor ⊂ admin`, from the Keycloak
+organization the instance serves; the matrix is `docs/design/permissions.md`).
 
 Models are not a credential. Every call goes to the platform's **AI gateway**
 (kanzo-ui's `services/ai`, agentgateway) under an alias (`chat`, `complete`), never a

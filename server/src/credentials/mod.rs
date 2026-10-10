@@ -33,7 +33,14 @@ pub async fn create(
         return Err(Refusal::probe_failed(report.failures(), Vec::new()));
     }
     let conn = db.write().await;
-    persistence::insert(&conn, db.secret_key(), &name, spec, by, &report)?;
+    persistence::insert(
+        &conn,
+        db.secret_key(),
+        &name,
+        spec,
+        by,
+        &report.taken_by(by),
+    )?;
     let stored = persistence::get(&conn, db.secret_key(), name.as_ref())?
         .ok_or_else(|| Refusal::not_found(ErrorCode::SecretNotFound, "No such secret"))?;
     Ok(stored.view(Vec::new()))

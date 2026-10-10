@@ -5,6 +5,7 @@ pub mod rules;
 use axum::http::StatusCode;
 use rusqlite::Connection;
 
+use crate::authentication::permission::Action;
 use crate::authentication::role::Caller;
 use crate::credentials::sealing::SecretKey;
 use crate::database::Database;
@@ -28,12 +29,18 @@ pub fn any(conn: &Connection, id: &str) -> Result<Graph, Refusal> {
         .ok_or_else(|| Refusal::not_found(ErrorCode::GraphNotFound, "No such graph"))
 }
 
-/// The graph, if `caller` may change it — an admin, or the editor who created
-/// it. Anyone else's is read, never changed: `rbac/forbidden`, not a 404, for
-/// a graph everyone can see exists.
-pub fn changeable(conn: &Connection, caller: &Caller, id: &str) -> Result<Graph, Refusal> {
+/// The graph, if `caller` may take `action` on it: run it (operate, any
+/// editor), or change it, its rules and its dashboard (manage, its owner or an
+/// admin). Refused with `rbac/forbidden`, not a 404, for a graph everyone can
+/// see exists.
+pub fn permitted(
+    conn: &Connection,
+    caller: &Caller,
+    id: &str,
+    action: Action,
+) -> Result<Graph, Refusal> {
     let graph = any(conn, id)?;
-    caller.ensure_may_modify(&graph.provenance.created_by.id, "graph")?;
+    caller.ensure(action, &graph)?;
     Ok(graph)
 }
 

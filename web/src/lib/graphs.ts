@@ -1,6 +1,7 @@
 import type { Badge } from "@kanzo-tech/ui";
 import type { Schemas } from "@/lib/api/client";
 import type { Wire } from "@/lib/errors";
+import { blocked } from "@/lib/permissions";
 import { lower, WORDS } from "@/lib/vocabulary";
 
 type Graph = Schemas["Graph"];
@@ -66,7 +67,6 @@ export interface Viewer {
 }
 
 const NO_OUTPUT = `No ${lower(WORDS.output)} yet`;
-const NOT_YOURS = `Only its creator or an admin can change this ${lower(WORDS.graph)}`;
 
 /**
  * The header's primary action for `graph`, as `viewer` sees it. What the role can never do is not
@@ -77,21 +77,25 @@ export function primaryAction(graph: Graph, { editor, me, runsHere }: Viewer): P
   const explore: Primary = { kind: "explore", label: WORDS.explore };
   if (graph.status === "completed") return explore;
   if (!editor) return { ...explore, blocked: NO_OUTPUT };
-  const mine = (p: Primary): Primary => (graph.can_modify ? p : { ...p, blocked: NOT_YOURS });
+  // Editing a draft manages the graph (its owner, an admin); running it operates it (any editor).
+  const may = (action: "operate" | "manage", p: Primary): Primary => {
+    const reason = blocked(graph, action, lower(WORDS.graph));
+    return reason ? { ...p, blocked: reason } : p;
+  };
   switch (graph.status) {
     case "draft":
-      return mine({ kind: "edit", label: `Edit ${lower(WORDS.recipe)}` });
+      return may("manage", { kind: "edit", label: `Edit ${lower(WORDS.recipe)}` });
     case "idle":
-      return mine({ kind: "run", label: WORDS.run });
+      return may("operate", { kind: "run", label: WORDS.run });
     case "failed":
     case "cancelled":
-      return mine({ kind: "run-again", label: `${WORDS.run} again` });
+      return may("operate", { kind: "run-again", label: `${WORDS.run} again` });
     case "running": {
       const stop: Primary = { kind: "stop", label: "Stop" };
       if (runsHere) return graph.cancel_requested ? { ...stop, blocked: "Stopping…" } : stop;
       // The run is ours, and no tab of this page runs it: the tab that did reloaded or closed.
       if (me && graph.runner?.id === me) return { kind: "recover", label: `Mark failed and ${lower(WORDS.run)} again` };
-      if (!graph.can_stop) return { ...stop, blocked: "Only whoever runs it, or an admin, can stop it" };
+      if (!graph.can_stop) return { ...stop, blocked: "Only whoever runs it, its owner or an admin can stop it" };
       return graph.cancel_requested ? { ...stop, blocked: "Stopping…" } : stop;
     }
   }

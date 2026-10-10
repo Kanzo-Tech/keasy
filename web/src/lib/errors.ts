@@ -109,7 +109,7 @@ const registry: Partial<Record<ErrorCode | NoBodyCode | ClientCode | Code | Kanz
   "graph/already-running": { title: `The ${lower(WORDS.graph)} is running already.` },
   "rbac/no-membership": { title: "You have no role in this workspace." },
   "rbac/insufficient-role": { title: "Your role in this workspace does not allow this." },
-  "rbac/forbidden": { title: "Only its creator or an admin can change this." },
+  "rbac/forbidden": { title: "You are not allowed to do this to it." },
   "graph/ended": { title: "The run has already ended." },
   "graph/abandoned": {
     title: "The run was abandoned",

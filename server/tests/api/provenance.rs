@@ -245,9 +245,11 @@ async fn rules_name_who_saved_them_first_and_last() {
     assert_eq!(read["updated_by"]["name"], "Bruno");
 }
 
-/// What an instance declares at boot is the bootstrap's: nobody who signs in.
+/// What an instance declares at boot was made by the bootstrap — nobody who
+/// signs in — and is owned by the workspace: every editor tests it, only an
+/// admin changes it.
 #[tokio::test]
-async fn a_declared_secret_is_the_bootstraps() {
+async fn a_declared_secret_is_the_bootstraps_and_the_workspace_owns_it() {
     let app = spawn_app().await;
     let file = tempfile::NamedTempFile::new().unwrap();
     std::fs::write(
@@ -274,5 +276,15 @@ async fn a_declared_secret_is_the_bootstraps() {
         secret["created_by"],
         json!({ "id": "bootstrap", "name": "Bootstrap" })
     );
+    assert_eq!(
+        secret["owner"],
+        json!({ "id": "workspace", "name": "Workspace" })
+    );
+    assert_eq!(secret["can"], json!({ "operate": true, "manage": false }));
     assert_eq!(secret["can_modify"], false, "only an admin changes it");
+    let admin = app.token_for("u-9", ADMIN);
+    let (_, secret) = app
+        .send(Method::GET, "/v1/secrets/declared", &admin, json!(null))
+        .await;
+    assert_eq!(secret["can"], json!({ "operate": true, "manage": true }));
 }

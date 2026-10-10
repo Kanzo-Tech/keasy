@@ -318,8 +318,10 @@ impl TestApp {
             name: name.into(),
             secret: credential.into(),
             target,
+            owner: actor(by).as_owner(),
             provenance: Provenance::created(actor(by)),
             validation: None,
+            can: Default::default(),
             can_modify: false,
         };
         keasy_server::connections::persistence::insert(&*self.db.write().await, &view, &actor(by))
@@ -339,6 +341,7 @@ pub fn unprobed() -> ValidationReport {
     ValidationReport {
         at: "now".into(),
         results: Vec::new(),
+        by: None,
     }
 }
 

@@ -43,8 +43,9 @@ export function RulesPanel() {
   const init = { params: { path: { id: graphId } } };
   const read = $api.queryOptions("get", "/v1/graphs/{id}/rules", init);
   const saved = settled($api.useSuspenseQuery("get", "/v1/graphs/{id}/rules", init));
-  // Everyone reads the rules; only whoever may change the graph replaces them.
-  const { can_modify } = settled($api.useSuspenseQuery("get", "/v1/graphs/{id}", init));
+  // Everyone reads the rules; only whoever manages the graph replaces them.
+  const { can } = settled($api.useSuspenseQuery("get", "/v1/graphs/{id}", init));
+  const can_modify = can.manage;
 
   const save = useMutation({
     mutationFn: async (file: File) =>

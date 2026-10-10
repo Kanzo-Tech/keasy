@@ -73,10 +73,7 @@ async fn a_credential_is_vended_only_for_what_the_state_allows() {
     let reader = app.token_for("u-3", READER);
     assert_eq!(
         app.vend(&reader, source.clone(), "read").await,
-        (
-            StatusCode::FORBIDDEN,
-            Some("rbac/insufficient-role".to_owned())
-        )
+        (StatusCode::FORBIDDEN, Some("rbac/forbidden".to_owned()))
     );
     assert_eq!(
         app.vend(&reader, graph.clone(), "read").await,

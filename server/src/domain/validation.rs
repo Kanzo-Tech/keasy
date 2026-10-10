@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
+use super::Actor;
+
 /// What a probe tried.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "snake_case")]
@@ -34,9 +36,22 @@ pub struct Check {
 pub struct ValidationReport {
     pub at: String,
     pub results: Vec<Check>,
+    /// Who asked for the probe. Testing is operating, not changing: it is
+    /// recorded here, never as the resource's `updated_by`. Absent from a
+    /// report stored before it was kept.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub by: Option<Actor>,
 }
 
 impl ValidationReport {
+    /// The report, as asked for by `by`.
+    pub fn taken_by(self, by: &Actor) -> Self {
+        Self {
+            by: Some(by.clone()),
+            ..self
+        }
+    }
+
     /// No check failed.
     pub fn passed(&self) -> bool {
         self.results.iter().all(|c| c.result != Outcome::Fail)

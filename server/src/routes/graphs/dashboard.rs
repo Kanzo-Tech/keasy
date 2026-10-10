@@ -8,10 +8,11 @@ use serde::Deserialize;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
+use crate::authentication::permission::Action;
 use crate::authentication::role::{Editor, Reader};
 use crate::domain::Dashboard;
 use crate::error::{ErrorBody, ErrorCode, Refusal};
-use crate::graphs::{any, changeable, dashboards};
+use crate::graphs::{any, dashboards, permitted};
 use crate::startup::AppState;
 
 /// The most a saved dashboard may weigh, as stored JSON. A layout and its
@@ -58,7 +59,7 @@ pub async fn put_dashboard(
     Path(id): Path<String>,
     Json(payload): Json<PutDashboardRequest>,
 ) -> Result<Json<Dashboard>, Refusal> {
-    changeable(&*state.db.read().await, &caller, &id)?;
+    permitted(&*state.db.read().await, &caller, &id, Action::Manage)?;
     let serde_json::Value::Object(spec) = payload.spec else {
         return Err(Refusal::invalid("A dashboard spec is a JSON object"));
     };

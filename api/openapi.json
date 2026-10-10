@@ -141,7 +141,7 @@
             }
           },
           "403": {
-            "description": "A sink by anyone but an admin",
+            "description": "A sink by anyone but an admin, or on a secret the caller may not use",
             "content": {
               "application/json": {
                 "schema": {
@@ -258,7 +258,7 @@
             "description": "Deleted"
           },
           "403": {
-            "description": "Not the caller's to delete",
+            "description": "Neither its owner nor an admin; the sink, anyone but an admin",
             "content": {
               "application/json": {
                 "schema": {
@@ -334,7 +334,7 @@
             }
           },
           "403": {
-            "description": "Not the caller's to change",
+            "description": "Neither its owner nor an admin; the sink, anyone but an admin; or a secret the caller may not use",
             "content": {
               "application/json": {
                 "schema": {
@@ -388,6 +388,7 @@
         "tags": [
           "Connections"
         ],
+        "summary": "What lies under a source is used, not read: an editor lists it, as an\neditor is vended a credential to read it. A reader reads curated outputs.",
         "operationId": "list_connection_files",
         "parameters": [
           {
@@ -474,7 +475,7 @@
         "security": [
           {
             "bearer": [
-              "reader"
+              "editor"
             ]
           }
         ]
@@ -485,7 +486,7 @@
         "tags": [
           "Connections"
         ],
-        "summary": "LIST a source, WRITE and DELETE under the sink.",
+        "summary": "LIST a source, WRITE and DELETE under the sink. Any editor tests a source,\nan admin the sink: testing operates a connection, it does not change it, so\nwho asked is kept on the report and never as who updated the connection.",
         "operationId": "validate_connection",
         "parameters": [
           {
@@ -500,7 +501,7 @@
         ],
         "responses": {
           "200": {
-            "description": "The probe's report, stored with the connection",
+            "description": "The probe's report, stored with the connection and naming who asked for it",
             "content": {
               "application/json": {
                 "schema": {
@@ -510,7 +511,7 @@
             }
           },
           "403": {
-            "description": "Not the caller's to change",
+            "description": "The sink, tested by anyone but an admin",
             "content": {
               "application/json": {
                 "schema": {
@@ -692,6 +693,16 @@
           "204": {
             "description": "Graph deleted"
           },
+          "403": {
+            "description": "Neither its owner nor an admin (`rbac/forbidden`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Graph not found",
             "content": {
@@ -760,6 +771,16 @@
           },
           "400": {
             "description": "The name or folder is misspelled (`data.field`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Neither its owner nor an admin (`rbac/forbidden`)",
             "content": {
               "application/json": {
                 "schema": {
@@ -1077,7 +1098,7 @@
         "tags": [
           "Graphs"
         ],
-        "summary": "Start a run, with the caller as its runner: of a graph never run, or again —\nover the last run's output, in the same folder. One compare-and-set on the\nstored status, so of two runs asked at once one starts and the other is\n`graph/already-running`. The run's lease starts now.",
+        "summary": "Start a run, with the caller as its runner — any editor runs any graph:\nrunning is operating it, not changing it. Of a graph never run, or again —\nover the last run's output, in the same folder. One compare-and-set on the\nstored status, so of two runs asked at once one starts and the other is\n`graph/already-running`. The run's lease starts now.",
         "operationId": "run_graph",
         "parameters": [
           {
@@ -1103,16 +1124,6 @@
           },
           "400": {
             "description": "A draft, which is submitted before it runs",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Neither its creator nor an admin (`rbac/forbidden`)",
             "content": {
               "application/json": {
                 "schema": {
@@ -1245,7 +1256,7 @@
         "tags": [
           "Graphs"
         ],
-        "summary": "Ask a run to stop, from wherever it is watched: its runner may, and an\nadmin. Cooperative — the browser running it hears it in the answer to its\nnext report and ends the run `cancelled`; if that browser is gone, the\nsweep ends it `graph/abandoned` once the lease lapses.",
+        "summary": "Ask a run to stop, from wherever it is watched: its runner may, the graph's\nowner and an admin. Cooperative — the browser running it hears it in the answer to its\nnext report and ends the run `cancelled`; if that browser is gone, the\nsweep ends it `graph/abandoned` once the lease lapses.",
         "operationId": "stop_graph",
         "parameters": [
           {
@@ -1270,7 +1281,7 @@
             }
           },
           "403": {
-            "description": "Neither its runner nor an admin (`rbac/forbidden`)",
+            "description": "Neither its runner, its owner nor an admin (`rbac/forbidden`)",
             "content": {
               "application/json": {
                 "schema": {
@@ -1358,6 +1369,16 @@
               }
             }
           },
+          "403": {
+            "description": "Neither its owner nor an admin (`rbac/forbidden`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Graph not found",
             "content": {
@@ -1421,7 +1442,7 @@
         "tags": [
           "Secrets"
         ],
-        "summary": "An editor creates one, for a source or, as an admin, for the sink; any editor\nmay use it in a connection, and its creator or an admin changes it.",
+        "summary": "An editor creates one, and owns it; any editor may use it in a connection\nand test it, and its owner or an admin changes it.",
         "operationId": "create_secret",
         "requestBody": {
           "content": {
@@ -1562,7 +1583,7 @@
             "description": "Deleted"
           },
           "403": {
-            "description": "Neither its creator nor an admin",
+            "description": "Neither its owner nor an admin",
             "content": {
               "application/json": {
                 "schema": {
@@ -1639,7 +1660,7 @@
             }
           },
           "403": {
-            "description": "Neither its creator nor an admin",
+            "description": "Neither its owner nor an admin",
             "content": {
               "application/json": {
                 "schema": {
@@ -1693,7 +1714,7 @@
         "tags": [
           "Secrets"
         ],
-        "summary": "Probe the secret through every connection that uses it.",
+        "summary": "Probe the secret through every connection that uses it. Any editor may:\ntesting operates the secret, it does not change it, so who asked is kept on\nthe report and never as who updated the secret.",
         "operationId": "validate_secret",
         "parameters": [
           {
@@ -1708,21 +1729,11 @@
         ],
         "responses": {
           "200": {
-            "description": "The probe's report, stored with the secret",
+            "description": "The probe's report, stored with the secret and naming who asked for it",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ValidationReport"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Neither its creator nor an admin",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
                 }
               }
             }
@@ -1868,7 +1879,7 @@
       },
       "Actor": {
         "type": "object",
-        "description": "Someone who wrote a resource.",
+        "description": "Someone who wrote a resource, or owns one.",
         "required": [
           "id",
           "name"
@@ -1936,6 +1947,24 @@
           }
         }
       },
+      "Can": {
+        "type": "object",
+        "description": "What the caller may do to an object beyond reading it, worked out for each\nresponse: the interface draws what this says and does not re-derive it.",
+        "required": [
+          "operate",
+          "manage"
+        ],
+        "properties": {
+          "manage": {
+            "type": "boolean",
+            "description": "Change, rename or delete it; a graph's rules and dashboard."
+          },
+          "operate": {
+            "type": "boolean",
+            "description": "Test it, or run it (again)."
+          }
+        }
+      },
       "Check": {
         "type": "object",
         "required": [
@@ -1974,15 +2003,26 @@
             "required": [
               "name",
               "secret",
-              "target"
+              "target",
+              "owner",
+              "can"
             ],
             "properties": {
+              "can": {
+                "$ref": "#/components/schemas/Can",
+                "description": "What the caller may do to it: test it (any editor; the sink, an admin)\nand manage it (its owner or an admin; the sink, an admin)."
+              },
               "can_modify": {
                 "type": "boolean",
-                "description": "Whether the caller may change or delete it: the sink is an admin's,\nany other connection its creator's or an admin's."
+                "description": "`can.manage`, under its old name.",
+                "deprecated": true
               },
               "name": {
                 "type": "string"
+              },
+              "owner": {
+                "$ref": "#/components/schemas/Actor",
+                "description": "Who owns it: its creator, or the workspace for what the instance\ndeclares. Its owner or an admin manages it; the sink is an admin's."
               },
               "secret": {
                 "type": "string"
@@ -2304,23 +2344,30 @@
         "allOf": [
           {
             "$ref": "#/components/schemas/Provenance",
-            "description": "Who created the graph — with an admin, the one who may change, run or\ndelete it — and when. Taken from the token, never the body."
+            "description": "Who created the graph, and when. Taken from the token, never the body."
           },
           {
             "type": "object",
             "required": [
               "id",
               "status",
+              "owner",
+              "can",
               "sink_connection"
             ],
             "properties": {
+              "can": {
+                "$ref": "#/components/schemas/Can",
+                "description": "What the caller may do to it: run it (again) — any editor — and manage\nit — its owner or an admin. Worked out for each response: the\ninterface draws what this says and does not re-derive it."
+              },
               "can_modify": {
                 "type": "boolean",
-                "description": "Whether the caller may change, run or delete this graph, worked out for\neach response: the interface draws what this says and does not\nre-derive it."
+                "description": "`can.manage`, under its old name.",
+                "deprecated": true
               },
               "can_stop": {
                 "type": "boolean",
-                "description": "Whether the caller may stop the run under way — its runner, or an\nadmin — worked out for each response; false when nothing runs."
+                "description": "Whether the caller may stop the run under way — its runner, the\ngraph's owner or an admin — worked out for each response; false when\nnothing runs."
               },
               "cancel_requested": {
                 "type": "boolean",
@@ -2370,6 +2417,10 @@
                   "null"
                 ],
                 "description": "Where the output lands, `{sink}/{folder}/`, as the sink's URL spells\nit: worked out for each response; unset for a draft with no folder."
+              },
+              "owner": {
+                "$ref": "#/components/schemas/Actor",
+                "description": "Who owns the graph — with an admin, the one who may change or delete\nit, and its rules and dashboard. Its creator, to begin with."
               },
               "problem": {
                 "description": "Why a `Failed` run failed, as the browser that ran it reported it: a\nproblem (`{ code, title, detail, data, … }`), stored verbatim and\n**opaque** — the web branches on its `code`, the server never does."
@@ -2819,15 +2870,26 @@
             "required": [
               "name",
               "spec",
-              "used_by"
+              "used_by",
+              "owner",
+              "can"
             ],
             "properties": {
+              "can": {
+                "$ref": "#/components/schemas/Can",
+                "description": "What the caller may do to it: test it (any editor) and manage it (its\nowner or an admin). Its value is never returned to anyone."
+              },
               "can_modify": {
                 "type": "boolean",
-                "description": "Whether the caller may change or delete it: its creator or an admin.\nAny editor may use it in a connection; its value is never returned."
+                "description": "`can.manage`, under its old name.",
+                "deprecated": true
               },
               "name": {
                 "type": "string"
+              },
+              "owner": {
+                "$ref": "#/components/schemas/Actor",
+                "description": "Who owns it: its creator, or the workspace for what the instance\ndeclares. Its owner or an admin manages it."
               },
               "spec": {
                 "$ref": "#/components/schemas/SecretSpecView"
@@ -2992,6 +3054,17 @@
         "properties": {
           "at": {
             "type": "string"
+          },
+          "by": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Actor",
+                "description": "Who asked for the probe. Testing is operating, not changing: it is\nrecorded here, never as the resource's `updated_by`. Absent from a\nreport stored before it was kept."
+              }
+            ]
           },
           "results": {
             "type": "array",

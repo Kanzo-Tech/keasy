@@ -4,18 +4,21 @@
 use rusqlite::{Connection, OptionalExtension, params};
 
 use super::sealing::{self, SecretKey};
-use crate::database::{DbError, DbResult, constraint, json_column_opt, provenance_columns};
+use crate::database::{
+    DbError, DbResult, constraint, json_column_opt, owner_columns, provenance_columns,
+};
 use crate::domain::{
     Actor, Credential, Provenance, ResourceName, SecretSpec, SecretView, ValidationReport,
 };
 
-const COLUMNS: &str = "name, spec, created_by, created_by_name, created_at, \
+const COLUMNS: &str = "name, spec, owner, owner_name, created_by, created_by_name, created_at, \
                        updated_by, updated_by_name, updated_at, validation";
 
 /// A row, still sealed.
 struct Row {
     name: String,
     spec: Vec<u8>,
+    owner: Actor,
     provenance: Provenance,
     validation: Option<ValidationReport>,
 }
@@ -24,6 +27,7 @@ fn row(r: &rusqlite::Row<'_>) -> rusqlite::Result<Row> {
     Ok(Row {
         name: r.get("name")?,
         spec: r.get("spec")?,
+        owner: owner_columns(r)?,
         provenance: provenance_columns(r)?,
         validation: json_column_opt(r, "validation")?,
     })
@@ -34,6 +38,7 @@ impl Row {
         Ok(Credential {
             spec: sealing::open_spec(&self.name, &self.spec, key).map_err(DbError::Secret)?,
             name: self.name,
+            owner: self.owner,
             provenance: self.provenance,
             validation: self.validation,
         })
@@ -53,6 +58,7 @@ fn refused(name: &ResourceName, e: rusqlite::Error) -> DbError {
     }
 }
 
+/// Store a credential created by `by`, owned as [`Actor::as_owner`] says.
 pub fn insert(
     conn: &Connection,
     key: &SecretKey,
@@ -62,13 +68,16 @@ pub fn insert(
     validation: &ValidationReport,
 ) -> DbResult<()> {
     let sealed = sealing::seal_spec(name.as_ref(), spec, key).map_err(DbError::Secret)?;
+    let owner = by.as_owner();
     conn.execute(
         "INSERT INTO credentials
-             (name, spec, created_by, created_by_name, created_at, validation)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+             (name, spec, owner, owner_name, created_by, created_by_name, created_at, validation)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
         params![
             name.as_ref(),
             sealed,
+            owner.id,
+            owner.name,
             by.id,
             by.name,
             crate::domain::now_iso8601(),
@@ -212,6 +221,7 @@ mod tests {
         ValidationReport {
             at: "now".into(),
             results: Vec::new(),
+            by: None,
         }
     }
 

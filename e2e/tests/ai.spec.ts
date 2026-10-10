@@ -1,19 +1,24 @@
-import { expect, type Route } from "@playwright/test";
+import { expect, type Page, type Route } from "@playwright/test";
+import type { HarnessEnvironment } from "@kanzo-tech/testing";
 
 import { api, SOURCE } from "../support/stack/api";
 import { start, stop, up } from "../support/stack/compose";
-import { AI, ask, openPanel, sse, test, text } from "../support/fixtures";
+import { DiscoverPage } from "../support/app";
+import { AI, sse, test, text } from "../support/fixtures";
 import { expectProblem } from "../support/stack/problem";
 
 const stream = (route: Route, body: string) =>
   route.fulfill({ status: 200, contentType: "text/event-stream", body });
 
-test("11 an AI gateway that is down fails the answer in Ask as ai/unavailable", async ({ page, corpusGraph }) => {
+/** The graph's Ask panel, docked from the URL. */
+const askPanel = async (page: Page, env: HarnessEnvironment, graphId: string) =>
+  (await DiscoverPage.open(page, env, graphId, { panel: "ask" })).ask();
+
+test("11 an AI gateway that is down fails the answer in Ask as ai/unavailable", async ({ page, env, corpusGraph }) => {
   test.setTimeout(180_000);
   stop("ai-gateway");
   try {
-    await openPanel(page, corpusGraph, "ask");
-    await ask(page, "How many people are there?");
+    await (await askPanel(page, env, corpusGraph)).send("How many people are there?");
     // The BFF's forward cannot reach it and answers 500 with no code of its own: `@kanzo-tech/llm`
     // names an error answer from the gateway's side `ai/unavailable`.
     await expectProblem(page, "ai/unavailable", { within: 20_000 });
@@ -22,7 +27,7 @@ test("11 an AI gateway that is down fails the answer in Ask as ai/unavailable", 
   }
 });
 
-test("12 a provider refusal the gateway relays is shown, not an empty answer", async ({ page, corpusGraph }) => {
+test("12 a provider refusal the gateway relays is shown, not an empty answer", async ({ page, env, corpusGraph }) => {
   // The gateway passes a provider's refusal on in the protocol's error format, with its status;
   // the provider's words are the detail of the one view.
   await page.route(AI, (route) =>
@@ -32,18 +37,16 @@ test("12 a provider refusal the gateway relays is shown, not an empty answer", a
       body: JSON.stringify({ error: { message: "You exceeded your current quota", type: "insufficient_quota" } }),
     }),
   );
-  await openPanel(page, corpusGraph, "ask");
-  await ask(page, "How many people are there?");
+  await (await askPanel(page, env, corpusGraph)).send("How many people are there?");
   await expectProblem(page, "ai/unavailable", { within: 15_000 });
 });
 
-test("13 an AI gateway that accepts and never answers is ai/silent", async ({ page, corpusGraph }) => {
+test("13 an AI gateway that accepts and never answers is ai/silent", async ({ page, env, corpusGraph }) => {
   test.setTimeout(240_000);
   stop("ai-gateway");
   up("ai-gateway-silent");
   try {
-    await openPanel(page, corpusGraph, "ask");
-    await ask(page, "How many people are there?");
+    await (await askPanel(page, env, corpusGraph)).send("How many people are there?");
     // The BFF forwards and waits; `@kanzo-tech/llm` gives the answer's headers 30 s.
     await expectProblem(page, "ai/silent", { within: 45_000 });
   } finally {
@@ -52,12 +55,11 @@ test("13 an AI gateway that accepts and never answers is ai/silent", async ({ pa
   }
 });
 
-test("14 an error event mid-stream is a failure, not a short answer", async ({ page, corpusGraph }) => {
+test("14 an error event mid-stream is a failure, not a short answer", async ({ page, env, corpusGraph }) => {
   await page.route(AI, (route) =>
     stream(route, sse(text("There are"), { error: { message: "The server is overloaded", type: "server_error" } })),
   );
-  await openPanel(page, corpusGraph, "ask");
-  await ask(page, "How many people are there?");
+  await (await askPanel(page, env, corpusGraph)).send("How many people are there?");
   await expectProblem(page, "llm/failed", { within: 15_000 });
 });
 
@@ -66,9 +68,12 @@ test("15 a structured answer that does not parse fails the assistant's step, not
   await page.route(AI, (route) => stream(route, sse(text("You should look at the people table."), text("", "stop"))));
   await page.goto("/graphs/new");
   await page.getByText("Assistant", { exact: true }).click();
-  // Ark draws the checkbox's control over its input.
-  // eslint-disable-next-line playwright/no-force-option -- Ark draws the control over its input; replaced by @kanzo-tech/testing in part 2
-  await page.getByRole("checkbox", { name: `Select ${SOURCE}` }).check({ force: true });
+  // Ark draws the checkbox's control over its input, so it is ticked from the keyboard, as a reader
+  // without a pointer ticks it, rather than clicked through the control.
+  const source = page.getByRole("checkbox", { name: `Select ${SOURCE}` });
+  await source.focus();
+  await source.press("Space");
+  await expect(source).toBeChecked();
   // In the dev stack TanStack's devtools button floats over the footer's corner.
   await page.addStyleTag({ content: ".tsqd-parent-container { display: none !important; }" });
   // Continue waits for the schemas, then asks for requirements on the Requirements screen.
@@ -110,7 +115,7 @@ function answering(input: unknown, then: string, onReadBack: (body: string) => v
   };
 }
 
-test("16 an answer the spec does not admit fails in its card, and the model reads why", async ({ page, corpusGraph }) => {
+test("16 an answer the spec does not admit fails in its card, and the model reads why", async ({ page, env, corpusGraph }) => {
   // The model names a field Person does not have; the tool's input is checked before anything runs,
   // and what the model is handed back is the check's own words.
   let readBack = "";
@@ -126,26 +131,23 @@ test("16 an answer the spec does not admit fails in its card, and the model read
       (body) => (readBack = body),
     ),
   );
-  await openPanel(page, corpusGraph, "ask");
-  await ask(page, "How many people wear a 42?");
+  const answers = await (await askPanel(page, env, corpusGraph)).composer();
+  await answers.ask("How many people wear a 42?");
   // The refusal is the tool's answer, drawn in its card, and it names the field that is not there.
-  const card = page.locator('[data-slot="answer-card"]');
-  await expect(card.getByText("The answer failed")).toBeVisible({ timeout: 20_000 });
-  await expect(card).toContainText("Person.shoeSize is not a field of Person");
+  await expect(answers.answer()).rejects.toThrow(/Person\.shoeSize is not a field of Person/);
   await expect.poll(() => readBack).toMatch(/Person\.shoeSize is not a field of Person/);
 });
 
-test("an answer added to the dashboard is saved as a tile of its relation", async ({ page, corpusGraph }) => {
+test("an answer added to the dashboard is saved as a tile of its relation", async ({ page, env, corpusGraph }) => {
   const title = `Asked ${Date.now()}`;
   await page.route(
     AI,
     answering({ relation: { root: "Person", path: [] }, show: { kind: "stat", measure: { op: "count" }, title } }, "That is everyone."),
   );
-  await openPanel(page, corpusGraph, "ask");
-  await ask(page, "How many people are there?");
-  const card = page.locator('[data-slot="answer-card"]');
-  await card.getByRole("button", { name: "Add to the dashboard" }).click({ timeout: 30_000 });
-  await expect(card.getByRole("button", { name: "✓ On the dashboard" })).toBeDisabled();
+  const answers = await (await askPanel(page, env, corpusGraph)).composer();
+  await answers.ask("How many people are there?");
+  // Resolves on the card's own *✓ On the dashboard*, read from the dashboards the page handed back.
+  await answers.addToDashboard();
   // Written at once, not after the editor's pause: an addition is a decision, not typing.
   await expect
     .poll(async () => JSON.stringify((await api(page, "GET", `/v1/graphs/${corpusGraph}/dashboard`)).body), { timeout: 10_000 })

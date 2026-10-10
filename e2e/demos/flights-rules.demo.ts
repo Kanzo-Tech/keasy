@@ -1,51 +1,51 @@
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { expect } from "@playwright/test";
 
+import { DiscoverPage, saveRules } from "../support/app";
 import { seedGraph } from "../support/seeds";
-import { api } from "../support/stack/api";
-import { onMap, showPanel, widenDock } from "./geo";
 import { demo } from "./record";
 
 /**
- * Rules over OpenFlights, from the rules already loaded and checked: the findings read, the airports
- * that break a rule lit on the map, then the ones that pass. Off camera, the example's rules
- * (`infra/dev/examples/openflights/rules.ttl`) are saved as the graph's, the graph is placed on a map
- * with its 36.9K routes hidden (with them drawn, nothing on the map reads), and the dock is widened
- * so the findings' columns fit. The Graph view lays out on the GPU: record on a machine with one.
+ * Assessment: the rules over OpenFlights, already loaded and checked — the findings read, every
+ * airport that breaks a rule shown on the map, then the high-altitude ones, framed. Off camera the
+ * example's rules (`infra/dev/examples/openflights/rules.ttl`) are saved as the graph's, the graph is
+ * placed on a map with its 36.9K routes hidden, and the dock is widened so the findings' columns fit.
+ * The Graph view lays out on the GPU: record on a machine with one.
+ *
+ * Step 2 needs keasy#127 (*Show all N violations*): until it is merged, the take fails there.
  */
-demo("flights-rules", "Rules over OpenFlights on the map: the findings, who fails, then who passes", {
-  async arrange(page) {
+demo("flights-rules", "Rules over OpenFlights on the map: the findings, every violation, then the high airports", {
+  async arrange({ page, env }) {
     const id = await seedGraph(page, "openflights", { name: "Demo · OpenFlights", reuse: true });
-    const shapes = readFileSync(fileURLToPath(new URL("../../infra/dev/examples/openflights/rules.ttl", import.meta.url)), "utf8");
-    const saved = await api(page, "PUT", `/v1/graphs/${id}/rules`, { name: "geo.ttl", shapes });
-    // eslint-disable-next-line playwright/no-standalone-expect -- arrange runs inside demo()'s test
-    expect(saved.status, JSON.stringify(saved.body)).toBeLessThan(300);
-
-    await onMap(page, id);
-    await widenDock(page, 280);
-
-    await showPanel(page, "Rules");
-    await page.getByText(/^Checked over all/).waitFor({ timeout: 120_000 });
-    // eslint-disable-next-line playwright/no-wait-for-timeout -- replaced by @kanzo-tech/testing in part 2
-    await page.waitForTimeout(500);
+    await saveRules(page, id, "openflights");
+    const discover = await DiscoverPage.open(page, env, id, { panel: "rules" });
+    const graph = await discover.onMap();
+    const rules = await discover.rules();
+    await discover.widenDock(280);
+    // rudof in the browser over 3,218 airports: the environment's two minutes cover it.
+    expect(await rules.checked()).toMatch(/^Checked over all 3,218 nodes$/);
+    return { graph, airport: await rules.rule("Airport"), bar: await discover.filters() };
   },
 
-  async act({ page, chapter, poster }) {
-    await chapter("Every airport, checked against your rules");
-    await chapter("Red breaks a rule, amber is a warning");
-
-    const airport = page.getByRole("region", { name: /Airport/ });
-    await chapter("Show the ones that break one — the map keeps only them");
-    await airport.getByRole("button", { name: /^Show \d+/ }).first().click();
-    // eslint-disable-next-line playwright/no-wait-for-timeout -- replaced by @kanzo-tech/testing in part 2
-    await page.waitForTimeout(1300);
-    await poster();
-
-    await chapter("Or only the airports that pass");
-    await airport.getByRole("button", { name: /^Showing \d+/ }).first().click();
-    await page.getByRole("button", { name: "Show what conforms" }).click();
-    // eslint-disable-next-line playwright/no-wait-for-timeout -- replaced by @kanzo-tech/testing in part 2
-    await page.waitForTimeout(1300);
-  },
+  steps: ({ graph, airport, bar }) => [
+    {
+      subtitle: "Every airport, checked against your rules",
+      check: async () => expect(await airport.state()).toBe("2 violations · 2 warnings"),
+    },
+    {
+      subtitle: "44 airports break a rule — show them all",
+      action: () => airport.showAll("violations"),
+      check: () => expect.poll(() => bar.readout()).toMatch(/^44 of 3,218\b/),
+    },
+    {
+      subtitle: "Amber warns: 218 airports above 4,000 ft",
+      action: () => airport.show(/high-altitude airport/),
+      check: () => expect.poll(() => bar.readout()).toMatch(/^218 of 3,218\b/),
+      poster: true,
+    },
+    {
+      subtitle: "The Rockies, the Andes, Iran, Ethiopia, Tibet",
+      action: () => graph.frame(),
+      check: () => expect.poll(() => bar.readout()).toMatch(/^218 of 3,218\b/),
+    },
+  ],
 });

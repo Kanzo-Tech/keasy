@@ -1,4 +1,5 @@
-use crate::authentication::role::{Caller, Role};
+use crate::authentication::permission::{Action, Can, Kind, Securable};
+use crate::authentication::role::Caller;
 use serde::{Deserialize, Serialize};
 
 use super::{Access, Actor, GraphFolder, Provenance, ResourceName, StorageLocation, now_iso8601};
@@ -68,17 +69,23 @@ pub struct Graph {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[schema(value_type = Option<Value>)]
     pub problem: Option<serde_json::Value>,
-    /// Who created the graph — with an admin, the one who may change, run or
-    /// delete it — and when. Taken from the token, never the body.
+    /// Who owns the graph — with an admin, the one who may change or delete
+    /// it, and its rules and dashboard. Its creator, to begin with.
+    pub owner: Actor,
+    /// Who created the graph, and when. Taken from the token, never the body.
     #[serde(flatten)]
     pub provenance: Provenance,
-    /// Whether the caller may change, run or delete this graph, worked out for
-    /// each response: the interface draws what this says and does not
-    /// re-derive it.
+    /// What the caller may do to it: run it (again) — any editor — and manage
+    /// it — its owner or an admin. Worked out for each response: the
+    /// interface draws what this says and does not re-derive it.
+    pub can: Can,
+    /// `can.manage`, under its old name.
     #[serde(default)]
+    #[schema(deprecated)]
     pub can_modify: bool,
-    /// Whether the caller may stop the run under way — its runner, or an
-    /// admin — worked out for each response; false when nothing runs.
+    /// Whether the caller may stop the run under way — its runner, the
+    /// graph's owner or an admin — worked out for each response; false when
+    /// nothing runs.
     #[serde(default)]
     pub can_stop: bool,
     /// The sink connection the output lands in, under `{sink.url}/{folder}`,
@@ -126,12 +133,14 @@ impl Graph {
             runner: None,
             cancel_requested: false,
             problem: None,
+            owner: created_by.as_owner(),
             provenance: Provenance::created(created_by),
             sink_connection,
             folder: folder.map(GraphFolder::into_inner),
             output: None,
             script: Some(script),
             report: None,
+            can: Can::default(),
             can_modify: false,
             can_stop: false,
             id,
@@ -212,7 +221,7 @@ impl Graph {
         Ok(())
     }
 
-    /// Ask the run to stop: its runner may, and an admin. The runner reads it
+    /// Ask the run to stop: its runner may, its owner and an admin. The runner reads it
     /// in the answer to its next report, aborts and reports `cancelled`; a
     /// runner gone silent is swept instead.
     pub fn stop(&mut self, caller: &Caller) -> Result<(), Transition> {
@@ -238,15 +247,17 @@ impl Graph {
         self.runner.as_ref().is_some_and(|r| r.id == sub)
     }
 
+    /// Who may stop a run: its runner, and whoever manages the graph.
     fn may_stop(&self, caller: &Caller) -> bool {
         self.status == GraphStatus::Running
-            && (caller.holds(Role::Admin) || self.runs_for(&caller.user_id))
+            && (self.runs_for(&caller.user_id) || caller.may(Action::Manage, self))
     }
 
-    /// The graph as `caller` sees it: [`Graph::can_modify`] and [`Graph::can_stop`]
+    /// The graph as `caller` sees it: [`Graph::can`] and [`Graph::can_stop`]
     /// filled in.
     pub fn seen_by(mut self, caller: &Caller) -> Self {
-        self.can_modify = caller.may_modify(&self.provenance.created_by.id);
+        self.can = caller.can(&self);
+        self.can_modify = self.can.manage;
         self.can_stop = self.may_stop(caller);
         self
     }
@@ -282,6 +293,16 @@ impl Graph {
     }
 }
 
+impl Securable for Graph {
+    fn kind(&self) -> Kind {
+        Kind::Graph
+    }
+
+    fn owner(&self) -> &Actor {
+        &self.owner
+    }
+}
+
 /// Why a graph's state does not allow what was asked: the one table of a graph's
 /// moves, said on the wire through [`Refusal`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -295,7 +316,7 @@ pub enum Transition {
     /// A run is under way already: a graph runs once at a time.
     AlreadyRunning,
     /// Only the runner reports on its run and writes its output; only the
-    /// runner or an admin stops it.
+    /// runner, the graph's owner or an admin stops it.
     NotRunner,
     Ended,
     NotRunning,
@@ -322,8 +343,8 @@ impl From<Transition> for Refusal {
                 "The graph is running already",
             ),
             Transition::NotRunner => Refusal::forbidden(
-                "Only whoever runs the graph reports on it and writes its output; only they or an \
-                 admin stop it",
+                "Only whoever runs the graph reports on it and writes its output; only they, its \
+                 owner or an admin stop it",
             ),
             Transition::Ended => Refusal::conflict(ErrorCode::GraphEnded, "The run has ended"),
             Transition::NotRunning => {
@@ -362,13 +383,14 @@ mod tests {
         }
     }
 
+    /// A draft `u-owner` made.
     fn draft(folder: Option<&str>) -> Graph {
         Graph::new(
             None,
             "sink".into(),
             folder.map(|f| GraphFolder::parse(f).unwrap()),
             "x".into(),
-            Actor::bootstrap(),
+            actor("u-owner"),
         )
     }
 
@@ -501,6 +523,20 @@ mod tests {
         assert_eq!(
             idle().report("u-1", GraphStatus::Running, None, None),
             Err(Transition::NotRunning)
+        );
+    }
+
+    /// Another editor runs the owner's graph (operate); the owner stops that
+    /// run (manage), as its runner and an admin may.
+    #[test]
+    fn a_run_is_stopped_by_its_runner_the_graphs_owner_or_an_admin() {
+        let mut graph = running("u-1");
+        graph.stop(&caller("u-owner", "editor")).unwrap();
+        assert!(graph.cancel_requested);
+        assert!(
+            running("u-1")
+                .seen_by(&caller("u-owner", "editor"))
+                .can_stop
         );
     }
 

@@ -1,8 +1,9 @@
-import { fileURLToPath } from "node:url";
+import { readFileSync } from "node:fs";
 import { expect } from "@playwright/test";
 
+import { DiscoverPage } from "../support/app";
 import { api, createGraph, MISSING } from "../support/stack/api";
-import { discoverUrl, openPanel, switchPanel, test } from "../support/fixtures";
+import { test } from "../support/fixtures";
 import { expectProblem } from "../support/stack/problem";
 
 test("01 a graph that does not exist opens in discover as graph/not-found", async ({ page }) => {
@@ -18,100 +19,98 @@ test("02 a graph that has not completed opens in discover as graph/not-completed
   await expectProblem(page, "graph/not-completed", { within: 10_000 });
 });
 
-test("17 a rules file rudof cannot read is rules/refused in the Rules panel, and nothing is saved", async ({ page, corpusGraph }) => {
-  await openPanel(page, corpusGraph, "rules");
+test("17 a rules file rudof cannot read is rules/refused in the Rules panel, and nothing is saved", async ({ page, env, corpusGraph }) => {
+  const rules = await (await DiscoverPage.open(page, env, corpusGraph, { panel: "rules" })).rules();
   // Dropped as a person drops it: the server reads it with rudof and refuses it where Turtle stops.
-  await page.locator('input[type="file"]').setInputFiles({
-    name: "broken.ttl",
-    mimeType: "text/turtle",
-    buffer: Buffer.from("@prefix sh: <http://www.w3.org/ns/shacl#> .\n<#S> a sh:NodeShape ;\n  sh:path .\n"),
-  });
+  await rules.drop("broken.ttl", "@prefix sh: <http://www.w3.org/ns/shacl#> .\n<#S> a sh:NodeShape ;\n  sh:path .\n");
   await expectProblem(page, "rules/refused", { within: 20_000 });
   expect((await api(page, "GET", `/v1/graphs/${corpusGraph}/rules`)).body).toBeNull();
 });
 
-test("the tile editor is the Dashboard view's: Graph view hides it, and its draft comes back with Dashboard", async ({ page, corpusGraph }) => {
-  await page.goto(discoverUrl(corpusGraph, { view: "dashboard" }));
+test("the tile editor is the Dashboard view's: Graph view hides it, and its draft comes back with Dashboard", async ({ page, env, corpusGraph }) => {
+  const discover = await DiscoverPage.open(page, env, corpusGraph, { view: "dashboard" });
+  await discover.dashboard();
   const format = page.getByRole("complementary", { name: "Format" });
-  await page.getByRole("button", { name: "Add tile" }).click({ timeout: 30_000 });
+  await page.getByRole("button", { name: "Add tile" }).click();
   const title = format.getByRole("textbox", { name: "Title" });
   await title.fill("Kept across views");
 
-  await page.getByRole("radio", { name: "Graph" }).click();
+  await discover.view("Graph");
   await expect(format).toBeHidden();
 
-  await page.getByRole("radio", { name: "Dashboard" }).click();
+  await discover.view("Dashboard");
   await expect(title).toHaveValue("Kept across views");
 });
 
-test("the view and the dock's panel are the URL's: a link opens them, and pressing them writes it", async ({ page, corpusGraph }) => {
+test("the view and the dock's panel are the URL's: a link opens them, and pressing them writes it", async ({ page, env, corpusGraph }) => {
   const rules = page.getByRole("complementary", { name: "Rules panel" });
-  await page.goto(discoverUrl(corpusGraph, { view: "dashboard", panel: "rules" }));
-  await expect(page.getByRole("radio", { name: "Dashboard" })).toBeChecked();
-  await expect(rules).toBeVisible();
+  const discover = await DiscoverPage.open(page, env, corpusGraph, { view: "dashboard", panel: "rules" });
+  const [views, dock] = [await discover.views(), await discover.dock()];
+  expect(await views.current()).toBe("Dashboard");
+  expect(await dock.current()).toBe("Rules");
 
   // Graph keeps the panel the dock holds; the URL names only what differs from the bare page.
-  await page.getByRole("radio", { name: "Graph" }).click();
+  await discover.view("Graph");
   await expect(page).toHaveURL(/\/discover\?panel=rules$/);
   await expect(rules).toBeVisible();
 
   // Pressing the panel the dock holds collapses it, and a reload opens the page as it was left.
-  await switchPanel(page, "Rules");
+  await dock.close();
   await expect(page).toHaveURL(/\/discover\?panel=none$/);
   await expect(rules).toBeHidden();
   await page.reload();
-  await expect(page.getByRole("radio", { name: "Graph" })).toBeChecked();
-  await expect(page.locator('[data-slot="graph-counts"]')).toHaveText(/^20 nodes/, { timeout: 30_000 });
-  await expect(page.getByRole("complementary", { name: /panel$/ })).toBeHidden();
+  // The hook is installed again on every load: the environment outlives the reload.
+  expect(await (await discover.views()).current()).toBe("Graph");
+  const graph = await discover.graph();
+  await graph.ready();
+  await expect.poll(() => graph.counts()).toMatch(/^20 nodes/);
+  expect(await (await discover.dock()).current()).toBeNull();
 
   // Dashboard collapses the dock, as it always has: a dashboard is judged at full width.
-  await switchPanel(page, "Info");
-  await page.getByRole("radio", { name: "Dashboard" }).click();
+  await discover.panel("Info");
+  await discover.view("Dashboard");
   await expect(page).toHaveURL(/\/discover\?view=dashboard$/);
-  await expect(page.getByRole("complementary", { name: "Info panel" })).toBeHidden();
+  expect(await (await discover.dock()).current()).toBeNull();
 });
 
-test("rules are validated over the corpus's triples: what fails, what conforms, and over the page's subset", async ({ page, corpusGraph }) => {
-  await openPanel(page, corpusGraph, "rules");
+test("rules are validated over the corpus's triples: what fails, what conforms, and over the page's subset", async ({ page, env, corpusGraph }) => {
+  const discover = await DiscoverPage.open(page, env, corpusGraph, { panel: "rules" });
+  const rules = await discover.rules();
   // The suite's own rules over its fixtures (e2e/fixtures/vocab/shop.ttl), dropped as a person drops them.
-  await page.locator('input[type="file"]').setInputFiles(fileURLToPath(new URL("../fixtures/vocab/shop.ttl", import.meta.url)));
-  const counts = page.locator('[data-slot="graph-counts"]');
-  const person = page.getByRole("region", { name: "Person" });
+  await rules.drop("shop.ttl", readFileSync(new URL("../fixtures/vocab/shop.ttl", import.meta.url), "utf8"));
 
   // Over the whole corpus: the two people outside GB and US break the Person rule; every order
   // keeps its own.
-  await expect(page.getByText("Checked over all 20 nodes")).toBeVisible({ timeout: 30_000 });
-  await expect(person.getByText("Ships only to GB and US")).toBeVisible();
-  await expect(page.getByRole("region", { name: "Order" }).getByText("In order")).toBeVisible();
+  await expect.poll(() => rules.checked(), { timeout: 30_000 }).toMatch(/^Checked over all 20 nodes/);
+  const shipping = await (await rules.rule("Person")).finding("Ships only to GB and US");
+  const order = await rules.rule("Order");
+  await expect.poll(() => order.state()).toBe("In order");
 
   // Show puts the finding's vertices on the page as its clause.
-  await person.getByRole("button", { name: "Show 2" }).click();
-  await expect(counts).toHaveText(/^2 of 20 nodes match/);
-  await person.getByRole("button", { name: "Showing 2" }).click();
+  expect(await shipping.show()).toBe(2);
+  await expect.poll(() => discover.counts()).toMatch(/^2 of 20 nodes match/);
+  await shipping.hide();
 
   // Show all puts every vertex a rule flags at one severity on the page: here the same two people.
-  await expect(person.getByRole("button", { name: "Show all 2 violations" })).toBeVisible();
-  await expect(person.getByRole("button", { name: /warning/ })).toHaveCount(0);
-  await person.getByRole("button", { name: "Show all 2 violations" }).click();
-  await expect(counts).toHaveText(/^2 of 20 nodes match/);
-  await expect(person.getByRole("button", { name: "Show all 2 violations" })).toHaveAttribute("aria-pressed", "true");
-  await person.getByRole("button", { name: "Show all 2 violations" }).click();
-  await expect(counts).toHaveText(/^20 nodes/);
+  const people = await rules.rule("Person");
+  expect(await people.offersShowAll("warnings")).toBe(false);
+  expect(await people.showAll("violations")).toBe(2);
+  await expect.poll(() => discover.counts()).toMatch(/^2 of 20 nodes match/);
+  await people.hideAll("violations");
+  await expect.poll(() => discover.counts()).toMatch(/^20 nodes/);
 
   // What conforms is rudof's Shape Fragment, read back by its subjects: six people and every order.
-  await page.getByRole("button", { name: "Show what conforms" }).click();
-  await expect(counts).toHaveText(/^18 of 20 nodes match/);
-  await page.getByRole("button", { name: "Show what conforms" }).click();
-  await expect(counts).toHaveText(/^20 nodes/);
+  await rules.conforms();
+  await expect.poll(() => discover.counts()).toMatch(/^18 of 20 nodes match/);
+  await rules.conforms(false);
+  await expect.poll(() => discover.counts()).toMatch(/^20 nodes/);
 
   // A subset picked elsewhere on the page is what the rules check: the four people in the US, all
   // of whom the Person rule admits.
-  await switchPanel(page, "Info");
-  await page.getByRole("button", { name: /Find anything in the graph/ }).click();
-  await page.getByPlaceholder("Find anything in the graph…").fill("country:US");
-  await page.getByRole("button", { name: /^Add 4 to the subset/ }).click();
-  await expect(counts).toHaveText(/^4 of 20 nodes match/);
-  await switchPanel(page, "Rules");
-  await expect(page.getByText("Checked over the selection: 4 of 20 nodes")).toBeVisible({ timeout: 30_000 });
-  await expect(person.getByText("In order")).toBeVisible();
+  expect(await (await discover.search()).add("country:US", 4)).toBe(4);
+  await expect.poll(() => discover.counts()).toMatch(/^4 of 20 nodes match/);
+  const subset = await discover.rules();
+  await expect.poll(() => subset.checked(), { timeout: 30_000 }).toMatch(/^Checked over the selection: 4 of 20 nodes/);
+  const person = await subset.rule("Person");
+  await expect.poll(() => person.state()).toBe("In order");
 });

@@ -3,9 +3,10 @@
 //! Three roles, `reader ⊂ editor ⊂ admin`, and the hierarchy is not here: it is
 //! declared once as Keycloak composite roles (`compose.yaml`, `x-application`), and the token
 //! carries the expanded set, so an admin's token says admin, editor and reader.
-//! A handler states the least role it admits by taking [`Reader`], [`Editor`]
-//! or [`Admin`], and asks [`Caller::may_modify`] before changing what someone
-//! else made. The work in a workspace is shared: every role reads all of it.
+//! A route states the least role it admits by taking [`Reader`], [`Editor`]
+//! or [`Admin`]; what it may do to one object it asks as an action,
+//! [`Caller::may`](super::permission), never as a role. The work in a
+//! workspace is shared: every role reads all of it.
 
 use std::ops::Deref;
 
@@ -138,22 +139,6 @@ impl Caller {
         }
         tracing::info!(authz = "deny:insufficient-role", required = role.name());
         Err(RbacError::InsufficientRole.into())
-    }
-
-    /// An admin changes anything; an editor changes what they made.
-    pub fn may_modify(&self, created_by: &str) -> bool {
-        self.holds(Role::Admin) || (self.holds(Role::Editor) && self.user_id == created_by)
-    }
-
-    /// [`Self::may_modify`], or `rbac/forbidden` naming what it was about.
-    pub fn ensure_may_modify(&self, created_by: &str, resource: &str) -> Result<(), Refusal> {
-        if self.may_modify(created_by) {
-            return Ok(());
-        }
-        tracing::info!(authz = "deny:forbidden", resource);
-        Err(Refusal::forbidden(format!(
-            "Only its creator or an admin may change this {resource}"
-        )))
     }
 }
 
@@ -310,21 +295,5 @@ mod tests {
                 StatusCode::UNAUTHORIZED
             );
         }
-    }
-
-    #[test]
-    fn an_admin_changes_anything_and_an_editor_what_they_made() {
-        let caller = |held: &[&str]| Caller {
-            user_id: "u-1".into(),
-            name: "Ana Duarte".into(),
-            roles: roles(held),
-        };
-        assert!(caller(&["admin", "editor", "reader"]).may_modify("someone-else"));
-        assert!(caller(&["editor", "reader"]).may_modify("u-1"));
-        assert!(!caller(&["editor", "reader"]).may_modify("someone-else"));
-        assert!(
-            !caller(&["reader"]).may_modify("u-1"),
-            "a reader changes nothing, not even what they made before"
-        );
     }
 }

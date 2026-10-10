@@ -1,5 +1,7 @@
 import type { Locator, Mouse, Page } from "@playwright/test";
 
+import { hold } from "./pace";
+
 /** How long the cursor glides to a target before the action lands there. */
 export const GLIDE = 550;
 
@@ -76,44 +78,57 @@ export const CURSOR = (glide: number) => {
   else install();
 };
 
+/** How fast a demo types: a field filled at once reads as a paste, not as someone asking. */
+const KEYSTROKE = 35;
+/** The moves a drag is drawn through between two of its points, so a brush or a lasso is seen drawn. */
+const DRAWN = 12;
+
 /**
- * While a demo records, every click, hover and drag first moves the pointer to its target and waits
- * out the glide, so the cursor arrives before the page answers. Patched on Locator's prototype for
- * the length of `run`, and put back.
+ * While a demo records, every click, hover, fill and drag first moves the pointer to its target and
+ * holds for the glide, so the cursor arrives before the page answers. Patched on Locator's prototype
+ * for the length of `run`, and put back. A fill is typed, a key at a time.
  *
- * `page.mouse` is wrapped the same way, for the drags a locator cannot name (a lasso, a brush drawn
- * point by point): a move with no button held waits out the glide once the pointer is sent, so the
- * press that follows lands where the cursor is; a move with a button held is the drag itself, which
- * the cursor follows at once.
+ * `page.mouse` is wrapped the same way, for what the harnesses do at a point rather than on a locator
+ * (a pick on a bar, a brush, a lasso): a move with no button held holds for the glide once the
+ * pointer is sent, so the press that follows lands where the cursor is; a move with a button held is
+ * the drag itself, drawn through a few moves the cursor follows at once; a click at a point is a
+ * glide, a press and a release.
+ *
+ * The glide is a CSS transition the page does not report, so it is held for (`hold`), not waited on.
  */
 export async function gliding<T>(page: Page, run: () => Promise<T>): Promise<T> {
   const proto = Object.getPrototypeOf(page.locator("body")) as Locator;
-  const { click, dragTo } = proto;
+  const { click, dragTo, fill, hover } = proto;
   const arrive = async (target: Locator, position?: { x: number; y: number }) => {
-    await target.hover({ position });
-    // eslint-disable-next-line playwright/no-wait-for-timeout -- the cursor's glide is a CSS transition the page does not report; replaced by @kanzo-tech/testing in part 2
-    await page.waitForTimeout(GLIDE);
+    await hover.call(target, { position });
+    await hold(GLIDE);
   };
   proto.click = async function (this: Locator, options?: Parameters<Locator["click"]>[0]) {
     await arrive(this, options?.position);
     return click.call(this, options);
   };
+  proto.hover = async function (this: Locator, options?: Parameters<Locator["hover"]>[0]) {
+    await arrive(this, options?.position);
+  };
   proto.dragTo = async function (this: Locator, target: Locator, options?: Parameters<Locator["dragTo"]>[1]) {
     await arrive(this, options?.sourcePosition);
     return dragTo.call(this, target, options);
   };
-
+  proto.fill = async function (this: Locator, value: string, options?: Parameters<Locator["fill"]>[1]) {
+    await arrive(this);
+    await fill.call(this, "", options);
+    await this.pressSequentially(value, { delay: KEYSTROKE });
+  };
   const mouse = page.mouse;
-  const KEYS = ["move", "down", "up"] as const;
+  const KEYS = ["move", "down", "up", "click"] as const;
   // Whatever the mouse holds as its own (nothing, when the methods are its class's), put back after.
   const own = KEYS.map((key) => [key, Object.getOwnPropertyDescriptor(mouse, key)] as const);
   const { move, down, up } = { move: mouse.move.bind(mouse), down: mouse.down.bind(mouse), up: mouse.up.bind(mouse) };
   let held = false;
-  const patched: Pick<Mouse, "move" | "down" | "up"> = {
+  const patched: Pick<Mouse, "move" | "down" | "up" | "click"> = {
     async move(x, y, options) {
-      await move(x, y, options);
-      // eslint-disable-next-line playwright/no-wait-for-timeout -- the cursor's glide is a CSS transition the page does not report; replaced by @kanzo-tech/testing in part 2
-      if (!held) await page.waitForTimeout(GLIDE);
+      await move(x, y, held ? { steps: DRAWN, ...options } : options);
+      if (!held) await hold(GLIDE);
     },
     async down(options) {
       held = true;
@@ -123,13 +138,17 @@ export async function gliding<T>(page: Page, run: () => Promise<T>): Promise<T> 
       await up(options);
       held = false;
     },
+    async click(x, y, options) {
+      await patched.move(x, y);
+      await patched.down(options);
+      await patched.up(options);
+    },
   };
   Object.assign(mouse, patched);
-
   try {
     return await run();
   } finally {
-    Object.assign(proto, { click, dragTo });
+    Object.assign(proto, { click, dragTo, fill, hover });
     for (const [key, descriptor] of own) {
       if (descriptor) Object.defineProperty(mouse, key, descriptor);
       else delete (mouse as Partial<Mouse>)[key];

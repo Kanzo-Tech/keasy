@@ -7,6 +7,7 @@ use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
+use crate::authentication::permission::Action;
 use crate::authentication::role::Editor;
 use crate::connections::persistence as connections;
 use crate::credentials::{named, persistence, probe};
@@ -66,8 +67,8 @@ pub async fn list_secrets(
         (status = 504, description = "The store did not answer the probe in time", body = ErrorBody),
     )
 )]
-/// An editor creates one, for a source or, as an admin, for the sink; any editor
-/// may use it in a connection, and its creator or an admin changes it.
+/// An editor creates one, and owns it; any editor may use it in a connection
+/// and test it, and its owner or an admin changes it.
 pub async fn create_secret(
     caller: Editor,
     State(state): State<AppState>,
@@ -107,7 +108,7 @@ pub async fn get_secret(
     request_body = UpdateSecretRequest,
     responses(
         (status = 200, description = "Renamed and/or rotated", body = SecretView),
-        (status = 403, description = "Neither its creator nor an admin", body = ErrorBody),
+        (status = 403, description = "Neither its owner nor an admin", body = ErrorBody),
         (status = 404, description = "No such secret", body = ErrorBody),
         (status = 422, description = "A connection using it would not validate with the new spec; `dependents` names them", body = ErrorBody),
         (status = 504, description = "The store did not answer the probe in time", body = ErrorBody),
@@ -123,7 +124,7 @@ pub async fn update_secret(
 ) -> Result<impl IntoResponse, Refusal> {
     let db = &state.db;
     let current = named(db, &name).await?;
-    caller.ensure_may_modify(&current.provenance.created_by.id, "secret")?;
+    caller.ensure(Action::Manage, &current)?;
     let new_name = ResourceName::parse(request.name.as_deref().unwrap_or(&name))
         .map_err(|e| Refusal::invalid_field("name", e))?;
 
@@ -138,7 +139,7 @@ pub async fn update_secret(
                     failing,
                 ));
             }
-            (spec, Some(report))
+            (spec, Some(report.taken_by(&caller.actor())))
         }
         None => (current.spec, None),
     };
@@ -163,7 +164,7 @@ pub async fn update_secret(
     params(("name" = String, Path, description = "Secret name")),
     responses(
         (status = 204, description = "Deleted"),
-        (status = 403, description = "Neither its creator nor an admin", body = ErrorBody),
+        (status = 403, description = "Neither its owner nor an admin", body = ErrorBody),
         (status = 404, description = "No such secret", body = ErrorBody),
         (status = 409, description = "Connections still use it; `dependents` names them", body = ErrorBody),
     )
@@ -174,7 +175,7 @@ pub async fn delete_secret(
     Path(name): Path<String>,
 ) -> Result<impl IntoResponse, Refusal> {
     let current = named(&state.db, &name).await?;
-    caller.ensure_may_modify(&current.provenance.created_by.id, "secret")?;
+    caller.ensure(Action::Manage, &current)?;
     persistence::delete(&*state.db.write().await, &name)?;
     Ok(StatusCode::NO_CONTENT)
 }
@@ -182,13 +183,14 @@ pub async fn delete_secret(
 #[utoipa::path(post, path = "/v1/secrets/{name}/validate", tag = "Secrets", security(("bearer" = ["editor"])),
     params(("name" = String, Path, description = "Secret name")),
     responses(
-        (status = 200, description = "The probe's report, stored with the secret", body = ValidationReport),
-        (status = 403, description = "Neither its creator nor an admin", body = ErrorBody),
+        (status = 200, description = "The probe's report, stored with the secret and naming who asked for it", body = ValidationReport),
         (status = 404, description = "No such secret", body = ErrorBody),
         (status = 504, description = "The store did not answer the probe in time", body = ErrorBody),
     )
 )]
-/// Probe the secret through every connection that uses it.
+/// Probe the secret through every connection that uses it. Any editor may:
+/// testing operates the secret, it does not change it, so who asked is kept on
+/// the report and never as who updated the secret.
 pub async fn validate_secret(
     caller: Editor,
     State(state): State<AppState>,
@@ -196,11 +198,11 @@ pub async fn validate_secret(
 ) -> Result<impl IntoResponse, Refusal> {
     let db = &state.db;
     let credential = named(db, &name).await?;
-    // Validating stores the report on the secret: a change, guarded as one.
-    caller.ensure_may_modify(&credential.provenance.created_by.id, "secret")?;
+    caller.ensure(Action::Operate, &credential)?;
     let dependents = connections::using(&*db.read().await, &name)?;
     let (report, _) =
         probe::credential(&credential.spec, None, &dependents, &state.endpoints).await?;
+    let report = report.taken_by(&caller.actor());
     persistence::set_validation(&*db.write().await, &name, &report)?;
     Ok(Json(report))
 }

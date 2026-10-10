@@ -11,7 +11,6 @@ import {
   EmptyIndicator,
   EmptyRoot,
   EmptyTitle,
-  MenuItem,
   SectionBody,
   SectionRoot,
   Skeleton,
@@ -30,14 +29,17 @@ import {
   useDataTable,
 } from "@kanzo-tech/ui/table";
 import { Link, useRouter } from "@kanzo-tech/navigation/next";
+import { BlockedMenuItem } from "@/components/blocked";
 import { CreatedBy } from "@/components/provenance";
 import { ValidationBadge } from "@/components/validation-badge";
 import { $api, invalidate } from "@/lib/api/client";
 import { type Credential, kindTitle } from "@/lib/connections";
 import { getProviderIcon } from "@/lib/ui/provider-icons";
 import { toastError } from "@/lib/errors";
+import { blocked } from "@/lib/permissions";
 import { Boundary, Loading } from "@/components/boundary";
 import { settled } from "@/lib/api/settled";
+import { PAGE_TABLE_HEIGHT } from "@/lib/ui/table-heights";
 
 export default function CredentialsPage() {
   return (
@@ -125,17 +127,27 @@ function Credentials() {
       },
       actionsColumn<Credential>({
         label: (row) => `Actions for ${row.original.name}`,
+        // Only editors reach this page. Any of them tests a credential; Delete is shown disabled,
+        // with who may, on one they do not manage.
         menu: (row) => {
-          if (!row.original.can_modify) return null;
           const path = { params: { path: { name: row.original.name } } };
           return (
             <>
-              <MenuItem onSelect={() => validate.mutate(path)} value="validate">
+              <BlockedMenuItem
+                onSelect={() => validate.mutate(path)}
+                reason={blocked(row.original, "operate", "credential")}
+                value="validate"
+              >
                 Test
-              </MenuItem>
-              <MenuItem onSelect={() => remove.mutate(path)} value="delete" variant="destructive">
+              </BlockedMenuItem>
+              <BlockedMenuItem
+                onSelect={() => remove.mutate(path)}
+                reason={blocked(row.original, "manage", "credential")}
+                value="delete"
+                variant="destructive"
+              >
                 Delete
-              </MenuItem>
+              </BlockedMenuItem>
             </>
           );
         },
@@ -179,6 +191,8 @@ function Credentials() {
         </div>
       </DataTableToolbar>
       <DataTableContent<Credential>
+        maxHeight={PAGE_TABLE_HEIGHT}
+        stickyHeader
         empty="No credentials match this filter."
         onRowClick={(c) => router.push(`/settings/credentials/${encodeURIComponent(c.name)}`)}
       />

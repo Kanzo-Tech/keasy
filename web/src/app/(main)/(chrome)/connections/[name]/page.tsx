@@ -1,9 +1,9 @@
 "use client";
 
-import { use } from "react";
-import { MoreHorizontal } from "lucide-react";
+import { use, useMemo } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { formatFor } from "@fossil-lang/wasm";
+import { useSession } from "@kanzo-tech/auth";
 import {
   Button,
   DataList,
@@ -11,32 +11,34 @@ import {
   DataListItem,
   DataListItemLabel,
   DataListItemValue,
-  Menu,
-  MenuContent,
   MenuItem,
-  MenuTrigger,
   SectionBody,
   SectionHeader,
   SectionRoot,
   SectionTitle,
   SectionTitleGroup,
   Skeleton,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
   toast,
 } from "@kanzo-tech/ui";
+import {
+  actionsColumn,
+  type ColumnDef,
+  DataTableContent,
+  DataTablePagination,
+  DataTableRoot,
+  useDataTable,
+} from "@kanzo-tech/ui/table";
+import { Blocked } from "@/components/blocked";
 import { Provenance } from "@/components/provenance";
 import { ValidationBadge } from "@/components/validation-badge";
 import { $api, invalidate } from "@/lib/api/client";
 import { formatsQuery } from "@/lib/fossil/checker";
 import { toastError } from "@/lib/errors";
+import { blocked } from "@/lib/permissions";
 import { reference } from "@/lib/connections";
 import { Boundary, Loading } from "@/components/boundary";
 import { settled } from "@/lib/api/settled";
+import { PAGE_TABLE_HEIGHT } from "@/lib/ui/table-heights";
 
 export default function ConnectionPage({ params }: { params: Promise<{ name: string }> }) {
   const name = decodeURIComponent(use(params).name);
@@ -60,6 +62,7 @@ export default function ConnectionPage({ params }: { params: Promise<{ name: str
 
 function ConnectionView({ name }: { name: string }) {
   const path = { params: { path: { name } } };
+  const editor = useSession().can("editor");
   const connection = settled($api.useSuspenseQuery("get", "/v1/connections/{name}", path));
   const storage = connection.target;
   const validate = $api.useMutation("post", "/v1/connections/{name}/validate", {
@@ -89,10 +92,19 @@ function ConnectionView({ name }: { name: string }) {
             <DataListItemLabel>Status</DataListItemLabel>
             <DataListItemValue className="flex items-center gap-2">
               <ValidationBadge report={connection.validation} />
-              {connection.can_modify && (
-                <Button isLoading={validate.isPending} onClick={() => validate.mutate(path)} size="sm" variant="outline">
-                  Test
-                </Button>
+              {/* Testing operates a connection: any editor's, seeded ones included. */}
+              {editor && (
+                <Blocked reason={blocked(connection, "operate", "connection")}>
+                  <Button
+                    disabled={!connection.can.operate}
+                    isLoading={validate.isPending}
+                    onClick={() => validate.mutate(path)}
+                    size="sm"
+                    variant="outline"
+                  >
+                    Test
+                  </Button>
+                </Blocked>
               )}
             </DataListItemValue>
           </DataListItem>
@@ -107,15 +119,20 @@ function ConnectionView({ name }: { name: string }) {
               </SectionTitleGroup>
             </SectionHeader>
             <SectionBody>
-              <Boundary
-                fallback={
-                  <Loading>
-                    <Skeleton className="h-40 w-full" />
-                  </Loading>
-                }
-              >
-                <Files kind={storage.kind === "data" ? "data" : "schema"} name={name} url={storage.url} />
-              </Boundary>
+              {/* What lies under a source is used, not read: an editor's to list, as to read it. */}
+              {editor ? (
+                <Boundary
+                  fallback={
+                    <Loading>
+                      <Skeleton className="h-40 w-full" />
+                    </Loading>
+                  }
+                >
+                  <Files kind={storage.kind === "data" ? "data" : "schema"} name={name} url={storage.url} />
+                </Boundary>
+              ) : (
+                <p className="text-muted-foreground text-xs">Only an editor can list a connection&apos;s files.</p>
+              )}
             </SectionBody>
           </SectionRoot>
         )}
@@ -123,6 +140,8 @@ function ConnectionView({ name }: { name: string }) {
     </SectionRoot>
   );
 }
+
+type ConnectionFile = { path: string; size: number };
 
 /** What a storage connection's prefix holds that a format reads. Fails on its own, beside the connection. */
 function Files({ name, url, kind }: { name: string; url: string; kind: "data" | "schema" }) {
@@ -139,6 +158,37 @@ function Files({ name, url, kind }: { name: string; url: string; kind: "data" | 
     navigator.clipboard.writeText(reference({ name, url }, path));
     toast.create({ title: "Reference copied", type: "success" });
   }
+  const columns = useMemo<ColumnDef<ConnectionFile>[]>(
+    () => [
+      {
+        accessorKey: "path",
+        header: "Path",
+        cell: ({ row }) => <span className="font-mono text-xs">{row.original.path}</span>,
+      },
+      {
+        accessorKey: "size",
+        header: () => <span className="block text-end">Size</span>,
+        cell: ({ row }) => (
+          <span className="block text-end text-muted-foreground text-xs">
+            <FormatByte unitSystem="binary" value={row.original.size} />
+          </span>
+        ),
+        size: 96,
+      },
+      actionsColumn<ConnectionFile>({
+        label: (row) => `Actions for ${row.original.path}`,
+        menu: (row) => (
+          <MenuItem onSelect={() => copyReference(row.original.path)} value="copy-reference">
+            Copy reference
+          </MenuItem>
+        ),
+      }),
+    ],
+    // copyReference reads only `name` and `url`.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [name, url],
+  );
+  const table = useDataTable({ columns, data: readable, getRowId: (file) => file.path });
 
   if (readable.length === 0) {
     return (
@@ -152,39 +202,10 @@ function Files({ name, url, kind }: { name: string; url: string; kind: "data" | 
   }
   return (
     <>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Path</TableHead>
-            <TableHead className="w-24 text-end">Size</TableHead>
-            <TableHead className="w-12" />
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {readable.map((f) => (
-            <TableRow key={f.path}>
-              <TableCell className="font-mono text-xs">{f.path}</TableCell>
-              <TableCell className="text-end text-muted-foreground text-xs">
-                <FormatByte unitSystem="binary" value={f.size} />
-              </TableCell>
-              <TableCell>
-                <Menu positioning={{ placement: "bottom-end" }}>
-                  <MenuTrigger asChild>
-                    <Button aria-label={`Actions for ${f.path}`} size="icon-sm" variant="ghost">
-                      <MoreHorizontal />
-                    </Button>
-                  </MenuTrigger>
-                  <MenuContent>
-                    <MenuItem onSelect={() => copyReference(f.path)} value="copy-reference">
-                      Copy reference
-                    </MenuItem>
-                  </MenuContent>
-                </Menu>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+      <DataTableRoot table={table}>
+        <DataTableContent<ConnectionFile> maxHeight={PAGE_TABLE_HEIGHT} stickyHeader />
+        <DataTablePagination />
+      </DataTableRoot>
       {cut}
     </>
   );

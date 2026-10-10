@@ -48,6 +48,7 @@ import { sourceDescriptorsKey } from "./use-source-descriptors";
 import { reference, type StorageConnection } from "@/lib/connections";
 import { ProblemView } from "@/components/problem-view";
 import { ClientError, toastError } from "@/lib/errors";
+import { PART_TABLE_HEIGHT } from "@/lib/ui/table-heights";
 
 type Connection = StorageConnection;
 type Selection = Record<string, boolean>;
@@ -157,6 +158,8 @@ function ConnectionFiles({
       ) : (
         <DataTableRoot table={table}>
           <DataTableContent<ConnectionFile>
+            maxHeight={PART_TABLE_HEIGHT}
+            stickyHeader
             empty={loading ? <Spinner className="mx-auto" /> : "No files a format reads."}
             onRowClick={(file) => table.getRow(file.path).toggleSelected()}
           />
@@ -394,6 +397,8 @@ export function AssistantWizard({
               <p className="text-muted-foreground text-sm">Select the data connections to include.</p>
               <DataTableRoot table={connectionTable}>
                 <DataTableContent<Connection>
+                  maxHeight={PART_TABLE_HEIGHT}
+                  stickyHeader
                   onRowClick={(c) => connectionTable.getRow(c.name).toggleSelected()}
                 />
                 <DataTablePagination />
@@ -464,6 +469,8 @@ export function AssistantWizard({
                   )}
                   <DataTableRoot table={reqTable}>
                     <DataTableContent<CompetencyQuestion>
+                      maxHeight={PART_TABLE_HEIGHT}
+                      stickyHeader
                       empty="No requirements yet."
                       onRowClick={(r) => reqTable.getRow(r.id).toggleSelected()}
                     />

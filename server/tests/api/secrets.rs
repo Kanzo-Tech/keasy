@@ -53,10 +53,10 @@ async fn no_response_carries_a_secret() {
     }
 }
 
-/// A credential or connection is its creator's or the owner's to change; the
-/// sink is the owner's alone, and sources are the members'.
+/// A credential or connection is its owner's or an admin's to change, and any
+/// editor's to test; the sink is an admin's alone, and sources are the members'.
 #[tokio::test]
-async fn only_the_creator_or_an_admin_changes_a_secret_and_only_an_admin_the_sink() {
+async fn only_the_owner_or_an_admin_changes_a_secret_and_only_an_admin_the_sink() {
     let app = spawn_app().await;
     let creator = app.token_for("u-1", EDITOR);
     let other = app.token_for("u-2", EDITOR);
@@ -88,12 +88,24 @@ async fn only_the_creator_or_an_admin_changes_a_secret_and_only_an_admin_the_sin
         StatusCode::FORBIDDEN
     );
     for validate in ["/v1/secrets/key/validate", "/v1/connections/data/validate"] {
-        assert_eq!(
+        assert_ne!(
             app.send(Method::POST, validate, &other, json!({})).await.0,
             StatusCode::FORBIDDEN,
-            "validating stores a report: {validate} is a change"
+            "testing operates, it does not change: {validate} is any editor's"
         );
     }
+    assert_eq!(
+        app.send(
+            Method::POST,
+            "/v1/connections/sink/validate",
+            &other,
+            json!({})
+        )
+        .await
+        .0,
+        StatusCode::FORBIDDEN,
+        "the sink is tested by an admin"
+    );
     let spec = json!({ "kind": "s3", "access_key_id": "AK", "secret_access_key": "s" });
     let (status, made) = app
         .send(

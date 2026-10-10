@@ -16,7 +16,7 @@ pub use credential::*;
 pub use dashboard::Dashboard;
 pub use graph::*;
 pub use graph_folder::GraphFolder;
-pub use provenance::{Actor, Provenance};
+pub use provenance::{Actor, Provenance, WORKSPACE};
 pub use resource_name::ResourceName;
 pub use rules::Rules;
 pub use storage_location::{StorageLocation, Store, StoreKind};

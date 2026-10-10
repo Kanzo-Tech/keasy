@@ -3,14 +3,14 @@
 use rusqlite::{Connection, OptionalExtension, params};
 
 use crate::database::{
-    DbError, DbResult, constraint, created_columns, enum_column, json_column_opt,
+    DbError, DbResult, constraint, created_columns, enum_column, json_column_opt, owner_columns,
 };
 use crate::domain::{Actor, Graph};
 use crate::error::{ErrorBody, ErrorCode};
 
 const COLUMNS: &str = "id, name, status, created_at, started_at, completed_at, heartbeat_at, \
-                       runner, runner_name, cancel_requested, problem, created_by, created_by_name, \
-                       sink_connection, folder, script, report";
+                       runner, runner_name, cancel_requested, problem, owner, owner_name, \
+                       created_by, created_by_name, sink_connection, folder, script, report";
 
 /// What the schema refused about `graph`, said in its terms.
 fn refused(graph: &Graph, e: rusqlite::Error) -> DbError {
@@ -31,7 +31,8 @@ pub fn insert(conn: &Connection, graph: &Graph) -> DbResult<()> {
     conn.execute(
         &format!(
             "INSERT INTO graphs ({COLUMNS})
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17)"
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17,
+                     ?18, ?19)"
         ),
         params![
             graph.id,
@@ -49,6 +50,8 @@ pub fn insert(conn: &Connection, graph: &Graph) -> DbResult<()> {
                 .as_ref()
                 .map(serde_json::to_string)
                 .transpose()?,
+            graph.owner.id,
+            graph.owner.name,
             graph.provenance.created_by.id,
             graph.provenance.created_by.name,
             graph.sink_connection,
@@ -208,12 +211,14 @@ fn row_to_graph(row: &rusqlite::Row<'_>) -> rusqlite::Result<Graph> {
         },
         cancel_requested: row.get("cancel_requested")?,
         problem: json_column_opt(row, "problem")?,
+        owner: owner_columns(row)?,
         provenance: created_columns(row)?,
         sink_connection: row.get("sink_connection")?,
         folder: row.get("folder")?,
         output: None,
         script: row.get("script")?,
         report: json_column_opt(row, "report")?,
+        can: Default::default(),
         can_modify: false,
         can_stop: false,
     })

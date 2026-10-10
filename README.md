@@ -200,9 +200,9 @@ forwards `/api/v1` to the server of the organization the request addresses
 Mappings run in the browser (DuckDB-WASM + `@fossil-lang/*`), and so does source
 introspection; the server hosts connections, vends credentials scoped to one prefix, graphs and the catalog,
 and never reads a data file. Every graph names a sink as its destination. The work
-is shared: everyone in the workspace reads every graph, and its creator or an admin
-changes it (roles `reader ⊂ editor ⊂ admin`, from the Keycloak organization the
-instance serves).
+is shared: everyone in the workspace reads every graph, every editor runs it, and its
+owner or an admin changes it (roles `reader ⊂ editor ⊂ admin`, from the Keycloak
+organization the instance serves; the matrix is `docs/design/permissions.md`).
 
 Models are not a credential. Every call goes to the platform's **AI gateway**
 (kanzo-ui's `services/ai`, agentgateway) under an alias (`chat`, `complete`), never a
@@ -268,7 +268,7 @@ pinned once, in `server/rust-toolchain.toml`.
 
 ## Demos
 
-Product demos are Playwright scripts in `e2e/demos/` that record instead of asserting, against
+Product demos are Playwright scripts in `e2e/demos/` that record a story and check each step of it, against
 the stack `make dev` and `make seed` bring up on :3000 (main checkout only, as for `make e2e`).
 
 ```sh
@@ -285,18 +285,26 @@ Playwright's frames into the MP4. The demos project runs Chromium on the GPU (Me
 
 `make demo` touches no container for a graph demo: Next's dev indicator and React Query's devtools
 are hidden in the recording's browser. A demo that asks the model (`snb-ask`) swaps the AI gateway onto
-`e2e/demos/models.yml` for the recording and puts the dev models back after.
+`e2e/demos/models.yml` for the recording and puts the dev models back after. Its model is replayed by
+default, from `e2e/demos/recordings/snb-ask.json`: the model's words are the recording's, and the tool
+it calls still runs on the page, so the figures on screen are the corpus's. `LIVE=1` asks the model
+instead, and `make demo DEMO=snb-ask LIVE=1 RECORD=1` captures a new recording, written only once every
+check of the take has passed (`e2e/demos/record/model.ts`).
 
 **Adding a demo** is a file `e2e/demos/<name>.demo.ts` calling `demo(name, description, { arrange,
-act })` from `e2e/demos/record/`; `make demo` lists it from that title. `arrange` gets the page
-ready off camera (`seedGraph` from `e2e/support/seeds.ts`, with `reuse`, finds or runs a dev
-example's graph); `act` is what is recorded, with
-`chapter(text)` for a subtitle saying what is happening (no title cards) and `poster()` where the
-still should be. The cursor is the page's own (`e2e/demos/record/cursor.ts`): an overlay injected
-into the recording's browser that follows the real pointer events, glides to each target before the
-action lands and rings where a button goes down. Every `Locator.click` and `dragTo`, and `page.mouse`
-moves (for a lasso or a brush drawn point by point), wait out that glide while a demo records, so the
-cursor arrives before the page answers. `snb-explore.demo.ts` is the worked example.
+steps })` from `e2e/demos/record/`, transcribed from its table in `e2e/demos/STORYBOARD.md`; `make demo`
+lists it from that title. `arrange` gets the page ready off camera (`seedGraph` from
+`e2e/support/seeds.ts`, with `reuse`, finds or runs a dev example's graph) and gets the page and its
+`@kanzo-tech/testing` environment, made before the page loads. Each step is a **subtitle**, an
+**action** — a call on keasy's page objects (`e2e/support/app/`) or the library's harnesses, brushes
+and lassos in data — and a **check**, so a take whose page did something else fails rather than
+recording it; `poster: true` takes the still after a step. No title cards. The subtitle leads its step
+and stays up for its reading time (`hold`, the only wait on a clock, and the viewer's). The cursor is the
+page's own (`e2e/demos/record/cursor.ts`): an overlay injected into the recording's browser that
+follows the real pointer events, glides to each target before the action lands and rings where a
+button goes down; while a demo records, every click, hover, fill (typed) and `page.mouse` gesture waits
+out that glide, so the cursor arrives before the page answers. `snb-explore.demo.ts` is the worked
+example. A demo whose example or feature is not on main yet says so in `skip`, and is listed but skipped.
 
 ## API contract
 

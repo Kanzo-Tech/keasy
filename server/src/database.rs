@@ -2,9 +2,11 @@
 //! its schema — one statement list.
 //!
 //! A fresh database gets the schema. An existing one must already hold exactly
-//! what the schema creates, or the server refuses to start. Schema changes are
-//! not migrated: a database of an earlier schema is refused, and changes by
-//! deleting the data volume.
+//! what the schema creates, or the server refuses to start. The one exception
+//! is the schema just before this one, which [`UPGRADE`] brings forward in
+//! place, its rows kept; anything older is refused, and changes by deleting
+//! the data volume. There is no chain of migrations: each change replaces the
+//! previous upgrade with its own.
 
 use std::path::Path;
 use std::str::FromStr;
@@ -134,6 +136,14 @@ pub(crate) fn created_columns(row: &rusqlite::Row<'_>) -> rusqlite::Result<Prove
     })
 }
 
+/// Who owns a row: `owner`, `owner_name`.
+pub(crate) fn owner_columns(row: &rusqlite::Row<'_>) -> rusqlite::Result<Actor> {
+    Ok(Actor {
+        id: row.get("owner")?,
+        name: row.get("owner_name")?,
+    })
+}
+
 /// [`created_columns`], and who changed the row last and when, if anyone has.
 pub(crate) fn provenance_columns(row: &rusqlite::Row<'_>) -> rusqlite::Result<Provenance> {
     let updated_by = match (
@@ -241,6 +251,10 @@ const SCHEMA: &str = "
 CREATE TABLE credentials (
     name            TEXT PRIMARY KEY,
     spec            BLOB NOT NULL,
+    -- Who owns it: a `sub`, or 'workspace' for what the instance declares.
+    -- What permissions read; who created it is kept apart, and never changes.
+    owner           TEXT NOT NULL,
+    owner_name      TEXT NOT NULL,
     created_by      TEXT NOT NULL,
     created_by_name TEXT NOT NULL,
     created_at      TEXT NOT NULL,
@@ -256,6 +270,10 @@ CREATE TABLE connections (
     credential      TEXT NOT NULL,
     target          TEXT NOT NULL CHECK (json_type(target) = 'object'),
     direction       TEXT GENERATED ALWAYS AS (json_extract(target, '$.direction')) VIRTUAL,
+    -- Who owns it: a `sub`, or 'workspace' for what the instance declares.
+    -- What permissions read; who created it is kept apart, and never changes.
+    owner           TEXT NOT NULL,
+    owner_name      TEXT NOT NULL,
     created_by      TEXT NOT NULL,
     created_by_name TEXT NOT NULL,
     created_at      TEXT NOT NULL,
@@ -284,6 +302,10 @@ CREATE TABLE graphs (
     runner_name     TEXT CHECK ((runner IS NULL) = (runner_name IS NULL)),
     cancel_requested INTEGER NOT NULL DEFAULT 0 CHECK (cancel_requested IN (0, 1)),
     problem         TEXT CHECK (problem IS NULL OR json_valid(problem)),
+    -- Who owns it: a `sub`, or 'workspace' for what the instance declares.
+    -- What permissions read; who created it is kept apart, and never changes.
+    owner           TEXT NOT NULL,
+    owner_name      TEXT NOT NULL,
     created_by      TEXT NOT NULL,
     created_by_name TEXT NOT NULL,
     sink_connection TEXT NOT NULL REFERENCES connections (name)
@@ -324,6 +346,164 @@ CREATE TABLE rules (
 );
 ";
 
+/// `credentials`, `connections` and `graphs` as the schema before this one
+/// made them: without an owner.
+const PREVIOUS: [&str; 3] = [
+    "CREATE TABLE credentials (
+    name            TEXT PRIMARY KEY,
+    spec            BLOB NOT NULL,
+    created_by      TEXT NOT NULL,
+    created_by_name TEXT NOT NULL,
+    created_at      TEXT NOT NULL,
+    updated_by      TEXT,
+    updated_by_name TEXT,
+    updated_at      TEXT,
+    validation      TEXT
+);",
+    "CREATE TABLE connections (
+    name            TEXT PRIMARY KEY,
+    credential      TEXT NOT NULL,
+    target          TEXT NOT NULL CHECK (json_type(target) = 'object'),
+    direction       TEXT GENERATED ALWAYS AS (json_extract(target, '$.direction')) VIRTUAL,
+    created_by      TEXT NOT NULL,
+    created_by_name TEXT NOT NULL,
+    created_at      TEXT NOT NULL,
+    updated_by      TEXT,
+    updated_by_name TEXT,
+    updated_at      TEXT,
+    validation      TEXT,
+    FOREIGN KEY (credential) REFERENCES credentials (name)
+        ON UPDATE CASCADE ON DELETE RESTRICT
+);",
+    "CREATE TABLE graphs (
+    id              TEXT PRIMARY KEY,
+    name            TEXT,
+    status          TEXT NOT NULL DEFAULT 'draft',
+    created_at      TEXT NOT NULL,
+    started_at      TEXT,
+    completed_at    TEXT,
+    -- The run's lease: taken by run and renewed by its runner; a running
+    -- graph whose lease has lapsed is swept to failed.
+    heartbeat_at    TEXT,
+    -- Who runs the graph, or ran it last: the only one whose reports count.
+    runner          TEXT CHECK (status <> 'running' OR runner IS NOT NULL),
+    runner_name     TEXT CHECK ((runner IS NULL) = (runner_name IS NULL)),
+    cancel_requested INTEGER NOT NULL DEFAULT 0 CHECK (cancel_requested IN (0, 1)),
+    problem         TEXT CHECK (problem IS NULL OR json_valid(problem)),
+    created_by      TEXT NOT NULL,
+    created_by_name TEXT NOT NULL,
+    sink_connection TEXT NOT NULL REFERENCES connections (name)
+        ON UPDATE CASCADE ON DELETE RESTRICT,
+    folder          TEXT CHECK (status = 'draft' OR folder IS NOT NULL),
+    script          TEXT,
+    -- fossil's run report, opaque. What the corpus holds, the corpus says.
+    report          TEXT CHECK (report IS NULL OR json_valid(report))
+);",
+];
+
+/// The statement of [`SCHEMA`] that begins `start`, through its `;`.
+fn statement(start: &str) -> &'static str {
+    let from = SCHEMA.find(start).expect("the schema holds the statement");
+    let to = from + SCHEMA[from..].find(";\n").expect("a statement ends") + 1;
+    &SCHEMA[from..to]
+}
+
+/// The tables [`PREVIOUS`] replaces, by the statement each begins with.
+const OWNED: [&str; 3] = [
+    "CREATE TABLE credentials (",
+    "CREATE TABLE connections (",
+    "CREATE TABLE graphs (",
+];
+
+/// The schema before this one, as a fresh database of it would hold it.
+fn previous_schema() -> String {
+    OWNED
+        .iter()
+        .zip(PREVIOUS)
+        .fold(SCHEMA.to_string(), |schema, (start, previous)| {
+            schema.replace(statement(start), previous)
+        })
+}
+
+/// From the previous schema to this one: `credentials`, `connections` and
+/// `graphs` gain an owner — whoever created each row, and the workspace for
+/// what the bootstrap declared. The old tables are moved aside rather than the
+/// new ones renamed into place, so each new statement is [`SCHEMA`]'s, word
+/// for word; `legacy_alter_table` keeps the moves from rewriting the
+/// references to them, and with foreign keys off the old tables go without
+/// taking their dependents with them.
+const UPGRADE: &str = "
+PRAGMA foreign_keys=OFF;
+PRAGMA legacy_alter_table=ON;
+BEGIN;
+DROP INDEX connections_one_sink;
+DROP INDEX graphs_one_folder;
+ALTER TABLE credentials RENAME TO credentials_previous;
+ALTER TABLE connections RENAME TO connections_previous;
+ALTER TABLE graphs RENAME TO graphs_previous;
+{credentials}
+{connections}
+{one_sink}
+{graphs}
+{one_folder}
+INSERT INTO credentials (name, spec, owner, owner_name, created_by, created_by_name, created_at,
+                         updated_by, updated_by_name, updated_at, validation)
+    SELECT name, spec, {owner}, {owner_name}, created_by, created_by_name, created_at,
+           updated_by, updated_by_name, updated_at, validation
+    FROM credentials_previous;
+INSERT INTO connections (name, credential, target, owner, owner_name, created_by,
+                         created_by_name, created_at, updated_by, updated_by_name, updated_at,
+                         validation)
+    SELECT name, credential, target, {owner}, {owner_name}, created_by,
+           created_by_name, created_at, updated_by, updated_by_name, updated_at, validation
+    FROM connections_previous;
+INSERT INTO graphs (id, name, status, created_at, started_at, completed_at, heartbeat_at, runner,
+                    runner_name, cancel_requested, problem, owner, owner_name, created_by,
+                    created_by_name, sink_connection, folder, script, report)
+    SELECT id, name, status, created_at, started_at, completed_at, heartbeat_at, runner,
+           runner_name, cancel_requested, problem, {owner}, {owner_name}, created_by,
+           created_by_name, sink_connection, folder, script, report
+    FROM graphs_previous;
+DROP TABLE graphs_previous;
+DROP TABLE connections_previous;
+DROP TABLE credentials_previous;
+COMMIT;
+PRAGMA legacy_alter_table=OFF;
+PRAGMA foreign_keys=ON;
+";
+
+/// [`UPGRADE`], its statements filled in from [`SCHEMA`] and its owner from
+/// [`Actor::as_owner`]'s rule.
+fn upgrade() -> String {
+    let (bootstrap, workspace) = (Actor::bootstrap(), Actor::workspace());
+    UPGRADE
+        .replace("{credentials}", statement(OWNED[0]))
+        .replace("{connections}", statement(OWNED[1]))
+        .replace("{graphs}", statement(OWNED[2]))
+        .replace(
+            "{one_sink}",
+            statement("CREATE UNIQUE INDEX connections_one_sink"),
+        )
+        .replace(
+            "{one_folder}",
+            statement("CREATE UNIQUE INDEX graphs_one_folder"),
+        )
+        .replace(
+            "{owner_name}",
+            &format!(
+                "CASE created_by WHEN '{}' THEN '{}' ELSE created_by_name END",
+                bootstrap.id, workspace.name
+            ),
+        )
+        .replace(
+            "{owner}",
+            &format!(
+                "CASE created_by WHEN '{}' THEN '{}' ELSE created_by END",
+                bootstrap.id, workspace.id
+            ),
+        )
+}
+
 /// Every table and index a fresh database of `schema` holds.
 fn objects_of(schema: &str) -> Result<Vec<(String, String)>, String> {
     rusqlite::Connection::open_in_memory()
@@ -334,8 +514,8 @@ fn objects_of(schema: &str) -> Result<Vec<(String, String)>, String> {
         .map_err(|e| format!("build expected schema: {e}"))
 }
 
-/// Create the schema in an empty database, or check that a non-empty one holds
-/// exactly it.
+/// Create the schema in an empty database, bring one of the previous schema
+/// forward, or check that a non-empty one holds exactly it.
 pub fn apply_schema(conn: &rusqlite::Connection) -> Result<(), String> {
     let existing = objects(conn).map_err(|e| format!("read schema: {e}"))?;
     if existing.is_empty() {
@@ -348,6 +528,24 @@ pub fn apply_schema(conn: &rusqlite::Connection) -> Result<(), String> {
     if existing == expected {
         return Ok(());
     }
+    if existing == objects_of(&previous_schema())? {
+        if let Err(e) = conn.execute_batch(&upgrade()) {
+            // A failed statement leaves the transaction open; nothing of it is kept.
+            let _ = conn
+                .execute_batch("ROLLBACK; PRAGMA legacy_alter_table=OFF; PRAGMA foreign_keys=ON;");
+            return Err(format!("upgrade the schema: {e}"));
+        }
+        let violations: i64 = conn
+            .query_row("SELECT count(*) FROM pragma_foreign_key_check", [], |r| {
+                r.get(0)
+            })
+            .map_err(|e| format!("check the upgrade: {e}"))?;
+        if violations > 0 {
+            return Err(format!("the upgrade left {violations} broken references"));
+        }
+        tracing::info!("schema upgraded: secrets, connections and graphs have an owner");
+    }
+    let existing = objects(conn).map_err(|e| format!("read schema: {e}"))?;
     if existing != expected {
         return Err(
             "the database was created by a different schema than this build's. \
@@ -388,6 +586,85 @@ mod tests {
             )
             .unwrap();
         assert_eq!(tables, 5);
+    }
+
+    /// A database of the previous schema is brought forward in place: every
+    /// row is kept, owned by who created it — what the bootstrap declared by
+    /// the workspace — and a graph's dashboard survives its table's rebuild.
+    #[test]
+    fn a_database_of_the_previous_schema_is_upgraded_with_its_rows() {
+        let conn = rusqlite::Connection::open_in_memory().unwrap();
+        conn.execute_batch("PRAGMA foreign_keys=ON;").unwrap();
+        conn.execute_batch(&previous_schema()).unwrap();
+        conn.execute_batch(
+            r#"
+            INSERT INTO credentials (name, spec, created_by, created_by_name, created_at)
+                VALUES ('seed', x'00', 'bootstrap', 'Bootstrap', 't'),
+                       ('mine', x'00', 'u-1', 'Ana', 't');
+            INSERT INTO connections (name, credential, target, created_by, created_by_name, created_at)
+                VALUES ('sink', 'seed', '{"direction":"sink"}', 'bootstrap', 'Bootstrap', 't'),
+                       ('data', 'mine', '{"direction":"source"}', 'u-1', 'Ana', 't');
+            INSERT INTO graphs (id, status, created_at, created_by, created_by_name, sink_connection, folder)
+                VALUES ('g', 'completed', 't', 'u-2', 'Bruno', 'sink', 'people');
+            INSERT INTO dashboards (graph_id, spec, created_by, created_by_name, created_at)
+                VALUES ('g', '{}', 'u-2', 'Bruno', 't');
+            "#,
+        )
+        .unwrap();
+
+        apply_schema(&conn).unwrap();
+        apply_schema(&conn).unwrap();
+
+        let owners = |table: &str| -> Vec<(String, String, String)> {
+            conn.prepare(&format!(
+                "SELECT owner, owner_name, created_by FROM {table} ORDER BY owner"
+            ))
+            .unwrap()
+            .query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))
+            .unwrap()
+            .collect::<rusqlite::Result<_>>()
+            .unwrap()
+        };
+        let row = |o: &str, n: &str, c: &str| (o.to_string(), n.to_string(), c.to_string());
+        assert_eq!(
+            owners("credentials"),
+            [
+                row("u-1", "Ana", "u-1"),
+                row("workspace", "Workspace", "bootstrap")
+            ],
+            "who created it is kept apart from who owns it"
+        );
+        assert_eq!(
+            owners("connections"),
+            [
+                row("u-1", "Ana", "u-1"),
+                row("workspace", "Workspace", "bootstrap")
+            ]
+        );
+        assert_eq!(owners("graphs"), [row("u-2", "Bruno", "u-2")]);
+        let sinks: i64 = conn
+            .query_row(
+                "SELECT count(*) FROM connections WHERE direction = 'sink'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(sinks, 1, "the generated column is computed again");
+        let foreign_keys: i64 = conn
+            .query_row("PRAGMA foreign_keys", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(foreign_keys, 1, "foreign keys are enforced again");
+        conn.execute("DELETE FROM graphs WHERE id = 'g'", [])
+            .unwrap();
+        let dashboards: i64 = conn
+            .query_row("SELECT count(*) FROM dashboards", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(dashboards, 0, "a dashboard still dies with its graph");
+        assert!(
+            conn.execute("DELETE FROM credentials WHERE name = 'mine'", [])
+                .is_err(),
+            "a used credential is still kept"
+        );
     }
 
     #[test]

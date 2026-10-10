@@ -133,29 +133,20 @@ export default function DiscoverPage({ params }: { params: Promise<{ id: string 
  */
 const GraphFailure = createContext<unknown>(undefined);
 
-/**
- * The Graph view: the canvas, and under it the timeline over the column Settings → Timeline chose,
- * in a strip of its own so the brush never covers the legend. With no column chosen `GraphTimeline`
- * draws nothing and the canvas takes the whole region.
- */
+/** The Graph view: the canvas, its toolbar and legend, and what it failed with. */
 function GraphRegion() {
   const failed = useGraphState((s) => s.status === "failed");
   const failure = use(GraphFailure);
   return (
-    <div className="absolute inset-0 flex flex-col">
-      <div className="relative min-h-0 flex-1">
-        <GraphCanvas className="absolute inset-0">
-          <GraphToolbar className="absolute end-2 top-2 z-10" />
-          <GraphLegend className="absolute start-2 bottom-2 z-10" />
-          <Show when={failed && failure !== undefined}>
-            <div className="absolute inset-0 z-20 grid place-items-center p-6">
-              <ProblemView className="w-full max-w-xl" error={failure} />
-            </div>
-          </Show>
-        </GraphCanvas>
-      </div>
-      <GraphTimeline className="shrink-0 border-t" />
-    </div>
+    <GraphCanvas className="absolute inset-0">
+      <GraphToolbar className="absolute end-2 top-2 z-10" />
+      <GraphLegend className="absolute start-2 bottom-2 z-10" />
+      <Show when={failed && failure !== undefined}>
+        <div className="absolute inset-0 z-20 grid place-items-center p-6">
+          <ProblemView className="w-full max-w-xl" error={failure} />
+        </div>
+      </Show>
+    </GraphCanvas>
   );
 }
 
@@ -267,16 +258,27 @@ function Workspace() {
           size={panelOpen ? sizes : [100, 0]}
         >
           <ResizablePanel className="relative min-w-0 overflow-hidden" id="canvas">
-            <ShellMain className="relative size-full min-h-0 bg-background">
-              {view === "graph" && <GraphRegion />}
-              {/* Hidden, not unmounted, in Graph view: its filters keep filtering the page and stay in
-                  the bar as they are drawn in Dashboard, and its charts ask nothing until it is
-                  shown again. */}
-              <MosaicClients enabled={view === "dashboard"}>
-                <div className="size-full min-h-0" hidden={view !== "dashboard"}>
-                  <DashboardView onRelationChange={setRelation} relation={relation} table={table} />
-                </div>
-              </MosaicClients>
+            <ShellMain className="flex size-full min-h-0 flex-col bg-background">
+              <div className="relative min-h-0 flex-1">
+                {view === "graph" && <GraphRegion />}
+                {/* Hidden, not unmounted, in Graph view: its filters keep filtering the page and stay
+                    in the bar as they are drawn in Dashboard, and its charts ask nothing until it is
+                    shown again. */}
+                <MosaicClients enabled={view === "dashboard"}>
+                  <div className="size-full min-h-0" hidden={view !== "dashboard"}>
+                    <DashboardView onRelationChange={setRelation} relation={relation} table={table} />
+                  </div>
+                </MosaicClients>
+              </div>
+              {/* The timeline over the column Settings → Timeline chose: the graph's, drawn under
+                  the canvas as Cosmograph draws it, where a dashboard brushes years with a chart of
+                  its own. Hidden, not unmounted, in Dashboard view: its window keeps filtering the
+                  page and stays in the bar as a chip to let go of, as the dashboard's filters do in
+                  Graph view. A strip of its own, so the brush never covers the legend; with no
+                  column chosen it draws nothing. */}
+              <div className="shrink-0" hidden={view !== "graph"}>
+                <GraphTimeline className="border-t" />
+              </div>
             </ShellMain>
           </ResizablePanel>
           <ResizableResizeTrigger hidden={!panelOpen} id="canvas:dock" withHandle />

@@ -3,8 +3,8 @@
 //! Every operation declares the least role it admits as its security
 //! requirement (`security(("bearer" = ["editor"]))`), so the table is the
 //! contract itself and a route added without one fails here, not in review.
-//! What depends on the request rather than the route — the sink is an admin's,
-//! a graph is changed by its creator or an admin — is `ownership.rs`.
+//! What depends on the object rather than the route — the sink is an admin's,
+//! a graph is changed by its owner or an admin — is `permissions.rs`.
 
 use axum::http::{Method, StatusCode};
 

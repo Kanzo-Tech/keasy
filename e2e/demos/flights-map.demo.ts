@@ -1,49 +1,84 @@
+import { expect } from "@playwright/test";
+import type { Point } from "@kanzo-tech/testing";
+
+import { DiscoverPage } from "../support/app";
 import { seedGraph } from "../support/seeds";
-import { hideEdges, openGraphView, pauseLayout, placeOnMap, showPanel } from "./geo";
 import { demo } from "./record";
 
 /**
- * OpenFlights put on a map: the airports moving as the force layout spreads them, then Placement → Map
- * with x = lon and y = lat on camera, so the moving cloud snaps into the world. Then one country
- * searched into the subset. Off camera the layout spreads the cloud and is paused, so Settings opens
- * at once, and the 36.9K routes are hidden so the points read; on camera it is woken to move again.
- * The demos project runs Chromium on the GPU (playwright.config.ts).
+ * The Iberian peninsula in lon/lat, the Map placement's own axes. It follows the Portuguese border
+ * and the Pyrenees and takes in the Balearics, so it catches 31 airports, every one of them Spanish:
+ * 28 on the peninsula, Palma, Ibiza and Menorca. Of the 40 in Spain it leaves out the 8 Canaries and
+ * Melilla, and no airport of Portugal, France, Andorra, Gibraltar or Morocco is inside (point in
+ * polygon over airports.csv; STORYBOARD.md has the query). A box is no substitute: −10…5 × 35…44.5
+ * catches 57, 13 of them in France.
  */
-demo("flights-map", "OpenFlights put on a map: the force layout's scatter, then longitude and latitude, then one country", {
-  async arrange(page) {
-    await openGraphView(page, await seedGraph(page, "openflights", { name: "Demo · OpenFlights", reuse: true }));
-    // eslint-disable-next-line playwright/no-wait-for-timeout -- replaced by @kanzo-tech/testing in part 2
-    await page.waitForTimeout(6000);
-    await pauseLayout(page);
-    await showPanel(page, "Settings");
-    await hideEdges(page);
-    await showPanel(page, "Info");
-    // eslint-disable-next-line playwright/no-wait-for-timeout -- replaced by @kanzo-tech/testing in part 2
-    await page.waitForTimeout(800);
+const PENINSULA: Point[] = [
+  [-9.5, 44], [-1.7, 43.6], [-1.5, 43.2], [3.3, 42.3], [4.6, 40.2], [4.6, 38.5], [0.5, 38.3],
+  [-2, 36.5], [-5.2, 36.3], [-6.4, 36.4], [-7.4, 37.3], [-7.3, 38.5], [-6.6, 40.5], [-6.6, 41.8],
+  [-8.2, 41.9], [-9.3, 41.9],
+];
+
+/** Frames the force layout draws off camera before it is paused: enough to spread the cloud. Tuned once per machine. */
+const SPREAD = 300;
+
+/**
+ * Hidden patterns: OpenFlights moving as the force layout spreads it, then put on a map on camera
+ * (x = lon, y = lat), so the moving cloud snaps into the world; then every airport in Spain searched
+ * into the subset, the peninsula lassoed, and the camera framed on what was kept. Off camera the
+ * layout spreads the cloud and is paused, and the 36.9K routes are hidden so the points read. The
+ * demos project runs Chromium on the GPU (playwright.config.ts).
+ */
+demo("flights-map", "OpenFlights put on a map: the force layout's scatter, then longitude and latitude, then Spain lassoed", {
+  async arrange({ page, env }) {
+    const id = await seedGraph(page, "openflights", { name: "Demo · OpenFlights", reuse: true });
+    const discover = await DiscoverPage.open(page, env, id);
+    const graph = await discover.graph();
+    await graph.ready();
+    await graph.run();
+    await env.until(async () => (await graph.frames()) > SPREAD, "the layout did not spread the cloud");
+    await graph.pause();
+    const settings = await discover.settings();
+    await settings.marks("Legible");
+    await settings.edges("Hidden");
+    await settings.labels("None");
+    await discover.panel("Info");
+    return { discover, graph, settings, bar: await discover.filters() };
   },
 
-  async act({ page, chapter, poster }) {
-    // Woken, so the cloud is moving when the map takes over.
-    await page.getByRole("button", { name: /^(Resume|Run) the layout$/ }).click();
-    await chapter("A graph of airports, spread by its links");
-
-    await chapter("Put it on a map: longitude across, latitude up");
-    await placeOnMap(page);
-    await pauseLayout(page);
-    // eslint-disable-next-line playwright/no-wait-for-timeout -- replaced by @kanzo-tech/testing in part 2
-    await page.waitForTimeout(1300);
-    await poster();
-
-    await chapter("Find anything — here, every airport in Spain");
-    await showPanel(page, "Info");
-    await page.getByRole("button", { name: /Find anything in the graph/ }).click();
-    await page.getByPlaceholder("Find anything in the graph…").pressSequentially("country:Spain", { delay: 60 });
-    await page.getByRole("button", { name: /^Add \d[\d,]* to the subset/ }).click({ timeout: 30_000 });
-    // eslint-disable-next-line playwright/no-wait-for-timeout -- replaced by @kanzo-tech/testing in part 2
-    await page.waitForTimeout(1400);
-
-    await chapter("The map keeps only what you picked");
-    // eslint-disable-next-line playwright/no-wait-for-timeout -- replaced by @kanzo-tech/testing in part 2
-    await page.waitForTimeout(1200);
-  },
+  steps: ({ discover, graph, settings, bar }) => [
+    {
+      subtitle: "A graph of airports, spread by its routes",
+      // Woken, so the cloud is moving when the map takes over.
+      action: () => graph.run(),
+      check: () => expect.poll(() => graph.counts()).toMatch(/\b(3,218|3\.2K) nodes\b/),
+    },
+    {
+      subtitle: "Put it on a map: longitude across, latitude up",
+      async action() {
+        await discover.panel("Settings");
+        await settings.placement("Map", { x: "lon", y: "lat" });
+        await graph.pause();
+      },
+      // `placement` resolves once Map is checked and both axes read their columns.
+      check: () => expect.poll(() => graph.frames()).toBeGreaterThan(SPREAD),
+      poster: true,
+    },
+    {
+      subtitle: "Find anything — here, every airport in Spain",
+      action: async () => (await discover.search()).add("country:Spain", 40),
+      check: () => expect.poll(() => bar.readout()).toMatch(/^40 of 3,218\b/),
+    },
+    {
+      subtitle: "Lasso the peninsula — the Canaries stay out",
+      action: () => graph.lasso(PENINSULA, { in: "data" }),
+      check: () => expect.poll(() => bar.readout()).toMatch(/^31 of 3,218\b/),
+    },
+    {
+      subtitle: "Frame what you kept",
+      // Resolves on a frame drawn after the press: the camera moved onto what is in full colour.
+      action: () => graph.frame(),
+      check: () => expect.poll(() => bar.readout()).toMatch(/^31 of 3,218\b/),
+    },
+  ],
 });

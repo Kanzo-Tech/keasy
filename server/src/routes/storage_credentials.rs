@@ -11,7 +11,8 @@ use serde::Deserialize;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use crate::authentication::role::{Reader, Role};
+use crate::authentication::permission::Action;
+use crate::authentication::role::Reader;
 use crate::domain::{Access, VendedCredentials};
 use crate::error::{ErrorBody, Refusal};
 use crate::startup::AppState;
@@ -68,18 +69,22 @@ pub async fn vend(
         let key = state.db.secret_key();
         match req.scope {
             Scope::Connection(name) => {
-                caller.require(Role::Editor)?;
+                let source = crate::connections::source(&conn, &name)?;
+                caller.ensure(Action::Use, &source)?;
                 if access != Access::Read {
                     return Err(Refusal::invalid("a source is read, never written"));
                 }
-                let source = crate::connections::source(&conn, &name)?;
                 crate::connections::storage(&conn, key, &source)?
             }
             Scope::Graph(id) => {
-                if access == Access::Write {
-                    caller.require(Role::Editor)?;
-                }
                 let graph = crate::graphs::any(&conn, &id)?;
+                // Reading a completed output uses the graph; writing one is
+                // its run, operated by its runner alone.
+                let action = match access {
+                    Access::Read => Action::Use,
+                    Access::Write => Action::Operate,
+                };
+                caller.ensure(action, &graph)?;
                 graph.may(access, &caller)?;
                 crate::graphs::output(&conn, key, &graph)?
             }

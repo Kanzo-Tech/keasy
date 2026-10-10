@@ -11,7 +11,6 @@ import {
   EmptyIndicator,
   EmptyRoot,
   EmptyTitle,
-  MenuItem,
   SectionBody,
   SectionRoot,
   Skeleton,
@@ -35,13 +34,16 @@ import {
 } from "@kanzo-tech/ui/table";
 import { Link, useRouter } from "@kanzo-tech/navigation/next";
 import { useSession } from "@kanzo-tech/auth";
+import { BlockedMenuItem } from "@/components/blocked";
 import { CreatedBy } from "@/components/provenance";
 import { ValidationBadge } from "@/components/validation-badge";
 import { $api, invalidate } from "@/lib/api/client";
 import type { Connection } from "@/lib/connections";
 import { toastError } from "@/lib/errors";
+import { blocked } from "@/lib/permissions";
 import { Boundary, Loading } from "@/components/boundary";
 import { settled } from "@/lib/api/settled";
+import { PAGE_TABLE_HEIGHT } from "@/lib/ui/table-heights";
 
 /** A tab: a storage connection's kind. */
 type Tab = "data" | "vocab";
@@ -142,24 +144,31 @@ function Connections({ tab }: { tab: Tab }) {
       },
       actionsColumn<Connection>({
         label: (row) => `Actions for ${row.original.name}`,
+        // A reader is offered nothing here. An editor tests any connection — testing operates it,
+        // as on a seeded one — and is shown Delete disabled, with who may, on one they do not manage.
         menu: (row) =>
-          row.original.can_modify ? (
+          editor ? (
             <>
-              <MenuItem onSelect={() => validate({ params: { path: { name: row.original.name } } })} value="validate">
+              <BlockedMenuItem
+                onSelect={() => validate({ params: { path: { name: row.original.name } } })}
+                reason={blocked(row.original, "operate", "connection")}
+                value="validate"
+              >
                 Test
-              </MenuItem>
-              <MenuItem
+              </BlockedMenuItem>
+              <BlockedMenuItem
                 onSelect={() => remove({ params: { path: { name: row.original.name } } })}
+                reason={blocked(row.original, "manage", "connection")}
                 value="delete"
                 variant="destructive"
               >
                 Delete
-              </MenuItem>
+              </BlockedMenuItem>
             </>
           ) : null,
       }),
     ],
-    [remove, validate],
+    [editor, remove, validate],
   );
   const table = useDataTable({ columns, data: connections });
 
@@ -199,6 +208,8 @@ function Connections({ tab }: { tab: Tab }) {
         </div>
       </DataTableToolbar>
       <DataTableContent<Connection>
+        maxHeight={PAGE_TABLE_HEIGHT}
+        stickyHeader
         empty="No connections match this filter."
         onRowClick={(conn) => router.push(`/connections/${encodeURIComponent(conn.name)}`)}
       />

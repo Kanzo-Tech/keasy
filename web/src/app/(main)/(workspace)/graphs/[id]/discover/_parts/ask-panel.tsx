@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useMemo } from "react";
-import { experimental_streamedQuery as streamedQuery, useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Sparkles } from "lucide-react";
 import { count, Query } from "@uwdata/mosaic-sql";
 import { useChartQuery, useClauses, useMosaic, type JoinGraph } from "@kanzo-tech/ui/analytics";
@@ -14,6 +14,7 @@ import { settled } from "@/lib/api/settled";
 import { coded } from "@/lib/errors";
 import { corpusKey, ONCE, useCorpus, useJoinGraph, useVertices } from "@/lib/fossil/corpus";
 import { useDashboardStore } from "./dashboard-store";
+import { startersQuery } from "./starters";
 
 /**
  * The Ask panel — `@kanzo-tech/ai/data` over the graph: `readAnswerRelations` over the corpus's join
@@ -74,10 +75,10 @@ function useStarters(graph: JoinGraph, relations: readonly AnswerRelation[]) {
   useClauses(crossfilter);
   const starters = useQuery({
     queryKey: [...corpusKey(graphId), "starters", String(crossfilter.predicate(null) ?? "")],
-    queryFn: streamedQuery({
-      streamFn: ({ signal }) =>
-        dataSuggestions({ model: gateway("complete"), graph, relations, selection: crossfilter, abortSignal: signal }),
-    }),
+    // Each request replaces the last, and one cut short by a filter change leaves nothing behind.
+    queryFn: startersQuery(({ signal }) =>
+      dataSuggestions({ model: gateway("complete"), graph, relations, selection: crossfilter, abortSignal: signal }),
+    ),
     staleTime: Infinity,
     retry: false,
   });

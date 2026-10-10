@@ -1,4 +1,5 @@
 import { DiscoverPage, saveDashboard } from "../support/app";
+import { discoverUrl } from "../support/fixtures";
 import { agreedCount, expect, test } from "../support/smoke";
 
 /**
@@ -30,10 +31,12 @@ const DASHBOARD = {
   ],
 };
 
-test("the social network opens in Graph view with every vertex", async ({ page, env, snbGraph }) => {
-  const discover = await DiscoverPage.open(page, env, snbGraph);
-  // 341.7K nodes on a software GPU: the counts are read off the footer, not after the canvas has drawn.
-  await expect.poll(() => discover.counts(), { timeout: 120_000 }).toMatch(/^341\.7K nodes · /);
+test("the social network opens in Graph view with every vertex", async ({ page, snbGraph }) => {
+  await page.goto(discoverUrl(snbGraph));
+  // 341.7K nodes on a software GPU hold the page's main thread for tens of seconds at a time, so a
+  // harness's round trips (find, then read, polled) get two tries in two minutes. One web-first
+  // assertion retries inside the page instead; the counts are read off the footer, not the canvas.
+  await expect(page.locator('[data-slot="graph-counts"]')).toHaveText(/^341\.7K nodes · /, { timeout: 120_000 });
 });
 
 test("the social network's dashboard over a hop draws every tile kind, and holds under a brush and a filter chip", async ({ page, env, snbGraph }) => {

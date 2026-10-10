@@ -143,6 +143,9 @@ export function demo<T>(name: string, description: string, { arrange, steps, pas
         encode(frames, shot, `${file}.mp4`);
         writeFileSync(`${file}.chapters.json`, `${JSON.stringify(chapters, null, 2)}\n`);
       } finally {
+        // A request still routed when the take ends (a model's suggestions, streaming) would throw from
+        // its handler once the context is gone, and fail the next take: the routes go first.
+        await page.unrouteAll({ behavior: "ignoreErrors" });
         // A failed take leaves nothing behind: its frames are hundreds of JPEGs.
         await context.close();
         rmSync(frames, { recursive: true, force: true });

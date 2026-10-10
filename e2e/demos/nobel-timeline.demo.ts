@@ -31,6 +31,8 @@ demo("nobel-timeline", "Nobel prizes on a timeline: brush the early years, play 
     // Each award at its first affiliation's city, the edges hidden: the prizes are dots on the map.
     const graph = await discover.onMap();
     await (await discover.settings()).timeline("date");
+    // The settings leave the dock to Info, as on the other maps.
+    await discover.panel("Info");
     const timeline = await env.harness(TimelineHarness.with({ title: /^Timeline: / }));
     return { discover, graph, timeline, bar: await discover.filters() };
   },

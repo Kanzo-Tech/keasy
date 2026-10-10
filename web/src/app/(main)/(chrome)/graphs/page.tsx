@@ -43,6 +43,7 @@ import { Boundary, Loading } from "@/components/boundary";
 import { GRAPH_COLUMNS } from "@/components/graph-columns";
 import { settled } from "@/lib/api/settled";
 import { useSession } from "@kanzo-tech/auth";
+import { PAGE_TABLE_HEIGHT } from "@/lib/ui/table-heights";
 
 type Graph = Schemas["Graph"];
 type GraphStatus = Schemas["GraphStatus"];
@@ -151,6 +152,8 @@ function Graphs() {
           </div>
         </DataTableToolbar>
         <DataTableContent<Graph>
+          maxHeight={PAGE_TABLE_HEIGHT}
+          stickyHeader
           empty={`No ${lower(WORDS.graphs)} match this filter.`}
           // One home per graph: its page, a draft's included; the recipe editor is reached from there.
           onRowClick={(graph) => router.push(`/graphs/${graph.id}`)}

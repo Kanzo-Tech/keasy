@@ -42,6 +42,7 @@ import type { Connection } from "@/lib/connections";
 import { toastError } from "@/lib/errors";
 import { Boundary, Loading } from "@/components/boundary";
 import { settled } from "@/lib/api/settled";
+import { PAGE_TABLE_HEIGHT } from "@/lib/ui/table-heights";
 
 /** A tab: a storage connection's kind. */
 type Tab = "data" | "vocab";
@@ -199,6 +200,8 @@ function Connections({ tab }: { tab: Tab }) {
         </div>
       </DataTableToolbar>
       <DataTableContent<Connection>
+        maxHeight={PAGE_TABLE_HEIGHT}
+        stickyHeader
         empty="No connections match this filter."
         onRowClick={(conn) => router.push(`/connections/${encodeURIComponent(conn.name)}`)}
       />

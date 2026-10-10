@@ -78,11 +78,22 @@ pub struct Claims {
 }
 
 /// One organization's entry: Keycloak writes into it the role mappings of the
-/// person's groups there (`addGroupRoleMappings`), composites expanded.
+/// person's groups there (`addGroupRoleMappings`), composites expanded; and
+/// the platform's Organization Group Ids mapper, the ids of those groups.
 #[derive(Debug, Clone, Default, serde::Deserialize)]
 pub struct OrgClaim {
     #[serde(default)]
     pub resource_access: HashMap<String, RoleSet>,
+    /// The ids of the person's groups here, ancestors included. A value that
+    /// begins with `/` is a group's path, which Keycloak's own mapper writes
+    /// when the platform's is not configured: never read, so that case is no
+    /// groups rather than names compared with ids.
+    #[serde(default, deserialize_with = "group_ids")]
+    pub groups: Vec<String>,
+    /// Microsoft Entra ID's overage rule: the person is in more groups here
+    /// than the token carries, and `groups` is empty and means nothing.
+    #[serde(default)]
+    pub groups_overage: bool,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize)]
@@ -105,6 +116,14 @@ impl Claims {
             .to_string()
     }
 
+    /// The ids of this person's groups in organization `alias`, and whether
+    /// the token left some out (Entra ID's overage) — `None` when they do not
+    /// belong to it.
+    pub fn org_groups(&self, alias: &str) -> Option<(&[String], bool)> {
+        let org = self.organization.get(alias)?;
+        Some((org.groups.as_slice(), org.groups_overage))
+    }
+
     /// The roles this person holds in organization `alias`, in application
     /// `client_id` — `None` when they do not belong to it. Another
     /// organization's roles, or another application's, authorize nothing here.
@@ -117,6 +136,23 @@ impl Claims {
                 .unwrap_or_default(),
         )
     }
+}
+
+/// An organization's `groups`, ids only: a path, or anything but a string, is
+/// left out rather than refusing the entry — and with it the roles beside it.
+fn group_ids<'de, D>(deserializer: D) -> Result<Vec<String>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let value = <serde_json::Value as serde::Deserialize>::deserialize(deserializer)?;
+    Ok(match value {
+        serde_json::Value::Array(values) => values
+            .into_iter()
+            .filter_map(|v| v.as_str().map(str::to_string))
+            .filter(|id| !id.starts_with('/'))
+            .collect(),
+        _ => vec![],
+    })
 }
 
 /// The `organization` claim, read in both shapes Keycloak emits: an object
@@ -542,6 +578,36 @@ mod tests {
             None,
             "the top-level resource_access grants nothing"
         );
+    }
+
+    /// The platform's mapper writes ids; Keycloak's own, paths — never read.
+    /// A malformed list loses the groups and keeps the roles beside them.
+    #[test]
+    fn groups_are_read_per_organization_by_id_never_by_path() {
+        let claims: Claims = serde_json::from_value(serde_json::json!({
+            "sub": "u-1",
+            "organization": {
+                "acme": {
+                    "groups": ["939de696", "/Research", 7, "4e2b3f51"],
+                    "resource_access": { "keasy": { "roles": ["editor"] } }
+                },
+                "globex": { "groups_overage": true },
+                "initech": {
+                    "groups": "939de696",
+                    "resource_access": { "keasy": { "roles": ["reader"] } }
+                }
+            }
+        }))
+        .unwrap();
+        let ids = ["939de696", "4e2b3f51"].map(String::from);
+        assert_eq!(claims.org_groups("acme"), Some((ids.as_slice(), false)));
+        assert_eq!(claims.org_groups("globex"), Some(([].as_slice(), true)));
+        assert_eq!(claims.org_groups("initech"), Some(([].as_slice(), false)));
+        assert_eq!(
+            claims.org_roles("initech", "keasy"),
+            Some(["reader".to_string()].as_slice())
+        );
+        assert_eq!(claims.org_groups("umbrella"), None);
     }
 
     #[test]

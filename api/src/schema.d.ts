@@ -123,6 +123,39 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/connections/{name}/grants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Who else manages the connection. Every editor already uses it. */
+        put: operations["share_connection"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/connections/{name}/owner": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["transfer_connection"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/connections/{name}/validate": {
         parameters: {
             query?: never;
@@ -190,6 +223,42 @@ export interface paths {
         get: operations["get_dashboard"];
         /** The dashboard is the graph's: who may change the graph may save it. */
         put: operations["put_dashboard"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/graphs/{id}/grants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Who else manages the graph, its rules and its dashboard. Every reader
+         *     already reads it, and every editor runs it.
+         */
+        put: operations["share_graph"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/graphs/{id}/owner": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["transfer_graph"];
         post?: never;
         delete?: never;
         options?: never;
@@ -343,6 +412,43 @@ export interface paths {
         patch: operations["update_secret"];
         trace?: never;
     };
+    "/v1/secrets/{name}/grants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Who else manages the secret, and who may build a connection on it. */
+        put: operations["share_secret"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/secrets/{name}/owner": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Its previous owner keeps nothing by having owned it, as in Unity Catalog:
+         *     what they still need, the new owner grants them.
+         */
+        put: operations["transfer_secret"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/secrets/{name}/validate": {
         parameters: {
             query?: never;
@@ -434,10 +540,17 @@ export interface components {
          *     response: the interface draws what this says and does not re-derive it.
          */
         Can: {
-            /** @description Change, rename or delete it; a graph's rules and dashboard. */
+            /** @description Change, rename or delete it; a graph's rules and dashboard; share it. */
             manage: boolean;
             /** @description Test it, or run it (again). */
             operate: boolean;
+            /** @description Give it to someone else to own. */
+            transfer: boolean;
+            /**
+             * @description Build on it: a secret in a connection. Every editor uses a connection
+             *     and reads a graph's output, so the interface reads this for secrets.
+             */
+            use: boolean;
         };
         Check: {
             message?: string | null;
@@ -448,19 +561,18 @@ export interface components {
         ConnectionKind: "data" | "vocab";
         ConnectionView: components["schemas"]["Provenance"] & {
             /**
-             * @description What the caller may do to it: test it (any editor; the sink, an admin)
-             *     and manage it (its owner or an admin; the sink, an admin).
+             * @description What the caller may do to it: test it (any editor; the sink, an admin),
+             *     manage it (its owner, a manager or an admin; the sink, an admin) and
+             *     give it away (its owner or an admin; the sink, no one).
              */
             can: components["schemas"]["Can"];
-            /**
-             * @deprecated
-             * @description `can.manage`, under its old name.
-             */
-            can_modify?: boolean;
+            /** @description Who else manages it. Never any on the sink. */
+            grants: components["schemas"]["Grant"][];
             name: string;
             /**
              * @description Who owns it: its creator, or the workspace for what the instance
-             *     declares. Its owner or an admin manages it; the sink is an admin's.
+             *     declares. Its owner, its managers or an admin manages it; the sink is
+             *     an admin's.
              */
             owner: components["schemas"]["Actor"];
             secret: string;
@@ -580,6 +692,29 @@ export interface components {
             /** @description More objects lie under the prefix than were listed. */
             truncated: boolean;
         };
+        /** @description One grant on an object. */
+        Grant: {
+            granted_at: string;
+            /** @description Who granted it, and when. */
+            granted_by: components["schemas"]["Actor"];
+            principal: components["schemas"]["Principal"];
+            relation: components["schemas"]["Relation"];
+        };
+        /** @description One grant, as the Share dialog asks for it. */
+        GrantRequest: {
+            /**
+             * @description A person, by `sub`, or one of the organization's groups, by its
+             *     Keycloak id — and the name the directory gave it, kept for people to
+             *     read and never compared.
+             */
+            principal: components["schemas"]["Principal"];
+            /** @description `manager` on anything but the sink; `user` on a secret only. */
+            relation: components["schemas"]["Relation"];
+        };
+        /** @description The object's grants, all of them: what is left out is revoked. */
+        GrantsRequest: {
+            grants: components["schemas"]["GrantRequest"][];
+        };
         Graph: components["schemas"]["Provenance"] & {
             /**
              * @description What the caller may do to it: run it (again) — any editor — and manage
@@ -587,11 +722,6 @@ export interface components {
              *     interface draws what this says and does not re-derive it.
              */
             can: components["schemas"]["Can"];
-            /**
-             * @deprecated
-             * @description `can.manage`, under its old name.
-             */
-            can_modify?: boolean;
             /**
              * @description Whether the caller may stop the run under way — its runner, the
              *     graph's owner or an admin — worked out for each response; false when
@@ -607,6 +737,11 @@ export interface components {
             completed_at?: string | null;
             folder?: null | components["schemas"]["GraphFolder"];
             /**
+             * @description Who else manages it: people and groups, granted by its owner, a
+             *     manager or an admin.
+             */
+            grants?: components["schemas"]["Grant"][];
+            /**
              * @description The run's lease: taken by `run`, renewed by every `running` its runner
              *     reports. A running graph whose lease lapses is swept as `graph/abandoned`.
              */
@@ -619,8 +754,8 @@ export interface components {
              */
             output?: string | null;
             /**
-             * @description Who owns the graph — with an admin, the one who may change or delete
-             *     it, and its rules and dashboard. Its creator, to begin with.
+             * @description Who owns the graph — with its managers and an admin, who may change or
+             *     delete it, and its rules and dashboard. Its creator, to begin with.
              */
             owner: components["schemas"]["Actor"];
             /**
@@ -681,6 +816,26 @@ export interface components {
         Operation: "list" | "write" | "delete";
         /** @enum {string} */
         Outcome: "pass" | "fail" | "skip";
+        OwnerRequest: {
+            id: string;
+            /** @description Required for a person; ignored for the workspace. */
+            name?: string | null;
+        };
+        /**
+         * @description A grantee, by id — a person's `sub` or a group's Keycloak id, what
+         *     authorization compares — and by the name it had when it was granted, for
+         *     people to read.
+         */
+        Principal: {
+            id: string;
+            kind: components["schemas"]["PrincipalKind"];
+            name: string;
+        };
+        /**
+         * @description Who a grant is to: a person, or one of the organization's Keycloak groups.
+         * @enum {string}
+         */
+        PrincipalKind: "user" | "group";
         /**
          * @description Who created a resource and when, and who changed it last and when — absent
          *     until someone has.
@@ -706,6 +861,11 @@ export interface components {
              */
             shapes: string;
         };
+        /**
+         * @description What a grant gives.
+         * @enum {string}
+         */
+        Relation: "manager" | "user";
         /** @description A credential's, a connection's or a graph's name: no leading or trailing whitespace, and no `/`, `@`, `\` or control character. */
         ResourceName: string;
         /**
@@ -800,19 +960,21 @@ export interface components {
         };
         SecretView: components["schemas"]["Provenance"] & {
             /**
-             * @description What the caller may do to it: test it (any editor) and manage it (its
-             *     owner or an admin). Its value is never returned to anyone.
+             * @description What the caller may do to it: use it in a connection (by a grant),
+             *     test it (any editor), manage it (its owner, a manager or an admin)
+             *     and give it away (its owner or an admin). Its value is never returned
+             *     to anyone.
              */
             can: components["schemas"]["Can"];
             /**
-             * @deprecated
-             * @description `can.manage`, under its old name.
+             * @description Who else manages it, and who may use it: what the workspace does not
+             *     own, an editor uses only by a grant.
              */
-            can_modify?: boolean;
+            grants: components["schemas"]["Grant"][];
             name: string;
             /**
              * @description Who owns it: its creator, or the workspace for what the instance
-             *     declares. Its owner or an admin manages it.
+             *     declares. Its owner, its managers or an admin manages it.
              */
             owner: components["schemas"]["Actor"];
             spec: components["schemas"]["SecretSpecView"];
@@ -843,6 +1005,13 @@ export interface components {
             dark: components["schemas"]["ThemeChoice"];
             family: string;
             light: components["schemas"]["ThemeChoice"];
+        };
+        /**
+         * @description Who is to own the object: a person, by `sub` and name, or the workspace
+         *     (`{ "id": "workspace" }`).
+         */
+        TransferRequest: {
+            owner: components["schemas"]["OwnerRequest"];
         };
         UpdateConnectionRequest: {
             name?: null | components["schemas"]["ResourceName"];
@@ -1302,6 +1471,114 @@ export interface operations {
             };
         };
     };
+    share_connection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Connection name */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GrantsRequest"];
+            };
+        };
+        responses: {
+            /** @description Shared as asked: the connection with its grants */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionView"];
+                };
+            };
+            /** @description A grant the connection cannot hold — any on the sink (`data.field` = `grants`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Neither its owner, a manager nor an admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No such connection */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    transfer_connection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Connection name */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferRequest"];
+            };
+        };
+        responses: {
+            /** @description Given away: the connection under its new owner */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionView"];
+                };
+            };
+            /** @description No owner named (`data.field` = `owner`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Neither its owner nor an admin; the sink, no one */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No such connection */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
     validate_connection: {
         parameters: {
             query?: never;
@@ -1625,6 +1902,114 @@ export interface operations {
             };
             /** @description The spec is larger than a dashboard may be */
             413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    share_graph: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Graph ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GrantsRequest"];
+            };
+        };
+        responses: {
+            /** @description Shared as asked: the graph with its grants */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Graph"];
+                };
+            };
+            /** @description A grant the graph cannot hold (`data.field` = `grants`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Neither its owner, a manager nor an admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Graph not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    transfer_graph: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Graph ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferRequest"];
+            };
+        };
+        responses: {
+            /** @description Given away: the graph under its new owner */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Graph"];
+                };
+            };
+            /** @description No owner named (`data.field` = `owner`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Neither its owner nor an admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Graph not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2169,6 +2554,114 @@ export interface operations {
             };
             /** @description The store did not answer the probe in time */
             504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    share_secret: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Secret name */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GrantsRequest"];
+            };
+        };
+        responses: {
+            /** @description Shared as asked: the secret with its grants */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SecretView"];
+                };
+            };
+            /** @description A grant the secret cannot hold (`data.field` = `grants`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Neither its owner, a manager nor an admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No such secret */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    transfer_secret: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Secret name */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferRequest"];
+            };
+        };
+        responses: {
+            /** @description Given away: the secret under its new owner */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SecretView"];
+                };
+            };
+            /** @description No owner named (`data.field` = `owner`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Neither its owner nor an admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description No such secret */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

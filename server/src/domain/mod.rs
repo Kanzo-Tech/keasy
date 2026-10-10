@@ -1,6 +1,7 @@
 mod connection;
 mod credential;
 mod dashboard;
+mod grant;
 mod graph;
 mod graph_folder;
 mod provenance;
@@ -14,6 +15,7 @@ mod vended;
 pub use connection::*;
 pub use credential::*;
 pub use dashboard::Dashboard;
+pub use grant::{Grant, Principal, PrincipalKind, Relation};
 pub use graph::*;
 pub use graph_folder::GraphFolder;
 pub use provenance::{Actor, Provenance, WORKSPACE};

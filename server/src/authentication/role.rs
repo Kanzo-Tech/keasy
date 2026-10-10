@@ -116,6 +116,9 @@ pub struct Caller {
     /// Their display name, kept with what they write. Never logged.
     pub name: String,
     pub roles: Roles,
+    /// The ids of the Keycloak groups they are in, in this organization: what
+    /// a grant to a group is compared with.
+    pub groups: Vec<String>,
 }
 
 impl Caller {
@@ -156,6 +159,7 @@ fn admit(parts: &Parts, min: Role) -> Result<Caller, Refusal> {
         user_id: user.user_id.clone(),
         name: user.name.clone(),
         roles: user.roles,
+        groups: user.groups.clone(),
     };
     caller.require(min)?;
     Ok(caller)
@@ -237,6 +241,7 @@ mod tests {
                             user_id: "u-1".to_string(),
                             name: "Ana Duarte".to_string(),
                             roles: held,
+                            groups: vec![],
                         });
                     }
                     next.run(request).await

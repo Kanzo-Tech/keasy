@@ -5,20 +5,30 @@ use rusqlite::{Connection, OptionalExtension, params};
 
 use super::sealing::{self, SecretKey};
 use crate::database::{
-    DbError, DbResult, constraint, json_column_opt, owner_columns, provenance_columns,
+    DbError, DbResult, constraint, grants_column, grants_of, json_column_opt, owner_columns,
+    provenance_columns,
 };
 use crate::domain::{
-    Actor, Credential, Provenance, ResourceName, SecretSpec, SecretView, ValidationReport,
+    Actor, Credential, Grant, Provenance, ResourceName, SecretSpec, SecretView, ValidationReport,
 };
 
 const COLUMNS: &str = "name, spec, owner, owner_name, created_by, created_by_name, created_at, \
                        updated_by, updated_by_name, updated_at, validation";
+
+/// [`COLUMNS`], and each row's grants.
+fn select() -> String {
+    format!(
+        "SELECT {COLUMNS}, {} FROM credentials",
+        grants_of("credentials", "secret", "name")
+    )
+}
 
 /// A row, still sealed.
 struct Row {
     name: String,
     spec: Vec<u8>,
     owner: Actor,
+    grants: Vec<Grant>,
     provenance: Provenance,
     validation: Option<ValidationReport>,
 }
@@ -28,6 +38,7 @@ fn row(r: &rusqlite::Row<'_>) -> rusqlite::Result<Row> {
         name: r.get("name")?,
         spec: r.get("spec")?,
         owner: owner_columns(r)?,
+        grants: grants_column(r)?,
         provenance: provenance_columns(r)?,
         validation: json_column_opt(r, "validation")?,
     })
@@ -39,6 +50,7 @@ impl Row {
             spec: sealing::open_spec(&self.name, &self.spec, key).map_err(DbError::Secret)?,
             name: self.name,
             owner: self.owner,
+            grants: self.grants,
             provenance: self.provenance,
             validation: self.validation,
         })
@@ -89,20 +101,16 @@ pub fn insert(
 }
 
 pub fn get(conn: &Connection, key: &SecretKey, name: &str) -> DbResult<Option<Credential>> {
-    conn.query_row(
-        &format!("SELECT {COLUMNS} FROM credentials WHERE name = ?1"),
-        [name],
-        row,
-    )
-    .optional()?
-    .map(|r| r.open(key))
-    .transpose()
+    conn.query_row(&format!("{} WHERE name = ?1", select()), [name], row)
+        .optional()?
+        .map(|r| r.open(key))
+        .transpose()
 }
 
 /// Every credential, each with the connections that use it.
 pub fn list(conn: &Connection, key: &SecretKey) -> DbResult<Vec<SecretView>> {
     let rows = conn
-        .prepare(&format!("SELECT {COLUMNS} FROM credentials ORDER BY name"))?
+        .prepare(&format!("{} ORDER BY name", select()))?
         .query_map([], row)?
         .collect::<rusqlite::Result<Vec<_>>>()?;
     rows.into_iter()

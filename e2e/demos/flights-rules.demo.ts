@@ -8,7 +8,8 @@ import { demo } from "./record";
  * Assessment: the rules over OpenFlights, already loaded and checked — the findings read, every
  * airport that breaks a rule shown on the map, then the high-altitude ones, framed. Off camera the
  * example's rules (`infra/dev/examples/openflights/rules.ttl`) are saved as the graph's, the graph is
- * placed on a map with its 36.9K routes hidden, and the dock is widened so the findings' columns fit.
+ * placed on a map with its 36.9K routes hidden, and the dock is collapsed: the rules are the filter
+ * bar's badge, and their findings its popover.
  * The Graph view lays out on the GPU: record on a machine with one.
  *
  * Step 2 needs keasy#127 (*Show all N violations*): until it is merged, the take fails there.
@@ -17,10 +18,11 @@ demo("flights-rules", "Rules over OpenFlights on the map: the findings, every vi
   async arrange({ page, env }) {
     const id = await seedGraph(page, "openflights", { name: "Demo · OpenFlights", reuse: true });
     await saveRules(page, id, "openflights");
-    const discover = await DiscoverPage.open(page, env, id, { panel: "rules" });
+    const discover = await DiscoverPage.open(page, env, id, { panel: "none" });
     const graph = await discover.onMap();
+    // The map at full width: the placement was set in Settings, and the findings are the badge's.
+    await (await discover.dock()).close();
     const rules = await discover.rules();
-    await discover.widenDock(280);
     // rudof in the browser over 3,218 airports: the environment's two minutes cover it.
     expect(await rules.checked()).toMatch(/^Checked over all 3,218 nodes$/);
     return { graph, airport: await rules.rule("Airport") };
@@ -29,7 +31,7 @@ demo("flights-rules", "Rules over OpenFlights on the map: the findings, every vi
   steps: ({ graph, airport }) => [
     {
       subtitle: "Every airport, checked against your rules",
-      check: async () => expect(await airport.state()).toBe("2 violations · 2 warnings"),
+      check: async () => expect(await airport.state()).toBe("44 violations · 247 warnings"),
     },
     {
       subtitle: "44 airports break a rule — show them all",

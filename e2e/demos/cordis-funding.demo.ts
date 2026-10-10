@@ -39,7 +39,7 @@ demo("cordis-funding", "EU research funding over CORDIS: who gets Horizon Europe
     const id = await seedGraph(page, "cordis", { name: "Demo · CORDIS Horizon Europe", reuse: true });
     await saveRules(page, id, "cordis");
     await saveDashboard(page, id, RELATION, DASHBOARD);
-    const discover = await DiscoverPage.open(page, env, id, { view: "dashboard", panel: "rules" });
+    const discover = await DiscoverPage.open(page, env, id, { view: "dashboard" });
     await discover.relation("OrganisationRole", [">isRoleOf>Organisation"]);
     const dashboard = await discover.dashboard();
     const rules = await discover.rules();

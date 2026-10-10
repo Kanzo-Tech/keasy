@@ -1,6 +1,7 @@
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-import { discoverUrl } from "../support/fixtures";
+import { DiscoverPage } from "../support/app";
 import { expect, test } from "../support/smoke";
 
 /**
@@ -18,49 +19,44 @@ test("the funding graph opens in Graph view: every project, organisation and par
   await expect(page.locator('[data-slot="graph-counts"]')).toHaveText(/^206\.6K nodes · 316\.8K edges$/, { timeout: 120_000 });
 });
 
-test("the funding rules find what the seed lacks: countries and SME status, and flag zero costs, unplaced organisations and ended participations", async ({ page, cordisGraph }) => {
-  // Opened beside the dashboard (#116's ?view and ?panel), as the flights rules are: the Graph view
-  // never mounts. Landing in it and clicking across left 206K nodes laying out on the CPU rudof needs,
-  // and the check that takes ~4 s beside the dashboard had not ended after 23 min.
-  await page.goto(discoverUrl(cordisGraph, { view: "dashboard", panel: "rules" }));
-  // infra/dev/examples/cordis/rules.ttl, dropped on the panel as a person drops it.
-  await page.locator('input[type="file"]').setInputFiles(fileURLToPath(new URL("../../infra/dev/examples/cordis/rules.ttl", import.meta.url)));
-  await expect(page.getByText("Checked over all 206,629 nodes")).toBeVisible({ timeout: 240_000 });
+test("the funding rules find what the seed lacks: countries and SME status, and flag zero costs, unplaced organisations and ended participations", async ({ page, env, cordisGraph }) => {
+  // Opened in the dashboard (#116's ?view), as the flights rules are: the Graph view never mounts.
+  // Landing in it and clicking across left 206K nodes laying out on the CPU rudof needs, and the
+  // check that takes ~4 s beside the dashboard had not ended after 23 min.
+  const discover = await DiscoverPage.open(page, env, cordisGraph, { view: "dashboard" });
+  const rules = await discover.rules();
+  // infra/dev/examples/cordis/rules.ttl, dropped on the badge as a person drops it.
+  await rules.drop("rules.ttl", readFileSync(fileURLToPath(new URL("../../infra/dev/examples/cordis/rules.ttl", import.meta.url)), "utf8"));
+  await expect.poll(() => rules.checked(), { timeout: 240_000 }).toMatch(/^Checked over all 206,629 nodes/);
 
-  const rule = (name: string) => page.getByRole("region", { name, exact: true });
-  const finding = (name: string, message: string) => rule(name).locator('[data-slot="diagnostic"]').filter({ hasText: message });
+  const expectFinding = async (rule: string, message: string, severity: "Violation" | "Warning", flagged: number) => {
+    const finding = await (await rules.rule(rule)).finding(message);
+    expect(await finding.severity(), message).toBe(severity);
+    expect(await finding.flagged(), message).toBe(flagged);
+  };
 
   // projects.csv: 12,525 rows whose `totalCost` is 0, a warning. Nothing else: every status is one
   // CORDIS uses, every EU contribution is above 0 and every project has its call topic.
-  await expect(rule("Project").locator('[data-slot="diagnostic"]')).toHaveCount(1);
-  const zeroCost = finding("Project", "The project declares a total cost of 0: its EU contribution is above it.");
-  await expect(zeroCost).toContainText("Warning");
-  await expect(zeroCost.getByRole("button", { name: "Show 12,525" })).toBeVisible();
+  expect(await (await rules.rule("Project")).findings()).toHaveLength(1);
+  await expectFinding("Project", "The project declares a total cost of 0: its EU contribution is above it.", "Warning", 12_525);
 
   // organisations.csv: 5 rows with an empty `country` and one whose `country` is `DE;HU`; 1,675 with
   // no `lat`, a warning.
-  await expect(rule("Organisation").locator('[data-slot="diagnostic"]')).toHaveCount(3);
-  await expect(finding("Organisation", "An organisation is registered in a country.")).toContainText("Violation");
-  await expect(finding("Organisation", "An organisation is registered in a country.").getByRole("button", { name: "Show 5" })).toBeVisible();
-  await expect(finding("Organisation", "A country is one two-letter code.")).toContainText("Violation");
-  await expect(finding("Organisation", "A country is one two-letter code.").getByRole("button", { name: "Show 1" })).toBeVisible();
-  await expect(finding("Organisation", "The organisation has no position: it is not on the map.")).toContainText("Warning");
-  await expect(finding("Organisation", "The organisation has no position: it is not on the map.").getByRole("button", { name: "Show 1,675" })).toBeVisible();
-  await expect(rule("Organisation").getByLabel("2 violations")).toBeVisible();
-  await expect(rule("Organisation").getByLabel("1 warnings")).toBeVisible();
+  const organisation = await rules.rule("Organisation");
+  expect(await organisation.findings()).toHaveLength(3);
+  await expectFinding("Organisation", "An organisation is registered in a country.", "Violation", 5);
+  await expectFinding("Organisation", "A country is one two-letter code.", "Violation", 1);
+  await expectFinding("Organisation", "The organisation has no position: it is not on the map.", "Warning", 1_675);
+  expect(await organisation.state()).toBe("6 violations · 1,675 warnings");
 
   // participations.csv: 356 rows with an empty `sme`; 3,164 whose `ended` is true, a warning. Every
   // role is one CORDIS uses, every amount is non-negative, and every participation has one
   // organisation and one project.
-  await expect(rule("OrganisationRole").locator('[data-slot="diagnostic"]')).toHaveCount(2);
-  const sme = finding("OrganisationRole", "A participation says whether the organisation is an SME.");
-  await expect(sme).toContainText("Violation");
-  await expect(sme.getByRole("button", { name: "Show 356" })).toBeVisible();
-  const ended = finding("OrganisationRole", "The organisation's participation has ended.");
-  await expect(ended).toContainText("Warning");
-  await expect(ended.getByRole("button", { name: "Show 3,164" })).toBeVisible();
+  expect(await (await rules.rule("OrganisationRole")).findings()).toHaveLength(2);
+  await expectFinding("OrganisationRole", "A participation says whether the organisation is an SME.", "Violation", 356);
+  await expectFinding("OrganisationRole", "The organisation's participation has ended.", "Warning", 3_164);
 
   // Show puts the finding's organisations on the page.
-  await finding("Organisation", "An organisation is registered in a country.").getByRole("button", { name: "Show 5" }).click();
-  await expect(page.locator('[data-slot="graph-counts"]')).toHaveText(/^5 of 206\.6K nodes match/);
+  expect(await organisation.show("An organisation is registered in a country.")).toBe(5);
+  await expect.poll(() => discover.counts()).toMatch(/^5 of 206\.6K nodes match/);
 });

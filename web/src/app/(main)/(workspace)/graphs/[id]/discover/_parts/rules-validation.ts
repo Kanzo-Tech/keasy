@@ -4,7 +4,8 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { and, column, count, createTable, type ExprNode, isIn, literal, Query, sql, TableRefNode } from "@uwdata/mosaic-sql";
 import { engine, numbers, useClauses, useCrossfilter, useMosaic } from "@kanzo-tech/ui/analytics";
 import { usePick } from "@kanzo-tech/graph";
-import type { LangString, Shapes, ShapeModelJson, TermValue, ValidationReport } from "@kanzo-tech/rudof-wasm";
+import type { RdfFindingGroup, RdfFindingGroups, Shapes, ShapeModelJson, TermValue } from "@kanzo-tech/rudof-wasm";
+import { type FindingSeverity, type FindingTally, tallyFindings } from "@kanzo-tech/ui";
 import { corpusKey, useCorpus, useGraphKey, useVertices } from "@/lib/fossil/corpus";
 
 /**
@@ -51,12 +52,13 @@ export function useReadRules(text: string) {
   return { rules: read.data, failure: read.error ?? undefined };
 }
 
-/** The place the Rules panel picks from: its findings and what conforms are one clause on the page. */
+/** The place the rules' badge picks from: its findings and what conforms are one clause on the page. */
 const PICK = "rules";
 
 /** What the rules were checked over: the subset's vertices, of all of them. */
 export interface Checked {
-  report: ValidationReport;
+  /** rudof's findings, grouped in Rust: a corpus with many results crosses to JavaScript as its groups. */
+  findings: RdfFindingGroups;
   inScope: number;
   total: number;
 }
@@ -97,10 +99,12 @@ export function useRules(rules: ReadRules | undefined) {
     queryKey: [...corpusKey(graphId), "rules", "report", rules?.shapes, subset ?? ""],
     queryFn: async ({ signal }): Promise<Checked> => {
       const { attachedTo, focus } = await prepared(signal);
-      const report = await rules!.shapes.validate({ table: triples, focus, engine: attachedTo, signal });
+      // Worded in the reader's languages, preferred first; untagged when none of them is there.
+      const languages = typeof navigator === "undefined" ? [] : [...navigator.languages];
+      const findings = await rules!.shapes.validateGroups({ table: triples, focus, engine: attachedTo, signal, languages });
       const counted = Query.from(vertices).select({ total: count(), inScope: predicate.length ? count().where(and(...predicate)) : count() });
       const answer = await attachedTo.query(String(counted), { signal });
-      return { report, inScope: Number(answer.getChild("inScope")?.get(0)), total: Number(answer.getChild("total")?.get(0)) };
+      return { findings, inScope: Number(answer.getChild("inScope")?.get(0)), total: Number(answer.getChild("total")?.get(0)) };
     },
     enabled: rules !== undefined,
     placeholderData: keepPreviousData,
@@ -140,101 +144,65 @@ export function useRules(rules: ReadRules | undefined) {
   };
 }
 
-/** One finding: a constraint of a rule, and the focus nodes that fail it. */
-export interface Finding {
-  id: string;
-  variant: "destructive" | "warning" | "info";
-  message: string;
-  where: string;
-  nodes: string[];
-}
-
-/** A rule — a node shape — and what the report says of it. */
+/**
+ * A rule — a node shape — and the groups of findings filed under it: rudof's groups, each a
+ * constraint of the shape at one path and one severity, the worst and largest first.
+ */
 export interface Rule {
   id: string;
   name: string;
-  checks: string;
   off: boolean;
   /** Why rudof did not check it, in rudof's words. */
   unchecked?: string;
-  findings: Finding[];
+  groups: RdfFindingGroup[];
+  tally: FindingTally;
 }
-
-const VARIANT: Record<string, Finding["variant"]> = {
-  "http://www.w3.org/ns/shacl#Violation": "destructive",
-  "http://www.w3.org/ns/shacl#Warning": "warning",
-};
 
 /** The last segment of an IRI: what a reader calls the type or the property. */
 const local = (iri: string) => iri.slice(Math.max(iri.lastIndexOf("#"), iri.lastIndexOf("/")) + 1) || iri;
-
-/** The message in the reader's language, else the engine's own, untagged. */
-function wordOf(messages: LangString[]): string | undefined {
-  const languages = typeof navigator === "undefined" ? [] : navigator.languages;
-  for (const language of [...languages, ""]) {
-    const found = messages.find((m) => m.language === language);
-    if (found) return found.value;
-  }
-  return messages[0]?.value;
-}
 
 /** A shape's node as `model()` names it: its IRI, or `_:` and the label of a blank node. */
 const shapeId = (node: TermValue) => (node.termType === "BlankNode" ? `_:${node.value}` : node.value);
 
 /**
- * The report filed under the rules it came from. A result's `sourceShape` is the node of a node
- * shape or of one of its property shapes, so each finds its rule by that node's id.
+ * The groups filed under the rules they came from. A group's `sourceShape` is the node of a node
+ * shape or of one of its property shapes, so each finds its rule by that node's id. rudof's order —
+ * worst, then largest — holds within a rule.
  */
-export function rulesOf(model: ShapeModelJson, report: ValidationReport): Rule[] {
+export function rulesOf(model: ShapeModelJson, checked: RdfFindingGroups): Rule[] {
   const owner = new Map<string, Rule>();
   const rules = model.nodeShapes.map((shape) => {
     const rule: Rule = {
       id: shape.id,
       name: shape.targetClasses.map(local).join(", ") || local(shape.id),
-      checks: shape.properties.map((p) => local(p.pathKey.replace(/[<>]/g, ""))).join(" · "),
       off: Boolean(shape.deactivated),
-      findings: [],
+      groups: [],
+      tally: tallyFindings([]),
     };
     owner.set(shape.id, rule);
     for (const property of shape.properties) owner.set(property.id, rule);
     return rule;
   });
-  for (const { shape, reason } of report.unchecked) {
+  for (const { shape, reason } of checked.unchecked) {
     const rule = owner.get(shapeId(shape));
     if (rule) rule.unchecked = reason;
   }
-  const found = new Map<string, Finding>();
-  for (const result of report.results) {
-    const shape = result.sourceShape ? shapeId(result.sourceShape) : "";
-    const rule = owner.get(shape);
-    if (!rule) continue;
-    const component = result.sourceConstraintComponent ?? "";
-    const id = `${shape}|${component}|${result.pathKey ?? ""}`;
-    let finding = found.get(id);
-    if (!finding) {
-      finding = {
-        id,
-        variant: VARIANT[result.resultSeverity] ?? "info",
-        message: wordOf(result.resultMessage) ?? local(component),
-        where: [rule.name, result.pathKey && local(result.pathKey.replace(/[<>]/g, "")), local(component).replace(/ConstraintComponent$/, "")]
-          .filter(Boolean)
-          .join(" · "),
-        nodes: [],
-      };
-      found.set(id, finding);
-      rule.findings.push(finding);
-    }
-    finding.nodes.push(result.focusNode.value);
+  for (const group of checked.groups) {
+    const rule = group.sourceShape && owner.get(shapeId(group.sourceShape));
+    if (rule) rule.groups.push(group);
   }
-  const worst = (f: Finding) => ["destructive", "warning", "info"].indexOf(f.variant);
-  for (const rule of rules) rule.findings.sort((a, b) => worst(a) - worst(b) || b.nodes.length - a.nodes.length);
+  for (const rule of rules) rule.tally = tallyFindings(rule.groups);
   return rules;
 }
 
+/** Every rule's tally, summed: what the badge reads. */
+export const tallyOf = (rules: readonly Rule[]): FindingTally => tallyFindings(rules.flatMap((rule) => rule.groups));
+
 /**
- * The focus nodes of a rule's findings of one severity, each once: a node that fails two of its
- * constraints is one vertex on the page.
+ * The focus nodes of groups, each once: a node that fails two constraints is one vertex on the page.
+ * `severity` keeps the groups of one severity, as a rule's *Show all N violations* does.
  */
-export function nodesOf(rule: Rule, variant: Finding["variant"]): string[] {
-  return [...new Set(rule.findings.filter((f) => f.variant === variant).flatMap((f) => f.nodes))];
+export function nodesOf(groups: readonly RdfFindingGroup[], severity?: FindingSeverity): string[] {
+  const kept = severity ? groups.filter((group) => group.severity === severity) : groups;
+  return [...new Set(kept.flatMap((group) => group.places.map((place) => place.focus.value)))];
 }

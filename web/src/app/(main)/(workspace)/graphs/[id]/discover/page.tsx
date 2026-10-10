@@ -8,7 +8,6 @@ import {
   MessageCircleIcon,
   NetworkIcon,
   Settings2Icon,
-  ShieldCheckIcon,
   XIcon,
 } from "lucide-react";
 import {
@@ -57,7 +56,7 @@ import { DashboardStoreProvider } from "./_parts/dashboard-store";
 import { CorpusProvider, useCorpus, useJoinGraph } from "@/lib/fossil/corpus";
 import { GraphInfo } from "./_parts/graph-info";
 import { GraphSettings } from "./_parts/graph-settings";
-import { RulesPanel } from "./_parts/rules-panel";
+import { RulesBadge } from "./_parts/rules-badge";
 import { useDiscoverState, type PanelId, type ViewId } from "./_parts/discover-url";
 import { Boundary } from "@/components/boundary";
 import { ProblemView } from "@/components/problem-view";
@@ -66,10 +65,10 @@ import { toastError } from "@/lib/errors";
 /**
  * Discovery, composed as kanzo-ui's `workspace` showcase: the header picks what `ShellMain` shows
  * (Graph · Dashboard), the footer's `ShellDockSwitcher` picks which panel the dock holds (Info · Ask ·
- * Rules · Settings) and collapses it when the active icon is pressed again. Both views and every
- * panel read one graph and one crossfilter, so a lasso on the canvas filters the dashboard and a rule
- * pressed in the dock lights the canvas. `FilterBar`, under the header, is every clause on the page
- * and the dashboard's filters, in either view, without a readout. The
+ * Settings) and collapses it when the active icon is pressed again. Both views and every panel read
+ * one graph and one crossfilter, so a lasso on the canvas filters the dashboard and a rule shown from
+ * the rules' badge lights the canvas. `FilterBar`, under the header, is every clause on the page and
+ * the dashboard's filters, in either view, without a readout, and ends with the rules' badge. The
  * saved dashboard is the page's (`./_parts/dashboard-store`), because the Ask panel adds answers to
  * it. A dashboard tile is edited in the Format aside at the body's end edge, beside the dock rather
  * than in it, so the panel the reader had open stays open. The view and the dock's panel are the
@@ -86,14 +85,12 @@ const DashboardView = dynamic(() => import("./_parts/dashboard-view"), {
 const PANELS = [
   { id: "info", label: "Info", icon: InfoIcon },
   { id: "ask", label: "Ask", icon: MessageCircleIcon },
-  { id: "rules", label: "Rules", icon: ShieldCheckIcon },
   { id: "settings", label: "Settings", icon: Settings2Icon },
 ] as const satisfies readonly { id: PanelId; label: string; icon: React.ComponentType }[];
 
 const PANEL_BODY: Record<PanelId, React.ComponentType> = {
   info: GraphInfo,
   ask: AskPanel,
-  rules: RulesPanel,
   settings: GraphSettings,
 };
 
@@ -239,7 +236,12 @@ function Workspace() {
 
       {/* The dashboard's filters stay in the bar to change in either view: the dashboard filters the
           graph while it is hidden. No readout: the dashboard's count tile and the footer count. */}
-      <FilterBar className="shrink-0 border-b px-3 py-1.5" />
+      <FilterBar className="shrink-0 border-b px-3 py-1.5">
+        {/* The rules' tally, after the filters: read in either view, its findings in its popover. */}
+        <Boundary fallback={<Skeleton className="h-5 w-24" />}>
+          <RulesBadge />
+        </Boundary>
+      </FilterBar>
 
       <ShellBody className="min-w-0">
         <Resizable

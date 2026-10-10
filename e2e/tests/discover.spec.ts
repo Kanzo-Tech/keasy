@@ -19,8 +19,10 @@ test("02 a graph that has not completed opens in discover as graph/not-completed
   await expectProblem(page, "graph/not-completed", { within: 10_000 });
 });
 
-test("17 a rules file rudof cannot read is rules/refused in the Rules panel, and nothing is saved", async ({ page, env, corpusGraph }) => {
-  const rules = await (await DiscoverPage.open(page, env, corpusGraph, { panel: "rules" })).rules();
+test("17 a rules file rudof cannot read is rules/refused in the rules' popover, and nothing is saved", async ({ page, env, corpusGraph }) => {
+  const rules = await (await DiscoverPage.open(page, env, corpusGraph)).rules();
+  expect(await rules.tally()).toBe("No rules");
+  await rules.open();
   // Dropped as a person drops it: the server reads it with rudof and refuses it where Turtle stops.
   await rules.drop("broken.ttl", "@prefix sh: <http://www.w3.org/ns/shacl#> .\n<#S> a sh:NodeShape ;\n  sh:path .\n");
   await expectProblem(page, "rules/refused", { within: 20_000 });
@@ -43,21 +45,21 @@ test("the tile editor is the Dashboard view's: Graph view hides it, and its draf
 });
 
 test("the view and the dock's panel are the URL's: a link opens them, and pressing them writes it", async ({ page, env, corpusGraph }) => {
-  const rules = page.getByRole("complementary", { name: "Rules panel" });
-  const discover = await DiscoverPage.open(page, env, corpusGraph, { view: "dashboard", panel: "rules" });
+  const settings = page.getByRole("complementary", { name: "Settings panel" });
+  const discover = await DiscoverPage.open(page, env, corpusGraph, { view: "dashboard", panel: "settings" });
   const [views, dock] = [await discover.views(), await discover.dock()];
   expect(await views.current()).toBe("Dashboard");
-  expect(await dock.current()).toBe("Rules");
+  expect(await dock.current()).toBe("Settings");
 
   // Graph keeps the panel the dock holds; the URL names only what differs from the bare page.
   await discover.view("Graph");
-  await expect(page).toHaveURL(/\/discover\?panel=rules$/);
-  await expect(rules).toBeVisible();
+  await expect(page).toHaveURL(/\/discover\?panel=settings$/);
+  await expect(settings).toBeVisible();
 
   // Pressing the panel the dock holds collapses it, and a reload opens the page as it was left.
   await dock.close();
   await expect(page).toHaveURL(/\/discover\?panel=none$/);
-  await expect(rules).toBeHidden();
+  await expect(settings).toBeHidden();
   await page.reload();
   // The hook is installed again on every load: the environment outlives the reload.
   expect(await (await discover.views()).current()).toBe("Graph");
@@ -74,14 +76,16 @@ test("the view and the dock's panel are the URL's: a link opens them, and pressi
 });
 
 test("rules are validated over the corpus's triples: what fails, what conforms, and over the page's subset", async ({ page, env, corpusGraph }) => {
-  const discover = await DiscoverPage.open(page, env, corpusGraph, { panel: "rules" });
+  const discover = await DiscoverPage.open(page, env, corpusGraph);
   const rules = await discover.rules();
-  // The suite's own rules over its fixtures (e2e/fixtures/vocab/shop.ttl), dropped as a person drops them.
+  // The suite's own rules over its fixtures (e2e/fixtures/vocab/shop.ttl), dropped on the badge's popover as a person drops them.
   await rules.drop("shop.ttl", readFileSync(new URL("../fixtures/vocab/shop.ttl", import.meta.url), "utf8"));
 
   // Over the whole corpus: the two people outside GB and US break the Person rule; every order
   // keeps its own.
   await expect.poll(() => rules.checked(), { timeout: 30_000 }).toMatch(/^Checked over all 20 nodes/);
+  // The badge reads the tally in either view: here, the two people.
+  await expect.poll(() => rules.tally()).toBe("2 violations");
   const shipping = await (await rules.rule("Person")).finding("Ships only to GB and US");
   const order = await rules.rule("Order");
   await expect.poll(() => order.state()).toBe("In order");

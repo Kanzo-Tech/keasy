@@ -3,20 +3,21 @@ import { useSearchParams } from "next/navigation";
 
 /**
  * What Discovery shows is in its URL, so a link opens it as it was left: `?view=` is the main
- * region (`graph` · `dashboard`) and `?panel=` what the dock holds (`info` · `ask` · `rules` ·
- * `settings`), or `none` while it is collapsed.
+ * region (`graph` · `dashboard`) and `?panel=` what the dock holds (`info` · `ask` · `settings`), or
+ * `none` while it is collapsed. The rules were a panel and are the filter bar's badge now, so an old
+ * `?panel=rules` reads as absent.
  *
  * A parameter that is absent is the view's default, and the URL carries only what differs from it:
  * Graph view with Info in the dock is the bare `/graphs/{id}/discover`, and a dashboard, judged at full
  * width, opens with the dock collapsed. So `?view=dashboard` is the dashboard alone, `?panel=none`
- * the graph alone, and `?view=dashboard&panel=rules` the dashboard beside its rules. A value the page
+ * the graph alone, and `?view=dashboard&panel=ask` the dashboard beside Ask. A value the page
  * does not know is read as absent.
  */
 
 export const VIEW_IDS = ["graph", "dashboard"] as const;
 export type ViewId = (typeof VIEW_IDS)[number];
 
-export const PANEL_IDS = ["info", "ask", "rules", "settings"] as const;
+export const PANEL_IDS = ["info", "ask", "settings"] as const;
 export type PanelId = (typeof PANEL_IDS)[number];
 
 /** What the dock holds: a panel, or `none` while it is collapsed. */

@@ -2,7 +2,9 @@ use crate::authentication::permission::{Action, Can, Kind, Securable};
 use crate::authentication::role::Caller;
 use serde::{Deserialize, Serialize};
 
-use super::{Access, Actor, GraphFolder, Provenance, ResourceName, StorageLocation, now_iso8601};
+use super::{
+    Access, Actor, Grant, GraphFolder, Provenance, ResourceName, StorageLocation, now_iso8601,
+};
 use crate::error::{ErrorCode, Refusal};
 
 #[derive(
@@ -69,9 +71,13 @@ pub struct Graph {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[schema(value_type = Option<Value>)]
     pub problem: Option<serde_json::Value>,
-    /// Who owns the graph — with an admin, the one who may change or delete
-    /// it, and its rules and dashboard. Its creator, to begin with.
+    /// Who owns the graph — with its managers and an admin, who may change or
+    /// delete it, and its rules and dashboard. Its creator, to begin with.
     pub owner: Actor,
+    /// Who else manages it: people and groups, granted by its owner, a
+    /// manager or an admin.
+    #[serde(default)]
+    pub grants: Vec<Grant>,
     /// Who created the graph, and when. Taken from the token, never the body.
     #[serde(flatten)]
     pub provenance: Provenance,
@@ -79,10 +85,6 @@ pub struct Graph {
     /// it — its owner or an admin. Worked out for each response: the
     /// interface draws what this says and does not re-derive it.
     pub can: Can,
-    /// `can.manage`, under its old name.
-    #[serde(default)]
-    #[schema(deprecated)]
-    pub can_modify: bool,
     /// Whether the caller may stop the run under way — its runner, the
     /// graph's owner or an admin — worked out for each response; false when
     /// nothing runs.
@@ -134,6 +136,7 @@ impl Graph {
             cancel_requested: false,
             problem: None,
             owner: created_by.as_owner(),
+            grants: vec![],
             provenance: Provenance::created(created_by),
             sink_connection,
             folder: folder.map(GraphFolder::into_inner),
@@ -141,7 +144,6 @@ impl Graph {
             script: Some(script),
             report: None,
             can: Can::default(),
-            can_modify: false,
             can_stop: false,
             id,
         }
@@ -257,7 +259,6 @@ impl Graph {
     /// filled in.
     pub fn seen_by(mut self, caller: &Caller) -> Self {
         self.can = caller.can(&self);
-        self.can_modify = self.can.manage;
         self.can_stop = self.may_stop(caller);
         self
     }
@@ -300,6 +301,10 @@ impl Securable for Graph {
 
     fn owner(&self) -> &Actor {
         &self.owner
+    }
+
+    fn grants(&self) -> &[Grant] {
+        &self.grants
     }
 }
 
@@ -373,6 +378,7 @@ mod tests {
             user_id: sub.into(),
             name: sub.into(),
             roles: Roles::from_claim([role]),
+            groups: vec![],
         }
     }
 

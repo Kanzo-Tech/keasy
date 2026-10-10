@@ -21,6 +21,9 @@ pub struct AuthenticatedUser {
     /// [`Claims::display_name`]: super::token::Claims::display_name
     pub name: String,
     pub roles: Roles,
+    /// The ids of their groups in this organization, for the grants made to
+    /// a group.
+    pub groups: Vec<String>,
 }
 
 /// Every protected route's front door: a verified bearer token, or nothing.
@@ -42,10 +45,26 @@ pub async fn bearer_required(
     span.record("org", state.org_alias.as_str());
     span.record("roles", roles.to_string().as_str());
 
+    // In overage the token carries no ids, and nothing here reads the
+    // membership from the realm: a grant to a group then holds for no one,
+    // which is the side to fail on. Said in the log, so it is not a mystery.
+    let groups = match claims.org_groups(&state.org_alias) {
+        Some((_, true)) => {
+            tracing::warn!(
+                authz = "groups:overage",
+                "the token carries no group ids: grants to groups do not apply"
+            );
+            vec![]
+        }
+        Some((ids, false)) => ids.to_vec(),
+        None => vec![],
+    };
+
     request.extensions_mut().insert(AuthenticatedUser {
         name: claims.display_name(),
         user_id: claims.sub,
         roles,
+        groups,
     });
     Ok(next.run(request).await)
 }

@@ -90,5 +90,9 @@ configs:
         # only whether a role is present (server/src/authentication/role.rs).
         roles:
           reader: { description: "Reads everything in the workspace: graphs, outputs, connections." }
-          editor: { description: "Builds graphs, connections and secrets; changes what they made.", composites: [reader] }
+          editor: { description: "Builds graphs, connections and secrets; changes what they own or manage.", composites: [reader] }
           admin: { description: "Configures the workspace and changes anything in it.", composites: [editor] }
+        # The ids of each person's groups in the organization, `organization.<alias>.groups`, for what
+        # is shared with a group (docs/design/permissions.md). Ancestors included; past 100 groups the
+        # token says `groups_overage` and carries none.
+        groups: {}

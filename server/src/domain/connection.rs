@@ -6,7 +6,7 @@ use crate::authentication::role::Caller;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use super::{Actor, Provenance, ValidationReport};
+use super::{Actor, Grant, Provenance, ValidationReport};
 
 #[derive(
     Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq, ToSchema, strum::AsRefStr,
@@ -56,19 +56,19 @@ pub struct ConnectionView {
     pub secret: String,
     pub target: StorageTarget,
     /// Who owns it: its creator, or the workspace for what the instance
-    /// declares. Its owner or an admin manages it; the sink is an admin's.
+    /// declares. Its owner, its managers or an admin manages it; the sink is
+    /// an admin's.
     pub owner: Actor,
+    /// Who else manages it. Never any on the sink.
+    pub grants: Vec<Grant>,
     #[serde(flatten)]
     pub provenance: Provenance,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub validation: Option<ValidationReport>,
-    /// What the caller may do to it: test it (any editor; the sink, an admin)
-    /// and manage it (its owner or an admin; the sink, an admin).
+    /// What the caller may do to it: test it (any editor; the sink, an admin),
+    /// manage it (its owner, a manager or an admin; the sink, an admin) and
+    /// give it away (its owner or an admin; the sink, no one).
     pub can: Can,
-    /// `can.manage`, under its old name.
-    #[serde(default)]
-    #[schema(deprecated)]
-    pub can_modify: bool,
 }
 
 impl Securable for ConnectionView {
@@ -83,13 +83,16 @@ impl Securable for ConnectionView {
     fn owner(&self) -> &Actor {
         &self.owner
     }
+
+    fn grants(&self) -> &[Grant] {
+        &self.grants
+    }
 }
 
 impl ConnectionView {
     /// The connection as `caller` sees it: [`Self::can`] filled in.
     pub fn seen_by(mut self, caller: &Caller) -> Self {
         self.can = caller.can(&self);
-        self.can_modify = self.can.manage;
         self
     }
 }

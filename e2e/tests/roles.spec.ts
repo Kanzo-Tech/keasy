@@ -1,7 +1,7 @@
 import { expect, test } from "../support/fixtures";
 
 import { signIn } from "../support/auth/sign-in";
-import { ConnectionsPage } from "../support/app";
+import { ConnectionsPage, NewConnectionPage } from "../support/app";
 import { api, createGraph, expectRefusal, SOURCE } from "../support/stack/api";
 
 /** A connection the instance declares (infra/dev/bootstrap.json): the workspace owns it, no person. */
@@ -10,7 +10,7 @@ const SEEDED = "LDBC SNB";
 /** A connection as the API answers it, as far as these scenarios read it. */
 interface Connection {
   owner: { id: string };
-  can: { operate: boolean; manage: boolean };
+  can: { use: boolean; operate: boolean; manage: boolean; transfer: boolean };
   updated_by?: { id: string } | null;
   validation?: { by?: { name: string } | null } | null;
 }
@@ -53,7 +53,7 @@ test("an editor tests a seeded connection, and is shown why they may not delete 
   const path = `/v1/connections/${encodeURIComponent(SEEDED)}`;
   const before = (await api(page, "GET", path)).body as Connection;
   expect(before.owner.id).toBe("workspace");
-  expect(before.can).toEqual({ operate: true, manage: false });
+  expect(before.can).toEqual({ use: true, operate: true, manage: false, transfer: false });
 
   const menu = await (await ConnectionsPage.open(page, env)).actions(SEEDED);
   expect(await menu.offered("Test")).toEqual({ enabled: true, reason: "" });
@@ -90,4 +90,33 @@ test("an editor runs again a graph someone else owns, without taking it", async 
   const ran = (await api(page, "GET", `/v1/graphs/${id}`)).body as { owner: { id: string }; runner: { id: string } };
   expect(ran.owner.id, "running it does not take it").toBe(owner);
   expect(ran.runner.id).not.toBe(owner);
+});
+
+test("an editor builds on another person's credential once it is shared with them", async ({ page, browser, baseURL, env }) => {
+  // The admin's own credential: nobody else uses it until they share it (Unity Catalog's rule).
+  const name = `e2e Shared key ${Date.now()}`;
+  const admin = await browser.newContext({ storageState: ".auth/admin.json", baseURL });
+  const adminPage = await admin.newPage();
+  const created = await api(adminPage, "POST", "/v1/secrets", {
+    name,
+    spec: { kind: "s3", access_key_id: "e2e", secret_access_key: "e2e" },
+  });
+  expect(created.status, JSON.stringify(created.body)).toBe(201);
+  const owner = (created.body as { owner: { name: string } }).owner.name;
+
+  let form = await NewConnectionPage.open(page, env);
+  expect(await form.credential(name)).toEqual({ enabled: false, reason: `Ask ${owner} to share it` });
+
+  const me = (await api(page, "GET", "/auth/session")).body as { user: { id: string; name?: string } };
+  const shared = await api(adminPage, "PUT", `/v1/secrets/${encodeURIComponent(name)}/grants`, {
+    grants: [{ principal: { kind: "user", id: me.user.id, name: me.user.name ?? "bruno" }, relation: "user" }],
+  });
+  expect(shared.status, JSON.stringify(shared.body)).toBe(200);
+
+  form = await NewConnectionPage.open(page, env);
+  expect(await form.credential(name)).toEqual({ enabled: true, reason: "" });
+
+  // Not left behind for the next run.
+  expect((await api(adminPage, "DELETE", `/v1/secrets/${encodeURIComponent(name)}`)).status).toBe(204);
+  await admin.close();
 });

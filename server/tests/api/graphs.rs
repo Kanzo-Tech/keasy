@@ -54,7 +54,10 @@ async fn a_graph_is_read_by_all_run_by_editors_and_changed_by_its_owner_or_an_ad
             json!({ "script": "x", "sink_connection": "sink" }),
         )
         .await;
-    assert_eq!(graph["can"], json!({ "operate": true, "manage": true }));
+    assert_eq!(
+        graph["can"],
+        json!({ "use": true, "operate": true, "manage": true, "transfer": true })
+    );
     assert_eq!(graph["owner"]["id"], "u-1");
     let id = graph["id"].as_str().unwrap().to_string();
     let path = format!("/v1/graphs/{id}");
@@ -68,9 +71,8 @@ async fn a_graph_is_read_by_all_run_by_editors_and_changed_by_its_owner_or_an_ad
             .send(Method::GET, "/v1/graphs", token, json!(null))
             .await;
         assert_eq!(listed.as_array().unwrap().len(), 1, "{who} lists it");
-        let can = json!({ "operate": operate, "manage": manage });
+        let can = json!({ "use": true, "operate": operate, "manage": manage, "transfer": manage });
         assert_eq!(listed[0]["can"], can, "{who}");
-        assert_eq!(listed[0]["can_modify"], manage, "{who}: the old name");
         let (status, read) = app.send(Method::GET, &path, token, json!(null)).await;
         assert_eq!((status, &read["can"]), (StatusCode::OK, &can), "{who}");
     }

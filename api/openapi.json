@@ -481,6 +481,163 @@
         ]
       }
     },
+    "/v1/connections/{name}/grants": {
+      "put": {
+        "tags": [
+          "Connections"
+        ],
+        "summary": "Who else manages the connection. Every editor already uses it.",
+        "operationId": "share_connection",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Connection name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GrantsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Shared as asked: the connection with its grants",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectionView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A grant the connection cannot hold — any on the sink (`data.field` = `grants`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Neither its owner, a manager nor an admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such connection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": [
+              "editor"
+            ]
+          }
+        ]
+      }
+    },
+    "/v1/connections/{name}/owner": {
+      "put": {
+        "tags": [
+          "Connections"
+        ],
+        "operationId": "transfer_connection",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Connection name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransferRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Given away: the connection under its new owner",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectionView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No owner named (`data.field` = `owner`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Neither its owner nor an admin; the sink, no one",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such connection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": [
+              "editor"
+            ]
+          }
+        ]
+      }
+    },
     "/v1/connections/{name}/validate": {
       "post": {
         "tags": [
@@ -933,6 +1090,163 @@
           },
           "413": {
             "description": "The spec is larger than a dashboard may be",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": [
+              "editor"
+            ]
+          }
+        ]
+      }
+    },
+    "/v1/graphs/{id}/grants": {
+      "put": {
+        "tags": [
+          "Graphs"
+        ],
+        "summary": "Who else manages the graph, its rules and its dashboard. Every reader\nalready reads it, and every editor runs it.",
+        "operationId": "share_graph",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Graph ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GrantsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Shared as asked: the graph with its grants",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Graph"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A grant the graph cannot hold (`data.field` = `grants`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Neither its owner, a manager nor an admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Graph not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": [
+              "editor"
+            ]
+          }
+        ]
+      }
+    },
+    "/v1/graphs/{id}/owner": {
+      "put": {
+        "tags": [
+          "Graphs"
+        ],
+        "operationId": "transfer_graph",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Graph ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransferRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Given away: the graph under its new owner",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Graph"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No owner named (`data.field` = `owner`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Neither its owner nor an admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Graph not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -1709,6 +2023,164 @@
         ]
       }
     },
+    "/v1/secrets/{name}/grants": {
+      "put": {
+        "tags": [
+          "Secrets"
+        ],
+        "summary": "Who else manages the secret, and who may build a connection on it.",
+        "operationId": "share_secret",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Secret name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GrantsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Shared as asked: the secret with its grants",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecretView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A grant the secret cannot hold (`data.field` = `grants`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Neither its owner, a manager nor an admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such secret",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": [
+              "editor"
+            ]
+          }
+        ]
+      }
+    },
+    "/v1/secrets/{name}/owner": {
+      "put": {
+        "tags": [
+          "Secrets"
+        ],
+        "summary": "Its previous owner keeps nothing by having owned it, as in Unity Catalog:\nwhat they still need, the new owner grants them.",
+        "operationId": "transfer_secret",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Secret name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransferRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Given away: the secret under its new owner",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecretView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No owner named (`data.field` = `owner`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Neither its owner nor an admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such secret",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": [
+              "editor"
+            ]
+          }
+        ]
+      }
+    },
     "/v1/secrets/{name}/validate": {
       "post": {
         "tags": [
@@ -1951,17 +2423,27 @@
         "type": "object",
         "description": "What the caller may do to an object beyond reading it, worked out for each\nresponse: the interface draws what this says and does not re-derive it.",
         "required": [
+          "use",
           "operate",
-          "manage"
+          "manage",
+          "transfer"
         ],
         "properties": {
           "manage": {
             "type": "boolean",
-            "description": "Change, rename or delete it; a graph's rules and dashboard."
+            "description": "Change, rename or delete it; a graph's rules and dashboard; share it."
           },
           "operate": {
             "type": "boolean",
             "description": "Test it, or run it (again)."
+          },
+          "transfer": {
+            "type": "boolean",
+            "description": "Give it to someone else to own."
+          },
+          "use": {
+            "type": "boolean",
+            "description": "Build on it: a secret in a connection. Every editor uses a connection\nand reads a graph's output, so the interface reads this for secrets."
           }
         }
       },
@@ -2005,24 +2487,27 @@
               "secret",
               "target",
               "owner",
+              "grants",
               "can"
             ],
             "properties": {
               "can": {
                 "$ref": "#/components/schemas/Can",
-                "description": "What the caller may do to it: test it (any editor; the sink, an admin)\nand manage it (its owner or an admin; the sink, an admin)."
+                "description": "What the caller may do to it: test it (any editor; the sink, an admin),\nmanage it (its owner, a manager or an admin; the sink, an admin) and\ngive it away (its owner or an admin; the sink, no one)."
               },
-              "can_modify": {
-                "type": "boolean",
-                "description": "`can.manage`, under its old name.",
-                "deprecated": true
+              "grants": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Grant"
+                },
+                "description": "Who else manages it. Never any on the sink."
               },
               "name": {
                 "type": "string"
               },
               "owner": {
                 "$ref": "#/components/schemas/Actor",
-                "description": "Who owns it: its creator, or the workspace for what the instance\ndeclares. Its owner or an admin manages it; the sink is an admin's."
+                "description": "Who owns it: its creator, or the workspace for what the instance\ndeclares. Its owner, its managers or an admin manages it; the sink is\nan admin's."
               },
               "secret": {
                 "type": "string"
@@ -2340,6 +2825,64 @@
           }
         }
       },
+      "Grant": {
+        "type": "object",
+        "description": "One grant on an object.",
+        "required": [
+          "principal",
+          "relation",
+          "granted_by",
+          "granted_at"
+        ],
+        "properties": {
+          "granted_at": {
+            "type": "string"
+          },
+          "granted_by": {
+            "$ref": "#/components/schemas/Actor",
+            "description": "Who granted it, and when."
+          },
+          "principal": {
+            "$ref": "#/components/schemas/Principal"
+          },
+          "relation": {
+            "$ref": "#/components/schemas/Relation"
+          }
+        }
+      },
+      "GrantRequest": {
+        "type": "object",
+        "description": "One grant, as the Share dialog asks for it.",
+        "required": [
+          "principal",
+          "relation"
+        ],
+        "properties": {
+          "principal": {
+            "$ref": "#/components/schemas/Principal",
+            "description": "A person, by `sub`, or one of the organization's groups, by its\nKeycloak id — and the name the directory gave it, kept for people to\nread and never compared."
+          },
+          "relation": {
+            "$ref": "#/components/schemas/Relation",
+            "description": "`manager` on anything but the sink; `user` on a secret only."
+          }
+        }
+      },
+      "GrantsRequest": {
+        "type": "object",
+        "description": "The object's grants, all of them: what is left out is revoked.",
+        "required": [
+          "grants"
+        ],
+        "properties": {
+          "grants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GrantRequest"
+            }
+          }
+        }
+      },
       "Graph": {
         "allOf": [
           {
@@ -2359,11 +2902,6 @@
               "can": {
                 "$ref": "#/components/schemas/Can",
                 "description": "What the caller may do to it: run it (again) — any editor — and manage\nit — its owner or an admin. Worked out for each response: the\ninterface draws what this says and does not re-derive it."
-              },
-              "can_modify": {
-                "type": "boolean",
-                "description": "`can.manage`, under its old name.",
-                "deprecated": true
               },
               "can_stop": {
                 "type": "boolean",
@@ -2390,6 +2928,13 @@
                     "description": "The folder under the sink the output lands in. A draft may not have one\nyet; every other graph does, and no two of them share one in a sink."
                   }
                 ]
+              },
+              "grants": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Grant"
+                },
+                "description": "Who else manages it: people and groups, granted by its owner, a\nmanager or an admin."
               },
               "heartbeat_at": {
                 "type": [
@@ -2420,7 +2965,7 @@
               },
               "owner": {
                 "$ref": "#/components/schemas/Actor",
-                "description": "Who owns the graph — with an admin, the one who may change or delete\nit, and its rules and dashboard. Its creator, to begin with."
+                "description": "Who owns the graph — with its managers and an admin, who may change or\ndelete it, and its rules and dashboard. Its creator, to begin with."
               },
               "problem": {
                 "description": "Why a `Failed` run failed, as the browser that ran it reported it: a\nproblem (`{ code, title, detail, data, … }`), stored verbatim and\n**opaque** — the web branches on its `code`, the server never does."
@@ -2518,6 +3063,52 @@
           "skip"
         ]
       },
+      "OwnerRequest": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Required for a person; ignored for the workspace."
+          }
+        }
+      },
+      "Principal": {
+        "type": "object",
+        "description": "A grantee, by id — a person's `sub` or a group's Keycloak id, what\nauthorization compares — and by the name it had when it was granted, for\npeople to read.",
+        "required": [
+          "kind",
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/PrincipalKind"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "PrincipalKind": {
+        "type": "string",
+        "description": "Who a grant is to: a person, or one of the organization's Keycloak groups.",
+        "enum": [
+          "user",
+          "group"
+        ]
+      },
       "Provenance": {
         "type": "object",
         "description": "Who created a resource and when, and who changed it last and when — absent\nuntil someone has.",
@@ -2582,6 +3173,14 @@
             "description": "The shapes graph, `text/turtle`, stored as sent once rudof reads it as\na SHACL shapes graph."
           }
         }
+      },
+      "Relation": {
+        "type": "string",
+        "description": "What a grant gives.",
+        "enum": [
+          "manager",
+          "user"
+        ]
       },
       "ResourceName": {
         "type": "string",
@@ -2872,24 +3471,27 @@
               "spec",
               "used_by",
               "owner",
+              "grants",
               "can"
             ],
             "properties": {
               "can": {
                 "$ref": "#/components/schemas/Can",
-                "description": "What the caller may do to it: test it (any editor) and manage it (its\nowner or an admin). Its value is never returned to anyone."
+                "description": "What the caller may do to it: use it in a connection (by a grant),\ntest it (any editor), manage it (its owner, a manager or an admin)\nand give it away (its owner or an admin). Its value is never returned\nto anyone."
               },
-              "can_modify": {
-                "type": "boolean",
-                "description": "`can.manage`, under its old name.",
-                "deprecated": true
+              "grants": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Grant"
+                },
+                "description": "Who else manages it, and who may use it: what the workspace does not\nown, an editor uses only by a grant."
               },
               "name": {
                 "type": "string"
               },
               "owner": {
                 "$ref": "#/components/schemas/Actor",
-                "description": "Who owns it: its creator, or the workspace for what the instance\ndeclares. Its owner or an admin manages it."
+                "description": "Who owns it: its creator, or the workspace for what the instance\ndeclares. Its owner, its managers or an admin manages it."
               },
               "spec": {
                 "$ref": "#/components/schemas/SecretSpecView"
@@ -2986,6 +3588,18 @@
           }
         },
         "additionalProperties": false
+      },
+      "TransferRequest": {
+        "type": "object",
+        "description": "Who is to own the object: a person, by `sub` and name, or the workspace\n(`{ \"id\": \"workspace\" }`).",
+        "required": [
+          "owner"
+        ],
+        "properties": {
+          "owner": {
+            "$ref": "#/components/schemas/OwnerRequest"
+          }
+        }
       },
       "UpdateConnectionRequest": {
         "type": "object",

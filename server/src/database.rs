@@ -19,7 +19,7 @@ use serde::de::DeserializeOwned;
 use tokio::sync::{Mutex, MutexGuard};
 
 use crate::credentials::sealing::SecretKey;
-use crate::domain::{Actor, Provenance};
+use crate::domain::{Actor, Grant, Provenance};
 use crate::error::{ErrorCode, Refusal};
 
 const READ_POOL_SIZE: usize = 4;
@@ -142,6 +142,30 @@ pub(crate) fn owner_columns(row: &rusqlite::Row<'_>) -> rusqlite::Result<Actor> 
         id: row.get("owner")?,
         name: row.get("owner_name")?,
     })
+}
+
+/// The `grants` column a `SELECT` over `table` adds: the row's grants as one
+/// JSON array, read by [`grants_column`]. `column` is the grants' column that
+/// names the row, `key` the row's own.
+pub(crate) fn grants_of(table: &str, column: &str, key: &str) -> String {
+    format!(
+        "(SELECT json_group_array(json_object(
+             'principal', json_object('kind', principal_kind, 'id', principal,
+                                      'name', principal_name),
+             'relation', relation,
+             'granted_by', json_object('id', created_by, 'name', created_by_name),
+             'granted_at', created_at))
+          FROM grants WHERE grants.{column} = {table}.{key}) AS grants"
+    )
+}
+
+/// The `grants` column [`grants_of`] selects, managers first and then by name.
+pub(crate) fn grants_column(row: &rusqlite::Row<'_>) -> rusqlite::Result<Vec<Grant>> {
+    let mut grants: Vec<Grant> = json_column(row, "grants")?;
+    grants.sort_by(|a, b| {
+        (a.relation.as_ref(), &a.principal.name).cmp(&(b.relation.as_ref(), &b.principal.name))
+    });
+    Ok(grants)
 }
 
 /// [`created_columns`], and who changed the row last and when, if anyone has.
@@ -344,61 +368,46 @@ CREATE TABLE rules (
     updated_by_name TEXT,
     updated_at      TEXT
 );
+
+-- Who besides its owner manages an object, and who uses a secret: one tuple a
+-- row (Zanzibar's object, relation, principal), the object in exactly one of
+-- three columns so each has its foreign key — a rename carries the grant
+-- along, a delete takes it away.
+CREATE TABLE grants (
+    secret          TEXT REFERENCES credentials (name) ON UPDATE CASCADE ON DELETE CASCADE,
+    connection      TEXT REFERENCES connections (name) ON UPDATE CASCADE ON DELETE CASCADE,
+    graph           TEXT REFERENCES graphs (id) ON DELETE CASCADE,
+    principal_kind  TEXT NOT NULL CHECK (principal_kind IN ('user', 'group')),
+    -- A person's `sub` or a group's Keycloak id; its name as it was granted.
+    principal       TEXT NOT NULL,
+    principal_name  TEXT NOT NULL,
+    -- 'user' uses a secret; nothing else is used by a grant.
+    relation        TEXT NOT NULL
+        CHECK (relation = 'manager' OR (relation = 'user' AND secret IS NOT NULL)),
+    created_by      TEXT NOT NULL,
+    created_by_name TEXT NOT NULL,
+    created_at      TEXT NOT NULL,
+    CHECK ((secret IS NOT NULL) + (connection IS NOT NULL) + (graph IS NOT NULL) = 1)
+);
+-- A tuple once: the object's NULL columns read as '' so they compare equal.
+CREATE UNIQUE INDEX grants_one_tuple ON grants (
+    coalesce(secret, ''), coalesce(connection, ''), coalesce(graph, ''),
+    principal_kind, principal, relation
+);
+CREATE INDEX grants_of_secret ON grants (secret) WHERE secret IS NOT NULL;
+CREATE INDEX grants_of_connection ON grants (connection) WHERE connection IS NOT NULL;
+CREATE INDEX grants_of_graph ON grants (graph) WHERE graph IS NOT NULL;
+CREATE INDEX grants_to ON grants (principal_kind, principal);
 ";
 
-/// `credentials`, `connections` and `graphs` as the schema before this one
-/// made them: without an owner.
-const PREVIOUS: [&str; 3] = [
-    "CREATE TABLE credentials (
-    name            TEXT PRIMARY KEY,
-    spec            BLOB NOT NULL,
-    created_by      TEXT NOT NULL,
-    created_by_name TEXT NOT NULL,
-    created_at      TEXT NOT NULL,
-    updated_by      TEXT,
-    updated_by_name TEXT,
-    updated_at      TEXT,
-    validation      TEXT
-);",
-    "CREATE TABLE connections (
-    name            TEXT PRIMARY KEY,
-    credential      TEXT NOT NULL,
-    target          TEXT NOT NULL CHECK (json_type(target) = 'object'),
-    direction       TEXT GENERATED ALWAYS AS (json_extract(target, '$.direction')) VIRTUAL,
-    created_by      TEXT NOT NULL,
-    created_by_name TEXT NOT NULL,
-    created_at      TEXT NOT NULL,
-    updated_by      TEXT,
-    updated_by_name TEXT,
-    updated_at      TEXT,
-    validation      TEXT,
-    FOREIGN KEY (credential) REFERENCES credentials (name)
-        ON UPDATE CASCADE ON DELETE RESTRICT
-);",
-    "CREATE TABLE graphs (
-    id              TEXT PRIMARY KEY,
-    name            TEXT,
-    status          TEXT NOT NULL DEFAULT 'draft',
-    created_at      TEXT NOT NULL,
-    started_at      TEXT,
-    completed_at    TEXT,
-    -- The run's lease: taken by run and renewed by its runner; a running
-    -- graph whose lease has lapsed is swept to failed.
-    heartbeat_at    TEXT,
-    -- Who runs the graph, or ran it last: the only one whose reports count.
-    runner          TEXT CHECK (status <> 'running' OR runner IS NOT NULL),
-    runner_name     TEXT CHECK ((runner IS NULL) = (runner_name IS NULL)),
-    cancel_requested INTEGER NOT NULL DEFAULT 0 CHECK (cancel_requested IN (0, 1)),
-    problem         TEXT CHECK (problem IS NULL OR json_valid(problem)),
-    created_by      TEXT NOT NULL,
-    created_by_name TEXT NOT NULL,
-    sink_connection TEXT NOT NULL REFERENCES connections (name)
-        ON UPDATE CASCADE ON DELETE RESTRICT,
-    folder          TEXT CHECK (status = 'draft' OR folder IS NOT NULL),
-    script          TEXT,
-    -- fossil's run report, opaque. What the corpus holds, the corpus says.
-    report          TEXT CHECK (report IS NULL OR json_valid(report))
-);",
+/// The statements this schema adds to the one before it, by how each begins.
+const ADDED: [&str; 6] = [
+    "CREATE TABLE grants (",
+    "CREATE UNIQUE INDEX grants_one_tuple",
+    "CREATE INDEX grants_of_secret",
+    "CREATE INDEX grants_of_connection",
+    "CREATE INDEX grants_of_graph",
+    "CREATE INDEX grants_to",
 ];
 
 /// The statement of [`SCHEMA`] that begins `start`, through its `;`.
@@ -408,100 +417,20 @@ fn statement(start: &str) -> &'static str {
     &SCHEMA[from..to]
 }
 
-/// The tables [`PREVIOUS`] replaces, by the statement each begins with.
-const OWNED: [&str; 3] = [
-    "CREATE TABLE credentials (",
-    "CREATE TABLE connections (",
-    "CREATE TABLE graphs (",
-];
-
-/// The schema before this one, as a fresh database of it would hold it.
+/// The schema before this one, as a fresh database of it would hold it: this
+/// one without the grants.
 fn previous_schema() -> String {
-    OWNED
-        .iter()
-        .zip(PREVIOUS)
-        .fold(SCHEMA.to_string(), |schema, (start, previous)| {
-            schema.replace(statement(start), previous)
-        })
+    ADDED.iter().fold(SCHEMA.to_string(), |schema, start| {
+        schema.replace(statement(start), "")
+    })
 }
 
-/// From the previous schema to this one: `credentials`, `connections` and
-/// `graphs` gain an owner — whoever created each row, and the workspace for
-/// what the bootstrap declared. The old tables are moved aside rather than the
-/// new ones renamed into place, so each new statement is [`SCHEMA`]'s, word
-/// for word; `legacy_alter_table` keeps the moves from rewriting the
-/// references to them, and with foreign keys off the old tables go without
-/// taking their dependents with them.
-const UPGRADE: &str = "
-PRAGMA foreign_keys=OFF;
-PRAGMA legacy_alter_table=ON;
-BEGIN;
-DROP INDEX connections_one_sink;
-DROP INDEX graphs_one_folder;
-ALTER TABLE credentials RENAME TO credentials_previous;
-ALTER TABLE connections RENAME TO connections_previous;
-ALTER TABLE graphs RENAME TO graphs_previous;
-{credentials}
-{connections}
-{one_sink}
-{graphs}
-{one_folder}
-INSERT INTO credentials (name, spec, owner, owner_name, created_by, created_by_name, created_at,
-                         updated_by, updated_by_name, updated_at, validation)
-    SELECT name, spec, {owner}, {owner_name}, created_by, created_by_name, created_at,
-           updated_by, updated_by_name, updated_at, validation
-    FROM credentials_previous;
-INSERT INTO connections (name, credential, target, owner, owner_name, created_by,
-                         created_by_name, created_at, updated_by, updated_by_name, updated_at,
-                         validation)
-    SELECT name, credential, target, {owner}, {owner_name}, created_by,
-           created_by_name, created_at, updated_by, updated_by_name, updated_at, validation
-    FROM connections_previous;
-INSERT INTO graphs (id, name, status, created_at, started_at, completed_at, heartbeat_at, runner,
-                    runner_name, cancel_requested, problem, owner, owner_name, created_by,
-                    created_by_name, sink_connection, folder, script, report)
-    SELECT id, name, status, created_at, started_at, completed_at, heartbeat_at, runner,
-           runner_name, cancel_requested, problem, {owner}, {owner_name}, created_by,
-           created_by_name, sink_connection, folder, script, report
-    FROM graphs_previous;
-DROP TABLE graphs_previous;
-DROP TABLE connections_previous;
-DROP TABLE credentials_previous;
-COMMIT;
-PRAGMA legacy_alter_table=OFF;
-PRAGMA foreign_keys=ON;
-";
-
-/// [`UPGRADE`], its statements filled in from [`SCHEMA`] and its owner from
-/// [`Actor::as_owner`]'s rule.
+/// From the previous schema to this one: the grants, an empty table and its
+/// indexes. Nothing else moves, so every row is kept as it is — owned, as
+/// phase A left it, by who created it or by the workspace.
 fn upgrade() -> String {
-    let (bootstrap, workspace) = (Actor::bootstrap(), Actor::workspace());
-    UPGRADE
-        .replace("{credentials}", statement(OWNED[0]))
-        .replace("{connections}", statement(OWNED[1]))
-        .replace("{graphs}", statement(OWNED[2]))
-        .replace(
-            "{one_sink}",
-            statement("CREATE UNIQUE INDEX connections_one_sink"),
-        )
-        .replace(
-            "{one_folder}",
-            statement("CREATE UNIQUE INDEX graphs_one_folder"),
-        )
-        .replace(
-            "{owner_name}",
-            &format!(
-                "CASE created_by WHEN '{}' THEN '{}' ELSE created_by_name END",
-                bootstrap.id, workspace.name
-            ),
-        )
-        .replace(
-            "{owner}",
-            &format!(
-                "CASE created_by WHEN '{}' THEN '{}' ELSE created_by END",
-                bootstrap.id, workspace.id
-            ),
-        )
+    let added: Vec<&str> = ADDED.iter().map(|start| statement(start)).collect();
+    format!("BEGIN;\n{}\nCOMMIT;", added.join("\n"))
 }
 
 /// Every table and index a fresh database of `schema` holds.
@@ -531,8 +460,7 @@ pub fn apply_schema(conn: &rusqlite::Connection) -> Result<(), String> {
     if existing == objects_of(&previous_schema())? {
         if let Err(e) = conn.execute_batch(&upgrade()) {
             // A failed statement leaves the transaction open; nothing of it is kept.
-            let _ = conn
-                .execute_batch("ROLLBACK; PRAGMA legacy_alter_table=OFF; PRAGMA foreign_keys=ON;");
+            let _ = conn.execute_batch("ROLLBACK;");
             return Err(format!("upgrade the schema: {e}"));
         }
         let violations: i64 = conn
@@ -543,7 +471,7 @@ pub fn apply_schema(conn: &rusqlite::Connection) -> Result<(), String> {
         if violations > 0 {
             return Err(format!("the upgrade left {violations} broken references"));
         }
-        tracing::info!("schema upgraded: secrets, connections and graphs have an owner");
+        tracing::info!("schema upgraded: objects can be shared");
     }
     let existing = objects(conn).map_err(|e| format!("read schema: {e}"))?;
     if existing != expected {
@@ -589,8 +517,8 @@ mod tests {
     }
 
     /// A database of the previous schema is brought forward in place: every
-    /// row is kept, owned by who created it — what the bootstrap declared by
-    /// the workspace — and a graph's dashboard survives its table's rebuild.
+    /// row is kept as it was, and the objects can be shared — a grant goes
+    /// with its object's rename and dies with it.
     #[test]
     fn a_database_of_the_previous_schema_is_upgraded_with_its_rows() {
         let conn = rusqlite::Connection::open_in_memory().unwrap();
@@ -598,16 +526,13 @@ mod tests {
         conn.execute_batch(&previous_schema()).unwrap();
         conn.execute_batch(
             r#"
-            INSERT INTO credentials (name, spec, created_by, created_by_name, created_at)
-                VALUES ('seed', x'00', 'bootstrap', 'Bootstrap', 't'),
-                       ('mine', x'00', 'u-1', 'Ana', 't');
-            INSERT INTO connections (name, credential, target, created_by, created_by_name, created_at)
-                VALUES ('sink', 'seed', '{"direction":"sink"}', 'bootstrap', 'Bootstrap', 't'),
-                       ('data', 'mine', '{"direction":"source"}', 'u-1', 'Ana', 't');
-            INSERT INTO graphs (id, status, created_at, created_by, created_by_name, sink_connection, folder)
-                VALUES ('g', 'completed', 't', 'u-2', 'Bruno', 'sink', 'people');
-            INSERT INTO dashboards (graph_id, spec, created_by, created_by_name, created_at)
-                VALUES ('g', '{}', 'u-2', 'Bruno', 't');
+            INSERT INTO credentials (name, spec, owner, owner_name, created_by, created_by_name, created_at)
+                VALUES ('seed', x'00', 'workspace', 'Workspace', 'bootstrap', 'Bootstrap', 't'),
+                       ('mine', x'00', 'u-1', 'Ana', 'u-1', 'Ana', 't');
+            INSERT INTO connections (name, credential, target, owner, owner_name, created_by, created_by_name, created_at)
+                VALUES ('sink', 'seed', '{"direction":"sink"}', 'workspace', 'Workspace', 'bootstrap', 'Bootstrap', 't');
+            INSERT INTO graphs (id, status, created_at, owner, owner_name, created_by, created_by_name, sink_connection, folder)
+                VALUES ('g', 'completed', 't', 'u-2', 'Bruno', 'u-2', 'Bruno', 'sink', 'people');
             "#,
         )
         .unwrap();
@@ -615,55 +540,70 @@ mod tests {
         apply_schema(&conn).unwrap();
         apply_schema(&conn).unwrap();
 
-        let owners = |table: &str| -> Vec<(String, String, String)> {
-            conn.prepare(&format!(
-                "SELECT owner, owner_name, created_by FROM {table} ORDER BY owner"
+        let count = |sql: &str| -> i64 { conn.query_row(sql, [], |r| r.get(0)).unwrap() };
+        assert_eq!(count("SELECT count(*) FROM credentials"), 2);
+        assert_eq!(count("SELECT count(*) FROM graphs WHERE owner = 'u-2'"), 1);
+        conn.execute_batch(
+            "INSERT INTO grants (secret, principal_kind, principal, principal_name, relation,
+                                 created_by, created_by_name, created_at)
+                 VALUES ('mine', 'group', 'g-1', 'Research', 'user', 'u-1', 'Ana', 't');
+             INSERT INTO grants (graph, principal_kind, principal, principal_name, relation,
+                                 created_by, created_by_name, created_at)
+                 VALUES ('g', 'user', 'u-1', 'Ana', 'manager', 'u-2', 'Bruno', 't');
+             UPDATE credentials SET name = 'ours' WHERE name = 'mine';
+             DELETE FROM graphs WHERE id = 'g';",
+        )
+        .unwrap();
+        assert_eq!(
+            count("SELECT count(*) FROM grants WHERE secret = 'ours'"),
+            1
+        );
+        assert_eq!(
+            count("SELECT count(*) FROM grants"),
+            1,
+            "gone with its graph"
+        );
+    }
+
+    /// One tuple, once; one object a row; and a user only of a secret.
+    #[test]
+    fn the_grants_table_holds_well_formed_tuples_only() {
+        let conn = rusqlite::Connection::open_in_memory().unwrap();
+        conn.execute_batch("PRAGMA foreign_keys=ON;").unwrap();
+        apply_schema(&conn).unwrap();
+        conn.execute_batch(
+            r#"
+            INSERT INTO credentials (name, spec, owner, owner_name, created_by, created_by_name, created_at)
+                VALUES ('s', x'00', 'u-1', 'Ana', 'u-1', 'Ana', 't');
+            INSERT INTO connections (name, credential, target, owner, owner_name, created_by, created_by_name, created_at)
+                VALUES ('c', 's', '{"direction":"source"}', 'u-1', 'Ana', 'u-1', 'Ana', 't');
+            "#,
+        )
+        .unwrap();
+        let grant = |object: &str, relation: &str| {
+            conn.execute_batch(&format!(
+                "INSERT INTO grants ({object}, principal_kind, principal, principal_name,
+                                     relation, created_by, created_by_name, created_at)
+                     VALUES ('{}', 'user', 'u-2', 'Bruno', '{relation}', 'u-1', 'Ana', 't')",
+                if object == "secret" { "s" } else { "c" }
             ))
-            .unwrap()
-            .query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))
-            .unwrap()
-            .collect::<rusqlite::Result<_>>()
-            .unwrap()
         };
-        let row = |o: &str, n: &str, c: &str| (o.to_string(), n.to_string(), c.to_string());
-        assert_eq!(
-            owners("credentials"),
-            [
-                row("u-1", "Ana", "u-1"),
-                row("workspace", "Workspace", "bootstrap")
-            ],
-            "who created it is kept apart from who owns it"
-        );
-        assert_eq!(
-            owners("connections"),
-            [
-                row("u-1", "Ana", "u-1"),
-                row("workspace", "Workspace", "bootstrap")
-            ]
-        );
-        assert_eq!(owners("graphs"), [row("u-2", "Bruno", "u-2")]);
-        let sinks: i64 = conn
-            .query_row(
-                "SELECT count(*) FROM connections WHERE direction = 'sink'",
-                [],
-                |r| r.get(0),
-            )
-            .unwrap();
-        assert_eq!(sinks, 1, "the generated column is computed again");
-        let foreign_keys: i64 = conn
-            .query_row("PRAGMA foreign_keys", [], |r| r.get(0))
-            .unwrap();
-        assert_eq!(foreign_keys, 1, "foreign keys are enforced again");
-        conn.execute("DELETE FROM graphs WHERE id = 'g'", [])
-            .unwrap();
-        let dashboards: i64 = conn
-            .query_row("SELECT count(*) FROM dashboards", [], |r| r.get(0))
-            .unwrap();
-        assert_eq!(dashboards, 0, "a dashboard still dies with its graph");
+        grant("secret", "user").unwrap();
+        grant("secret", "manager").unwrap();
+        grant("connection", "manager").unwrap();
+        assert!(grant("secret", "user").is_err(), "a second of one tuple");
         assert!(
-            conn.execute("DELETE FROM credentials WHERE name = 'mine'", [])
-                .is_err(),
-            "a used credential is still kept"
+            grant("connection", "user").is_err(),
+            "a connection is not used by a grant"
+        );
+        assert!(
+            conn.execute_batch(
+                "INSERT INTO grants (secret, connection, principal_kind, principal, principal_name,
+                                     relation, created_by, created_by_name, created_at)
+                     VALUES ('s', 'c', 'user', 'u-3', 'Caro', 'manager', 'u-1', 'Ana', 't')"
+            )
+            .is_err(),
+            "two objects in one row"
         );
     }
 

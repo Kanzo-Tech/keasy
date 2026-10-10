@@ -6,6 +6,7 @@ pub mod credentials;
 pub mod database;
 pub mod domain;
 pub mod error;
+pub mod grants;
 pub mod graphs;
 pub mod routes;
 pub mod startup;

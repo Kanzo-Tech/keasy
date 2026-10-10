@@ -146,10 +146,10 @@ pub async fn create_connection(
         secret: request.secret.clone(),
         target: request.target.clone(),
         owner: caller.actor(),
+        grants: vec![],
         provenance: Provenance::created(caller.actor()),
         validation: None,
         can: Default::default(),
-        can_modify: false,
     };
     may_change(&caller, &state.db, None, &proposed).await?;
     let view = crate::connections::create(

@@ -102,7 +102,18 @@ function Form({ credentials, holds }: { credentials: Credential[]; holds: Holds 
   });
   const sending = create.isPending || create.isSuccess;
   const collection = useMemo(
-    () => createListCollection({ items: credentials.map((c) => ({ label: c.name, value: c.name, kind: c.spec.kind })) }),
+    () =>
+      createListCollection({
+        // A credential someone else owns is used once they share it (docs/design/permissions.md):
+        // offered, disabled, with whom to ask.
+        items: credentials.map((c) => ({
+          label: c.name,
+          value: c.name,
+          kind: c.spec.kind,
+          disabled: !c.can.use,
+          owner: c.owner.name,
+        })),
+      }),
     [credentials],
   );
   const schemeOf = (credential: string) => {
@@ -216,6 +227,9 @@ function Form({ credentials, holds }: { credentials: Credential[]; holds: Holds 
                           <SelectItem item={item} key={item.value}>
                             <Icon className="size-3.5 opacity-60" />
                             {item.label}
+                            {item.disabled && (
+                              <span className="text-muted-foreground ms-auto text-xs">Ask {item.owner} to share it</span>
+                            )}
                           </SelectItem>
                         );
                       })}

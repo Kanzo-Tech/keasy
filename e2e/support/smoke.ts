@@ -6,7 +6,7 @@ import { expect, test as base } from "./env";
 import { type Example, seedGraph } from "./seeds";
 
 /**
- * The smoke suite's fixtures: the two dev seed graphs, run once per worker from the programs `make
+ * The smoke suite's fixtures: the dev seed graphs, run once per worker from the programs `make
  * seed`'s data is mapped by (`seedGraph`, support/seeds.ts), and a guard every smoke test runs
  * under: **a console error or an uncaught page error anywhere in the test's browser context fails it.**
  *
@@ -53,7 +53,7 @@ async function guardedSeed(browser: Browser, name: string, example: Example, wit
   return id;
 }
 
-export const test = base.extend<{ quiet: void }, { geoGraph: string; snbGraph: string }>({
+export const test = base.extend<{ quiet: void }, { geoGraph: string; snbGraph: string; cordisGraph: string }>({
   // A view over the seeds — a 74K-row join, rudof over 3,218 airports — takes longer than a component.
   harnessTimeout: 60_000,
   quiet: [
@@ -68,6 +68,9 @@ export const test = base.extend<{ quiet: void }, { geoGraph: string; snbGraph: s
   geoGraph: [async ({ browser }, use) => use(await guardedSeed(browser, "smoke OpenFlights", "openflights", 300_000)), { scope: "worker", timeout: 360_000 }],
   // LDBC SNB SF0.1: 341,661 vertices of nine types.
   snbGraph: [async ({ browser }, use) => use(await guardedSeed(browser, "smoke LDBC SNB", "snb", 900_000)), { scope: "worker", timeout: 960_000 }],
+  // CORDIS Horizon Europe: 206,629 vertices of four types — projects, organisations, the
+  // participations between them, and funding schemes.
+  cordisGraph: [async ({ browser }, use) => use(await guardedSeed(browser, "smoke CORDIS", "cordis", 600_000)), { scope: "worker", timeout: 660_000 }],
 });
 
 const compact = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 });

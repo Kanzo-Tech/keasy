@@ -120,8 +120,8 @@ importers:
         specifier: ^0.37.0
         version: 0.37.0(next@16.3.7(@babel/core@7.29.7)(@opentelemetry/api@1.9.0)(@playwright/test@1.63.0)(@types/node@20.19.37)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)
       '@kanzo-tech/rudof-wasm':
-        specifier: ^0.4.3
-        version: 0.4.3
+        specifier: ^0.4.5
+        version: 0.4.5
       '@kanzo-tech/theme':
         specifier: ^0.37.0
         version: 0.37.0
@@ -750,8 +750,8 @@ packages:
       next:
         optional: true
 
-  '@kanzo-tech/rudof-wasm@0.4.3':
-    resolution: {integrity: sha512-USkcMBE9ysARSoJtKeeXr6FTyhl7payaU6Mu+/v8Tdu/+tUmRU1N9DKUJi2KGKzoMHs4HP+zKSPPqnjm8qhyow==}
+  '@kanzo-tech/rudof-wasm@0.4.5':
+    resolution: {integrity: sha512-tU+Qdd08fR8KTcNAGrb2g6qxwYkCoyaIYG3zxFjj90rReyd6aAeWIY5StR04b4ct4CLIhFZ1bgy+nAzXidlmIA==}
 
   '@kanzo-tech/testing@0.37.0':
     resolution: {integrity: sha512-29YkLIqnRu4buZQGbDX8NJk3MT6ZxtwEkkOARIgK119t/CAanEcHBY6Hzc44SKkUZWKS9BtYf1Y7K53vKoA4ig==}
@@ -4826,7 +4826,7 @@ snapshots:
     optionalDependencies:
       next: 16.3.7(@babel/core@7.29.7)(@opentelemetry/api@1.9.0)(@playwright/test@1.63.0)(@types/node@20.19.37)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
 
-  '@kanzo-tech/rudof-wasm@0.4.3': {}
+  '@kanzo-tech/rudof-wasm@0.4.5': {}
 
   '@kanzo-tech/testing@0.37.0(playwright-core@1.63.0)':
     optionalDependencies:

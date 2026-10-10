@@ -32,6 +32,16 @@
       "target": { "url": "s3://keasy-dev/examples/openflights/shapes/", "kind": "vocab", "direction": "source" }
     },
     {
+      "name": "CORDIS",
+      "secret": "Dev S3",
+      "target": { "url": "s3://keasy-dev/examples/cordis/data/", "kind": "data", "direction": "source" }
+    },
+    {
+      "name": "CORDIS shapes",
+      "secret": "Dev S3",
+      "target": { "url": "s3://keasy-dev/examples/cordis/shapes/", "kind": "vocab", "direction": "source" }
+    },
+    {
       "name": "Nobel laureates",
       "secret": "Dev S3",
       "target": { "url": "s3://keasy-dev/examples/nobel/data/", "kind": "data", "direction": "source" }

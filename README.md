@@ -96,7 +96,20 @@ placement (x = `lon`, y = `lat`) draws it as a map. The data is © OpenFlights u
 attribution, and it travels to the bucket with the files. It is derived on your machine and not
 committed: the subset's own digest is pinned, so every machine derives the same bytes.
 
-And a third, whose time is on a relation: the [Nobel laureates](https://www.nobelprize.org/about/developer-zone-2/)
+A third is public funding: [CORDIS](https://cordis.europa.eu)'s Horizon Europe projects, the
+organisations in them and what each was granted, from the Publications Office's CSV export of
+2026-08-06 (37 MB zipped; CORDIS replaces the file in place, so the pin is the Internet Archive's
+capture of it). It is cut down to about 18 MB of CSV: 23,451 projects, 35,122 organisations, the
+145,274 participations between them, and the 2,767 call topics and 15 programme parts the projects
+answer.
+A participation is a vertex of its own, EURIO's `OrganisationRole`, as the role and the EU
+contribution belong to it; the shapes are EURIO's, the Publications Office's ontology of CORDIS,
+where it has a term. Organisations carry `lat` and `lon` where CORDIS has a position. The data is
+© European Union under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) —
+`infra/dev/examples/cordis/data/NOTICE` is the attribution — and, like OpenFlights, derived on your
+machine to pinned digests.
+
+And a fourth, whose time is on a relation: the [Nobel laureates](https://www.nobelprize.org/about/developer-zone-2/)
 and every prize awarded to 2025, from nobelprize.org's API (CC0), derived into six JSON files
 (470 KB, needs `python3`). Each prize a laureate won is a vertex between the laureate and the
 category — the API's own Linked Data vocabulary models it so, as `nobel:LaureateAward` — and it
@@ -110,28 +123,34 @@ Without them the bucket holds the shapes alone and `s3-init` says to run `make s
 The failure scenarios do not need it: `s3-init` also mirrors the suite's own
 fixtures (`e2e/fixtures/`, a small shop: people, orders and `shop.shex`) to `e2e/`,
 and the suite declares its connections over them (**E2E source**, **E2E shapes**) as
-it signs in. The smoke (`e2e/smoke/`) does: it runs both programs over these seeds and
-drives Discovery through them, so `make e2e` fetches them first, as CI does.
+it signs in. The smoke (`e2e/smoke/`) does: it runs each example's program over its seed
+and drives Discovery through them, so `make e2e` fetches them first, as CI does.
 
 Each example is one folder under `infra/dev/examples/<name>/`: `fetch.sh` (what `make seed` runs
 for it), `shapes.shex`, `mapping.fossil` and the gitignored `data/` it fetches. In the bucket it is
 `examples/<name>/data/` and `examples/<name>/shapes/`. At boot the instance declares, over them, a
 data source and a vocabulary connection per example — **LDBC SNB** and **LDBC SNB shapes**,
-**OpenFlights** and **OpenFlights shapes**, **Nobel laureates** and **Nobel laureates shapes** — and the sink, **Workspace output** (`output/`). Access
-is proved before each connection row is written, and an existing sink is never overwritten. Each
-example's program reads its own two connections; paste one into the studio to map its graph into
-`output/`:
+**OpenFlights** and **OpenFlights shapes**, **CORDIS** and **CORDIS shapes**, **Nobel laureates**
+and **Nobel laureates shapes** — and the sink, **Workspace output** (`output/`). Access is proved
+before each connection row is written, and an existing sink is never overwritten. Each example's
+program reads its own two connections; paste one into the studio to map its graph into `output/`:
 
 | Program | Graph |
 |---------|-------|
 | `infra/dev/examples/snb/mapping.fossil` | LDBC SNB SF0.1 onto its `shapes.shex` |
 | `infra/dev/examples/openflights/mapping.fossil` | OpenFlights onto its `shapes.shex`: 3,218 `Airport` vertices with `lat`/`lon`, 36,906 `routeTo` edges |
+| `infra/dev/examples/cordis/mapping.fossil` | CORDIS onto its `shapes.shex` (EURIO): 206,629 vertices — 23,451 `Project`, 35,122 `Organisation`, 145,274 `OrganisationRole`, 2,782 `FundingScheme` — and 316,766 edges |
 | `infra/dev/examples/nobel/mapping.fossil` | The Nobel laureates onto its `shapes.shex`: 1,018 `Laureate`, 1,026 `LaureateAward` with their year as `xsd:gYear`, 6 `Category`, 379 `University`, 86 `Country` |
 
 `infra/dev/examples/openflights/rules.ttl` is rules for the OpenFlights graph: a SHACL shapes graph
 to drop on the graph's Rules panel in Discover. Most airports conform; 44 fail it (no IATA code, or
 an ICAO field that is not a four-letter ICAO code), and two kinds draw a warning: 29 with no time
 zone and 218 above 4,000 ft, where takeoff performance is limited.
+
+`infra/dev/examples/cordis/rules.ttl` is the same for the CORDIS graph. It finds 5 organisations
+with no country, one with two, and 356 participations that do not say whether the organisation is an
+SME; and it warns about 12,525 projects that declare a total cost of 0, 1,675 organisations with no
+position, and 3,164 participations that have ended.
 
 **A stack seeded before the examples moved** (when they were `infra/dev/seed/` and `snb.fossil`,
 `geo.fossil` at `infra/dev/`) keeps its old connections. The instance declares a connection only when

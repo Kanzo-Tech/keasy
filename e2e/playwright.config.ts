@@ -11,6 +11,17 @@ import { defineConfig, devices } from "@playwright/test";
  * Only on :3000: Keycloak's client admits that origin alone, so a worktree on another port cannot
  * sign in.
  */
+/**
+ * Chromium on the machine's GPU. Headless Chromium draws WebGL in software (SwiftShader) unless told
+ * otherwise, and a Graph view of hundreds of thousands of points then lays out at a step a second:
+ * minutes for CORDIS's 206K vertices, against seconds on the GPU. These put it on the GPU through
+ * ANGLE: Metal on a Mac (measured: "ANGLE Metal Renderer: Apple M4 Pro"); elsewhere the GPU flags
+ * still lift the blocklist. A runner with no GPU at all still draws in software.
+ */
+const GPU = {
+  args: [...(process.platform === "darwin" ? ["--use-angle=metal"] : []), "--enable-gpu", "--ignore-gpu-blocklist"],
+};
+
 export default defineConfig({
   testDir: ".",
   fullyParallel: false,
@@ -42,7 +53,8 @@ export default defineConfig({
       name: "smoke",
       testMatch: /\/smoke\/[^/]+\.spec\.ts$/,
       dependencies: ["setup"],
-      use: { storageState: ".auth/editor.json" },
+      // The seeds are large graphs, laid out live: on the GPU, as a reader with one sees them.
+      use: { storageState: ".auth/editor.json", launchOptions: GPU },
     },
     // Product demos, recorded rather than asserted (demos/, `make demo`). Never part of `test`:
     // it names the projects it runs, so CI and `make e2e` do not record.
@@ -58,17 +70,7 @@ export default defineConfig({
         // An action waits for its element without bound by default, so a demo whose step never appears
         // hangs instead of failing; 30 s names the step that did not come.
         actionTimeout: 30_000,
-        // Headless Chromium draws WebGL in software (SwiftShader) unless told otherwise, and the
-        // Graph view of thousands of points then paints at a frame or two a second. These put it on
-        // the machine's GPU through ANGLE: Metal on a Mac (measured: "ANGLE Metal Renderer: Apple
-        // M4 Pro"); elsewhere the GPU flags still lift the blocklist.
-        launchOptions: {
-          args: [
-            ...(process.platform === "darwin" ? ["--use-angle=metal"] : []),
-            "--enable-gpu",
-            "--ignore-gpu-blocklist",
-          ],
-        },
+        launchOptions: GPU,
       },
     },
   ],

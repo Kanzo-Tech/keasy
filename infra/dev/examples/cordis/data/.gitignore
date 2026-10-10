@@ -1,0 +1,4 @@
+# fetch.sh (`make seed`) derives the CORDIS subset here. Never committed; NOTICE is.
+*
+!.gitignore
+!NOTICE

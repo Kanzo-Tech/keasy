@@ -111,6 +111,7 @@ test("rules are validated over the corpus's triples: what fails, what conforms, 
   await expect.poll(() => discover.counts()).toMatch(/^18 of 20 nodes match/);
   await rules.conforms(false);
   await expect.poll(() => discover.counts()).toMatch(/^20 nodes/);
+  await rules.close();
 
   // A subset picked elsewhere on the page leaves the last check behind, and keeps its tally until
   // Check again: then the rules check the four people in the US, all of whom the Person rule admits.

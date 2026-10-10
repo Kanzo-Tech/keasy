@@ -134,6 +134,7 @@ test("the flights rules find what the seed lacks: IATA codes, four-letter ICAO c
   const panel = await discover.rules();
   // infra/dev/examples/openflights/rules.ttl, dropped on the badge as a person drops it.
   await panel.drop("rules.ttl", rules("openflights"));
+  await expect.poll(() => panel.tally(), { timeout: 30_000 }).toBe("Not checked");
   expect(await panel.check()).toMatch(/^Checked over all 3,218 nodes/);
 
   const airport = await panel.rule("Airport");

@@ -74,6 +74,13 @@ export class RulesBadge extends FindingsBadgeHarness {
     return line ? line.text() : null;
   }
 
+  /** Closes the popover, if it is open, as a second press on the badge does. */
+  async close(): Promise<void> {
+    if ((await this.host.attribute("aria-expanded")) !== "true") return;
+    await this.host.click();
+    await this.env.until(async () => (await this.openDialogs()) === 0, "the rules did not close");
+  }
+
   /** The rule named `name`: a region of the popover, found again on every read. */
   rule(name: string | RegExp): Promise<Rule> {
     return Promise.resolve(new Rule(this, name));

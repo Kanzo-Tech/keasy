@@ -37,16 +37,20 @@ export interface ReadRules {
   model: ShapeModelJson;
 }
 
-/** The rules file parsed; a file rudof cannot read is the failure, a `ShapesError` placed by line and column. */
-export function useReadRules(text: string) {
+/**
+ * The rules file parsed — none while there is no file; a file rudof cannot read is the failure, a
+ * `ShapesError` placed by line and column.
+ */
+export function useReadRules(text: string | undefined) {
   const { graphId } = useCorpus();
   const read = useQuery({
     queryKey: [...corpusKey(graphId), "rules", text],
     queryFn: async (): Promise<ReadRules> => {
       const { Shapes } = await rudof();
-      const shapes = Shapes.parse(text);
+      const shapes = Shapes.parse(text!);
       return { shapes, model: shapes.model() };
     },
+    enabled: text !== undefined,
     staleTime: Infinity,
     retry: false,
   });
@@ -128,11 +132,14 @@ export function useRules(rules: ReadRules | undefined, text: string) {
     return { attachedTo, focus: String(focus) };
   };
 
-  /** rudof's groups over `over`, worded in the reader's languages, preferred first. */
-  const validated = async (shapes: Shapes, over: string | undefined, name: string, signal: AbortSignal) => {
+  /**
+   * rudof's groups over `over`, worded in the reader's languages, preferred first — of every rule,
+   * or of `shape` alone: that node shape over every target it declares (rudof-wasm 0.4.6's `shape`).
+   */
+  const validated = async (shapes: Shapes, over: string | undefined, name: string, signal: AbortSignal, shape?: string) => {
     const { attachedTo, focus } = await prepared(over, name, signal);
     const languages = typeof navigator === "undefined" ? [] : [...navigator.languages];
-    return { attachedTo, findings: await shapes.validateGroups({ table: triples, focus, engine: attachedTo, signal, languages }) };
+    return { attachedTo, findings: await shapes.validateGroups({ table: triples, focus, engine: attachedTo, signal, languages, shape }) };
   };
 
   const check = async () => {
@@ -188,13 +195,14 @@ export function useRules(rules: ReadRules | undefined, text: string) {
   };
 
   /**
-   * The focus nodes of the groups `keep` admits, found again: the last check's rules over the last
-   * check's subset, so they are the N its rows count. Asked for by a press, and nothing stops it.
+   * The focus nodes of `rule`'s groups that `keep` admits, found again: that rule alone, re-checked
+   * over the last check's subset, so they are the N its rows count. Asked for by a press, and
+   * nothing stops it.
    */
-  const nodesAgain = async (keep: (group: RdfFindingGroup) => boolean) => {
+  const nodesAgain = async (rule: Rule, keep: (group: RdfFindingGroup) => boolean) => {
     if (!rules || !checked) return [];
     const { signal } = new AbortController();
-    const { findings } = await validated(rules.shapes, checked.subset, "rules_show_focus", signal);
+    const { findings } = await validated(rules.shapes, checked.subset, "rules_show_focus", signal, rule.id);
     return nodesOf(findings.groups.filter(keep));
   };
 
@@ -218,15 +226,15 @@ export function useRules(rules: ReadRules | undefined, text: string) {
     withdraw: () => pick.pick(null, ""),
     /** Show one sampled node: its vertex becomes the rules' clause. */
     show: showNodes,
-    /** Show a group's vertices, found again: they become the rules' clause. */
-    showGroup: async (group: KeptGroup, label: string) => {
+    /** Show a group of `rule`'s vertices, found again: they become the rules' clause. */
+    showGroup: async (rule: Rule, group: KeptGroup, label: string) => {
       const wanted = groupKey(group);
-      await showNodes(await nodesAgain((g) => groupKey(g) === wanted), label);
+      await showNodes(await nodesAgain(rule, (g) => groupKey(g) === wanted), label);
     },
     /** Show every vertex `rule` flags with `severity`, found again, each once. */
     showSeverity: async (rule: Rule, severity: FindingSeverity, label: string) => {
       const wanted = new Set(rule.groups.filter((g) => g.severity === severity).map(groupKey));
-      await showNodes(await nodesAgain((g) => wanted.has(groupKey(g))), label);
+      await showNodes(await nodesAgain(rule, (g) => wanted.has(groupKey(g))), label);
     },
     /** Show what conforms: rudof's Shape Fragment of the subset, its subjects the panel's clause. */
     conforming: async (label: string) => {

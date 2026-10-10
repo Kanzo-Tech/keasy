@@ -63,22 +63,9 @@ export function RulesBadge() {
       maxFiles={1}
       onFileAccept={({ files: [file] }) => file && save.mutate(file)}
     >
-      {saved ? (
-        <Checked can_manage={can.manage} refused={save.error} saved={saved} />
-      ) : (
-        <FindingsRoot tally={undefined}>
-          <Badge>No rules</Badge>
-          <FindingsContent
-            empty={
-              <>
-                {save.error && <ProblemView error={save.error} uncoded="rules/refused" />}
-                <NoRules can_manage={can.manage} />
-              </>
-            }
-            header={<PopoverHeader title="Rules" />}
-          />
-        </FindingsRoot>
-      )}
+      {/* One badge whether or not there is a file yet: saving the first one changes its words, and
+          the popover it opens stays the one that is open. */}
+      <Checked can_manage={can.manage} refused={save.error} saved={saved ?? undefined} />
       <FileUploadHiddenInput />
     </FileUpload>
   );
@@ -135,14 +122,15 @@ const STALE: Record<Stale, string> = {
  * The rules file, read, and checked when asked: the badge's tally — kept, and marked out of date,
  * once a filter or the file moves past it — and the popover's groups.
  */
-function Checked({ saved, can_manage, refused }: { saved: Schemas["Rules"]; can_manage: boolean; refused: Error | null }) {
-  const { rules: read, failure: unreadable } = useReadRules(saved.shapes);
-  const rulesCheck = useRules(read, saved.shapes);
+function Checked({ saved, can_manage, refused }: { saved: Schemas["Rules"] | undefined; can_manage: boolean; refused: Error | null }) {
+  const { rules: read, failure: unreadable } = useReadRules(saved?.shapes);
+  const rulesCheck = useRules(read, saved?.shapes ?? "");
   const { checked, checking, failure, stale, picked, withdraw, show, conforming } = rulesCheck;
   const rules = read && checked ? rulesOf(read.model, checked.findings) : undefined;
   const tally = rules ? tallyOf(rules) : undefined;
-  const words =
-    unreadable !== undefined
+  const words = !saved
+    ? "No rules"
+    : unreadable !== undefined
       ? "Rules unreadable"
       : checking
         ? "Checking rules…"
@@ -156,8 +144,12 @@ function Checked({ saved, can_manage, refused }: { saved: Schemas["Rules"]; can_
   const toggle = (label: string, publish: () => Promise<void>) =>
     picked === label ? withdraw() : void publish().catch(failed);
 
-  const problem =
-    unreadable !== undefined ? (
+  const problem = !saved ? (
+    <>
+      {refused && <ProblemView error={refused} uncoded="rules/refused" />}
+      <NoRules can_manage={can_manage} />
+    </>
+  ) : unreadable !== undefined ? (
       <ProblemView error={unreadable} uncoded="rules/refused" />
     ) : failure !== undefined ? (
       <ProblemView error={failure} uncoded="query/failed" />
@@ -175,14 +167,18 @@ function Checked({ saved, can_manage, refused }: { saved: Schemas["Rules"]; can_
       <FindingsContent
         empty={problem ?? <AllConform rules={rules ?? []} />}
         header={
-          <RulesHeader
-            can_manage={can_manage}
-            check={read ? rulesCheck : undefined}
-            conforms={{ pressed: picked === CONFORMS, toggle: () => toggle(CONFORMS, () => conforming(CONFORMS)) }}
-            count={read?.model.nodeShapes.length}
-            refused={refused}
-            saved={saved}
-          />
+          !saved ? (
+            <PopoverHeader title="Rules" />
+          ) : (
+            <RulesHeader
+              can_manage={can_manage}
+              check={read ? rulesCheck : undefined}
+              conforms={{ pressed: picked === CONFORMS, toggle: () => toggle(CONFORMS, () => conforming(CONFORMS)) }}
+              count={read?.model.nodeShapes.length}
+              refused={refused}
+              saved={saved}
+            />
+          )
         }
       >
         {problem === undefined &&
@@ -205,7 +201,7 @@ function Checked({ saved, can_manage, refused }: { saved: Schemas["Rules"]; can_
                 const n = group.vertices.toLocaleString();
                 return (
                   <FindingGroupRow
-                    action={{ label: picked === label ? `Showing ${n}` : `Show ${n}`, run: () => toggle(label, () => rulesCheck.showGroup(group, label)) }}
+                    action={{ label: picked === label ? `Showing ${n}` : `Show ${n}`, run: () => toggle(label, () => rulesCheck.showGroup(rule, group, label)) }}
                     describe={(place) => describe(place, rule, show, failed)}
                     group={group}
                     key={groupKey(group)}

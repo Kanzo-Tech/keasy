@@ -27,7 +27,8 @@ test("the funding rules find what the seed lacks: countries and SME status, and 
   const rules = await discover.rules();
   // infra/dev/examples/cordis/rules.ttl, dropped on the badge as a person drops it.
   await rules.drop("rules.ttl", readFileSync(fileURLToPath(new URL("../../infra/dev/examples/cordis/rules.ttl", import.meta.url)), "utf8"));
-  // Checked when asked, over the whole corpus.
+  // Saved, and not checked until asked: then over the whole corpus.
+  await expect.poll(() => rules.tally(), { timeout: 30_000 }).toBe("Not checked");
   await rules.start();
   await expect.poll(() => rules.checked(), { timeout: 240_000 }).toMatch(/^Checked over all 206,629 nodes/);
 

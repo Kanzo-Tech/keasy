@@ -9,7 +9,7 @@
 # its data volume. infra/prod/README.md is the operator's guide.
 
 include:
-  - https://github.com/Kanzo-Tech/ui.git#${KANZO_UI_REF:-v0.39.0}:services/compose.yaml
+  - https://github.com/Kanzo-Tech/ui.git#${KANZO_UI_REF:-v0.39.1}:services/compose.yaml
 
 services:
   # The edge: TLS for every host, from Let's Encrypt. Keycloak's route is infra/prod/traefik.yaml;

@@ -25,12 +25,27 @@ export const EXAMPLES: readonly string[] = readdirSync(EXAMPLES_DIR, { withFileT
  */
 export type Example = string;
 
-/** The program that maps the dev example `example`. */
-export function mapping(example: Example): string {
+/** A file of the dev example `example`, by its name in the example's folder. */
+function read(example: Example, file: string): string {
   if (!EXAMPLES.includes(example)) {
     throw new Error(`no dev example "${example}" under infra/dev/examples/ (there are: ${EXAMPLES.join(", ")})`);
   }
-  return readFileSync(join(EXAMPLES_DIR, example, "mapping.fossil"), "utf8");
+  return readFileSync(join(EXAMPLES_DIR, example, file), "utf8");
+}
+
+/** The program that maps the dev example `example`. */
+export function mapping(example: Example): string {
+  return read(example, "mapping.fossil");
+}
+
+/** The rules the dev example `example` is checked against (`rules.ttl`, SHACL), as the Rules panel takes them. */
+export function rules(example: Example): string {
+  return read(example, "rules.ttl");
+}
+
+/** Whether the dev example `example` is in this tree: a demo of an example still on its way skips. */
+export function hasExample(example: Example): boolean {
+  return EXAMPLES.includes(example);
 }
 
 /**

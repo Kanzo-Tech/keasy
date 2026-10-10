@@ -1,7 +1,6 @@
-import { fileURLToPath } from "node:url";
-
-import { discoverUrl } from "../support/fixtures";
-import { agreedCount, brush, expect, PLOT, saveDashboard, test } from "../support/smoke";
+import { DiscoverPage, saveDashboard } from "../support/app";
+import { rules } from "../support/seeds";
+import { agreedCount, expect, test } from "../support/smoke";
 
 /**
  * The OpenFlights dev graph (infra/dev/examples/openflights/mapping.fossil over `make seed`'s subset):
@@ -10,6 +9,8 @@ import { agreedCount, brush, expect, PLOT, saveDashboard, test } from "../suppor
  */
 
 const AIRPORTS = 3218;
+/** The readout with no filter on the page: every airport, none of them kept out. */
+const UNFILTERED = /^3,218 Airport/;
 
 // The suite's first visits to the views compile them in the dev server, and the seed is 160 times
 // the shop.
@@ -33,16 +34,18 @@ const DASHBOARD = {
   ],
 };
 
-test("the flights graph opens in Graph view: every airport, and the routes between them", async ({ page, geoGraph }) => {
-  await page.goto(`/graphs/${geoGraph}/discover`);
-  await expect(page.locator('[data-slot="graph-counts"]')).toHaveText(/^3\.2K nodes · 36\.9K edges$/, { timeout: 60_000 });
+test("the flights graph opens in Graph view: every airport, and the routes between them", async ({ page, env, geoGraph }) => {
+  const graph = await (await DiscoverPage.open(page, env, geoGraph)).graph();
+  await graph.ready();
+  expect(await graph.counts()).toMatch(/^3\.2K nodes · 36\.9K edges$/);
 });
 
-test("the flights dashboard draws every tile kind, and holds under a brush and a filter chip", async ({ page, geoGraph }) => {
+test("the flights dashboard draws every tile kind, and holds under a brush and a filter chip", async ({ page, env, geoGraph }) => {
   await saveDashboard(page, geoGraph, "Airport", DASHBOARD);
-  await page.goto(discoverUrl(geoGraph, { view: "dashboard" }));
-  const filters = page.getByRole("region", { name: "Filters" });
-  await expect(filters).toContainText(`${AIRPORTS.toLocaleString("en-US")} Airport`, { timeout: 60_000 });
+  const discover = await DiscoverPage.open(page, env, geoGraph, { view: "dashboard" });
+  const dashboard = await discover.dashboard();
+  const bar = await discover.filters();
+  await expect.poll(() => bar.readout()).toMatch(UNFILTERED);
 
   // What the editor offers is what this dashboard has one of: a kind or a mark added to kanzo-ui's
   // dashboard fails here until the smoke draws it too.
@@ -54,40 +57,41 @@ test("the flights dashboard draws every tile kind, and holds under a brush and a
   expect(await offered("Mark")).toEqual(["Bar", "Line", "Area", "Histogram", "Scatter", "Fit"]);
   await format.getByRole("button", { name: "Cancel" }).click();
 
-  const figure = (title: string) => page.locator('[data-slot="dashboard-figures"] > *').filter({ hasText: title });
-  const card = (title: string) => page.locator('[data-slot="dashboard-tiles"] > *').filter({ hasText: title });
-  await expect(figure("Airports")).toContainText("3,218");
+  expect(await (await dashboard.tile("Airports")).text()).toContain("3,218");
   for (const title of ["By country", "Altitude along latitude", "Along longitude", "By altitude", "Positions", "Altitude against latitude"]) {
-    await expect(card(title).locator(PLOT).first(), title).toBeVisible();
+    await (await (await dashboard.tile(title)).chart()).settled();
   }
-  await expect(card("By country")).toContainText("United States");
-  await expect(card("Airport rows")).toContainText("Airport.iataCode");
+  expect(await (await dashboard.tile("By country")).text()).toContain("United States");
+  expect(await (await dashboard.tile("Airport rows")).text()).toContain("Airport.iataCode");
 
-  // A brush on the altitude histogram: every other tile reads the airports it keeps, the fit
-  // pre-aggregated, and the bar names it as a chip.
-  await brush(page, card("By altitude"));
-  const kept = await agreedCount(page, { total: AIRPORTS, noun: "Airport", figure: "Airports" });
+  // A brush on the altitude histogram, from 4,000 to 8,000 ft: every other tile reads the airports it
+  // keeps, the fit pre-aggregated, and the bar names it as a chip.
+  await (await (await dashboard.tile("By altitude")).chart()).brush({ x: [4000, 8000] });
+  const kept = await agreedCount(discover, { total: AIRPORTS, noun: "Airport", figure: "Airports" });
   expect(kept).toBeGreaterThan(0);
   expect(kept).toBeLessThan(AIRPORTS);
-  await expect(card("Altitude against latitude").locator(PLOT).first()).toBeVisible();
-  const brushChip = filters.getByRole("button", { name: /^Remove .*Airport\.altitude/ });
-  await expect(brushChip).toBeVisible();
-  await brushChip.click();
-  await expect(filters).toContainText(`${AIRPORTS.toLocaleString("en-US")} Airport`);
+  await (await (await dashboard.tile("Altitude against latitude")).chart()).settled();
+  // A clause chip reads its source, then its field and range: *Airport Airport.altitude 3976.6 – 7990.0*.
+  expect((await bar.chips()).some((chip) => chip.startsWith("Airport Airport.altitude "))).toBe(true);
+  await bar.remove("Airport Airport.altitude");
+  await expect.poll(() => bar.readout()).toMatch(UNFILTERED);
 
-  // The dashboard's filter chip: the 40 airports in Spain.
-  await filters.getByRole("button", { name: /^Airport\.country:/ }).click();
+  // The dashboard's filter chip: the 40 airports in Spain. The control's value list is the library's
+  // and has no harness method yet, so it is driven by its roles.
+  await bar.open("Airport.country");
   await page.getByRole("textbox", { name: "Filter values" }).fill("Spain");
   // Each value with its count over the whole relation.
   await page.getByRole("option", { name: "Spain 40", exact: true }).click();
   await page.keyboard.press("Escape");
-  expect(await agreedCount(page, { total: AIRPORTS, noun: "Airport", figure: "Airports" })).toBe(40);
+  expect(await agreedCount(discover, { total: AIRPORTS, noun: "Airport", figure: "Airports" })).toBe(40);
   // The table pages through the 40, every one of them in Spain.
-  await expect(card("Airport rows")).toContainText("1–25 of 40");
-  await expect(card("Airport rows").getByRole("row").filter({ hasNotText: "Airport.country" }).filter({ hasNotText: "Spain" })).toHaveCount(0);
+  const table = await dashboard.tile("Airport rows");
+  expect(await table.text()).toContain("1–25 of 40");
+  const rows = await Promise.all((await table.host.find({ role: "row" })).map((row) => row.text()));
+  expect(rows.filter((row) => !row.includes("Airport.country") && !row.includes("Spain"))).toEqual([]);
 });
 
-test("leaving Discover with a dashboard filter in force logs nothing, and the page opens again", async ({ page, geoGraph }) => {
+test("leaving Discover with a dashboard filter in force logs nothing, and the page opens again", async ({ page, env, geoGraph }) => {
   // A frame that comes late, as on a busy machine or in a tab in the background: Mosaic batches its
   // queries behind `requestAnimationFrame`, so what a page queues on its way out runs well after it
   // unmounts: a corpus detached as the page goes, rather than when the cache collects it, is gone
@@ -97,18 +101,19 @@ test("leaving Discover with a dashboard filter in force logs nothing, and the pa
     window.requestAnimationFrame = (run) => frame((t) => setTimeout(() => run(t), 250));
   });
   await saveDashboard(page, geoGraph, "Airport", DASHBOARD);
-  await page.goto(discoverUrl(geoGraph, { view: "dashboard" }));
-  const filters = page.getByRole("region", { name: "Filters" });
-  await expect(filters).toContainText(`${AIRPORTS.toLocaleString("en-US")} Airport`, { timeout: 60_000 });
+  const discover = await DiscoverPage.open(page, env, geoGraph, { view: "dashboard" });
+  await discover.dashboard();
+  const bar = await discover.filters();
+  await expect.poll(() => bar.readout()).toMatch(UNFILTERED);
 
-  await filters.getByRole("button", { name: /^Airport\.country:/ }).click();
+  await bar.open("Airport.country");
   await page.getByRole("textbox", { name: "Filter values" }).fill("United States");
   await page.getByRole("option", { name: /^United States \d/ }).click();
   await page.keyboard.press("Escape");
-  await expect(filters).toContainText(/^.*\d[\d,]* of 3,218 Airport/);
+  await expect.poll(() => bar.readout()).toMatch(/^[\d,]+ of 3,218 Airport$/);
   // The dashboard hidden, its clause still on the page, the canvas drawing what it keeps.
-  await page.getByRole("radio", { name: "Graph" }).click();
-  await expect(page.locator('[data-slot="graph-counts"]')).toHaveText(/ of 3\.2K nodes match/, { timeout: 60_000 });
+  await discover.view("Graph");
+  await expect.poll(() => discover.counts()).toMatch(/ of 3\.2K nodes match/);
 
   // Leaving by a link unmounts the page in the browser: the dashboard withdraws its clause as it
   // goes, and every client still connected asks again. Those queries must not outlive their clients
@@ -117,41 +122,46 @@ test("leaving Discover with a dashboard filter in force logs nothing, and the pa
   await page.getByRole("navigation", { name: "breadcrumb" }).getByRole("link", { name: "Graphs" }).click();
   await expect(page.getByPlaceholder("Search graphs...")).toBeVisible();
   await page.goBack();
-  await expect(page.locator('[data-slot="graph-counts"]')).toHaveText(/^3\.2K nodes · 36\.9K edges$/, { timeout: 60_000 });
+  const graph = await discover.graph();
+  await graph.ready();
+  await expect.poll(() => graph.counts()).toMatch(/^3\.2K nodes · 36\.9K edges$/);
 });
 
-test("the flights rules find what the seed lacks: IATA codes, four-letter ICAO codes, time zones, and flag high airports", async ({ page, geoGraph }) => {
+test("the flights rules find what the seed lacks: IATA codes, four-letter ICAO codes, time zones, and flag high airports", async ({ page, env, geoGraph }) => {
   // Beside the dashboard: on CI's software GPU the canvas's layout shares the CPU with rudof, and the
   // check that takes ~10 s beside the dashboard took ~3 min beside the canvas.
-  await page.goto(discoverUrl(geoGraph, { view: "dashboard", panel: "rules" }));
+  const discover = await DiscoverPage.open(page, env, geoGraph, { view: "dashboard", panel: "rules" });
+  const panel = await discover.rules();
   // infra/dev/examples/openflights/rules.ttl, dropped on the panel as a person drops it.
-  await page.locator('input[type="file"]').setInputFiles(fileURLToPath(new URL("../../infra/dev/examples/openflights/rules.ttl", import.meta.url)));
-  await expect(page.getByText("Checked over all 3,218 nodes")).toBeVisible({ timeout: 60_000 });
+  await panel.drop("rules.ttl", rules("openflights"));
+  expect(await panel.checked()).toMatch(/^Checked over all 3,218 nodes/);
 
-  const airport = page.getByRole("region", { name: "Airport" });
-  const finding = (message: string) => airport.locator('[data-slot="diagnostic"]').filter({ hasText: message });
+  const airport = await panel.rule("Airport");
   // airports.csv: 20 rows with an empty `iata`; 24 whose `icao` is not four capitals (CAJ4, S31, VA1P,
   // …); 29 with an empty `timezone`, a warning; 218 whose `altitude` is above 4,000 ft, a warning too.
   // Nothing else: every position is in range and every route lands on an airport.
-  await expect(airport.locator('[data-slot="diagnostic"]')).toHaveCount(4);
-  await expect(finding("An airport with scheduled routes has a three-letter IATA code.")).toContainText("Violation");
-  await expect(finding("An airport with scheduled routes has a three-letter IATA code.").getByRole("button", { name: "Show 20" })).toBeVisible();
-  await expect(finding("An ICAO airport code is four letters.")).toContainText("Violation");
-  await expect(finding("An ICAO airport code is four letters.").getByRole("button", { name: "Show 24" })).toBeVisible();
-  await expect(finding("The airport has no IANA time zone.")).toContainText("Warning");
-  await expect(finding("The airport has no IANA time zone.").getByRole("button", { name: "Show 29" })).toBeVisible();
-  await expect(finding("A high-altitude airport: takeoff performance is limited.")).toContainText("Warning");
-  await expect(finding("A high-altitude airport: takeoff performance is limited.").getByRole("button", { name: "Show 218" })).toBeVisible();
-  await expect(airport.getByLabel("2 violations")).toBeVisible();
-  await expect(airport.getByLabel("2 warnings")).toBeVisible();
+  expect(await airport.findings()).toHaveLength(4);
+  const expected = [
+    ["An airport with scheduled routes has a three-letter IATA code.", "Violation", 20],
+    ["An ICAO airport code is four letters.", "Violation", 24],
+    ["The airport has no IANA time zone.", "Warning", 29],
+    ["A high-altitude airport: takeoff performance is limited.", "Warning", 218],
+  ] as const;
+  for (const [message, severity, flagged] of expected) {
+    const finding = await airport.finding(message);
+    expect(await finding.severity(), message).toBe(severity);
+    expect(await finding.flagged(), message).toBe(flagged);
+  }
+  expect(await airport.state()).toBe("2 violations · 2 warnings");
 
   // Show puts the finding's airports on the page.
-  await finding("The airport has no IANA time zone.").getByRole("button", { name: "Show 29" }).click();
-  await expect(page.locator('[data-slot="graph-counts"]')).toHaveText(/^29 of 3\.2K nodes match/);
+  expect(await airport.show("The airport has no IANA time zone.")).toBe(29);
+  await expect.poll(() => discover.counts()).toMatch(/^29 of 3\.2K nodes match/);
 
   // Show all is every airport one severity flags, each once: 20 + 24 violations share no airport,
   // and two of the 29 without a time zone are high too, so 29 + 218 warnings are 245 airports.
-  await expect(airport.getByRole("button", { name: "Show all 245 warnings" })).toBeVisible();
-  await airport.getByRole("button", { name: "Show all 44 violations" }).click();
-  await expect(page.locator('[data-slot="graph-counts"]')).toHaveText(/^44 of 3\.2K nodes match/);
+  expect(await airport.showAll("warnings")).toBe(245);
+  await expect.poll(() => discover.counts()).toMatch(/^245 of 3\.2K nodes match/);
+  expect(await airport.showAll("violations")).toBe(44);
+  await expect.poll(() => discover.counts()).toMatch(/^44 of 3\.2K nodes match/);
 });

@@ -26,6 +26,9 @@ importers:
       '@eslint/js':
         specifier: ^9.39.5
         version: 9.39.5
+      '@kanzo-tech/testing':
+        specifier: ^0.37.0
+        version: 0.37.0(playwright-core@1.63.0)
       '@playwright/test':
         specifier: ^1.63.0
         version: 1.63.0
@@ -749,6 +752,17 @@ packages:
 
   '@kanzo-tech/rudof-wasm@0.4.2':
     resolution: {integrity: sha512-/YieegJw20F76PqOGwmRyxNTOo2dtRi41mqxK2Htcz97mk+GllsOeFvldE05vBJ5fy1D9nBDvQzYLjdb3TWQ0w==}
+
+  '@kanzo-tech/testing@0.37.0':
+    resolution: {integrity: sha512-29YkLIqnRu4buZQGbDX8NJk3MT6ZxtwEkkOARIgK119t/CAanEcHBY6Hzc44SKkUZWKS9BtYf1Y7K53vKoA4ig==}
+    peerDependencies:
+      '@testing-library/dom': ^10.4.0
+      playwright-core: ^1.62.0
+    peerDependenciesMeta:
+      '@testing-library/dom':
+        optional: true
+      playwright-core:
+        optional: true
 
   '@kanzo-tech/theme@0.37.0':
     resolution: {integrity: sha512-RATw+O0QgkHogPFGbBGd/6rUouDjebC51QAGnCwaK2LsTVA9Ec8Te856i7yKvCTO24mGuFKsizdupK9nuBhrkw==}
@@ -4813,6 +4827,10 @@ snapshots:
       next: 16.3.7(@babel/core@7.29.7)(@opentelemetry/api@1.9.0)(@playwright/test@1.63.0)(@types/node@20.19.37)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
 
   '@kanzo-tech/rudof-wasm@0.4.2': {}
+
+  '@kanzo-tech/testing@0.37.0(playwright-core@1.63.0)':
+    optionalDependencies:
+      playwright-core: 1.63.0
 
   '@kanzo-tech/theme@0.37.0': {}
 

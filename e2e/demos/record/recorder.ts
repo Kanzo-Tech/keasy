@@ -18,8 +18,10 @@ import { hold, PACE, readingTime } from "./pace";
  * page object's, in data (a brush over 1985–1989, a lasso in lon/lat), and it resolves on the state it
  * caused. The check asserts what must be true after it, so a take whose page did something else fails
  * rather than recording it. `hold` is the only time a demo spends on the clock, and it is the
- * viewer's: the subtitle is left up for its reading time (`readingTime`), counted from when it
- * appeared, so a slow action does not add to it.
+ * viewer's: the subtitle is read while it leads its action (`LEAD`), and the rest of its reading time
+ * (`readingTime`) is held once the action's result is on screen. The action's own time is watched,
+ * not read, so it never eats into that: counted from when the subtitle appeared, a slow action left
+ * the result no time to be seen, and the takes read too fast.
  *
  * The subtitles are the Screencast API's `showOverlay` (`subtitle`). The cursor is the page's own
  * (`CURSOR`): the API's `showActions` also draws a box round each target and a title for each action,
@@ -174,7 +176,6 @@ async function take(
     for (const step of steps) {
       // The subtitle leads its step, and stays until the next replaces it.
       await shown?.dispose();
-      const up = Date.now();
       const last = chapters.at(-1);
       if (last) last.end = now();
       chapters.push({ text: step.subtitle, start: now(), end: now() });
@@ -183,7 +184,9 @@ async function take(
       await step.action?.();
       await step.check();
       if (step.poster) await page.screenshot({ path: poster });
-      await hold(readingTime(step.subtitle) - (Date.now() - up));
+      // The action's own time is not reading time: the words are read while they lead it, and what
+      // they caused stays on screen for the rest of their reading time once it is there.
+      await hold(readingTime(step.subtitle) - LEAD);
     }
   });
   await shown?.dispose();

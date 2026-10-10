@@ -2,7 +2,7 @@ import { expect } from "@playwright/test";
 
 import { DiscoverPage, saveDashboard, saveRules } from "../support/app";
 import { hasExample, seedGraph } from "../support/seeds";
-import { categories } from "./charts";
+import { categories, leaders } from "./charts";
 import { demo } from "./record";
 
 /** The relation the dashboard reads: each participation with the organisation it is the role of. */
@@ -26,7 +26,7 @@ const DASHBOARD = {
 };
 
 /**
- * EU research funding: who gets Horizon Europe's €62.5 billion. Coordinators hold one seat in six and
+ * EU research funding: who gets Horizon Europe's €62.6 billion. Coordinators hold one seat in six and
  * 43 % of the money; universities coordinate six projects in ten, Germany's and the Netherlands' first;
  * and a rule finds 12,525 projects that declare a total cost of 0. Every figure is DuckDB's over the
  * CORDIS example (STORYBOARD.md has the queries). Off camera: the example's rules and the dashboard
@@ -44,6 +44,8 @@ demo("cordis-funding", "EU research funding over CORDIS: who gets Horizon Europe
     const dashboard = await discover.dashboard();
     const rules = await discover.rules();
     await rules.check();
+    // The popover is modal: left open, it hides the dashboard behind it.
+    await rules.close();
     return { discover, dashboard, rules };
   },
 
@@ -52,9 +54,9 @@ demo("cordis-funding", "EU research funding over CORDIS: who gets Horizon Europe
     const countries = async () => categories(await dashboard.tile(/by Organisation\.country/));
     return [
       {
-        subtitle: "€62.5 billion of Horizon Europe — who gets it?",
+        subtitle: "€62.6 billion of Horizon Europe — who gets it?",
         async check() {
-          expect(await total()).toMatch(/62\.55?B/);
+          expect(await total()).toMatch(/62\.6B$/);
           expect((await countries())[0]).toBe("DE");
         },
       },
@@ -79,7 +81,7 @@ demo("cordis-funding", "EU research funding over CORDIS: who gets Horizon Europe
       {
         subtitle: "Germany and the Netherlands lead them",
         // A reading: the country chart, now over university coordinators — DE €1.88B, NL €1.40B.
-        check: async () => expect((await countries()).slice(0, 2)).toEqual(["DE", "NL"]),
+        check: () => expect.poll(async () => (await leaders(await dashboard.tile(/by Organisation\.country/))).slice(0, 2)).toEqual(["DE", "NL"]),
       },
       {
         subtitle: "A rule finds 12,525 projects that declare a cost of 0",

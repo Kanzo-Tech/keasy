@@ -68,3 +68,30 @@ export class ConnectionsPage extends ComponentHarness {
     return (await this.host.find({ role: "button", name: `Actions for ${name}` })).length > 0;
   }
 }
+
+/**
+ * **New connection** — the form an editor makes a source with. Its credential picker lists every
+ * credential; one someone else owns and has not shared with the editor is disabled and says whom to
+ * ask, so it is read here rather than found missing.
+ */
+export class NewConnectionPage extends ComponentHarness {
+  static readonly by: By = { css: "body" };
+
+  static async open(page: Page, env: HarnessEnvironment): Promise<NewConnectionPage> {
+    await page.goto("/connections/new");
+    const form = await env.harness(NewConnectionPage);
+    await form.one({ role: "heading", name: "New connection" }, "the page is not the new connection form");
+    return form;
+  }
+
+  /** The credential `name` as the picker offers it: whether it may be chosen, and why not. */
+  async credential(name: string): Promise<Offered> {
+    const picker = await this.one({ role: "combobox", name: /Credential/ }, "the form has no credential picker");
+    await picker.click();
+    const option = await this.one({ role: "option", name: new RegExp(`^${name}`) }, `the picker offers no ${name}`);
+    const disabled = (await option.attribute("aria-disabled")) === "true" || (await option.attribute("data-disabled")) !== null;
+    const words = await option.text();
+    await picker.press("Escape");
+    return { enabled: !disabled, reason: words.slice(name.length).trim() };
+  }
+}

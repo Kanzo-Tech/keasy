@@ -10,7 +10,7 @@ const graph = (over: Partial<Schemas["Graph"]>): Schemas["Graph"] =>
     created_by: { id: "u-1", name: "Ana" },
     owner: { id: "u-1", name: "Ana" },
     sink_connection: "sink",
-    can: { operate: true, manage: true },
+    can: { use: true, operate: true, manage: true, transfer: true },
     can_stop: false,
     cancel_requested: false,
     ...over,
@@ -34,7 +34,7 @@ describe("the header's primary action", () => {
   it("shows a reader Explore, disabled until there is output", () => {
     expect(primaryAction(graph({ status: "completed" }), reader)).toMatchObject({ kind: "explore" });
     for (const status of ["draft", "idle", "running", "failed"] as const) {
-      expect(primaryAction(graph({ status, can: { operate: false, manage: false } }), reader)).toMatchObject({
+      expect(primaryAction(graph({ status, can: { use: true, operate: false, manage: false, transfer: false } }), reader)).toMatchObject({
         kind: "explore",
         blocked: "No output yet",
       });
@@ -42,10 +42,10 @@ describe("the header's primary action", () => {
   });
 
   it("runs another editor's graph, and disables editing their draft with the reason", () => {
-    const theirs = { can: { operate: true, manage: false } };
+    const theirs = { can: { use: true, operate: true, manage: false, transfer: false } };
     expect(primaryAction(graph({ status: "idle", ...theirs }), editor)).toEqual({ kind: "run", label: "Run" });
     expect(primaryAction(graph({ status: "failed", ...theirs }), editor).blocked).toBeUndefined();
-    expect(primaryAction(graph({ status: "draft", ...theirs }), editor).blocked).toMatch(/owner \(Ana\) or an admin/);
+    expect(primaryAction(graph({ status: "draft", ...theirs }), editor).blocked).toMatch(/owner \(Ana\), its managers or an admin/);
   });
 
   it("stops a run here at once, elsewhere if allowed, and recovers one this tab lost", () => {

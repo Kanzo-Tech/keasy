@@ -12,7 +12,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
-    "@kanzo-tech/testing": "^0.38.0",
+    "@kanzo-tech/testing": "^0.39.0",
     "@playwright/test": "^1.63.0",
     "@types/node": "^20.19.37",
     "eslint": "^9.39.5",

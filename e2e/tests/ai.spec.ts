@@ -123,7 +123,7 @@ test("16 an answer the spec does not admit fails in its card, and the model read
     AI,
     answering(
       {
-        relation: { root: "Person", path: [] },
+        relation: "Person",
         where: [{ field: "Person.shoeSize", in: ["42"] }],
         show: { kind: "stat", measure: { op: "count" } },
       },
@@ -142,7 +142,7 @@ test("an answer added to the dashboard is saved as a tile of its relation", asyn
   const title = `Asked ${Date.now()}`;
   await page.route(
     AI,
-    answering({ relation: { root: "Person", path: [] }, show: { kind: "stat", measure: { op: "count" }, title } }, "That is everyone."),
+    answering({ relation: "Person", show: { kind: "stat", measure: { op: "count" }, title } }, "That is everyone."),
   );
   const answers = await (await askPanel(page, env, corpusGraph)).composer();
   await answers.ask("How many people are there?");

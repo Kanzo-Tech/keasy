@@ -15,7 +15,7 @@ import {
   tallyFindings,
 } from "@kanzo-tech/ui";
 import type { Diagnostic } from "@fossil-lang/types";
-import { copyOf } from "@/lib/errors";
+import { copyOf, pageOf } from "@/lib/errors";
 
 /** LSP severity: 1 error, 2 warning, 3 information, 4 hint — as kanzo-ui's severities, a hint a note. */
 const SEVERITY = { 1: "violation", 2: "warning", 3: "info", 4: "info" } as const satisfies Record<number, FindingSeverity>;
@@ -69,10 +69,20 @@ export function FindingsBadge({
     () => [...findings].sort((a, b) => a.range.start.line - b.range.start.line).map(findingOf),
     [findings],
   );
-  const describe: DescribePlace<Diagnostic> = (row) => ({
-    where: `Line ${row.range.start.line + 1}`,
-    action: { label: "Go to line", run: () => onSelect(row) },
-  });
+  const describe: DescribePlace<Diagnostic> = (row) => {
+    // The page that explains the code, as `ProblemItem` linked it: a `detail`, not the finding's
+    // `help`, which is text and is the compiler's.
+    const page = pageOf(row.code);
+    return {
+      where: `Line ${row.range.start.line + 1}`,
+      action: { label: "Go to line", run: () => onSelect(row) },
+      detail: page && (
+        <a className="underline underline-offset-2" href={page} rel="noreferrer" target="_blank">
+          What {row.code} means
+        </a>
+      ),
+    };
+  };
 
   return (
     <FindingsRoot labels={LABELS} onOpenChange={(d) => onOpenChange(d.open)} open={open} tally={tallyFindings(listed)}>

@@ -43,7 +43,7 @@ demo("flights-crossfilter", "Crossfiltering over OpenFlights: a click, a brush, 
         await graph.ready();
       },
       async check() {
-        await expect.poll(() => graph.counts()).toMatch(/^132 of 3\.2K nodes match/);
+        await expect.poll(() => graph.counts()).toMatch(/^132 match · 3\.2K of 3\.2K placed/);
       },
     },
     {

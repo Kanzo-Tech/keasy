@@ -6,7 +6,7 @@ import { playwright, type HarnessEnvironment } from "@kanzo-tech/testing";
 
 import { CURSOR, GLIDE, gliding } from "./cursor";
 import { encode, ffmpeg } from "./encode";
-import { hold, readingTime } from "./pace";
+import { hold, PACE, readingTime } from "./pace";
 
 /**
  * A product demo: a Playwright test that records a story, step by step. `make demo` lists them by
@@ -58,7 +58,7 @@ const FURNITURE = () => {
 };
 
 /** How long a subtitle is up before its step's action starts: it leads, the cursor follows. */
-const LEAD = 700;
+const LEAD = 700 * PACE;
 
 /** A subtitle: one line, dark, at the foot of the frame, the same on either theme. */
 function subtitle(text: string): string {

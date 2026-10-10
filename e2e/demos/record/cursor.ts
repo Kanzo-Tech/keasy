@@ -1,9 +1,9 @@
 import type { Locator, Mouse, Page } from "@playwright/test";
 
-import { hold } from "./pace";
+import { hold, PACE } from "./pace";
 
 /** How long the cursor glides to a target before the action lands there. */
-export const GLIDE = 550;
+export const GLIDE = 550 * PACE;
 
 /**
  * The cursor, drawn by the page itself from the real input events Playwright sends: an arrow that
@@ -79,7 +79,7 @@ export const CURSOR = (glide: number) => {
 };
 
 /** How fast a demo types: a field filled at once reads as a paste, not as someone asking. */
-const KEYSTROKE = 35;
+const KEYSTROKE = 35 * PACE;
 /** The moves a drag is drawn through between two of its points, so a brush or a lasso is seen drawn. */
 const DRAWN = 12;
 

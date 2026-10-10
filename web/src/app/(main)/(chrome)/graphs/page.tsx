@@ -44,7 +44,7 @@ import { Boundary, Loading } from "@/components/boundary";
 import { GRAPH_COLUMNS } from "@/components/graph-columns";
 import { settled } from "@/lib/api/settled";
 import { useSession } from "@kanzo-tech/auth";
-import { PAGE_TABLE_HEIGHT } from "@/lib/ui/table-heights";
+import { PAGE_TABLE } from "@/lib/ui/table-heights";
 
 type Graph = Schemas["Graph"];
 type GraphStatus = Schemas["GraphStatus"];
@@ -143,7 +143,7 @@ function Graphs() {
     </EmptyRoot>
   ) : (
     <>
-      <DataTableRoot table={table}>
+      <DataTableRoot className={PAGE_TABLE.root} table={table}>
         <DataTableToolbar>
           <DataTableSearch column="name" placeholder={`Search ${lower(WORDS.graphs)}...`} />
           <DataTableFacetFilter column="status" label="Status" options={STATUS_OPTIONS} size="sm" />
@@ -160,7 +160,8 @@ function Graphs() {
           </div>
         </DataTableToolbar>
         <DataTableContent<Graph>
-          maxHeight={PAGE_TABLE_HEIGHT}
+          className={PAGE_TABLE.content}
+          maxHeight={PAGE_TABLE.maxHeight}
           stickyHeader
           empty={`No ${lower(WORDS.graphs)} match this filter.`}
           // One home per graph: its page, a draft's included; the recipe editor is reached from there.

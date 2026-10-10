@@ -39,7 +39,7 @@ import { toastError } from "@/lib/errors";
 import { blocked } from "@/lib/permissions";
 import { Boundary, Loading } from "@/components/boundary";
 import { settled } from "@/lib/api/settled";
-import { PAGE_TABLE_HEIGHT } from "@/lib/ui/table-heights";
+import { PAGE_TABLE } from "@/lib/ui/table-heights";
 
 export default function CredentialsPage() {
   return (
@@ -178,7 +178,7 @@ function Credentials() {
       </EmptyContent>
     </EmptyRoot>
   ) : (
-    <DataTableRoot table={table}>
+    <DataTableRoot className={PAGE_TABLE.root} table={table}>
       <DataTableToolbar>
         <DataTableSearch column="name" placeholder="Search credentials..." />
         <div className="ms-auto flex items-center gap-2">
@@ -191,7 +191,8 @@ function Credentials() {
         </div>
       </DataTableToolbar>
       <DataTableContent<Credential>
-        maxHeight={PAGE_TABLE_HEIGHT}
+        className={PAGE_TABLE.content}
+          maxHeight={PAGE_TABLE.maxHeight}
         stickyHeader
         empty="No credentials match this filter."
         onRowClick={(c) => router.push(`/settings/credentials/${encodeURIComponent(c.name)}`)}

@@ -38,7 +38,7 @@ import { blocked } from "@/lib/permissions";
 import { reference } from "@/lib/connections";
 import { Boundary, Loading } from "@/components/boundary";
 import { settled } from "@/lib/api/settled";
-import { PAGE_TABLE_HEIGHT } from "@/lib/ui/table-heights";
+import { PAGE_TABLE } from "@/lib/ui/table-heights";
 
 export default function ConnectionPage({ params }: { params: Promise<{ name: string }> }) {
   const name = decodeURIComponent(use(params).name);
@@ -202,8 +202,9 @@ function Files({ name, url, kind }: { name: string; url: string; kind: "data" | 
   }
   return (
     <>
-      <DataTableRoot table={table}>
-        <DataTableContent<ConnectionFile> maxHeight={PAGE_TABLE_HEIGHT} stickyHeader />
+      <DataTableRoot className={PAGE_TABLE.root} table={table}>
+        <DataTableContent<ConnectionFile> className={PAGE_TABLE.content}
+          maxHeight={PAGE_TABLE.maxHeight} stickyHeader />
         <DataTablePagination />
       </DataTableRoot>
       {cut}

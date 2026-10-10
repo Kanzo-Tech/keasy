@@ -1,5 +1,5 @@
 # Data-quality rules for the CORDIS graph mapping.fossil writes: a SHACL Core
-# shapes graph to drop on its Rules panel. The terms are shapes.shex's, as the
+# shapes graph to drop on its rules badge. The terms are shapes.shex's, as the
 # corpus's `triples` view states them — EURIO's for projects, organisations and
 # their roles, WGS 84 for a position, `cordis:` for CORDIS's own.
 #

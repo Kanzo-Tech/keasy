@@ -13,18 +13,18 @@ import {
 
 import { discoverUrl } from "../fixtures";
 import { AskPanel } from "./ask";
-import { RulesPanel } from "./rules";
+import { RulesBadge } from "./rules";
 import { GraphSearch } from "./search";
 import { SettingsPanel } from "./settings";
 
 export type View = "Graph" | "Dashboard";
-export type Panel = "Info" | "Ask" | "Rules" | "Settings";
+export type Panel = "Info" | "Ask" | "Settings";
 
 /** `GraphCounts`' sentence — *3.2K nodes · 36.9K edges*, *29 of 3.2K nodes match · …* — the library's own pattern. */
 
 /**
  * **Discover** — a graph's page: the view switch (*View*: Graph · Dashboard), the dock and its
- * switcher (*Panels*: Info · Ask · Rules · Settings), the filter bar, and the footer's counts. Its view
+ * switcher (*Panels*: Info · Ask · Settings), the filter bar, and the footer's counts. Its view
  * and panel are in its URL, so `open` deep-links to them rather than clicking towards them.
  *
  * Its host is the document's body: nothing on the page is a landmark holding both the view and the
@@ -91,10 +91,9 @@ export class DiscoverPage extends ComponentHarness {
     return this.env.harness(SettingsPanel);
   }
 
-  /** The Rules panel, docked. */
-  async rules(): Promise<RulesPanel> {
-    await this.panel("Rules");
-    return this.env.harness(RulesPanel);
+  /** The rules' badge, at the end of the filter bar, in either view. */
+  rules(): Promise<RulesBadge> {
+    return this.env.harness(RulesBadge);
   }
 
   /** The Ask panel, docked. */
@@ -179,7 +178,7 @@ export class DiscoverPage extends ComponentHarness {
     return (await value.text()).trim();
   }
 
-  /** A docked panel, by the name the dock gives it: *Rules panel*. */
+  /** A docked panel, by the name the dock gives it: *Ask panel*. */
   static docked(panel: Panel): HarnessQuery<DiscoverPanel> {
     return { type: DiscoverPanel, by: { role: "complementary", name: `${panel} panel` } };
   }

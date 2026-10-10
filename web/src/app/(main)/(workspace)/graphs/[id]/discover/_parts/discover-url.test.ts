@@ -11,7 +11,9 @@ describe("Discovery's URL", () => {
 
   it("opens a dashboard with the dock collapsed unless it names a panel", () => {
     expect(read("view=dashboard")).toEqual({ view: "dashboard", panel: "none" });
-    expect(read("view=dashboard&panel=rules")).toEqual({ view: "dashboard", panel: "rules" });
+    expect(read("view=dashboard&panel=ask")).toEqual({ view: "dashboard", panel: "ask" });
+    // The rules left the dock for the filter bar: an old link opens the view's default.
+    expect(read("view=dashboard&panel=rules")).toEqual({ view: "dashboard", panel: "none" });
   });
 
   it("names a collapsed dock beside the graph as none", () => {
@@ -28,7 +30,7 @@ describe("Discovery's URL", () => {
     expect(write("", { view: "graph", panel: "none" })).toBe("panel=none");
     expect(write("", { view: "dashboard", panel: "none" })).toBe("view=dashboard");
     expect(write("", { view: "dashboard", panel: "ask" })).toBe("view=dashboard&panel=ask");
-    expect(write("view=dashboard&panel=rules", { view: "graph", panel: "info" })).toBe("");
+    expect(write("view=dashboard&panel=ask", { view: "graph", panel: "info" })).toBe("");
   });
 
   it("keeps every other parameter", () => {
@@ -37,7 +39,7 @@ describe("Discovery's URL", () => {
 
   it("reads back what it wrote", () => {
     for (const view of ["graph", "dashboard"] as const) {
-      for (const panel of ["info", "ask", "rules", "settings", "none"] as const) {
+      for (const panel of ["info", "ask", "settings", "none"] as const) {
         expect(read(write("", { view, panel }))).toEqual({ view, panel });
       }
     }

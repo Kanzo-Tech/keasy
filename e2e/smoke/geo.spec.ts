@@ -130,11 +130,12 @@ test("leaving Discover with a dashboard filter in force logs nothing, and the pa
 test("the flights rules find what the seed lacks: IATA codes, four-letter ICAO codes, time zones, and flag high airports", async ({ page, env, geoGraph }) => {
   // Beside the dashboard: on CI's software GPU the canvas's layout shares the CPU with rudof, and the
   // check that takes ~10 s beside the dashboard took ~3 min beside the canvas.
-  const discover = await DiscoverPage.open(page, env, geoGraph, { view: "dashboard", panel: "rules" });
+  const discover = await DiscoverPage.open(page, env, geoGraph, { view: "dashboard" });
   const panel = await discover.rules();
-  // infra/dev/examples/openflights/rules.ttl, dropped on the panel as a person drops it.
+  // infra/dev/examples/openflights/rules.ttl, dropped on the badge as a person drops it.
   await panel.drop("rules.ttl", rules("openflights"));
-  expect(await panel.checked()).toMatch(/^Checked over all 3,218 nodes/);
+  await expect.poll(() => panel.tally(), { timeout: 30_000 }).toBe("Not checked");
+  expect(await panel.check()).toMatch(/^Checked over all 3,218 nodes/);
 
   const airport = await panel.rule("Airport");
   // airports.csv: 20 rows with an empty `iata`; 24 whose `icao` is not four capitals (CAJ4, S31, VA1P,
@@ -152,7 +153,8 @@ test("the flights rules find what the seed lacks: IATA codes, four-letter ICAO c
     expect(await finding.severity(), message).toBe(severity);
     expect(await finding.flagged(), message).toBe(flagged);
   }
-  expect(await airport.state()).toBe("2 violations · 2 warnings");
+  // The tally counts results, as the badge does: 20 + 24 violations, 29 + 218 warnings.
+  expect(await airport.state()).toBe("44 violations · 247 warnings");
 
   // Show puts the finding's airports on the page.
   expect(await airport.show("The airport has no IANA time zone.")).toBe(29);

@@ -143,7 +143,7 @@ program reads its own two connections; paste one into the studio to map its grap
 | `infra/dev/examples/nobel/mapping.fossil` | The Nobel laureates onto its `shapes.shex`: 1,018 `Laureate`, 1,026 `LaureateAward` with their year as `xsd:gYear`, 6 `Category`, 379 `University`, 86 `Country` |
 
 `infra/dev/examples/openflights/rules.ttl` is rules for the OpenFlights graph: a SHACL shapes graph
-to drop on the graph's Rules panel in Discover. Most airports conform; 44 fail it (no IATA code, or
+to drop on the rules' badge in Discover's filter bar. Most airports conform; 44 fail it (no IATA code, or
 an ICAO field that is not a four-letter ICAO code), and two kinds draw a warning: 29 with no time
 zone and 218 above 4,000 ft, where takeoff performance is limited.
 

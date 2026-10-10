@@ -7,6 +7,6 @@ export { saveDashboard, saveRules } from "./api";
 export { AskPanel } from "./ask";
 export { ConnectionsPage, NewConnectionPage, type Offered, RowMenu } from "./connections";
 export { DiscoverPage, type Panel, type View } from "./discover";
-export { Rule, RuleFinding, RulesPanel } from "./rules";
+export { Rule, RuleFinding, RulesBadge } from "./rules";
 export { GraphSearch } from "./search";
 export { SettingsPanel, type Labels } from "./settings";

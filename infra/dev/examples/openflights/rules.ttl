@@ -1,5 +1,5 @@
 # Data-quality rules for the OpenFlights graph mapping.fossil writes: a SHACL
-# Core shapes graph to drop on its Rules panel. The terms are shapes.shex's, as
+# Core shapes graph to drop on its rules badge. The terms are shapes.shex's, as
 # the corpus's `triples` view states them — schema.org for the airport and its
 # codes, WGS 84 for its position, `of:` for the dataset's own.
 #

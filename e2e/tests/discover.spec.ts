@@ -19,8 +19,10 @@ test("02 a graph that has not completed opens in discover as graph/not-completed
   await expectProblem(page, "graph/not-completed", { within: 10_000 });
 });
 
-test("17 a rules file rudof cannot read is rules/refused in the Rules panel, and nothing is saved", async ({ page, env, corpusGraph }) => {
-  const rules = await (await DiscoverPage.open(page, env, corpusGraph, { panel: "rules" })).rules();
+test("17 a rules file rudof cannot read is rules/refused in the rules' popover, and nothing is saved", async ({ page, env, corpusGraph }) => {
+  const rules = await (await DiscoverPage.open(page, env, corpusGraph)).rules();
+  expect(await rules.tally()).toBe("No rules");
+  await rules.open();
   // Dropped as a person drops it: the server reads it with rudof and refuses it where Turtle stops.
   await rules.drop("broken.ttl", "@prefix sh: <http://www.w3.org/ns/shacl#> .\n<#S> a sh:NodeShape ;\n  sh:path .\n");
   await expectProblem(page, "rules/refused", { within: 20_000 });
@@ -43,21 +45,21 @@ test("the tile editor is the Dashboard view's: Graph view hides it, and its draf
 });
 
 test("the view and the dock's panel are the URL's: a link opens them, and pressing them writes it", async ({ page, env, corpusGraph }) => {
-  const rules = page.getByRole("complementary", { name: "Rules panel" });
-  const discover = await DiscoverPage.open(page, env, corpusGraph, { view: "dashboard", panel: "rules" });
+  const settings = page.getByRole("complementary", { name: "Settings panel" });
+  const discover = await DiscoverPage.open(page, env, corpusGraph, { view: "dashboard", panel: "settings" });
   const [views, dock] = [await discover.views(), await discover.dock()];
   expect(await views.current()).toBe("Dashboard");
-  expect(await dock.current()).toBe("Rules");
+  expect(await dock.current()).toBe("Settings");
 
   // Graph keeps the panel the dock holds; the URL names only what differs from the bare page.
   await discover.view("Graph");
-  await expect(page).toHaveURL(/\/discover\?panel=rules$/);
-  await expect(rules).toBeVisible();
+  await expect(page).toHaveURL(/\/discover\?panel=settings$/);
+  await expect(settings).toBeVisible();
 
   // Pressing the panel the dock holds collapses it, and a reload opens the page as it was left.
   await dock.close();
   await expect(page).toHaveURL(/\/discover\?panel=none$/);
-  await expect(rules).toBeHidden();
+  await expect(settings).toBeHidden();
   await page.reload();
   // The hook is installed again on every load: the environment outlives the reload.
   expect(await (await discover.views()).current()).toBe("Graph");
@@ -74,14 +76,19 @@ test("the view and the dock's panel are the URL's: a link opens them, and pressi
 });
 
 test("rules are validated over the corpus's triples: what fails, what conforms, and over the page's subset", async ({ page, env, corpusGraph }) => {
-  const discover = await DiscoverPage.open(page, env, corpusGraph, { panel: "rules" });
+  const discover = await DiscoverPage.open(page, env, corpusGraph);
   const rules = await discover.rules();
-  // The suite's own rules over its fixtures (e2e/fixtures/vocab/shop.ttl), dropped as a person drops them.
+  // The suite's own rules over its fixtures (e2e/fixtures/vocab/shop.ttl), dropped on the badge's popover as a person drops them.
   await rules.drop("shop.ttl", readFileSync(new URL("../fixtures/vocab/shop.ttl", import.meta.url), "utf8"));
+
+  // Nothing validates by itself: the badge says so until Check is pressed.
+  await expect.poll(() => rules.tally()).toBe("Not checked");
 
   // Over the whole corpus: the two people outside GB and US break the Person rule; every order
   // keeps its own.
-  await expect.poll(() => rules.checked(), { timeout: 30_000 }).toMatch(/^Checked over all 20 nodes/);
+  expect(await rules.check()).toMatch(/^Checked over all 20 nodes/);
+  // The badge reads the tally in either view: here, the two people.
+  await expect.poll(() => rules.tally()).toBe("2 violations");
   const shipping = await (await rules.rule("Person")).finding("Ships only to GB and US");
   const order = await rules.rule("Order");
   await expect.poll(() => order.state()).toBe("In order");
@@ -89,6 +96,9 @@ test("rules are validated over the corpus's triples: what fails, what conforms, 
   // Show puts the finding's vertices on the page as its clause.
   expect(await shipping.show()).toBe(2);
   await expect.poll(() => discover.counts()).toMatch(/^2 of 20 nodes match/);
+  // The rules' own clause is no filter of theirs: the check is not out of date for it.
+  expect(await rules.stale()).toBeNull();
+  expect(await rules.tally()).toBe("2 violations");
   await shipping.hide();
 
   // Show all puts every vertex a rule flags at one severity on the page: here the same two people.
@@ -102,15 +112,21 @@ test("rules are validated over the corpus's triples: what fails, what conforms, 
   // What conforms is rudof's Shape Fragment, read back by its subjects: six people and every order.
   await rules.conforms();
   await expect.poll(() => discover.counts()).toMatch(/^18 of 20 nodes match/);
+  expect(await rules.stale()).toBeNull();
   await rules.conforms(false);
   await expect.poll(() => discover.counts()).toMatch(/^20 nodes/);
+  await rules.close();
 
-  // A subset picked elsewhere on the page is what the rules check: the four people in the US, all
-  // of whom the Person rule admits.
+  // A subset picked elsewhere on the page leaves the last check behind, and keeps its tally until
+  // Check again: then the rules check the four people in the US, all of whom the Person rule admits.
   expect(await (await discover.search()).add("country:US", 4)).toBe(4);
   await expect.poll(() => discover.counts()).toMatch(/^4 of 20 nodes match/);
   const subset = await discover.rules();
-  await expect.poll(() => subset.checked(), { timeout: 30_000 }).toMatch(/^Checked over the selection: 4 of 20 nodes/);
+  expect(await subset.stale()).toBe("Filter changed since the last check");
+  // The tally is kept, and its name says it is out of date.
+  expect(await subset.tally()).toBe("2 violations, out of date");
+  expect(await subset.check()).toMatch(/^Checked over the selection: 4 of 20 nodes/);
+  expect(await subset.stale()).toBeNull();
   const person = await subset.rule("Person");
   await expect.poll(() => person.state()).toBe("In order");
 });

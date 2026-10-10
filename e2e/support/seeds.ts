@@ -38,7 +38,7 @@ export function mapping(example: Example): string {
   return read(example, "mapping.fossil");
 }
 
-/** The rules the dev example `example` is checked against (`rules.ttl`, SHACL), as the Rules panel takes them. */
+/** The rules the dev example `example` is checked against (`rules.ttl`, SHACL), as the rules' badge takes them. */
 export function rules(example: Example): string {
   return read(example, "rules.ttl");
 }

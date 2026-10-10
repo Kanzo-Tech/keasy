@@ -1,10 +1,12 @@
 "use client";
 
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
 import { and, column, count, createTable, type ExprNode, isIn, literal, Query, sql, TableRefNode } from "@uwdata/mosaic-sql";
 import { engine, numbers, useClauses, useCrossfilter, useMosaic } from "@kanzo-tech/ui/analytics";
 import { usePick } from "@kanzo-tech/graph";
-import type { LangString, Shapes, ShapeModelJson, TermValue, ValidationReport } from "@kanzo-tech/rudof-wasm";
+import type { RdfFindingGroup, RdfFindingGroups, RdfPlace, Shapes, ShapeModelJson, TermValue } from "@kanzo-tech/rudof-wasm";
+import { type FindingSeverity, type FindingTally, tallyFindings } from "@kanzo-tech/ui";
 import { corpusKey, useCorpus, useGraphKey, useVertices } from "@/lib/fossil/corpus";
 
 /**
@@ -35,42 +37,74 @@ export interface ReadRules {
   model: ShapeModelJson;
 }
 
-/** The rules file parsed; a file rudof cannot read is the failure, a `ShapesError` placed by line and column. */
-export function useReadRules(text: string) {
+/**
+ * The rules file parsed — none while there is no file; a file rudof cannot read is the failure, a
+ * `ShapesError` placed by line and column.
+ */
+export function useReadRules(text: string | undefined) {
   const { graphId } = useCorpus();
   const read = useQuery({
     queryKey: [...corpusKey(graphId), "rules", text],
     queryFn: async (): Promise<ReadRules> => {
       const { Shapes } = await rudof();
-      const shapes = Shapes.parse(text);
+      const shapes = Shapes.parse(text!);
       return { shapes, model: shapes.model() };
     },
+    enabled: text !== undefined,
     staleTime: Infinity,
     retry: false,
   });
   return { rules: read.data, failure: read.error ?? undefined };
 }
 
-/** The place the Rules panel picks from: its findings and what conforms are one clause on the page. */
+/** The place the rules' badge picks from: its findings and what conforms are one clause on the page. */
 const PICK = "rules";
 
-/** What the rules were checked over: the subset's vertices, of all of them. */
-export interface Checked {
-  report: ValidationReport;
-  inScope: number;
-  total: number;
+/** A group as the badge keeps it: rudof's, without its places — only how many vertices they are. */
+export interface KeptGroup extends Omit<RdfFindingGroup, "places"> {
+  places: RdfPlace[];
+  /** How many vertices the group's results are at: the N of its *Show N*. */
+  vertices: number;
 }
 
+/** A group's identity across two checks of one subset: its rule, its path and its severity. */
+export const groupKey = (group: Pick<RdfFindingGroup, "rule" | "severity" | "sample">) =>
+  `${group.rule.id}|${group.sample[0]?.place.path ?? ""}|${group.severity}`;
+
 /**
- * The rules, validated over the page's subset — every clause but the panel's own, so showing a
- * finding narrows the graph and never the findings. The focus nodes are the subjects of the
- * vertices the subset keeps, each checked against the whole corpus.
+ * One check: rudof's groups without their places, what they were checked over — the subset's
+ * vertices of all of them — and what was checked, so the badge can say a later filter or a replaced
+ * file left it behind. The places are dropped: 17K focus nodes are not held for a Show that may
+ * never be pressed, which finds them again over `subset`.
  */
-export function useRules(rules: ReadRules | undefined) {
+export interface Checked {
+  findings: { conforms: boolean; groups: KeptGroup[]; unchecked: RdfFindingGroups["unchecked"] };
+  inScope: number;
+  total: number;
+  /** The subset's subjects, as SQL — `undefined` for the whole corpus. */
+  subset: string | undefined;
+  /** The rules file checked, as it was. */
+  shapes: string;
+  /** Per rule, how many vertices each severity flags, each once: the N of *Show all N violations*. */
+  flagged: Record<string, Partial<Record<FindingSeverity, number>>>;
+}
+
+/** Why the last check no longer says what the page holds: a filter changed, or the file did. */
+export type Stale = "filter" | "rules";
+
+/**
+ * The rules, validated **on demand** — TopBraid EDG's and GraphDB's *Validate*: nothing checks by
+ * itself, so a timeline that plays or a brush that drags runs no validation beside the page's own
+ * queries. `check()` validates what the page holds at that moment — every clause but the rules' own,
+ * so showing a finding narrows the graph and never the findings — and a second press, or `stop()`,
+ * abandons the first: latest wins. The focus nodes are the subjects of the vertices the subset keeps,
+ * each checked against the whole corpus.
+ */
+export function useRules(rules: ReadRules | undefined, text: string) {
   const { graphId } = useCorpus();
   const { coordinator } = useMosaic();
   const pick = usePick(PICK);
-  // Re-rendered on every clause, so the predicate below is the subset as it is now.
+  // Re-rendered on every clause, only so the badge can say the subset moved since the last check.
   useClauses(useCrossfilter());
   const vertices = useVertices();
   const key = useGraphKey();
@@ -80,161 +114,199 @@ export function useRules(rules: ReadRules | undefined) {
     ? String(Query.from(vertices).select({ s_type: literal("I"), s_value: column("subject") }).where(predicate))
     : undefined;
 
+  const [state, setState] = useState<{ checked?: Checked; checking: boolean; failure?: unknown }>({ checking: false });
+  const running = useRef<AbortController | undefined>(undefined);
+  // A check left running when the badge goes is abandoned with it.
+  useEffect(() => () => running.current?.abort(), []);
+
   /**
    * The page's engine, and the relation rudof reads the focus nodes from: rudof takes a relation's
-   * name, so the subset's subjects are a view beside the triples, replaced on every read. Nothing
-   * picked elsewhere is no focus, and every target is checked.
+   * name, so `over`'s subjects are a view beside the triples, replaced on every read. No subset is
+   * no focus, and every target is checked.
    */
-  const prepared = async (signal: AbortSignal) => {
+  const prepared = async (over: string | undefined, name: string, signal: AbortSignal) => {
     const attachedTo = await engine({ signal });
-    if (subset === undefined) return { attachedTo, focus: undefined };
-    const focus = new TableRefNode([graphId, "rules_focus"]);
-    await attachedTo.query(String(createTable(focus, subset, { view: true, replace: true })), { signal });
+    if (over === undefined) return { attachedTo, focus: undefined };
+    const focus = new TableRefNode([graphId, name]);
+    await attachedTo.query(String(createTable(focus, over, { view: true, replace: true })), { signal });
     return { attachedTo, focus: String(focus) };
   };
 
-  const checked = useQuery({
-    queryKey: [...corpusKey(graphId), "rules", "report", rules?.shapes, subset ?? ""],
-    queryFn: async ({ signal }): Promise<Checked> => {
-      const { attachedTo, focus } = await prepared(signal);
-      const report = await rules!.shapes.validate({ table: triples, focus, engine: attachedTo, signal });
+  /**
+   * rudof's groups over `over`, worded in the reader's languages, preferred first — of every rule,
+   * or of `shape` alone: that node shape over every target it declares (rudof-wasm 0.4.6's `shape`).
+   */
+  const validated = async (shapes: Shapes, over: string | undefined, name: string, signal: AbortSignal, shape?: string) => {
+    const { attachedTo, focus } = await prepared(over, name, signal);
+    const languages = typeof navigator === "undefined" ? [] : [...navigator.languages];
+    return { attachedTo, findings: await shapes.validateGroups({ table: triples, focus, engine: attachedTo, signal, languages, shape }) };
+  };
+
+  const check = async () => {
+    if (!rules) return;
+    running.current?.abort();
+    const run = new AbortController();
+    running.current = run;
+    const { signal } = run;
+    const over = subset;
+    setState((s) => ({ checked: s.checked, checking: true }));
+    try {
+      const { attachedTo, findings } = await validated(rules.shapes, over, "rules_focus", signal);
       const counted = Query.from(vertices).select({ total: count(), inScope: predicate.length ? count().where(and(...predicate)) : count() });
       const answer = await attachedTo.query(String(counted), { signal });
-      return { report, inScope: Number(answer.getChild("inScope")?.get(0)), total: Number(answer.getChild("total")?.get(0)) };
-    },
-    enabled: rules !== undefined,
-    placeholderData: keepPreviousData,
-    staleTime: Infinity,
-    retry: false,
-  });
+      const placed = findings.groups.map((group) => ({ ...group, vertices: nodesOf([group]).length }));
+      const flagged = Object.fromEntries(
+        rulesOf(rules.model, { ...findings, groups: placed }).map((rule) => [
+          rule.id,
+          Object.fromEntries((["violation", "warning", "info"] as const).map((severity) => [severity, nodesOf(rule.groups, severity).length])),
+        ]),
+      );
+      const groups = placed.map((group) => ({ ...group, places: [] }));
+      const checked: Checked = {
+        findings: { conforms: findings.conforms, groups, unchecked: findings.unchecked },
+        inScope: Number(answer.getChild("inScope")?.get(0)),
+        total: Number(answer.getChild("total")?.get(0)),
+        subset: over,
+        shapes: text,
+        flagged,
+      };
+      if (running.current === run) setState({ checked, checking: false });
+    } catch (failure) {
+      if (signal.aborted) return;
+      if (running.current === run) setState((s) => ({ checked: s.checked, checking: false, failure }));
+    } finally {
+      if (running.current === run) running.current = undefined;
+    }
+  };
 
-  /** The vertices whose subjects `subjects` selects, published as the panel's clause, named `label`. */
+  const stop = () => {
+    running.current?.abort();
+    running.current = undefined;
+    setState((s) => ({ checked: s.checked, checking: false }));
+  };
+
+  const checked = state.checked;
+  const stale: Stale | undefined = !checked ? undefined : checked.shapes !== text ? "rules" : checked.subset !== subset ? "filter" : undefined;
+
+  /** The vertices whose subjects `subjects` selects, published as the rules' clause, named `label`. */
   const publish = async (subjects: ExprNode, label: string) => {
     const ids = numbers(await coordinator.query(Query.from(vertices).select(key).where(subjects)), key);
     pick.pick(ids, label);
   };
 
+  /**
+   * The focus nodes of `rule`'s groups that `keep` admits, found again: that rule alone, re-checked
+   * over the last check's subset, so they are the N its rows count. Asked for by a press, and
+   * nothing stops it.
+   */
+  const nodesAgain = async (rule: Rule, keep: (group: RdfFindingGroup) => boolean) => {
+    if (!rules || !checked) return [];
+    const { signal } = new AbortController();
+    const { findings } = await validated(rules.shapes, checked.subset, "rules_show_focus", signal, rule.id);
+    return nodesOf(findings.groups.filter(keep));
+  };
+
+  const showNodes = (nodes: readonly string[], label: string) =>
+    publish(
+      isIn(
+        column("subject"),
+        nodes.map((node) => literal(node)),
+      ),
+      label,
+    );
+
   return {
-    checked: checked.data,
-    failure: checked.error ?? undefined,
+    checked,
+    checking: state.checking,
+    failure: state.failure,
+    stale,
+    check,
+    stop,
     picked: pick.picked,
     withdraw: () => pick.pick(null, ""),
-    /** Show the focus nodes of a finding: its vertices become the panel's clause. */
-    show: (nodes: readonly string[], label: string) =>
-      publish(
-        isIn(
-          column("subject"),
-          nodes.map((node) => literal(node)),
-        ),
-        label,
-      ),
+    /** Show one sampled node: its vertex becomes the rules' clause. */
+    show: showNodes,
+    /** Show a group of `rule`'s vertices, found again: they become the rules' clause. */
+    showGroup: async (rule: Rule, group: KeptGroup, label: string) => {
+      const wanted = groupKey(group);
+      await showNodes(await nodesAgain(rule, (g) => groupKey(g) === wanted), label);
+    },
+    /** Show every vertex `rule` flags with `severity`, found again, each once. */
+    showSeverity: async (rule: Rule, severity: FindingSeverity, label: string) => {
+      const wanted = new Set(rule.groups.filter((g) => g.severity === severity).map(groupKey));
+      await showNodes(await nodesAgain(rule, (g) => wanted.has(groupKey(g))), label);
+    },
     /** Show what conforms: rudof's Shape Fragment of the subset, its subjects the panel's clause. */
     conforming: async (label: string) => {
       const into = String(new TableRefNode([graphId, "rules_fragment"]));
       // Asked for by a press, and nothing stops it once asked: a signal that never aborts.
       const { signal } = new AbortController();
-      const { attachedTo, focus } = await prepared(signal);
+      const { attachedTo, focus } = await prepared(subset, "rules_focus", signal);
       await rules!.shapes.fragment({ table: triples, focus, engine: attachedTo, into, signal });
       await publish(sql`${column("subject")} IN (SELECT s_value FROM ${into})`, label);
     },
   };
 }
 
-/** One finding: a constraint of a rule, and the focus nodes that fail it. */
-export interface Finding {
-  id: string;
-  variant: "destructive" | "warning" | "info";
-  message: string;
-  where: string;
-  nodes: string[];
-}
-
-/** A rule — a node shape — and what the report says of it. */
+/**
+ * A rule — a node shape — and the groups of findings filed under it: rudof's groups, each a
+ * constraint of the shape at one path and one severity, the worst and largest first.
+ */
 export interface Rule {
   id: string;
   name: string;
-  checks: string;
   off: boolean;
   /** Why rudof did not check it, in rudof's words. */
   unchecked?: string;
-  findings: Finding[];
+  groups: KeptGroup[];
+  tally: FindingTally;
 }
-
-const VARIANT: Record<string, Finding["variant"]> = {
-  "http://www.w3.org/ns/shacl#Violation": "destructive",
-  "http://www.w3.org/ns/shacl#Warning": "warning",
-};
 
 /** The last segment of an IRI: what a reader calls the type or the property. */
 const local = (iri: string) => iri.slice(Math.max(iri.lastIndexOf("#"), iri.lastIndexOf("/")) + 1) || iri;
-
-/** The message in the reader's language, else the engine's own, untagged. */
-function wordOf(messages: LangString[]): string | undefined {
-  const languages = typeof navigator === "undefined" ? [] : navigator.languages;
-  for (const language of [...languages, ""]) {
-    const found = messages.find((m) => m.language === language);
-    if (found) return found.value;
-  }
-  return messages[0]?.value;
-}
 
 /** A shape's node as `model()` names it: its IRI, or `_:` and the label of a blank node. */
 const shapeId = (node: TermValue) => (node.termType === "BlankNode" ? `_:${node.value}` : node.value);
 
 /**
- * The report filed under the rules it came from. A result's `sourceShape` is the node of a node
- * shape or of one of its property shapes, so each finds its rule by that node's id.
+ * The groups filed under the rules they came from. A group's `sourceShape` is the node of a node
+ * shape or of one of its property shapes, so each finds its rule by that node's id. rudof's order —
+ * worst, then largest — holds within a rule.
  */
-export function rulesOf(model: ShapeModelJson, report: ValidationReport): Rule[] {
+export function rulesOf(model: ShapeModelJson, checked: Checked["findings"]): Rule[] {
   const owner = new Map<string, Rule>();
   const rules = model.nodeShapes.map((shape) => {
     const rule: Rule = {
       id: shape.id,
       name: shape.targetClasses.map(local).join(", ") || local(shape.id),
-      checks: shape.properties.map((p) => local(p.pathKey.replace(/[<>]/g, ""))).join(" · "),
       off: Boolean(shape.deactivated),
-      findings: [],
+      groups: [],
+      tally: tallyFindings([]),
     };
     owner.set(shape.id, rule);
     for (const property of shape.properties) owner.set(property.id, rule);
     return rule;
   });
-  for (const { shape, reason } of report.unchecked) {
+  for (const { shape, reason } of checked.unchecked) {
     const rule = owner.get(shapeId(shape));
     if (rule) rule.unchecked = reason;
   }
-  const found = new Map<string, Finding>();
-  for (const result of report.results) {
-    const shape = result.sourceShape ? shapeId(result.sourceShape) : "";
-    const rule = owner.get(shape);
-    if (!rule) continue;
-    const component = result.sourceConstraintComponent ?? "";
-    const id = `${shape}|${component}|${result.pathKey ?? ""}`;
-    let finding = found.get(id);
-    if (!finding) {
-      finding = {
-        id,
-        variant: VARIANT[result.resultSeverity] ?? "info",
-        message: wordOf(result.resultMessage) ?? local(component),
-        where: [rule.name, result.pathKey && local(result.pathKey.replace(/[<>]/g, "")), local(component).replace(/ConstraintComponent$/, "")]
-          .filter(Boolean)
-          .join(" · "),
-        nodes: [],
-      };
-      found.set(id, finding);
-      rule.findings.push(finding);
-    }
-    finding.nodes.push(result.focusNode.value);
+  for (const group of checked.groups) {
+    const rule = group.sourceShape && owner.get(shapeId(group.sourceShape));
+    if (rule) rule.groups.push(group);
   }
-  const worst = (f: Finding) => ["destructive", "warning", "info"].indexOf(f.variant);
-  for (const rule of rules) rule.findings.sort((a, b) => worst(a) - worst(b) || b.nodes.length - a.nodes.length);
+  for (const rule of rules) rule.tally = tallyFindings(rule.groups);
   return rules;
 }
 
+/** Every rule's tally, summed: what the badge reads. */
+export const tallyOf = (rules: readonly Rule[]): FindingTally => tallyFindings(rules.flatMap((rule) => rule.groups));
+
 /**
- * The focus nodes of a rule's findings of one severity, each once: a node that fails two of its
- * constraints is one vertex on the page.
+ * The focus nodes of groups, each once: a node that fails two constraints is one vertex on the page.
+ * `severity` keeps the groups of one severity, as a rule's *Show all N violations* does.
  */
-export function nodesOf(rule: Rule, variant: Finding["variant"]): string[] {
-  return [...new Set(rule.findings.filter((f) => f.variant === variant).flatMap((f) => f.nodes))];
+export function nodesOf(groups: readonly Pick<RdfFindingGroup, "places" | "severity">[], severity?: FindingSeverity): string[] {
+  const kept = severity ? groups.filter((group) => group.severity === severity) : groups;
+  return [...new Set(kept.flatMap((group) => group.places.map((place) => place.focus.value)))];
 }

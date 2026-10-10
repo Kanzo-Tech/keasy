@@ -267,14 +267,14 @@ when the prompt, the tool's schema or the SNB example change.
 **Arrange (off camera)**
 
 1. `env`; seed; `api(page, "PUT", /v1/graphs/${id}/rules, { name: "geo.ttl", shapes })` (as today).
-2. `discover.open(id, { panel: "rules" })`; `graph.ready()`; `graph.pause()`; `settings`: Map, lon/lat, Legible, Hidden edges, no labels (the shared `onMap`, as a page-object method `discover.onMap()`).
-3. `discover.widenDock(280)`; `rules.checked()` → `/^Checked over all 3,218 nodes$/`.
+2. `discover.open(id, { panel: "none" })`; `graph.ready()`; `graph.pause()`; `settings`: Map, lon/lat, Legible, Hidden edges, no labels (the shared `onMap`, as a page-object method `discover.onMap()`); then the dock is closed: the rules are the filter bar's badge.
+3. `rules.check()` (presses *Check*: the rules validate only when asked) → `/^Checked over all 3,218 nodes$/`.
 
 **Steps**
 
 | # | Subtitle | Action | Check |
 | --- | --- | --- | --- |
-| 1 | Every airport, checked against your rules | — (the panel is read) | `rules.rule("Airport").state()` → *2 violations · 2 warnings* |
+| 1 | Every airport, checked against your rules | — (the panel is read) | `rules.rule("Airport").state()` → *44 violations · 247 warnings* (the tally counts results) |
 | 2 | 44 airports break a rule — show them all | `rules.rule("Airport").showAll("violations")` (presses *Show all 44 violations*) | the button is pressed; `graph.counts()` → `/^44 of 3\.2K nodes match/` |
 | 3 | Amber warns: 218 airports above 4,000 ft | `rules.rule("Airport").show(/high-altitude airport/)` | button `Showing 218`; `graph.counts()` → `/^218 of 3\.2K nodes match/` · **poster** |
 | 4 | The Rockies, the Andes, Iran, Ethiopia, Tibet | `graph.frame()` | resolved |
@@ -304,10 +304,10 @@ mountains. Recommended: the finding. The subtitle of step 4 is 45 characters.
 - **"Show 44" is a product change**, Kanzo-Tech/keasy#127: per rule, *Show all N violations* and
   *Show all N warnings* publish the union of that severity's focus nodes as the panel's one clause
   (`Airport · violations`). Over OpenFlights: 44 violations, 245 warnings. The demo needs it merged
-  and `RulesPanel`'s `rule(name).showAll("violations" | "warnings")` (presses *Show all N …*, waits
-  on `aria-pressed`).
-- The rule's badge counts **findings**, not airports (*2 violations · 2 warnings*), so no badge reads
-  44 or 218; the Show-all button is what names 44.
+  and `RulesBadge`'s `rule(name).showAll("violations" | "warnings")` (presses *Show all N …*, and
+  resolves once the popover has closed).
+- The rule's tally counts **results** (*44 violations · 247 warnings*), not airports: 29 + 218
+  warnings are 245 airports, so the Show-all button is what names 245.
 - Step 4's subtitle names the regions the 218 sit in by weight: the Rockies and the US–Mexico west
   (48), the Andes (30), Iran (14), the Ethiopian highlands (9), Tibet and Qinghai (17). The US (46),
   China (29) and Mexico (15) lead by country. The frame of 218 points over four continents is close
@@ -355,7 +355,7 @@ role and the EU contribution) — €62.55B in all. Candidates, and what the dat
    - chart *Count by OrganisationRole.roleLabel*.
    The column names and the relation key are the page's (`relationKey`, `alias.name`): pin them by
    saving the spec once from the UI and reading `GET /v1/graphs/{id}/dashboard`.
-4. `page.goto(discoverUrl(id, { view: "dashboard", panel: "rules" }))`; `discover.relation("OrganisationRole", ["isRoleOf → Organisation"])`; `dashboard.settled()`; `rules.checked()` resolves.
+4. `page.goto(discoverUrl(id, { view: "dashboard" }))`; `discover.relation("OrganisationRole", ["isRoleOf → Organisation"])`; `dashboard.settled()`; `rules.check()` resolves (presses *Check*).
 
 ### Steps
 
@@ -399,10 +399,9 @@ create view r  as select pa.*, o.country, o.activityType from pa join o on o.id 
 - **The relation is not in the URL**: picking the root and the hop is a page-object call
   (`discover.relation`), done off camera.
 - **Rules over 206.6K vertices in the browser**: the first check may take long; arrange waits on
-  `rules.checked()`. The panel checks *the page's subset*: after steps 2–3 it re-checks over the
-  selection. The clauses are on OrganisationRole and Organisation, and a clause leaves other types
-  whole, so the Project finding should still read 12,525 — verify on the first run; if it does not,
-  move step 5 first.
+  `rules.check()`. Rules validate on demand (*Check*), so steps 2–3 do not re-check: the badge
+  keeps the whole corpus's tally, marked *Filter changed since the last check*, and step 5's *Show
+  12,525* finds that group's projects again over what the check was over — the whole corpus.
 - **No Graph step.** The graph has ~206.6K vertices, 145K of them participations with no position, so
   a Map placement leaves most of the graph unplaced; the force layout of that size is the timing risk
   the SNB demos already avoid. Optional sixth step, gated on a GPU timing check: *"The same filter on
@@ -492,7 +491,7 @@ Beyond the library harnesses (`GraphCanvasHarness`, `ChartHarness`, `TimelineHar
 | `DiscoverPage` (`support/app/discover.ts`) | `open(id, { view?, panel? })` (deep link, `discoverUrl`); `view("Graph" \| "Dashboard")` (the view switch through `DockHarness.with({ name: <its group name> })`); `relation(root, hops?)` (*Root type* select, *Hop* menu items `label → Type`); `widenDock(px)`; `onMap()` (the shared OpenFlights arrange); `figure(title)` (a figure tile's value); `counts()` (the footer's GraphCounts, in either view); `hoverChip(field)` | `openGraphView`, `onMap`, `widenDock`, the `dispatchEvent("click")` on *Dashboard*. The relation is not in the URL, so it is a call |
 | `SettingsPanel` (`support/app/settings.ts`) | `placement("Map", { x, y })`; `marks("Legible")`; `edges("Hidden")`; `labels(n)`; `timeline(column)` | `placeOnMap`, `hideEdges`, `choose`; `timeline` is new (the *Timeline* select, `time-by`) |
 | `GraphSearch` (`support/app/search.ts`) | `add(query): Promise<number>` — opens *Find anything in the graph*, types, presses *Add N to the subset*, returns N | demo 2's inline steps |
-| `RulesPanel` (`support/app/rules.ts`) | `checked()` (the *Checked over …* line); `rule(name)` → `state()` (the badges), `show(message \| RegExp)` (presses *Show N*, waits for *Showing N*), `showAll("violations" \| "warnings")` (presses *Show all N …*, waits on `aria-pressed`; keasy#127), `conforms()` | keasy's panel is `Diagnostic`s, not the library's `Findings`, so `FindingsHarness` does not drive it |
+| `RulesBadge` (`support/app/rules.ts`, on `FindingsBadgeHarness`) | `checked()` (the *Checked over …* line); `rule(name)` → `state()` (the badges), `show(message \| RegExp)` (presses *Show N*, waits for *Showing N*), `showAll("violations" \| "warnings")` (presses *Show all N …*, waits on `aria-pressed`; keasy#127), `conforms()` | keasy's panel is `Diagnostic`s, not the library's `Findings`, so `FindingsHarness` does not drive it |
 | `AskPanel` (`support/app/ask.ts`) | `warmUp()`; `composer()` → `AnswerHarness.with({ name: "Ask about your data…" })` | `warmUp` in `snb-ask.demo.ts` |
 | seeds / API (`support/seeds.ts`, `support/stack/api.ts`) | `saveRules(id, example)`; `saveDashboard(id, relationKey, spec)` | rules PUT exists inline in flights-rules; the dashboard PUT is new (demos 6, 7) |
 

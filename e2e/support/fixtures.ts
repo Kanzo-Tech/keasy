@@ -40,7 +40,7 @@ export function text(content: string, finish: string | null = null) {
  */
 export function discoverUrl(
   graphId: string,
-  { view, panel }: { view?: "graph" | "dashboard"; panel?: "info" | "ask" | "rules" | "settings" | "none" } = {},
+  { view, panel }: { view?: "graph" | "dashboard"; panel?: "info" | "ask" | "settings" | "none" } = {},
 ): string {
   const query = new URLSearchParams();
   if (view) query.set("view", view);

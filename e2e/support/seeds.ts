@@ -51,7 +51,8 @@ export function hasExample(example: Example): boolean {
 /**
  * A graph of the dev example `example`, named `name`, run to completion by the browser on `page`
  * (which must be signed in), within `within` ms. With `reuse`, a completed graph already named
- * `name` is returned instead of running another — a demo recorded twice runs its graph once.
+ * `name` and run from the same recipe is returned instead of running another — a demo recorded
+ * twice runs its graph once, and an example whose recipe changed is run again.
  */
 export async function seedGraph(
   page: Page,
@@ -61,8 +62,8 @@ export async function seedGraph(
   const script = mapping(example);
   if (reuse) {
     const listed = await api(page, "GET", "/v1/graphs");
-    const graphs = listed.body as { id: string; name: string | null; status: string }[];
-    const done = graphs.find((g) => g.name === name && g.status === "completed");
+    const graphs = listed.body as { id: string; name: string | null; status: string; script: string }[];
+    const done = graphs.find((g) => g.name === name && g.status === "completed" && g.script === script);
     if (done) return done.id;
   }
   return runToCompletion(page, { name, script, within });

@@ -15,7 +15,7 @@ const pressed = async (button: Handle) => (await button.attribute("aria-pressed"
  * severity's word, its message, and *Show N*, which puts the N vertices it flags on the page as the
  * panel's one clause and reads *Showing N* while it does.
  *
- * Not the library's `FindingHarness`: keasy lists its findings as `Diagnostic`s inline, not in a
+ * Not the library's `FindingRowHarness`: keasy lists its findings as `Diagnostic`s inline, not in a
  * `Findings` popover. A `Diagnostic` has no role of its own, so the rows are found by its `data-slot`.
  */
 export class RuleFinding extends ComponentHarness {

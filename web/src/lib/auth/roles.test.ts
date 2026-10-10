@@ -14,7 +14,8 @@ function session(...organizations: Organization[]): Session {
   };
 }
 
-const acme = (...roles: string[]): Organization => ({ alias: "acme", roles });
+const org = (alias: string, ...roles: string[]): Organization => ({ alias, roles, groups: [], groupsOverage: false });
+const acme = (...roles: string[]): Organization => org("acme", ...roles);
 
 describe("displayRole", () => {
   it("names the widest role held in the current workspace", () => {
@@ -26,14 +27,14 @@ describe("displayRole", () => {
   it("is null without a role in this workspace, whatever the realm or another organization grants", () => {
     expect(displayRole(session(acme()))).toBeNull();
     expect(displayRole(session(acme("uma_authorization")))).toBeNull();
-    expect(displayRole(session({ alias: "other", roles: ["admin"] }))).toBeNull();
+    expect(displayRole(session(org("other", "admin")))).toBeNull();
     expect(displayRole(undefined)).toBeNull();
   });
 });
 
 describe("switchable", () => {
   it("lists the organizations holding a role", () => {
-    const other = { alias: "other", roles: [] };
+    const other = org("other");
     expect(switchable(session(acme("reader"), other)).map((o) => o.alias)).toEqual(["acme"]);
     expect(switchable(null)).toEqual([]);
   });

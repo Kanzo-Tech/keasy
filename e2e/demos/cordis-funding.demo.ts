@@ -40,7 +40,7 @@ demo("cordis-funding", "EU research funding over CORDIS: who gets Horizon Europe
     await saveRules(page, id, "cordis");
     await saveDashboard(page, id, RELATION, DASHBOARD);
     const discover = await DiscoverPage.open(page, env, id, { view: "dashboard", panel: "rules" });
-    await discover.relation("OrganisationRole", ["isRoleOf → Organisation"]);
+    await discover.relation("OrganisationRole", [">isRoleOf>Organisation"]);
     const dashboard = await discover.dashboard();
     const rules = await discover.rules();
     await rules.checked();

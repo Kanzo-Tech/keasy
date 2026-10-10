@@ -18,7 +18,7 @@ import { startersQuery } from "./starters";
 
 /**
  * The Ask panel — `@kanzo-tech/ai/data` over the graph: `readAnswerRelations` over the corpus's join
- * graph, `dataAgent` on the page's coordinator under the page's crossfilter, `dataSuggestions` as the
+ * graph, `dataAgent` on the page's engine under the page's crossfilter, `dataSuggestions` as the
  * pills, and each answer an `AnswerCard` — the dashboard tile it is, which *Filter to it* narrows the
  * page to and *Add to the dashboard* adds to the Dashboard view's saved document. Nothing here
  * writes SQL, and neither does the model: it names a relation, conditions and a tile.
@@ -118,13 +118,14 @@ function SubsetPill({ vertices }: { vertices: Query }) {
 }
 
 function AskChat() {
-  const { coordinator, crossfilter } = useMosaic();
+  const { crossfilter } = useMosaic();
+  const { engine } = useCorpus();
   const vertices = useVertices();
   const graph = useJoinGraph();
   const relations = useRelations(graph);
   const agent = useMemo(
-    () => dataAgent({ model: gateway("chat"), coordinator, graph, relations, selection: crossfilter }),
-    [coordinator, graph, relations, crossfilter],
+    () => dataAgent({ model: gateway("chat"), engine, graph, relations, selection: crossfilter }),
+    [engine, graph, relations, crossfilter],
   );
   const chat = useAgentChat(agent);
   const starters = useStarters(graph, relations);

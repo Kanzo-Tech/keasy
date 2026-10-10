@@ -86,7 +86,7 @@ demo("nobel-timeline", "Nobel prizes on a timeline: brush the early years, play 
       async action() {
         await discover.view("Dashboard");
         // The Dashboard opens on the graph's first type: the affiliations' relation is picked, as a person picks it.
-        await discover.relation("LaureateAward", ["university → University", "addressCountry → Country"]);
+        await discover.relation("LaureateAward", [">university>University", ">addressCountry>Country"]);
       },
       async check() {
         const dashboard = await discover.dashboard();

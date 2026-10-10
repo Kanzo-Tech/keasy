@@ -43,7 +43,7 @@ test("the social network's dashboard over a hop draws every tile kind, and holds
   await saveDashboard(page, snbGraph, RELATION, DASHBOARD);
   // Opened on the dashboard: the canvas never draws 341.7K nodes on a software GPU first.
   const discover = await DiscoverPage.open(page, env, snbGraph, { view: "dashboard" });
-  await discover.relation("Comment", ["replyOfPost → Post"]);
+  await discover.relation("Comment", [">replyOfPost>Post"]);
   const bar = await discover.filters();
   await expect.poll(() => unfiltered(discover, "Replies"), { timeout: 60_000 }).toBe(figured(PATHS));
 

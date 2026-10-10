@@ -270,11 +270,15 @@ function Workspace() {
                   </div>
                 </MosaicClients>
               </div>
-              {/* The timeline over the column Settings → Timeline chose, under either view: its
-                  window filters the whole page, so it outlives a switch of view as the dashboard's
-                  filters do, and a reader brushes the years from the dashboard too. A strip of its
-                  own, so the brush never covers the legend; with no column chosen it draws nothing. */}
-              <GraphTimeline className="shrink-0 border-t" />
+              {/* The timeline over the column Settings → Timeline chose: the graph's, drawn under
+                  the canvas as Cosmograph draws it, where a dashboard brushes years with a chart of
+                  its own. Hidden, not unmounted, in Dashboard view: its window keeps filtering the
+                  page and stays in the bar as a chip to let go of, as the dashboard's filters do in
+                  Graph view. A strip of its own, so the brush never covers the legend; with no
+                  column chosen it draws nothing. */}
+              <div className="shrink-0" hidden={view !== "graph"}>
+                <GraphTimeline className="border-t" />
+              </div>
             </ShellMain>
           </ResizablePanel>
           <ResizableResizeTrigger hidden={!panelOpen} id="canvas:dock" withHandle />

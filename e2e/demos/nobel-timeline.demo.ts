@@ -6,24 +6,33 @@ import { seedGraph } from "../support/seeds";
 import { categories } from "./charts";
 import { demo } from "./record";
 
-/** Each prize's affiliation, with the country of the university it was won at. */
-const RELATION = "LaureateAward>university>University>addressCountry>Country";
+/**
+ * Each prize with its laureate and the country the laureate was born in: one relation that holds the
+ * gender a reader picks and the country the dashboard ends on. Rooted at the award, so a pick on it
+ * keeps awards — the dots on the map — and not laureates, which the map does not place.
+ */
+const RELATION = "LaureateAward>laureate>Laureate>birthPlace>Country";
+const HOPS = [">laureate>Laureate", ">birthPlace>Country"];
 const DASHBOARD = {
   filters: [],
-  tiles: [{ id: "country", kind: "chart", span: 1, type: "bar", title: "Count by Country.name", x: "Country.name", y: { op: "count" } }],
+  tiles: [
+    { id: "gender", kind: "chart", span: 1, type: "bar", title: "Count by Laureate.gender", x: "Laureate.gender", y: { op: "count" } },
+    { id: "country", kind: "chart", span: 1, type: "bar", title: "Count by Country.name", x: "Country.name", y: { op: "count" } },
+  ],
 };
 
 /** The year the timeline's window ends at; NaN with no window. */
 const end = async (timeline: TimelineHarness) => Number((await timeline.range())?.slice(-4) ?? Number.NaN);
 
 /**
- * The Nobel timeline: every prize since 1901 on one time axis under the graph, in bars of five years
- * a brush snaps to. A window over 1900–1930, when German universities led; played forward, the prizes
- * go west in the 1940s as 1900–1960 plays; and 1990–2000 on the dashboard, where 66 of 89 affiliations are American (the
- * window is inclusive: 2000 is in it). Off camera: the timeline set to the award's year (`date`,
- * `xsd:gYear`), the graph put on the map with its edges hidden, and the dashboard saved.
+ * A century of science moving west: the 749 prizes since 1901 whose affiliation has a place, each at
+ * the city it was won in, on the map, and the timeline under it. The whole century played; 1900–1930, when nine in ten of the prizes on
+ * the map were won in Europe; 1990–2000, when 65 of 86 were won in the US; then only the prizes won
+ * by women, the century played again; and the same filter on the dashboard. Off camera: the graph on
+ * the map with its edges hidden, the timeline set to the award's year (`date`, `xsd:gYear`), and the
+ * dashboard saved and picked. STORYBOARD.md has every figure's query.
  */
-demo("nobel-timeline", "Nobel prizes on a timeline: brush the early years, play it forward, read the 1990s", {
+demo("nobel-timeline", "Nobel prizes on a map and a timeline: a century of science moving west, then only the women", {
   async arrange({ page, env }) {
     const id = await seedGraph(page, "nobel", { name: "Demo · Nobel laureates", reuse: true });
     await saveDashboard(page, id, RELATION, DASHBOARD);
@@ -31,66 +40,100 @@ demo("nobel-timeline", "Nobel prizes on a timeline: brush the early years, play 
     // Each award at its first affiliation's city, the edges hidden: the prizes are dots on the map.
     const graph = await discover.onMap();
     await (await discover.settings()).timeline("date");
+    // The dashboard's relation is the page's, not the URL's: picked here, so step 5 finds it there.
+    await discover.view("Dashboard");
+    await discover.relation("LaureateAward", HOPS);
+    await discover.dashboard();
+    await discover.view("Graph");
+    await graph.ready();
     // The settings leave the dock to Info, as on the other maps.
     await discover.panel("Info");
     const timeline = await env.harness(TimelineHarness.with({ title: /^Timeline: / }));
     return { discover, graph, timeline, bar: await discover.filters() };
   },
 
-  steps: ({ discover, graph, timeline, bar }) => [
-    {
-      subtitle: "Every Nobel prize since 1901, on one time axis",
-      async check() {
-        expect(await timeline.range()).toBeNull();
-        expect(await graph.counts()).toMatch(/^1\.1K of 2\.5K nodes placed/);
+  steps: ({ discover, graph, timeline, bar }) => {
+    /** Play runs inside the brushed range, accumulating: the whole axis brushed, played to its end. */
+    const playCentury = async () => {
+      await timeline.brush([1900, 2029]);
+      await timeline.play();
+      await expect.poll(() => end(timeline), { timeout: 120_000 }).toBeGreaterThanOrEqual(2025);
+      // At its end Play stops by itself with the whole range kept; this only makes sure.
+      await timeline.pause();
+    };
+    return [
+      {
+        subtitle: "749 Nobel prizes since 1901, each where it was won",
+        async check() {
+          expect(await timeline.range()).toBeNull();
+          // 749 awards and 370 universities have a position: 1,119 placed of 2.5K nodes.
+          expect(await graph.counts()).toMatch(/^1\.1K of 2\.5K nodes placed/);
+        },
       },
-    },
-    {
-      subtitle: "Brush 1900–1930: German universities lead",
-      action: () => timeline.brush([1900, 1930]),
-      async check() {
-        // A harness drag lands on pixels, not on the bars a hand snaps to: an edge may read a year off.
-        expect(await timeline.range()).toMatch(/^19(00|01) – 19(29|30)$/);
-        expect((await bar.chips()).some((chip) => /\bdate\b/.test(chip))).toBe(true);
+      {
+        subtitle: "Play the whole century",
+        action: playCentury,
+        check: async () => expect(await end(timeline)).toBeGreaterThanOrEqual(2025),
       },
-    },
-    {
-      subtitle: "Play 1900–1960 — in the 1940s the prizes go west",
-      // Play runs inside the brushed range and fills it from its start, a bar a tick: the range is
-      // widened to the 1960s first, so the 1940s come in as it plays.
-      async action() {
-        await bar.remove("date");
-        await timeline.brush([1900, 1960]);
-        await timeline.play();
-        await expect.poll(() => end(timeline), { timeout: 60_000 }).toBeGreaterThanOrEqual(1955);
-        await timeline.pause();
+      {
+        subtitle: "1900–1930: 9 in 10 mapped prizes were won in Europe",
+        // A drag that starts inside the played window moves it rather than drawing a new one: the
+        // window comes off the bar first. Then the toolbar's one Frame, on what the window keeps.
+        async action() {
+          await bar.remove("date");
+          await timeline.brush([1900, 1930]);
+          await graph.frame();
+        },
+        async check() {
+          // A harness drag lands on pixels, not on the bars a hand snaps to: an edge may read a year
+          // off. Either way it is 9 in 10 — 83 of 93 through 1930, 82 of 90 through 1929.
+          expect(await timeline.range()).toMatch(/^19(00|01) – 19(29|30)$/);
+          await expect.poll(() => graph.counts()).toMatch(/^(93|90) match · /);
+        },
       },
-      check: async () => expect(await end(timeline)).toBeGreaterThanOrEqual(1955),
-    },
-    {
-      subtitle: "1990–2000: 66 of 89 affiliations are American",
-      // A drag that starts inside the paused window moves it rather than drawing a new one: the
-      // window comes off the bar first.
-      async action() {
-        await bar.remove("date");
-        await timeline.brush([1990, 2000]);
+      {
+        subtitle: "1990–2000: 65 of 86 mapped prizes were won in the US",
+        async action() {
+          await bar.remove("date");
+          await timeline.brush([1990, 2000]);
+          await graph.frame();
+        },
+        async check() {
+          // The window is inclusive: 2000 is in it.
+          expect(await timeline.range()).toBe("1990 – 2000");
+          await expect.poll(() => graph.counts()).toMatch(/^86 match · /);
+        },
+        poster: true,
       },
-      check: async () => expect(await timeline.range()).toBe("1990 – 2000"),
-    },
-    {
-      subtitle: "One filter, every view",
-      async action() {
-        await discover.view("Dashboard");
-        // The Dashboard opens on the graph's first type: the affiliations' relation is picked, as a person picks it.
-        await discover.relation("LaureateAward", [">university>University", ">addressCountry>Country"]);
+      {
+        subtitle: "Only the women — play the century again",
+        // The pick is the dashboard's, crossed onto the awards; the timeline plays under it.
+        async action() {
+          await discover.view("Dashboard");
+          await (await (await (await discover.dashboard()).tile("Count by Laureate.gender")).chart()).pick({ y: "female" });
+          await discover.view("Graph");
+          await graph.ready();
+          await bar.remove("date");
+          await playCentury();
+        },
+        async check() {
+          // 68 prizes went to women, 29 of them with a place on the map.
+          await expect.poll(() => graph.counts()).toMatch(/^29 match · /);
+          expect((await bar.chips()).some((chip) => /\bLaureate\.gender\b/.test(chip))).toBe(true);
+        },
       },
-      async check() {
-        const dashboard = await discover.dashboard();
-        expect((await categories(await dashboard.tile("Count by Country.name")))[0]).toBe("USA");
-        // The timeline's clause holds on the dashboard.
-        expect((await bar.chips()).some((chip) => /\bdate\b/.test(chip))).toBe(true);
+      {
+        subtitle: "One filter, every view",
+        action: () => discover.view("Dashboard"),
+        async check() {
+          const dashboard = await discover.dashboard();
+          // Where the 68 women were born: the USA 18, France 6, Poland 5.
+          expect((await categories(await dashboard.tile("Count by Country.name")))[0]).toBe("USA");
+          const chips = await bar.chips();
+          expect(chips.some((chip) => /\bdate\b/.test(chip))).toBe(true);
+          expect(chips.some((chip) => /\bLaureate\.gender\b/.test(chip))).toBe(true);
+        },
       },
-      poster: true,
-    },
-  ],
+    ];
+  },
 });

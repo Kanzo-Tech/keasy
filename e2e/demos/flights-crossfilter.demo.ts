@@ -7,7 +7,7 @@ import { demo } from "./record";
 /**
  * Crossfiltering over OpenFlights: one filter for every chart and every view. A country clicked in the
  * Dashboard filters every chart, a longitude range brushed narrows it to the American West, and the
- * Graph view — on a map, set off camera — shows the same airports, framed.
+ * Graph view — on a map, set off camera — shows the same airports, framed, in one step.
  */
 demo("flights-crossfilter", "Crossfiltering over OpenFlights: a click, a brush, and the same filter on the map", {
   async arrange({ page, env }) {
@@ -38,19 +38,15 @@ demo("flights-crossfilter", "Crossfiltering over OpenFlights: a click, a brush, 
       poster: true,
     },
     {
-      subtitle: "Switch to the graph — the same filter, on the map",
+      subtitle: "Switch to the graph — the same filter, framed on the map",
+      // One step: the Graph view, once it has drawn, then its one Frame on what the filters keep.
       async action() {
         await discover.view("Graph");
         await graph.ready();
+        await graph.frame();
       },
       async check() {
         await expect.poll(() => graph.counts()).toMatch(/^135 match · 3\.2K of 3\.2K placed/);
-      },
-    },
-    {
-      subtitle: "Frame what the filters keep",
-      action: () => graph.frame(),
-      async check() {
         const chips = await bar.chips();
         expect(chips.some((chip) => /\bAirport\.country\b/.test(chip))).toBe(true);
         expect(chips.some((chip) => /\bAirport\.lon\b/.test(chip))).toBe(true);

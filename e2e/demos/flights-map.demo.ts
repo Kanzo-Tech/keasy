@@ -25,7 +25,8 @@ const SPREAD = 300;
 /**
  * Hidden patterns: OpenFlights moving as the force layout spreads it, then put on a map on camera
  * (x = lon, y = lat), so the moving cloud snaps into the world; then every airport in Spain searched
- * into the subset, the peninsula lassoed, and the camera framed on what was kept. Off camera the
+ * into the subset and framed — the Canaries and Melilla with the peninsula — then the peninsula
+ * lassoed, and the camera framed on what was kept. Off camera the
  * layout spreads the cloud and is paused, and the 36.9K routes are hidden so the points read. The
  * demos project runs Chromium on the GPU (playwright.config.ts).
  */
@@ -67,6 +68,12 @@ demo("flights-map", "OpenFlights put on a map: the force layout's scatter, then 
     {
       subtitle: "Find anything — here, every airport in Spain",
       action: async () => (await discover.search()).add("country:Spain", 40),
+      check: () => expect.poll(() => graph.counts()).toMatch(/^40 match · 3\.2K of 3\.2K placed/),
+    },
+    {
+      subtitle: "Frame Spain",
+      // The toolbar's one Frame, on what the search kept: the 40, the Canaries and Melilla with them.
+      action: () => graph.frame(),
       check: () => expect.poll(() => graph.counts()).toMatch(/^40 match · 3\.2K of 3\.2K placed/),
     },
     {

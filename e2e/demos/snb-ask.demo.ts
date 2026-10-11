@@ -5,19 +5,30 @@ import { DiscoverPage } from "../support/app";
 import { seedGraph } from "../support/seeds";
 import { demo, model } from "./record";
 
-const QUESTION = "Which browsers do they use most?";
+const BROWSERS = "Which browsers do they use most?";
+const OPERA = "Where do the ones on Opera live?";
+
+/** Whether `rows` — an answer's data table — holds a row reading `value` and `n` (thousands separators aside). */
+const holds = (rows: Record<string, string>[], value: string, n: number) =>
+  rows.some((row) => {
+    const cells = Object.values(row);
+    return cells.includes(value) && cells.some((cell) => cell.replace(/[,\s]/g, "") === String(n));
+  });
 
 /**
- * Ask over LDBC SNB: the page filtered to women, a question in plain words about what is in view, the
- * answer as a chart over those women, and the answer added to the dashboard.
+ * Ask over LDBC SNB, both of an answer's verbs: the page filtered to women, a question about what is
+ * in view whose answer keeps everything in it — every browser, so *Filter the page to these rows* is
+ * disabled — added to the dashboard and opened there; then a question whose answer has a where —
+ * the women on Opera — and the page filtered to it, the same 22 framed in the Graph view.
  *
  * The model's words are replayed from `recordings/snb-ask.json` (record/model.ts): the `answer` tool
- * it calls still runs on the page under its filter, so the chart is DuckDB's on every take. The check
- * that the reply reads Firefox 324 — the women's count, not everyone's 628 — proves, on the take that
- * captures it, that the answer is over what is in view. `LIVE=1` asks the model instead; `LIVE=1 RECORD=1` asks it and,
- * once every check has passed, keeps what it said as the recording.
+ * it calls still runs on the page under its filter, so the chart and its rows are DuckDB's on every
+ * take. The check that the rows read Firefox 324 — the women's count, not everyone's 628 — proves, on
+ * the take that captures it, that the answer is over what is in view. `LIVE=1` asks the model instead;
+ * `LIVE=1 RECORD=1` asks it and, once every check has passed, keeps what it said as the recording.
+ * The figures are person_0_0.csv's (STORYBOARD.md has the queries).
  */
-demo("snb-ask", "Ask over LDBC SNB: filter the page, ask about it, and add the answer to the dashboard", {
+demo("snb-ask", "Ask over LDBC SNB: an answer added to the dashboard and opened there, then one that filters the page", {
   async arrange({ page, env }) {
     const replay = await model(page, "snb-ask");
     const id = await seedGraph(page, "snb", { name: "Demo · LDBC Social Network", reuse: true });
@@ -28,10 +39,10 @@ demo("snb-ask", "Ask over LDBC SNB: filter the page, ask about it, and add the a
     const ask = await discover.ask();
     if (replay.live) await ask.warmUp();
     const answers = await ask.composer();
-    return { replay, discover, dashboard, ask, answers, answered: { tile: undefined as TileHarness | undefined } };
+    return { replay, discover, dashboard, answers, answered: { tile: undefined as TileHarness | undefined } };
   },
 
-  steps: ({ replay, discover, dashboard, ask, answers, answered }) => [
+  steps: ({ replay, discover, dashboard, answers, answered }) => [
     {
       subtitle: "Filter the page: women only",
       action: async () => (await (await dashboard.tile("Count by Person.gender")).chart()).pick({ y: "female" }),
@@ -40,7 +51,7 @@ demo("snb-ask", "Ask over LDBC SNB: filter the page, ask about it, and add the a
     {
       subtitle: "Ask about what's in view, in plain words",
       // Resolves once a new answer card has begun.
-      action: () => answers.ask(QUESTION),
+      action: () => answers.ask(BROWSERS),
       check: async () => expect(replay.unrecorded, "model calls the recording does not hold: capture it again").toEqual([]),
     },
     {
@@ -48,20 +59,59 @@ demo("snb-ask", "Ask over LDBC SNB: filter the page, ask about it, and add the a
       action: async () => (answered.tile = await answers.answer()),
       async check() {
         expect(await answered.tile!.text()).toContain("Firefox");
-        // A chart draws its bars, not their figures: the figures are in the reply, which the model
-        // writes from the tool's result. 324 of the women; 628 would be everyone's — an answer that
-        // dropped the page's filter.
-        const reply = await ask.host.text();
-        expect(reply).toContain("324");
-        expect(reply).not.toContain("628");
+        // The rows the answer was read from, the engine's: 324 of the women; 628 would be everyone's
+        // — an answer that dropped the page's filter.
+        const rows = await answers.rows();
+        expect(holds(rows, "Firefox", 324)).toBe(true);
+        expect(holds(rows, "Firefox", 628)).toBe(false);
+        // Every browser, and no where: filtering the page to it would keep everything in view.
+        await expect(answers.filterTo()).rejects.toThrow(/keeps everything in view/);
       },
       poster: true,
     },
     {
       subtitle: "Add it to the dashboard",
-      // Resolves on the card's *✓ On the dashboard*, read from the dashboards the page handed back.
+      // Resolves on the card's *Open on the dashboard*, read from the dashboards the page handed back.
       action: () => answers.addToDashboard(),
       check: async () => void (await dashboard.tile(/browserUsed/)),
+    },
+    {
+      subtitle: "Open it on the dashboard",
+      // The page's onOpen: the Dashboard view on the answer's relation, the tile brought into view.
+      action: () => answers.openOnDashboard(),
+      async check() {
+        const tile = await dashboard.tile(/browserUsed/);
+        await expect
+          .poll(async () => {
+            const { y, height } = await tile.host.rect();
+            return y >= 0 && y + height / 2 <= 900;
+          })
+          .toBe(true);
+      },
+    },
+    {
+      subtitle: "Ask again: where do the ones on Opera live?",
+      // The Ask panel stayed docked: the conversation goes on under the same filter.
+      async action() {
+        await answers.ask(OPERA);
+        answered.tile = await answers.answer();
+      },
+      check: async () => expect(replay.unrecorded, "model calls the recording does not hold: capture it again").toEqual([]),
+    },
+    {
+      subtitle: "This one filters: keep the 22 women on Opera",
+      action: () => answers.filterTo(),
+      check: () => expect.poll(() => discover.figure("Rows")).toBe("22"),
+    },
+    {
+      subtitle: "The same 22 in the graph, framed",
+      async action() {
+        await discover.view("Graph");
+        const graph = await discover.graph();
+        await graph.ready();
+        await graph.frame();
+      },
+      check: () => expect.poll(() => discover.counts()).toMatch(/^22 of /),
     },
   ],
 

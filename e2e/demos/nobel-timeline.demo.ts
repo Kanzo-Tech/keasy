@@ -111,15 +111,18 @@ demo("nobel-timeline", "Nobel prizes on a map and a timeline: a century of scien
         async action() {
           await discover.view("Dashboard");
           await (await (await (await discover.dashboard()).tile("Count by Laureate.gender")).chart()).pick({ y: "female" });
+          // The pick is on the page before the view changes: its chip is in the bar.
+          await expect.poll(async () => (await bar.chips()).some((chip) => /\bLaureate\.gender\b/.test(chip))).toBe(true);
           await discover.view("Graph");
           await graph.ready();
           await bar.remove("date");
           await playCentury();
         },
         async check() {
+          // The pick outlived the view change and the replay: its chip is still in the bar.
+          expect((await bar.chips()).some((chip) => /\bLaureate\.gender\b/.test(chip))).toBe(true);
           // 68 prizes went to women, 29 of them with a place on the map.
           await expect.poll(() => graph.counts()).toMatch(/^29 match · /);
-          expect((await bar.chips()).some((chip) => /\bLaureate\.gender\b/.test(chip))).toBe(true);
         },
       },
       {

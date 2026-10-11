@@ -111,12 +111,25 @@ demo("nobel-timeline", "Nobel prizes on a map and a timeline: a century of scien
         async action() {
           await discover.view("Dashboard");
           await (await (await (await discover.dashboard()).tile("Count by Laureate.gender")).chart()).pick({ y: "female" });
-          // The pick is on the page before the view changes: its chip is in the bar.
+          // The pick stays on the page through every step after it: its chip is in the bar.
+          const picked = async (after: string) =>
+            expect(
+              (await bar.chips()).some((chip) => /\bLaureate\.gender\b/.test(chip)),
+              `the gender pick's chip is in the bar after ${after}`,
+            ).toBe(true);
           await expect.poll(async () => (await bar.chips()).some((chip) => /\bLaureate\.gender\b/.test(chip))).toBe(true);
           await discover.view("Graph");
+          await picked("the view changed to Graph");
           await graph.ready();
+          await picked("the graph was ready");
           await bar.remove("date");
-          await playCentury();
+          await picked("the date chip was removed");
+          await timeline.brush([1900, 2029]);
+          await picked("the century was brushed");
+          await timeline.play();
+          await expect.poll(() => end(timeline), { timeout: 120_000 }).toBeGreaterThanOrEqual(2025);
+          await picked("the century was played");
+          await timeline.pause();
         },
         async check() {
           // The pick outlived the view change and the replay: its chip is still in the bar.

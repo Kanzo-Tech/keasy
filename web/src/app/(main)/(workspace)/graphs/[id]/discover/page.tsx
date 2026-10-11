@@ -279,12 +279,12 @@ function Workspace() {
                   dashboard brushes years with a chart of its own. Hidden, not unmounted, in Dashboard view: its window keeps filtering the
                   page and stays in the bar as a chip to let go of, as the dashboard's filters do in
                   Graph view. A strip of its own, so the brush never covers the legend; with no
-                  column chosen it draws nothing. */}
-              <div className="shrink-0" hidden={view !== "graph"}>
-                <div className="border-t" style={{ minHeight: 44 }}>
-                  {timeline && <ChartTimeline field={timeline} relation="vertices" title={`Timeline: ${timeline}`} />}
+                  column chosen there is no strip, and the canvas takes its height. */}
+              {timeline && (
+                <div className="shrink-0 border-t" hidden={view !== "graph"} style={{ minHeight: 44 }}>
+                  <ChartTimeline field={timeline} relation="vertices" title={`Timeline: ${timeline}`} />
                 </div>
-              </div>
+              )}
             </ShellMain>
           </ResizablePanel>
           <ResizableResizeTrigger hidden={!panelOpen} id="canvas:dock" withHandle />

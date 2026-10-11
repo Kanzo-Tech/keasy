@@ -146,7 +146,7 @@ test("an answer added to the dashboard is saved as a tile of its relation", asyn
   );
   const answers = await (await askPanel(page, env, corpusGraph)).composer();
   await answers.ask("How many people are there?");
-  // Resolves on the card's own *✓ On the dashboard*, read from the dashboards the page handed back.
+  // Resolves on the card's own *Open on the dashboard*, read from the dashboards the page handed back.
   await answers.addToDashboard();
   // Written at once, not after the editor's pause: an addition is a decision, not typing.
   await expect

@@ -135,7 +135,8 @@ test("the flights rules find what the seed lacks: IATA codes, four-letter ICAO c
   // infra/dev/examples/openflights/rules.ttl, dropped on the badge as a person drops it.
   await panel.drop("rules.ttl", rules("openflights"));
   await expect.poll(() => panel.tally(), { timeout: 30_000 }).toBe("Not checked");
-  expect(await panel.check()).toMatch(/^Checked over all 3,218 nodes/);
+  // 288 airports carry a result of either severity (44 ∪ 245, one in both), so 2,930 conform.
+  expect(await panel.check()).toBe("All 3,218 nodes checked · 2,930 conform");
 
   const airport = await panel.rule("Airport");
   // airports.csv: 20 rows with an empty `iata`; 24 whose `icao` is not four capitals (CAJ4, S31, VA1P,
@@ -160,10 +161,9 @@ test("the flights rules find what the seed lacks: IATA codes, four-letter ICAO c
   expect(await airport.show("The airport has no IANA time zone.")).toBe(29);
   await expect.poll(() => discover.counts()).toMatch(/^29 of 3\.2K nodes match/);
 
-  // Show all is every airport one severity flags, each once: 20 + 24 violations share no airport,
-  // and two of the 29 without a time zone are high too, so 29 + 218 warnings are 245 airports.
-  expect(await airport.showAll("warnings")).toBe(245);
-  await expect.poll(() => discover.counts()).toMatch(/^245 of 3\.2K nodes match/);
-  expect(await airport.showAll("violations")).toBe(44);
-  await expect.poll(() => discover.counts()).toMatch(/^44 of 3\.2K nodes match/);
+  // The rule's own Show is every airport it flags, each once, of either severity: 20 + 24 violations
+  // share no airport, two of the 29 without a time zone are high too (245 with a warning), and one
+  // airport has both a violation and a warning — 288.
+  expect(await airport.showAll()).toBe(288);
+  await expect.poll(() => discover.counts()).toMatch(/^288 of 3\.2K nodes match/);
 });

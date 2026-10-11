@@ -30,7 +30,7 @@ test("the funding rules find what the seed lacks: countries and SME status, and 
   // Saved, and not checked until asked: then over the whole corpus.
   await expect.poll(() => rules.tally(), { timeout: 30_000 }).toBe("Not checked");
   await rules.start();
-  await expect.poll(() => rules.checked(), { timeout: 240_000 }).toMatch(/^Checked over all 206,629 nodes/);
+  await expect.poll(() => rules.checked(), { timeout: 240_000 }).toMatch(/^All 206,629 nodes checked · /);
 
   const expectFinding = async (rule: string, message: string, severity: "Violation" | "Warning", flagged: number) => {
     const finding = await (await rules.rule(rule)).finding(message);

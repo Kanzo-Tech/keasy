@@ -86,7 +86,7 @@ test("rules are validated over the corpus's triples: what fails, what conforms, 
 
   // Over the whole corpus: the two people outside GB and US break the Person rule; every order
   // keeps its own.
-  expect(await rules.check()).toMatch(/^Checked over all 20 nodes/);
+  expect(await rules.check()).toBe("All 20 nodes checked · 18 conform");
   // The badge reads the tally in either view: here, the two people.
   await expect.poll(() => rules.tally()).toBe("2 violations");
   const shipping = await (await rules.rule("Person")).finding("Ships only to GB and US");
@@ -101,12 +101,13 @@ test("rules are validated over the corpus's triples: what fails, what conforms, 
   expect(await rules.tally()).toBe("2 violations");
   await shipping.hide();
 
-  // Show all puts every vertex a rule flags at one severity on the page: here the same two people.
+  // A rule's own Show puts every vertex it flags on the page, of any severity: here the same two
+  // people. A rule that flags nothing offers none.
   const people = await rules.rule("Person");
-  expect(await people.offersShowAll("warnings")).toBe(false);
-  expect(await people.showAll("violations")).toBe(2);
+  expect(await order.offersShowAll()).toBe(false);
+  expect(await people.showAll()).toBe(2);
   await expect.poll(() => discover.counts()).toMatch(/^2 of 20 nodes match/);
-  await people.hideAll("violations");
+  await people.hideAll();
   await expect.poll(() => discover.counts()).toMatch(/^20 nodes/);
 
   // What conforms is rudof's Shape Fragment, read back by its subjects: six people and every order.
@@ -125,7 +126,7 @@ test("rules are validated over the corpus's triples: what fails, what conforms, 
   expect(await subset.stale()).toBe("Filter changed since the last check");
   // The tally is kept, and its name says it is out of date.
   expect(await subset.tally()).toBe("2 violations, out of date");
-  expect(await subset.check()).toMatch(/^Checked over the selection: 4 of 20 nodes/);
+  expect(await subset.check()).toBe("4 of 20 nodes checked · 4 conform");
   expect(await subset.stale()).toBeNull();
   const person = await subset.rule("Person");
   await expect.poll(() => person.state()).toBe("In order");

@@ -43,6 +43,7 @@ demo("flights-map", "OpenFlights put on a map: the force layout's scatter, then 
     await settings.marks("Legible");
     await settings.edges("Hidden");
     await settings.labels("None");
+    await settings.backdrop({ vignette: true, grid: true });
     await discover.panel("Info");
     return { discover, graph, settings };
   },

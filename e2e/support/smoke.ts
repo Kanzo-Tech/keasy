@@ -89,8 +89,8 @@ const footed = (figure: string) => compact.format(counted(figure));
 
 /**
  * What a filter left of the dashboard's relation, once every view agrees on it: the `count` figure
- * titled `figure` and the footer's matching nodes — the relation's roots, which are its rows when each
- * root has one path. Returned as the figure reads it, exact under ten thousand (`counted` reads it).
+ * titled `figure` and the filter bar's readout of the relation's rows. Returned as the figure reads
+ * it, exact under ten thousand (`counted` reads it).
  *
  * A harness's brush resolves on the release, and `settled()` once nothing on the dashboard is
  * querying, so what the views read then is the range the drag ended on: they are read until they
@@ -99,8 +99,8 @@ const footed = (figure: string) => compact.format(counted(figure));
 export async function agreedCount(discover: DiscoverPage, { figure }: { figure: string }): Promise<string> {
   const read = async () => {
     const shown = await discover.figure(figure);
-    const matching = /^(\S+) of \S+ nodes match/.exec(await discover.counts())?.[1];
-    return matching !== undefined && footed(shown) === matching ? { shown } : `figure ${shown}, nodes ${matching}`;
+    const kept = await discover.kept();
+    return footed(shown) === compact.format(Number(kept.replace(/,/g, ""))) ? { shown } : `figure ${shown}, readout ${kept}`;
   };
   let agreed = "";
   await expect
@@ -116,12 +116,12 @@ export async function agreedCount(discover: DiscoverPage, { figure }: { figure: 
 
 /**
  * What the dashboard's relation counts with no filter on the page: the `count` figure titled
- * `figure`, or *filtered* while the footer still matches some nodes and not others. Polled for the
+ * `figure`, or *filtered* while the filter bar's readout still keeps a part. Polled for the
  * relation's size: `expect.poll(() => unfiltered(discover, "Airports")).toBe("3,218")`.
  */
 export async function unfiltered(discover: DiscoverPage, figure: string): Promise<string> {
-  const footer = await discover.counts();
-  return footer.includes(" match") ? `filtered: ${footer}` : discover.figure(figure);
+  const readout = await (await discover.filters()).readout();
+  return readout.includes(" of ") ? `filtered: ${readout}` : discover.figure(figure);
 }
 
 export { expect };

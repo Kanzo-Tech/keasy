@@ -65,24 +65,24 @@ demo("flights-map", "OpenFlights put on a map: the force layout's scatter, then 
     {
       subtitle: "Find anything — here, every airport in Spain",
       action: async () => (await discover.search()).add("country:Spain", 40),
-      check: () => expect.poll(() => graph.counts()).toMatch(/^40 match · 3\.2K of 3\.2K placed/),
+      check: () => expect.poll(() => discover.kept()).toBe("40"),
     },
     {
       subtitle: "Frame Spain",
       // The toolbar's one Frame, on what the search kept: the 40, the Canaries and Melilla with them.
       action: () => graph.frame(),
-      check: () => expect.poll(() => graph.counts()).toMatch(/^40 match · 3\.2K of 3\.2K placed/),
+      check: () => expect.poll(() => discover.kept()).toBe("40"),
     },
     {
       subtitle: "Lasso the peninsula — the Canaries stay out",
       action: () => graph.lasso(PENINSULA, { in: "data" }),
-      check: () => expect.poll(() => graph.counts()).toMatch(/^31 match · 3\.2K of 3\.2K placed/),
+      check: () => expect.poll(() => discover.kept()).toBe("31"),
     },
     {
       subtitle: "Frame what you kept",
       // Resolves on a frame drawn after the press: the camera moved onto what is in full colour.
       action: () => graph.frame(),
-      check: () => expect.poll(() => graph.counts()).toMatch(/^31 match · 3\.2K of 3\.2K placed/),
+      check: () => expect.poll(() => discover.kept()).toBe("31"),
     },
   ],
 });

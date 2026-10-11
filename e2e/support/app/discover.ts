@@ -20,7 +20,6 @@ import { SettingsPanel } from "./settings";
 export type View = "Graph" | "Dashboard";
 export type Panel = "Info" | "Ask" | "Settings";
 
-/** `GraphCounts`' sentence — *3.2K nodes · 36.9K edges*, *29 of 3.2K nodes match · …* — the library's own pattern. */
 
 /**
  * **Discover** — a graph's page: the view switch (*View*: Graph · Dashboard), the dock and its
@@ -168,9 +167,20 @@ export class DiscoverPage extends ComponentHarness {
   }
 
   /**
+   * The page's one count — the filter bar's readout, *135 of 3,218 nodes* in the Graph view or *551
+   * of 3,218 rows* in the Dashboard view — as what the filters keep, in full: *135*, or with nothing
+   * filtering the whole, *3,218*. kanzo-ui counts nowhere else: not the footer, the legend or a chip.
+   */
+  async kept(): Promise<string> {
+    const readout = await (await this.filters()).readout();
+    return /^[\d,]+/.exec(readout)?.[0] ?? readout;
+  }
+
+  /**
    * What the Dashboard view's figure titled `title` reads — its value alone, without its label or a
    * trend's delta — once nothing in the tile is loading. A count reads in full under ten thousand and
-   * compact above (kanzo-ui's `ChartStat`): *778*, *23.5K*. The automatic dashboard's count is *Rows*.
+   * compact above (kanzo-ui's `ChartStat`): *778*, *23.5K*. A saved dashboard's figure; the automatic
+   * one has no count, which is the filter bar's readout (`kept`).
    */
   async figure(title: string | RegExp): Promise<string> {
     const tile = await (await this.dashboard()).tile(title);

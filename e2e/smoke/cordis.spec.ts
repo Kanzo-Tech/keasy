@@ -61,5 +61,5 @@ test("the funding rules find what the seed lacks: countries and SME status, and 
 
   // Show puts the finding's organisations on the page.
   expect(await organisation.show("An organisation is registered in a country.")).toBe(5);
-  await expect.poll(() => discover.counts()).toMatch(/^5 of 206\.6K nodes match/);
+  await expect.poll(() => discover.kept()).toBe("5");
 });

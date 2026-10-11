@@ -241,8 +241,13 @@ function Workspace() {
       </HeaderEnd>
 
       {/* The dashboard's filters stay in the bar to change in either view: the dashboard filters the
-          graph while it is hidden. No readout: the dashboard's count tile and the footer count. */}
-      <FilterBar className="shrink-0 border-b px-3 py-0.5">
+          graph while it is hidden. Its readout is the page's one count, of what the view shows: the
+          vertices in the Graph view, the dashboard's relation in the Dashboard view. */}
+      <FilterBar
+        className="shrink-0 border-b px-3 py-0.5"
+        relation={view === "graph" ? "vertices" : relation}
+        rowNoun={view === "graph" ? "nodes" : "rows"}
+      >
         {/* The rules' tally, after the filters: read in either view, its findings in its popover. */}
         <Boundary fallback={<Skeleton className="h-5 w-24" />}>
           <RulesBadge />

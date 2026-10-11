@@ -27,7 +27,7 @@ demo("flights-crossfilter", "Crossfiltering over OpenFlights: a click, a brush, 
       subtitle: "Click a country — every chart follows",
       action: async () => (await (await dashboard.tile(/Count by Airport\.country/)).chart()).pick({ y: "United States" }),
       async check() {
-        await expect.poll(() => discover.figure("Rows")).toBe("551");
+        await expect.poll(() => discover.kept()).toBe("551");
         await dashboard.settled();
       },
     },
@@ -37,7 +37,7 @@ demo("flights-crossfilter", "Crossfiltering over OpenFlights: a click, a brush, 
       // US airports west of 98.98°W. Both edges sit in gaps of the data — the west one in the 7° between
       // southeast Alaska and the Pacific coast, the east one 0.49° from the nearest airport — so a drag a pixel off
       // still reads the same figure.
-      check: () => expect.poll(() => discover.figure("Rows")).toBe("135"),
+      check: () => expect.poll(() => discover.kept()).toBe("135"),
       poster: true,
     },
     {
@@ -49,7 +49,7 @@ demo("flights-crossfilter", "Crossfiltering over OpenFlights: a click, a brush, 
         await graph.frame();
       },
       async check() {
-        await expect.poll(() => graph.counts()).toMatch(/^135 match · 3\.2K of 3\.2K placed/);
+        await expect.poll(() => discover.kept()).toBe("135");
         const chips = await bar.chips();
         expect(chips.some((chip) => /\bAirport\.country\b/.test(chip))).toBe(true);
         expect(chips.some((chip) => /\bAirport\.lon\b/.test(chip))).toBe(true);

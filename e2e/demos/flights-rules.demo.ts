@@ -27,10 +27,10 @@ demo("flights-rules", "Rules over OpenFlights on the map: what breaks the rule, 
     const rules = await discover.rules();
     // rudof in the browser over 3,218 airports: the environment's two minutes cover it.
     expect(await rules.check()).toBe("All 3,218 nodes checked · 2,930 conform");
-    return { graph, rules, airport: await rules.rule("Airport") };
+    return { discover, graph, rules, airport: await rules.rule("Airport") };
   },
 
-  steps: ({ graph, rules, airport }) => [
+  steps: ({ discover, graph, rules, airport }) => [
     {
       subtitle: "Every airport, checked against your rules",
       check: async () => expect(await airport.state()).toBe("44 violations · 247 warnings"),
@@ -39,30 +39,30 @@ demo("flights-rules", "Rules over OpenFlights on the map: what breaks the rule, 
       subtitle: "288 airports break the rule — show them all",
       // The rule's own Show N, at the end of its heading: every airport it flags, of either severity.
       action: () => airport.showAll(),
-      check: () => expect.poll(() => graph.counts()).toMatch(/^288 match · 3\.2K of 3\.2K placed/),
+      check: () => expect.poll(() => discover.kept()).toBe("288"),
     },
     {
       subtitle: "Frame them",
       action: () => graph.frame(),
-      check: () => expect.poll(() => graph.counts()).toMatch(/^288 match · 3\.2K of 3\.2K placed/),
+      check: () => expect.poll(() => discover.kept()).toBe("288"),
     },
     {
       subtitle: "Amber warns: 218 airports above 4,000 ft",
       // The finding's own Show N, on its item: it replaces the rule's, the rules being one clause.
       action: () => airport.show(/high-altitude airport/),
-      check: () => expect.poll(() => graph.counts()).toMatch(/^218 match · 3\.2K of 3\.2K placed/),
+      check: () => expect.poll(() => discover.kept()).toBe("218"),
       poster: true,
     },
     {
       subtitle: "Frame them: the Rockies, the Andes, Tibet",
       action: () => graph.frame(),
-      check: () => expect.poll(() => graph.counts()).toMatch(/^218 match · 3\.2K of 3\.2K placed/),
+      check: () => expect.poll(() => discover.kept()).toBe("218"),
     },
     {
       subtitle: "Keep what conforms: 2,930 airports pass every rule",
-      // rudof's Shape Fragment, read back by its subjects, is the page: every view counts it.
+      // The airports rudof names as conforming beside its Shape Fragment are the page: the readout counts them.
       action: () => rules.conforms(),
-      check: () => expect.poll(() => graph.counts()).toMatch(/^2\.9K match · 3\.2K of 3\.2K placed/),
+      check: () => expect.poll(() => discover.kept()).toBe("2,930"),
     },
   ],
 });

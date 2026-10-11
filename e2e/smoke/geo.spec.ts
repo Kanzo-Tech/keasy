@@ -114,7 +114,7 @@ test("leaving Discover with a dashboard filter in force logs nothing, and the pa
   expect(counted(await agreedCount(discover, { figure: "Airports" }))).toBeLessThan(AIRPORTS);
   // The dashboard hidden, its clause still on the page, the canvas drawing what it keeps.
   await discover.view("Graph");
-  await expect.poll(() => discover.counts()).toMatch(/ of 3\.2K nodes match/);
+  await expect.poll(async () => (await discover.filters()).readout()).toMatch(/ of 3,218 nodes$/);
 
   // Leaving by a link unmounts the page in the browser: the dashboard withdraws its clause as it
   // goes, and every client still connected asks again. Those queries must not outlive their clients
@@ -160,11 +160,11 @@ test("the flights rules find what the seed lacks: IATA codes, four-letter ICAO c
 
   // Show puts the finding's airports on the page.
   expect(await airport.show("The airport has no IANA time zone.")).toBe(29);
-  await expect.poll(() => discover.counts()).toMatch(/^29 of 3\.2K nodes match/);
+  await expect.poll(() => discover.kept()).toBe("29");
 
   // The rule's own Show is every airport it flags, each once, of either severity: 20 + 24 violations
   // share no airport, two of the 29 without a time zone are high too (245 with a warning), and one
   // airport has both a violation and a warning — 288.
   expect(await airport.showAll()).toBe(288);
-  await expect.poll(() => discover.counts()).toMatch(/^288 of 3\.2K nodes match/);
+  await expect.poll(() => discover.kept()).toBe("288");
 });

@@ -12,8 +12,8 @@ import { corpusKey, useCorpus, useGraphKey, useVertices } from "@/lib/fossil/cor
 /**
  * A graph's rules, run by rudof on the page's one DuckDB over the corpus as RDF — the
  * `"<graph>".triples` view fossil's `attach` creates. rudof parses the file, validates the triples
- * whose subjects are in the page's subset, and writes the Shape Fragment of what conforms; keasy
- * only says which subset and reads the answer back.
+ * whose subjects are in the page's subset, and writes the Shape Fragment of what conforms with the
+ * focus nodes that conform beside it; keasy only says which subset and reads the answer back.
  */
 
 /** rudof's SHACL stack, instantiated once and only when the rules are read: the graph never loads it. */
@@ -241,14 +241,19 @@ export function useRules(rules: ReadRules | undefined, text: string) {
       const wanted = new Set(rule.groups.filter((g) => g.severity === severity).map(groupKey));
       await showNodes(await nodesAgain(rule, (g) => wanted.has(groupKey(g))), label);
     },
-    /** Keep what conforms: rudof's Shape Fragment of the subset, its subjects the panel's clause. */
+    /**
+     * Keep what conforms: the focus nodes no rule reports anything for, as rudof names them beside
+     * its Shape Fragment, the panel's clause. Not the fragment's subjects: a fragment holds each
+     * conforming node's neighbourhood, so a `sh:class` on a route took in every airport it reaches.
+     */
     conforming: async (label: string) => {
       const into = String(new TableRefNode([graphId, "rules_fragment"]));
+      const conforming = String(new TableRefNode([graphId, "rules_conforming"]));
       // Asked for by a press, and nothing stops it once asked: a signal that never aborts.
       const { signal } = new AbortController();
       const { attachedTo, focus } = await prepared(subset, "rules_focus", signal);
-      await rules!.shapes.fragment({ table: triples, focus, engine: attachedTo, into, signal });
-      await publish(sql`${column("subject")} IN (SELECT s_value FROM ${into})`, label);
+      await rules!.shapes.fragment({ table: triples, focus, engine: attachedTo, into, conforming, signal });
+      await publish(sql`${column("subject")} IN (SELECT s_value FROM ${conforming})`, label);
     },
   };
 }

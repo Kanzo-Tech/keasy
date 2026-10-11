@@ -20,10 +20,9 @@ step the subtitle goes and the page is held for `TAIL` (3 s, `record/pace.ts`) b
 `env` is `await playwright(page)`, made **before** the first `page.goto` (the hook registers charts
 and canvases as they mount). `bar` is `await env.harness(FilterBarHarness)`. `discover`, `settings`,
 `search`, `rules`, `ask` are the keasy page objects listed at the end
-([Page objects](#the-keasy-page-objects-the-demos-need)). The filter bar has no readout: what the
-filters keep is read from the dashboard's count figure, `discover.figure("Rows")` (in full under ten
-thousand, compact above: `"778"`, `"23.5K"`), or in the Graph view from the footer's GraphCounts,
-`graph.counts()` → `/^132 of 3\.2K nodes match/` (compact, the total being every node).
+([Page objects](#the-keasy-page-objects-the-demos-need)). What the filters keep is the page's one
+count, the filter bar's readout, read in full by `discover.kept()`: `"778"` of the Dashboard view's
+relation, `"132"` of the Graph view's nodes.
 
 Every number below was computed from the example's CSV/JSON with DuckDB; the query is under each
 demo's **Numbers**. The OpenFlights and SNB queries run in `infra/dev/examples/<name>/data` after
@@ -97,10 +96,10 @@ depends on which relations the mapping writes as edges); read it off GraphCounts
 | --- | --- | --- | --- |
 | 1 | A graph of airports and their routes | `graph.run()` (woken, so the cloud moves on camera) | the transport reads *Pause the layout*; `graph.counts()` → `/3,218 nodes/` (or `3.2K`) |
 | 2 | Put it on a map: longitude across, latitude up | `settings.placement("Map", { x: "lon", y: "lat" })` then `graph.pause()` | `graph.counts()` → `/3,218 of 3,218 placed/` (or `3.2K`); the placement radio *Map* is checked · **poster** |
-| 3 | Find anything — here, every airport in Spain | `search.add("country:Spain")` (Info → *Find anything in the graph* → type → *Add 40 to the subset*) | the add button read `Add 40 to the subset`; `graph.counts()` → `/^40 match · 3\.2K of 3\.2K placed/` |
-| 4 | Frame Spain | `graph.frame()` — the toolbar's one Frame (kanzo-ui #179), on what the search kept | `graph.counts()` still `/^40 match · /` |
-| 5 | Lasso the peninsula — the Canaries stay out | `graph.lasso(PENINSULA, { in: "data" })` (the polygon below, in lon/lat) | `graph.counts()` → `/^31 match · 3\.2K of 3\.2K placed/` |
-| 6 | Frame what you kept | `graph.frame()` | `graph.frame()` resolved (a frame drawn after the press); `graph.counts()` still `/^31 match · /` |
+| 3 | Find anything — here, every airport in Spain | `search.add("country:Spain")` (Info → *Find anything in the graph* → type → *Add 40 to the subset*) | the add button read `Add 40 to the subset`; `discover.kept()` → `"40"` |
+| 4 | Frame Spain | `graph.frame()` — the toolbar's one Frame (kanzo-ui #179), on what the search kept | `discover.kept()` still `"40"` |
+| 5 | Lasso the peninsula — the Canaries stay out | `graph.lasso(PENINSULA, { in: "data" })` (the polygon below, in lon/lat) | `discover.kept()` → `"31"` |
+| 6 | Frame what you kept | `graph.frame()` | `graph.frame()` resolved (a frame drawn after the press); `discover.kept()` still `"31"` |
 
 Step 4 frames the 40 as the search kept them: the camera takes in the Canaries and the Atlantic
 down to their latitude (27.8° N), and Melilla across the strait — which is what makes step 5's
@@ -161,7 +160,7 @@ is 31 whether the lasso's clause is ANDed with the search's or stands alone. Lef
 | --- | --- | --- | --- |
 | 1 | Click a country — every chart follows | `(await (await dashboard.tile(/Count by Airport\.country/)).chart()).pick({ y: "United States" })` | `discover.figure("Rows")` → `"551"`; `dashboard.settled()` |
 | 2 | Drag across longitude — just the West | `(await (await dashboard.tile(/Count by Airport\.lon$/)).chart()).brush({ x: [-125, -100] })` | `discover.figure("Rows")` → `"132"` · **poster** |
-| 3 | Switch to the graph — the same filter, framed on the map | `discover.view("Graph")`; `graph.ready()`; `graph.frame()` — one step | `graph.counts()` → `/^135 match · 3\.2K of 3\.2K placed/`; `bar.chips()` has the country and the lon clauses |
+| 3 | Switch to the graph — the same filter, framed on the map | `discover.view("Graph")`; `graph.ready()`; `graph.frame()` — one step | `discover.kept()` → `"135"`; `bar.chips()` has the country and the lon clauses |
 
 The take brushes `[-128, -98.98]`, whose edges both sit in gaps of the data, so it reads **135** (US
 airports west of 98.98° W) whatever a pixel does; the `[-125, -100]` figures below are the first
@@ -182,8 +181,7 @@ lands in the bar"* is the check of the last step rather than a step of its own.
 
 - Whether the lon brush filters by its extent or by the bins it covers: by extent it is 132; read the
   figure on the first run and pin it.
-- `graph.counts()` reads GraphCounts' sentence; with a type filter it may read *132 of 3.2K nodes
-  match*. Match the leading figure only.
+- `discover.kept()` reads the readout's leading figure, in full.
 
 ---
 
@@ -298,11 +296,11 @@ again with `LIVE=1 RECORD=1`.
 | # | Subtitle | Action | Check |
 | --- | --- | --- | --- |
 | 1 | Every airport, checked against your rules | — (the popover is read) | `rules.rule("Airport").state()` → *44 violations · 247 warnings* (the tally counts results) |
-| 2 | 288 airports break the rule — show them all | `rules.rule("Airport").showAll()` (presses the rule's *Show 288*) | `graph.counts()` → `/^288 match · 3\.2K of 3\.2K placed/` |
-| 3 | Frame them | `graph.frame()` | still `/^288 match/` |
-| 4 | Amber warns: 218 airports above 4,000 ft | `rules.rule("Airport").show(/high-altitude airport/)` (the finding's *Show 218*, which replaces the rule's: the rules are one clause) | `graph.counts()` → `/^218 match · /` · **poster** |
-| 5 | Frame them: the Rockies, the Andes, Tibet | `graph.frame()` | still `/^218 match/` |
-| 6 | Keep what conforms: 2,930 airports pass every rule | `rules.conforms()` (presses *Keep what conforms*; the popover closes) | `graph.counts()` → `/^2\.9K match · 3\.2K of 3\.2K placed/` — the clean set is the page, and every view counts it |
+| 2 | 288 airports break the rule — show them all | `rules.rule("Airport").showAll()` (presses the rule's *Show 288*) | `discover.kept()` → `"288"` |
+| 3 | Frame them | `graph.frame()` | still `"288"` |
+| 4 | Amber warns: 218 airports above 4,000 ft | `rules.rule("Airport").show(/high-altitude airport/)` (the finding's *Show 218*, which replaces the rule's: the rules are one clause) | `discover.kept()` → `"218"` · **poster** |
+| 5 | Frame them: the Rockies, the Andes, Tibet | `graph.frame()` | still `"218"` |
+| 6 | Keep what conforms: 2,930 airports pass every rule | `rules.conforms()` (presses *Keep what conforms*; the popover closes) | `discover.kept()` → `"2,930"` — the clean set is the page, and every view counts it |
 
 The take ends on the clean set: what conforms, kept, is the page. Step 4 is the high-altitude finding
 (218), not the rule's 288: the subtitle and the frame are about altitude.
@@ -365,13 +363,14 @@ subjects of rudof's Shape Fragment instead, so step 6's check is what proves the
 | --- | --- | --- | --- |
 | 1 | 749 Nobel prizes since 1901, each where it was won | — (the map is read: the first frame is the world, the Atlantic in the middle) | `timeline.range()` → `null`; `graph.counts()` → `/^1\.1K of 2\.5K nodes placed/` (749 awards + 370 universities) |
 | 2 | Play the whole century | `timeline.brush([1900, 2029])`; `timeline.play()`; poll the window's end to ≥ 2025 | the end year ≥ 2025 |
-| 3 | 1900–1930: 9 in 10 mapped prizes were won in Europe | `bar.remove("date")`; `timeline.brush([1900, 1930])`; `graph.frame()` | `timeline.range()` → `/^19(00\|01) – 19(29\|30)$/`; `graph.counts()` → `/^(93\|90) match/` |
-| 4 | 1990–2000: 65 of 86 mapped prizes were won in the US | `bar.remove("date")`; `timeline.brush([1990, 2000])`; `graph.frame()` | `timeline.range()` → `"1990 – 2000"`; `graph.counts()` → `/^86 match/` · **poster** |
-| 5 | Only the women — play the century again | `discover.view("Dashboard")`; *Count by Laureate.gender* `pick({ y: "female" })`; `discover.view("Graph")`; `bar.remove("date")`; brush 1900–2029 and play to the end | `graph.counts()` → `/^29 match/`; `bar.chips()` holds `Laureate.gender` |
+| 3 | 1900–1930: 9 in 10 mapped prizes were won in Europe | `bar.remove("date")`; `timeline.brush([1900, 1930])`; `graph.frame()` | `timeline.range()` → `/^19(00\|01) – 19(29\|30)$/`; `discover.kept()` → `/^(156\|151)$/` (every prize in the window; 93 or 90 of them mapped) |
+| 4 | 1990–2000: 65 of 86 mapped prizes were won in the US | `bar.remove("date")`; `timeline.brush([1990, 2000])`; `graph.frame()` | `timeline.range()` → `"1990 – 2000"`; `discover.kept()` → `"117"` (86 mapped) · **poster** |
+| 5 | Only the women — play the century again | `discover.view("Dashboard")`; *Count by Laureate.gender* `pick({ y: "female" })`; `discover.view("Graph")`; `bar.remove("date")`; brush 1900–2029 and play to the end | `discover.kept()` → `"68"` (29 mapped); `bar.chips()` holds `Laureate.gender` |
 | 6 | One filter, every view | `discover.view("Dashboard")` | *Count by Country.name*'s top bar is `USA`; `bar.chips()` holds `date` and `Laureate.gender` |
 
 *Mapped* is said because the map places 749 of the 1,026 awards — those whose first affiliation has
-a city on record — and *N match* counts only those. The 9 in 10 holds whichever year the drag's
+a city on record — and the readout counts every prize the window keeps, mapped or not (`select
+count(*) from awards where year::int between 1900 and 1930` → 156; 1990–2000 → 117; to women → 68). The 9 in 10 holds whichever year the drag's
 right edge reads: 83 of 93 through 1930, 82 of 90 through 1929.
 
 **The frames do not zoom into a continent.** Steps 3 and 4 frame what the window keeps, and both

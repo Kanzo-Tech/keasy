@@ -48,7 +48,7 @@ demo("snb-ask", "Ask over LDBC SNB: an answer added to the dashboard and opened 
     {
       subtitle: "Filter the page: women only",
       action: async () => (await (await dashboard.tile("Count by Person.gender")).chart()).pick({ y: "female" }),
-      check: () => expect.poll(() => discover.figure("Rows")).toBe("778"),
+      check: () => expect.poll(() => discover.kept()).toBe("778"),
     },
     {
       subtitle: "Ask about what's in view, in plain words",
@@ -105,7 +105,7 @@ demo("snb-ask", "Ask over LDBC SNB: an answer added to the dashboard and opened 
       // the 22 on Opera in 16 (STORYBOARD.md).
       subtitle: "This one filters: keep the women it drew",
       action: () => answers.filterTo(),
-      check: () => expect.poll(() => discover.figure("Rows")).toBe("19"),
+      check: () => expect.poll(() => discover.kept()).toBe("19"),
     },
     {
       subtitle: "The same 19 in the graph, framed",

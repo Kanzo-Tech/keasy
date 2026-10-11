@@ -88,7 +88,8 @@ demo("nobel-timeline", "Nobel prizes on a map and a timeline: a century of scien
           // A harness drag lands on pixels, not on the bars a hand snaps to: an edge may read a year
           // off. Either way it is 9 in 10 — 83 of 93 through 1930, 82 of 90 through 1929.
           expect(await timeline.range()).toMatch(/^19(00|01) – 19(29|30)$/);
-          await expect.poll(() => graph.counts()).toMatch(/^(93|90) match · /);
+          // Every prize in the window, mapped or not: 93 of the 156 through 1930 are on the map.
+          await expect.poll(() => discover.kept()).toMatch(/^(156|151)$/);
         },
       },
       {
@@ -101,7 +102,8 @@ demo("nobel-timeline", "Nobel prizes on a map and a timeline: a century of scien
         async check() {
           // The window is inclusive: 2000 is in it.
           expect(await timeline.range()).toBe("1990 – 2000");
-          await expect.poll(() => graph.counts()).toMatch(/^86 match · /);
+          // 86 of the 117 are on the map.
+          await expect.poll(() => discover.kept()).toBe("117");
         },
         poster: true,
       },
@@ -135,7 +137,8 @@ demo("nobel-timeline", "Nobel prizes on a map and a timeline: a century of scien
           // The pick outlived the view change and the replay: its chip is still in the bar.
           expect((await bar.chips()).some((chip) => /\bLaureate\.gender\b/.test(chip))).toBe(true);
           // 68 prizes went to women, 29 of them with a place on the map.
-          await expect.poll(() => graph.counts()).toMatch(/^29 match · /);
+          // The 68 prizes won by women; 29 of them are on the map.
+          await expect.poll(() => discover.kept()).toBe("68");
         },
       },
       {

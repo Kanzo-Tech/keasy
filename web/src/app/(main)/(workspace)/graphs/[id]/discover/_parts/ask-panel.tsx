@@ -3,8 +3,7 @@
 import { Suspense, useMemo } from "react";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Sparkles } from "lucide-react";
-import { count, Query } from "@uwdata/mosaic-sql";
-import { useChartQuery, useClauses, useMosaic, type JoinGraph, type TableExpr } from "@kanzo-tech/ui/analytics";
+import { useClauses, useMosaic, type JoinGraph } from "@kanzo-tech/ui/analytics";
 import { Badge, EmptyDescription, EmptyHeader, EmptyIndicator, EmptyRoot } from "@kanzo-tech/ui";
 import { Chat, ChatSkeleton, useAgentChat } from "@kanzo-tech/ai";
 import { AnswerCard, answerRelationsOf, dataAgent, dataSuggestions, readAnswerRelations, type AnswerRelation } from "@kanzo-tech/ai/data";
@@ -13,7 +12,7 @@ import { gateway } from "@/lib/ai";
 import { settled } from "@/lib/api/settled";
 import { coded } from "@/lib/errors";
 import { useModelContext } from "@/lib/model-windows-context";
-import { corpusKey, ONCE, useCorpus, useJoinGraph, useVertices } from "@/lib/fossil/corpus";
+import { corpusKey, ONCE, useCorpus, useJoinGraph } from "@/lib/fossil/corpus";
 import { useDashboardStore } from "./dashboard-store";
 import { startersQuery } from "./starters";
 
@@ -107,16 +106,16 @@ function useAdding() {
 }
 
 /**
- * What the next question is asked over, in the composer: the subset's size while the page holds one,
- * and nothing while it does not — every question then reads the whole graph.
+ * What the next question is asked over, in the composer: *Filtered* while the page holds a filter,
+ * and nothing while it does not — every question then reads the whole graph. Not how many: that is
+ * the page's one count, the filter bar's readout.
  */
-function SubsetPill({ vertices }: { vertices: TableExpr }) {
+function SubsetPill() {
   const { selection } = useMosaic();
-  const { row } = useChartQuery({ relation: "vertices", deps: [vertices], query: (filter) => Query.from(vertices).select({ n: count() }).where(filter) });
-  if (!row || selection.clauses.length === 0) return null;
+  if (useClauses(selection).length === 0) return null;
   return (
     <Badge pill variant="outline">
-      Subset · {Number(row.n).toLocaleString()} nodes
+      Filtered
     </Badge>
   );
 }
@@ -125,7 +124,6 @@ function AskChat() {
   const { selection } = useMosaic();
   const { engine } = useCorpus();
   const context = useModelContext("chat");
-  const vertices = useVertices();
   const graph = useJoinGraph();
   const relations = useRelations(graph);
   const agent = useMemo(
@@ -144,7 +142,7 @@ function AskChat() {
         chat={{ ...chat, error: chat.error === undefined ? undefined : coded(chat.error, "llm/failed") }}
         copy={problemCopy}
         className="p-2"
-        context={<SubsetPill vertices={vertices} />}
+        context={<SubsetPill />}
         empty={<AskEmpty />}
         notice={starters.failure}
         suggesting={starters.suggesting}

@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { expect, type Page, type Route } from "@playwright/test";
 import type { HarnessEnvironment } from "@kanzo-tech/testing";
 
@@ -146,6 +147,9 @@ test("an answer added to the dashboard is saved as a tile of its relation", asyn
   );
   const answers = await (await askPanel(page, env, corpusGraph)).composer();
   await answers.ask("How many people are there?");
+  // The figure is proven from the engine's result, against the fixture it was read from.
+  const people = readFileSync(new URL("../fixtures/data/people.csv", import.meta.url), "utf8").trim().split("\n").length - 1;
+  expect(await answers.rows()).toEqual([{ count: String(people) }]);
   // Resolves on the card's own *✓ On the dashboard*, read from the dashboards the page handed back.
   await answers.addToDashboard();
   // Written at once, not after the editor's pause: an addition is a decision, not typing.

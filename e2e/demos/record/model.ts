@@ -30,7 +30,7 @@ import { STATE_TIMEOUT } from "./recorder";
  *   `e2e/demos/recordings/<demo>.json` only once every check of the take has passed, so a refused
  *   query or an answer over the wrong rows is never recorded.
  *
- * Capture, with the stack and the seeds up: `make demo DEMO=snb-ask LIVE=1 RECORD=1`, then commit
+ * Capture, with the stack and the seeds up: `make demo DEMO=nobel-ask LIVE=1 RECORD=1`, then commit
  * the recording. Capture again when the prompt, the tool's schema or the example changes.
  */
 

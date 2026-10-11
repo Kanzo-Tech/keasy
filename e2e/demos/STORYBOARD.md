@@ -185,94 +185,54 @@ lands in the bar"* is the check of the last step rather than a step of its own.
 
 ---
 
-## 4. Ask — `snb-ask`
+## 4. Ask — `nobel-ask`
 
 - **Hero tab:** `ask` · label **Ask**
 - **Stat line:** *Every answer is a query over what's in view — with its chart* (unchanged)
-- **Example / seed:** `snb`, same graph as demo 1
-- **Depends on:** kanzo-ui 0.40's `AnswerCard` (#179): its verbs are icons on the tile — *Filter the
-  page to these rows*, disabled when the answer keeps everything in view, and *Add to the dashboard*,
-  which becomes *Open on the dashboard* given the host's `onOpen`.
+- **Example / seed:** `nobel`, same graph as demo 6
+- **Why Nobel, not SNB:** the last step frames the answer on the graph. LDBC's graph is 327K nodes and
+  the frame lagged on camera even on the GPU; Nobel's is 2.5K and already on the map. And SNB's
+  browsers were `snb-explore`'s filter already.
 
 **Arrange (off camera)**
 
-1. `env`; seed; `page.goto(discoverUrl(id, { view: "dashboard", panel: "ask" }))`.
-2. `discover.relation("Person")`; `dashboard.settled()`.
-3. `ask.warmUp()` on `LIVE=1` only — both model aliases loaded.
-4. `answers = await ask.composer()` (`AnswerHarness.with({ name: "Ask about your data…" })`).
+1. `env`; seed; save the dashboard on `LaureateAward>category>Category` (one tile, *Count by
+   Category.name*); `discover.open(id)`.
+2. `discover.onMap()` — the Graph view on the map for step 8 — then `view("Dashboard")`,
+   `relation("LaureateAward", [">category>Category"])`, `dashboard.settled()`, `panel("Ask")`.
+3. `LIVE=1`: `ask.warmUp()`.
 
-**Steps** — both verbs: an answer that keeps everything in view goes to the dashboard; one with a
-where filters the page.
+**Steps**
 
 | # | Subtitle | Action | Check |
 | --- | --- | --- | --- |
-| 1 | Filter the page: women only | `(await (await dashboard.tile("Count by Person.gender")).chart()).pick({ y: "female" })` | `discover.figure("Rows")` → `"778"` |
-| 2 | Ask about what's in view, in plain words | `answers.ask("Which browsers do they use most?")` | a new answer card began; `replay.unrecorded` is empty |
-| 3 | The answer is a chart, over the women in view | `answers.answer()` | the tile reads `Firefox`; `answers.rows()` holds Firefox 324 and not 628; `answers.filterTo()` rejects — *Filter the page to these rows* is disabled: no where, every browser · **poster** |
-| 4 | Add it to the dashboard | `answers.addToDashboard()` (only writes: the reader stays in Ask) | `dashboard.tile(/browserUsed/)` resolves |
-| 5 | Open it on the dashboard | `answers.openOnDashboard()` — keasy's `onOpen`: the Dashboard view on the answer's relation, the tile scrolled into view and ringed | the tile's middle is inside the 900 px viewport |
-| 6 | Ask again: where do the ones on Opera live? | `answers.ask("Where do the ones on Opera live?")`; `answers.answer()` — Ask stayed docked, the conversation goes on | `replay.unrecorded` is empty |
-| 7 | This one filters: keep the women it drew | `answers.filterTo()` (its where: `Person.browserUsed` Opera, and the countries its bars show) | `discover.figure("Rows")` → `"19"` |
-| 8 | The same 22 in the graph, framed | `discover.view("Graph")`; `graph.ready()`; `graph.frame()` | `discover.counts()` → `/^22 of /` |
+| 1 | Filter the page: Physics only | *Count by Category.name* `pick({ y: "Physics" })` | `discover.kept()` → `"230"` |
+| 2 | Ask about what's in view, in plain words | `answers.ask("Which universities won the most?")` | the replay held the call |
+| 3 | The answer is a chart, over the Physics prizes in view | `answers.answer()` | the tile names *University of California*; its rows hold UC **16**, not **43** (every category's) · **poster** |
+| 4 | Add it to the dashboard | `answers.addToDashboard()` | a tile `/University/` on the dashboard |
+| 5 | Open it on the dashboard | `answers.openOnDashboard()` | that tile is in view |
+| 6 | Ask again: which ones were won in Germany? | `answers.ask("Which ones were won in Germany?")`; `answers.answer()` | the replay held the call |
+| 7 | This one filters: keep what it found | `answers.filterTo()` | `discover.kept()` > 0 — pin it on the take that captures it |
+| 8 | The same prizes on the map, framed on Germany | `view("Graph")`; `graph.frame()` | the Graph view's readout reads the same; ≤ 22 |
 
-Step 8 lays out SNB's 327K nodes in the Graph view, on camera: the step waits on `graph.ready()`
-within the two minutes every state gets. If that is too long for a take, the frame is the step to
-reconsider, not the wait.
-
-**Replaying the model**
-
-kanzo-ui's workspace showcase (`docs/showcases/workspace/graph-view.tsx`, `GraphAsk`) shows Ask
-without a model: `dataAgent` runs over `mockModel` (`docs/lib/mock-model.ts`, the AI SDK's
-`MockLanguageModelV4`), a *recording* that matches the question to an intent and returns the
-`answer` tool call with that intent's tile, then reads its sentence off the rows the tool brought
-back. The language is canned; the tool still queries the corpus for real under the page's
-crossfilter. Swapping the recording for the gateway model is one line.
-
-keasy's model is behind the BFF, so the demo records at the network instead, with the same split —
-the model's words replayed, the `answer` tool run for real by the page:
-
-1. **Capture, once, from a good live run** — `make demo DEMO=snb-ask LIVE=1 RECORD=1`. In arrange,
-   `page.route(AI, async (route) => { const r = await route.fetch(); calls.push({ ask: lastUser(route.request()), body: await r.text() }); await route.fulfill({ response: r }); })`
-   (`AI` = `**/api/ai/chat/completions`, `support/fixtures.ts`). After the take's checks pass (the
-   tile says `Firefox`/`324`, the card is on the dashboard), write `calls` to
-   `e2e/demos/recordings/snb-ask.json`: one SSE body per model call, in order — the tool-call turn,
-   then the turn after the tool. A take whose checks fail writes nothing, so a refused query is
-   never recorded.
-2. **Replay, for the site take** (the default) — `page.route(AI, (route) => route.fulfill({ status: 200, contentType: "text/event-stream", body: next(route.request()) }))`,
-   where `next` serves the recorded bodies in order and throws when a request's last user message
-   is not the recorded one (the question changed: re-capture). `sse()`/`text()` in
-   `support/fixtures.ts` already build this stream format for the e2e tests.
-3. `ask.warmUp()` is skipped on replay (no model to load); it stays on `LIVE=1`.
-
-Because the tool runs on the page, the chart's numbers (Firefox 324 over the women in view) are
-still DuckDB's — read from the card's own data table, `AnswerHarness.rows()` — and the check still
-fails if the recorded tool call drops the filter. Re-capture when the prompt, the tool's schema, a
-question or the SNB example change. **The recording in the repository predates this cut**: it holds
-neither the second question nor the suggestions' prompt kanzo-ui 0.40 words for a page filtered
-through a dashboard (`ask-reads-bridged-parts`), so a replay fails at step 2 until it is captured
-again with `LIVE=1 RECORD=1`.
-
-**Numbers** (`data/dynamic/person_0_0.csv`, `delim='|'`; places `data/static/place_0_0.csv`)
+**Numbers** (`nobel/data`; `affiliations` joins an award to its institutions)
 
 | Figure | Value | Query |
 | --- | --- | --- |
-| Women | 778 of 1,528 | `select gender, count(*) from p group by 1` |
-| Women's browsers | Firefox 324 · Chrome 224 · Internet Explorer 182 · Safari 26 · Opera 22 | `select browserUsed, count(*) from p where gender='female' group by 1 order by 2 desc` |
-| Everyone's browsers | Firefox 628 · Chrome 438 · IE 364 · Safari 54 · Opera 44 | the same, without the `where` |
-| Women on Opera | 22, in 22 different cities of 16 countries (Belgium, Nepal and the Philippines 3 each) | `select count(*), count(distinct place) from p where gender='female' and browserUsed='Opera'`; the countries: `… join pl on pl.id = p.place join pl co on co.id = pl.isPartOf group by co.name` |
+| Physics prizes | **230** | `select count(*) from awards where category = 'physics'` |
+| Physics prizes by institution | UC **16**, Princeton 10, Stanford 9, Caltech 9, MIT 8, Cambridge 8, Harvard 8, Lebedev 6 | `select i.name, count(distinct a.id) from awards a join affiliations af on af.award = a.id join institutions i on i.id = af.institution where a.category = 'physics' group by 1 order by 2 desc` |
+| UC's prizes, every category | 43 | the same, without the category |
+| Physics prizes at a German institution | **22**, all on the map | `… where a.category = 'physics' and i.country = 'germany'` |
 
-**Risks**
+**Notes**
 
-- **The model — decided: the site take replays a recorded answer; the live model stays covered by
-  the e2e tests** (`e2e/tests/ai.spec.ts` and the smoke runs).
-- The check that the answer counts **women** (324, not 628) is what proves "over what's in view";
-  a model that drops the filter fails it.
-- Step 6 needs an answer **with a where** (`Person.browserUsed` Opera): a model that answers over
-  every browser leaves *Filter the page to these rows* disabled, and step 7 fails. Capture again.
-- *Filter the page to these rows* keeps what the answer draws: the women in the categories its bars
-  show. The recorded answer draws the top 13 of the 16 countries, so step 7 keeps 19 of the 22; an
-  answer drawn by city, or with every country, keeps another figure. Capturing again means reading it
-  off the answer's bars and setting step 7 and 8 to it.
+- The check that UC reads **16** (not 43) is what proves "over what's in view"; a model that drops
+  the filter fails it.
+- Step 6 needs an answer **with a where** (the institution's country, Germany): a model that answers
+  over every country leaves *Filter the page to these rows* disabled, and step 7 fails. Capture again.
+- *Filter the page to these rows* keeps what the answer draws: the prizes in the categories its bars
+  show. An answer drawn by university keeps those universities' prizes, at most the 22; read the
+  figure off the take that captures it and pin steps 7 and 8 to it.
 
 ---
 
@@ -432,7 +392,7 @@ Beyond the library harnesses (`GraphCanvasHarness`, `ChartHarness`, `TimelineHar
 | `SettingsPanel` (`support/app/settings.ts`) | `placement("Map", { x, y })`; `marks("Legible")`; `edges("Hidden")`; `labels(n)`; `timeline(column)` | `placeOnMap`, `hideEdges`, `choose`; `timeline` is new (the *Timeline* select, `time-by`) |
 | `GraphSearch` (`support/app/search.ts`) | `add(query): Promise<number>` — opens *Find anything in the graph*, types, presses *Add N to the subset*, returns N | demo 2's inline steps |
 | `RulesBadge` (`support/app/rules.ts`, on `FindingsBadgeHarness`) | `check()` / `checked()` (the scope line, *All 3,218 nodes checked · 2,930 conform*); `stale()` (the reason the scope line gives once it is out of date); `rule(name)` → `state()` (the tally badges), `showAll()` / `hideAll()` / `offersShowAll()` (the rule's own *Show N* at the end of its heading), `show(message \| RegExp)` (a finding's *Show N* toggle, through `FindingsItemHarness.act`); `conforms(on?)` (*Keep what conforms*; resolves once the popover has closed) | the library's `FindingsItemHarness` reads each finding |
-| `AskPanel` (`support/app/ask.ts`) | `warmUp()`; `composer()` → `AnswerHarness.with({ name: "Ask about your data…" })` | `warmUp` in `snb-ask.demo.ts` |
+| `AskPanel` (`support/app/ask.ts`) | `warmUp()`; `composer()` → `AnswerHarness.with({ name: "Ask about your data…" })` | `warmUp` in `nobel-ask.demo.ts` |
 | seeds / API (`support/seeds.ts`, `support/stack/api.ts`) | `saveRules(id, example)`; `saveDashboard(id, relationKey, spec)` | rules PUT exists inline in flights-rules; the dashboard PUT is new (demo 6) |
 
 The view switch and dock: `DockHarness` drives any single-select toggle group; it needs the view
@@ -454,7 +414,7 @@ group is unnamed, naming it (*View*) is a one-line keasy change and the clean fi
    posters via sharp, 1600 wide).
 2. **Steps re-read for every tab** from the new chapters (the 0.40 re-cut): Hidden patterns gains
    *Frame Spain* before the lasso; Crossfilter's switch to the graph and its frame are one step;
-   Ask gains *Open it on the dashboard*, the Opera question, *keep the 22* and the frame;
+   Ask moves to Nobel: Physics, the universities, *Open it on the dashboard*, Germany and the frame on the map;
    Assessment shows the rule's 288, frames twice and ends on *Keep what conforms*; Nobel is
    re-cut as a century moving west, then the women.
 3. Stat lines: the five existing ones stand. Assessment's *3,218 airports assessed* is right (3,218).

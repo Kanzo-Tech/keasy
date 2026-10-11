@@ -72,7 +72,8 @@ test("the flights dashboard draws every tile kind, and holds under a brush and a
   expect(kept).toBeLessThan(AIRPORTS);
   await (await (await dashboard.tile("Altitude against latitude")).chart()).settled();
   // A clause chip reads its source, then its field and range: *Airport Airport.altitude 3976.6 – 7990.0*.
-  expect((await bar.chips()).some((chip) => chip.startsWith("Airport Airport.altitude "))).toBe(true);
+  // It shows once the page delivers the brush's clause, a while after the brush.
+  await expect.poll(async () => (await bar.chips()).some((chip) => chip.startsWith("Airport Airport.altitude "))).toBe(true);
   await bar.remove("Airport Airport.altitude");
   await expect.poll(() => unfiltered(discover, "Airports")).toBe(UNFILTERED);
 

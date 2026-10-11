@@ -36,6 +36,8 @@ demo("snb-ask", "Ask over LDBC SNB: an answer added to the dashboard and opened 
     const discover = await DiscoverPage.open(page, env, id, { view: "dashboard", panel: "ask" });
     await discover.relation("Person");
     const dashboard = await discover.dashboard();
+    // Every tile drawn before the take starts, so none arrives on camera.
+    await dashboard.settled();
     const ask = await discover.ask();
     if (replay.live) await ask.warmUp();
     const answers = await ask.composer();

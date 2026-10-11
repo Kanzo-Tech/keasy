@@ -16,7 +16,10 @@ demo("flights-crossfilter", "Crossfiltering over OpenFlights: a click, a brush, 
     // The Graph view set for step 3, then the dashboard the story starts on.
     const graph = await discover.onMap();
     await discover.view("Dashboard");
-    return { discover, graph, dashboard: await discover.dashboard(), bar: await discover.filters() };
+    const dashboard = await discover.dashboard();
+    // Every tile drawn before the take starts: the fit's scatter is the slowest, and arrived on camera.
+    await dashboard.settled();
+    return { discover, graph, dashboard, bar: await discover.filters() };
   },
 
   steps: ({ discover, graph, dashboard, bar }) => [

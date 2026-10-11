@@ -14,7 +14,10 @@ demo("snb-explore", "Dashboard over LDBC SNB: pick a type, click a bar, brush a 
     const id = await seedGraph(page, "snb", { name: "Demo · LDBC Social Network", reuse: true });
     // Opened on the dashboard: the Graph view would lay out 327K nodes first.
     const discover = await DiscoverPage.open(page, env, id, { view: "dashboard" });
-    return { discover, dashboard: await discover.dashboard(), bar: await discover.filters() };
+    const dashboard = await discover.dashboard();
+    // Every tile drawn before the take starts, so none arrives on camera.
+    await dashboard.settled();
+    return { discover, dashboard, bar: await discover.filters() };
   },
 
   steps: ({ discover, dashboard, bar }, { page }) => [

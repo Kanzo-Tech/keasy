@@ -86,9 +86,8 @@ depends on which relations the mapping writes as edges); read it off GraphCounts
 
 1. `env = await playwright(page)`; seed; `discover.open(id)` (Graph view, Info docked).
 2. `graph = await env.harness(GraphCanvasHarness); await graph.ready()`.
-3. Let the force layout spread the cloud: `await graph.run()`, then wait on frames, not time —
-   `await env.until(async () => (await graph.frames()) > 300, "the layout spread")` — then
-   `graph.pause()`.
+3. `graph.pause()` — the layout is not waited on: spread, the cloud looked as it did before, so the
+   wait was a stretch of take where nothing changed.
 4. `settings.marks("Legible"); settings.edges("Hidden"); settings.labels(0)` — the 36,906 routes are fog.
 5. Dock back to Info (`dock.open("Info")`).
 
@@ -96,8 +95,8 @@ depends on which relations the mapping writes as edges); read it off GraphCounts
 
 | # | Subtitle | Action | Check |
 | --- | --- | --- | --- |
-| 1 | A graph of airports, spread by its routes | `graph.run()` (woken, so the cloud moves on camera) | the transport reads *Pause the layout*; `graph.counts()` → `/3,218 nodes/` (or `3.2K`) |
-| 2 | Put it on a map: longitude across, latitude up | `settings.placement("Map", { x: "lon", y: "lat" })` then `graph.pause()` | `graph.frames()` grew; the placement radio *Map* is checked · **poster** |
+| 1 | A graph of airports and their routes | `graph.run()` (woken, so the cloud moves on camera) | the transport reads *Pause the layout*; `graph.counts()` → `/3,218 nodes/` (or `3.2K`) |
+| 2 | Put it on a map: longitude across, latitude up | `settings.placement("Map", { x: "lon", y: "lat" })` then `graph.pause()` | `graph.counts()` → `/3,218 of 3,218 placed/` (or `3.2K`); the placement radio *Map* is checked · **poster** |
 | 3 | Find anything — here, every airport in Spain | `search.add("country:Spain")` (Info → *Find anything in the graph* → type → *Add 40 to the subset*) | the add button read `Add 40 to the subset`; `graph.counts()` → `/^40 match · 3\.2K of 3\.2K placed/` |
 | 4 | Frame Spain | `graph.frame()` — the toolbar's one Frame (kanzo-ui #179), on what the search kept | `graph.counts()` still `/^40 match · /` |
 | 5 | Lasso the peninsula — the Canaries stay out | `graph.lasso(PENINSULA, { in: "data" })` (the polygon below, in lon/lat) | `graph.counts()` → `/^31 match · 3\.2K of 3\.2K placed/` |

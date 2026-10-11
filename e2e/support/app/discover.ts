@@ -149,6 +149,7 @@ export class DiscoverPage extends ComponentHarness {
     await settings.marks("Legible");
     await settings.edges("Hidden");
     await settings.labels("None");
+    await settings.backdrop({ vignette: true, grid: true });
     await graph.pause();
     return graph;
   }

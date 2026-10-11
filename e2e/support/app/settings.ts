@@ -1,6 +1,6 @@
 import { ComponentHarness, type By } from "@kanzo-tech/testing";
 
-import { chooseOption, chooseRadio } from "./controls";
+import { chooseOption, chooseRadio, isChecked } from "./controls";
 
 /** The levels of the Labels setting, fewest first: its slider's steps. */
 const LABELS = ["None", "Hovered", "Top", "Visible", "All"] as const;
@@ -9,7 +9,8 @@ export type Labels = (typeof LABELS)[number];
 /**
  * **The Settings panel** — the graph's section of `@kanzo-tech/graph`'s preferences, as keasy docks
  * it: how the graph draws (Marks, Labels, Edges), where its points come from (Placement, and the
- * X and Y axes a Map reads), and the column the timeline under the graph counts (Timeline).
+ * X and Y axes a Map reads), the backdrop it sits on (Vignette, Dot grid), and the column the timeline
+ * under the graph counts (Timeline).
  */
 export class SettingsPanel extends ComponentHarness {
   static readonly by: By = { role: "complementary", name: "Settings panel" };
@@ -45,6 +46,20 @@ export class SettingsPanel extends ComponentHarness {
     await slider.press("Home");
     for (let step = 0; step < LABELS.indexOf(level); step++) await slider.press("ArrowRight");
     await this.env.until(at, `Labels did not change to ${level}`);
+  }
+
+  /**
+   * The backdrop the graph sits on: the darkened rim (Vignette) and the dot grid that pans with the
+   * camera (Dot grid). Each is Ark's Switch, which reaches the accessibility tree as the checkbox it
+   * renders (no `role="switch"`): found as one, and pressed with Space, as assistive technology does,
+   * until it reads `on`.
+   */
+  async backdrop({ vignette, grid }: { vignette: boolean; grid: boolean }): Promise<void> {
+    for (const [name, on] of [["Vignette", vignette], ["Dot grid", grid]] as const) {
+      const toggle = await this.one({ role: "checkbox", name }, `the panel has no ${name}`);
+      if ((await isChecked(toggle)) !== on) await toggle.press("Space");
+      await this.env.until(async () => (await isChecked(toggle)) === on, `${name} did not turn ${on ? "on" : "off"}`);
+    }
   }
 
   /** The column the timeline under the graph counts, filters by and plays forward; None draws none. */

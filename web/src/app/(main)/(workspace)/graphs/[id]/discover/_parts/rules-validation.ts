@@ -85,8 +85,13 @@ export interface Checked {
   subset: string | undefined;
   /** The rules file checked, as it was. */
   shapes: string;
-  /** Per rule, how many vertices each severity flags, each once: the N of *Show all N violations*. */
-  flagged: Record<string, Partial<Record<FindingSeverity, number>>>;
+  /** Per rule, how many vertices it flags, each once whatever the severity: the N of its *Show N*. */
+  flagged: Record<string, number>;
+  /**
+   * How many of the subset's vertices some rule flags, each once: the scope line's *N conform* is
+   * `inScope` less these. A warning is a result too, so a vertex with one does not conform.
+   */
+  broken: number;
 }
 
 /** Why the last check no longer says what the page holds: a filter changed, or the file did. */
@@ -155,12 +160,7 @@ export function useRules(rules: ReadRules | undefined, text: string) {
       const counted = Query.from(vertices).select({ total: count(), inScope: predicate.length ? count().where(and(...predicate)) : count() });
       const answer = await attachedTo.query(String(counted), { signal });
       const placed = findings.groups.map((group) => ({ ...group, vertices: nodesOf([group]).length }));
-      const flagged = Object.fromEntries(
-        rulesOf(rules.model, { ...findings, groups: placed }).map((rule) => [
-          rule.id,
-          Object.fromEntries((["violation", "warning", "info"] as const).map((severity) => [severity, nodesOf(rule.groups, severity).length])),
-        ]),
-      );
+      const flagged = Object.fromEntries(rulesOf(rules.model, { ...findings, groups: placed }).map((rule) => [rule.id, nodesOf(rule.groups).length]));
       const groups = placed.map((group) => ({ ...group, places: [] }));
       const checked: Checked = {
         findings: { conforms: findings.conforms, groups, unchecked: findings.unchecked },
@@ -169,6 +169,7 @@ export function useRules(rules: ReadRules | undefined, text: string) {
         subset: over,
         shapes: text,
         flagged,
+        broken: nodesOf(findings.groups).length,
       };
       if (running.current === run) setState({ checked, checking: false });
     } catch (failure) {
@@ -231,12 +232,16 @@ export function useRules(rules: ReadRules | undefined, text: string) {
       const wanted = groupKey(group);
       await showNodes(await nodesAgain(rule, (g) => groupKey(g) === wanted), label);
     },
+    /** Show every vertex `rule` flags, of any severity, found again, each once: the rule's *Show N*. */
+    showRule: async (rule: Rule, label: string) => {
+      await showNodes(await nodesAgain(rule, () => true), label);
+    },
     /** Show every vertex `rule` flags with `severity`, found again, each once. */
     showSeverity: async (rule: Rule, severity: FindingSeverity, label: string) => {
       const wanted = new Set(rule.groups.filter((g) => g.severity === severity).map(groupKey));
       await showNodes(await nodesAgain(rule, (g) => wanted.has(groupKey(g))), label);
     },
-    /** Show what conforms: rudof's Shape Fragment of the subset, its subjects the panel's clause. */
+    /** Keep what conforms: rudof's Shape Fragment of the subset, its subjects the panel's clause. */
     conforming: async (label: string) => {
       const into = String(new TableRefNode([graphId, "rules_fragment"]));
       // Asked for by a press, and nothing stops it once asked: a signal that never aborts.
@@ -304,7 +309,7 @@ export const tallyOf = (rules: readonly Rule[]): FindingTally => tallyFindings(r
 
 /**
  * The focus nodes of groups, each once: a node that fails two constraints is one vertex on the page.
- * `severity` keeps the groups of one severity, as a rule's *Show all N violations* does.
+ * `severity` keeps the groups of one severity.
  */
 export function nodesOf(groups: readonly Pick<RdfFindingGroup, "places" | "severity">[], severity?: FindingSeverity): string[] {
   const kept = severity ? groups.filter((group) => group.severity === severity) : groups;

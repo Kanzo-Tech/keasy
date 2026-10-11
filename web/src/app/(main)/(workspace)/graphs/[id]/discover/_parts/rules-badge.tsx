@@ -2,7 +2,7 @@
 
 import type * as React from "react";
 import { useMutation } from "@tanstack/react-query";
-import { FileIcon, ShieldCheckIcon, UploadIcon } from "lucide-react";
+import { EllipsisIcon, RotateCwIcon, ShieldCheckIcon, SquareIcon, UploadIcon } from "lucide-react";
 import {
   Button,
   cn,
@@ -12,13 +12,28 @@ import {
   FileUploadDropzone,
   FileUploadHiddenInput,
   FileUploadTrigger,
-  FindingGroupRow,
+  FindingsActions,
   FindingsBadge,
   FindingsContent,
   FindingsGroup,
+  FindingsHeader,
+  FindingsItem,
+  FindingsList,
   FindingsRoot,
-  PopoverHeader,
+  FindingsSource,
+  Menu,
+  MenuContent,
+  MenuGroup,
+  MenuItem,
+  MenuSeparator,
+  MenuTrigger,
+  PopoverDescription,
   Skeleton,
+  Toggle,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  useFileUpload,
   usePopover,
 } from "@kanzo-tech/ui";
 import type { RdfPlace } from "@kanzo-tech/rudof-wasm";
@@ -34,11 +49,11 @@ import { groupKey, type Rule, rulesOf, type Stale, tallyOf, useReadRules, useRul
 /**
  * The graph's rules as a badge in the filter bar — the recipe editor's findings badge, read in Graph
  * and Dashboard alike — and the work in its popover. The rules are one SHACL file the server keeps:
- * dropping a `.ttl` on the popover, or *Replace…*, replaces it, and a file rudof cannot read is
- * refused with its line and column while the previous one stays. rudof validates the corpus over the
- * page's subset; the popover lists rudof's groups under their rule, and Show — of a group, of every
- * violation or warning of a rule, of one node, or of what conforms — puts the vertices on the page as
- * the rules' one clause. `/docs/design/findings` in kanzo-ui is the model.
+ * dropping a `.ttl` anywhere on the popover, or *Replace rules…* in its menu, replaces it, and a file
+ * rudof cannot read is refused with its line and column while the previous one stays. rudof validates
+ * the corpus over the page's subset; the popover lists rudof's groups under their rule, and each
+ * *Show N* — of a rule, of one of its groups — or *Keep what conforms* puts the vertices on the page
+ * as the rules' one clause. `/docs/design/findings` in kanzo-ui is the model.
  */
 export function RulesBadge() {
   const { graphId } = useCorpus();
@@ -109,7 +124,7 @@ function tallyWords(tally: FindingTally): string {
     .join(" · ");
 }
 
-/** The clause *Show what conforms* puts on the page. */
+/** The clause *Keep what conforms* puts on the page. */
 const CONFORMS = "Conforms to the rules";
 
 /** Why the last check is out of date, as the popover says it. */
@@ -125,7 +140,8 @@ const STALE: Record<Stale, string> = {
 function Checked({ saved, can_manage, refused }: { saved: Schemas["Rules"] | undefined; can_manage: boolean; refused: Error | null }) {
   const { rules: read, failure: unreadable } = useReadRules(saved?.shapes);
   const rulesCheck = useRules(read, saved?.shapes ?? "");
-  const { checked, checking, failure, stale, picked, withdraw, show, conforming } = rulesCheck;
+  const { checked, checking, failure, picked, withdraw, conforming } = rulesCheck;
+  const upload = useFileUpload();
   const rules = read && checked ? rulesOf(read.model, checked.findings) : undefined;
   const tally = rules ? tallyOf(rules) : undefined;
   const words = !saved
@@ -143,6 +159,12 @@ function Checked({ saved, can_manage, refused }: { saved: Schemas["Rules"] | und
   const failed = (err: unknown) => toastError(err, "The graph could not show them");
   const toggle = (label: string, publish: () => Promise<void>) =>
     picked === label ? withdraw() : void publish().catch(failed);
+  /** A Show: toggles the clause `label`, and reads pressed while it holds. */
+  const show = (n: number, label: string, publish: () => Promise<void>) => ({
+    label: `Show ${n.toLocaleString()}`,
+    pressed: picked === label,
+    run: () => toggle(label, publish),
+  });
 
   const problem = !saved ? (
     <>
@@ -163,13 +185,20 @@ function Checked({ saved, can_manage, refused }: { saved: Schemas["Rules"] | und
 
   return (
     <FindingsRoot tally={tally}>
-      <Badge stale={stale}>{words}</Badge>
+      <Badge stale={rulesCheck.stale}>{words}</Badge>
       <FindingsContent
-        empty={problem ?? <AllConform rules={rules ?? []} />}
-        header={
-          !saved ? (
-            <PopoverHeader title="Rules" />
-          ) : (
+        // A `.ttl` dropped anywhere on the popover replaces the file, for whoever may; the upload's
+        // own checks — the type, one file, who may — apply as they do to the menu's picker. With no
+        // file yet the list is a drop zone of its own, which handles its drop.
+        onDragOver={(event) => saved && can_manage && event.preventDefault()}
+        onDrop={(event) => {
+          if (!saved || !can_manage) return;
+          event.preventDefault();
+          upload.setFiles([...event.dataTransfer.files]);
+        }}
+      >
+        <FindingsHeader>
+          {saved && (
             <RulesHeader
               can_manage={can_manage}
               check={read ? rulesCheck : undefined}
@@ -178,74 +207,45 @@ function Checked({ saved, can_manage, refused }: { saved: Schemas["Rules"] | und
               refused={refused}
               saved={saved}
             />
-          )
-        }
-      >
-        {problem === undefined &&
-          rules?.map((rule) => (
-            <FindingsGroup key={rule.id} tally={rule.tally} title={rule.name}>
-              <RuleState rule={rule} />
-              {(["violation", "warning"] as const).map((severity) => {
-                const n = checked?.flagged[rule.id]?.[severity] ?? 0;
-                if (n === 0) return null;
-                const label = `${rule.name} · ${NOUN[severity][1]}`;
-                const what = n === 1 ? `the 1 ${NOUN[severity][0]}` : `all ${n.toLocaleString()} ${NOUN[severity][1]}`;
-                return (
-                  <ShowAll key={severity} pressed={picked === label} toggle={() => toggle(label, () => rulesCheck.showSeverity(rule, severity, label))}>
-                    Show {what}
-                  </ShowAll>
-                );
-              })}
-              {rule.groups.map((group) => {
-                const label = `${rule.name}: ${group.message}`;
-                const n = group.vertices.toLocaleString();
-                return (
-                  <FindingGroupRow
-                    action={{ label: picked === label ? `Showing ${n}` : `Show ${n}`, run: () => toggle(label, () => rulesCheck.showGroup(rule, group, label)) }}
-                    describe={(place) => describe(place, rule, show, failed)}
-                    group={group}
-                    key={groupKey(group)}
-                  />
-                );
-              })}
-            </FindingsGroup>
-          ))}
+          )}
+        </FindingsHeader>
+        <FindingsList empty={problem ?? <AllConform rules={rules ?? []} />}>
+          {problem === undefined &&
+            rules?.map((rule) => {
+              const label = `Breaks ${rule.name}`;
+              const n = checked?.flagged[rule.id] ?? 0;
+              return (
+                <FindingsGroup
+                  action={n > 0 ? show(n, label, () => rulesCheck.showRule(rule, label)) : undefined}
+                  key={rule.id}
+                  tally={rule.tally}
+                  title={rule.name}
+                >
+                  <RuleState rule={rule} />
+                  {rule.groups.map((group) => {
+                    const label = `${rule.name}: ${group.message}`;
+                    return (
+                      <FindingsItem
+                        action={show(group.vertices, label, () => rulesCheck.showGroup(rule, group, label))}
+                        describe={describe}
+                        finding={group}
+                        key={groupKey(group)}
+                      />
+                    );
+                  })}
+                </FindingsGroup>
+              );
+            })}
+        </FindingsList>
       </FindingsContent>
     </FindingsRoot>
   );
 }
 
-/** *Show all 44 violations* of a rule, keasy#127: the popover closes, as a row's Show closes it. */
-function ShowAll({ pressed, toggle, children }: { pressed: boolean; toggle: () => void; children: React.ReactNode }) {
-  const popover = usePopover();
-  return (
-    <li className="flex">
-      <Button
-        aria-pressed={pressed}
-        onClick={() => {
-          popover.setOpen(false);
-          toggle();
-        }}
-        size="sm"
-        variant={pressed ? "secondary" : "outline"}
-      >
-        {children}
-      </Button>
-    </li>
-  );
-}
-
-/** A sampled node, as its row reads it: the node, *Show* to put it alone on the page, and its value. */
-function describe(
-  place: RdfPlace,
-  rule: Rule,
-  show: (nodes: readonly string[], label: string) => Promise<void>,
-  failed: (err: unknown) => void,
-): FindingPlace {
-  const node = place.focus.value;
+/** A sampled node, as its group reads it once opened: the node and its value. Read, not acted on. */
+function describe(place: RdfPlace): FindingPlace {
   return {
-    where: node,
-    action: { label: "Show", run: () => void show([node], `${rule.name}: ${node}`).catch(failed) },
+    where: place.focus.value,
     detail: place.value ? `Value: ${place.value.value}` : undefined,
   };
 }
@@ -271,6 +271,20 @@ function AllConform({ rules }: { rules: Rule[] }) {
   );
 }
 
+/** An icon button named by its tooltip: the header's controls, as the filter bar's verbs are. */
+function IconButton({ label, children, ...rest }: Omit<React.ComponentProps<typeof Button>, "aria-label" | "size" | "variant"> & { label: string }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button aria-label={label} size="icon-sm" variant="ghost" {...rest}>
+          {children}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  );
+}
+
 interface RulesHeaderProps {
   saved: Schemas["Rules"];
   count: number | undefined;
@@ -282,88 +296,94 @@ interface RulesHeaderProps {
 }
 
 /**
- * Above the list, not scrolling with it: the file — its name, its rules, who saved it, the file back,
- * *Replace…* — a drop zone for the next one, then the check: what it was over and whether a filter
- * or the file has moved past it, *Check* (*Check again*, *Stop* while it runs), and *Show what
- * conforms*.
+ * The header's parts after its title, above the list and not scrolling with it: the file — its name
+ * and how many rules — then the controls, *Check* (*Check again*, *Stop* while it runs) and a menu
+ * with *Replace rules…* and who saved the file; then, on a line of its own, what the last check was
+ * over and how much of it conforms — in the warning colour, with the reason, once a filter or the
+ * file has moved past it — and *Keep what conforms*.
  */
 function RulesHeader({ saved, count, can_manage, refused, check, conforms }: RulesHeaderProps) {
   const popover = usePopover();
+  const upload = useFileUpload();
   const checked = check?.checked;
+  const stale = check?.checking ? undefined : check?.stale;
   const scope = check?.checking
     ? "Checking what the page holds…"
     : checked
-      ? checked.inScope === checked.total
-        ? `Checked over all ${checked.total.toLocaleString()} nodes`
-        : `Checked over the selection: ${checked.inScope.toLocaleString()} of ${checked.total.toLocaleString()} nodes`
+      ? `${checked.inScope === checked.total ? "All" : `${checked.inScope.toLocaleString()} of`} ${checked.total.toLocaleString()} nodes checked · ${(checked.inScope - checked.broken).toLocaleString()} conform`
       : "Not checked";
   return (
-    <PopoverHeader className="gap-2 border-b">
-      <FileUploadDropzone className="items-stretch gap-1 border-0 p-0 text-start" disableClick>
-        <div className="flex min-w-0 items-center gap-2">
-          <FileIcon aria-hidden className="size-4 shrink-0" />
-          <span className="min-w-0 truncate font-mono text-foreground text-sm">{saved.name}</span>
-          {count !== undefined && (
-            <span className="shrink-0 text-xs">
-              · {count} {count === 1 ? "rule" : "rules"}
-            </span>
-          )}
-          <span className="ms-auto flex shrink-0 items-center gap-2">
-            <Button asChild className="h-auto p-0" size="sm" variant="link">
-              <a download={saved.name} href={`data:text/turtle;charset=utf-8,${encodeURIComponent(saved.shapes)}`}>
-                Download
-              </a>
-            </Button>
+    <>
+      <FindingsSource>
+        {saved.name}
+        {count !== undefined && ` · ${count} ${count === 1 ? "rule" : "rules"}`}
+      </FindingsSource>
+      <FindingsActions>
+        {check &&
+          (check.checking ? (
+            <IconButton label="Stop" onClick={check.stop}>
+              <SquareIcon />
+            </IconButton>
+          ) : (
+            <IconButton label={checked ? "Check again" : "Check"} onClick={() => void check.check()}>
+              <RotateCwIcon />
+            </IconButton>
+          ))}
+        <Menu>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <MenuTrigger asChild>
+                <Button aria-label="The rules file" size="icon-sm" variant="ghost">
+                  <EllipsisIcon />
+                </Button>
+              </MenuTrigger>
+            </TooltipTrigger>
+            <TooltipContent>The rules file</TooltipContent>
+          </Tooltip>
+          <MenuContent>
             {can_manage && (
-              <FileUploadTrigger className="h-auto p-0" size="sm" variant="link">
-                Replace…
-              </FileUploadTrigger>
+              <>
+                <MenuItem onClick={() => upload.openFilePicker()} value="replace">
+                  Replace rules…
+                </MenuItem>
+                <MenuSeparator />
+              </>
             )}
-          </span>
-        </div>
-        <p className="text-xs">
-          <SavedBy of={saved} />
-          {can_manage && ". Drop a .ttl here to replace it."}
-        </p>
-      </FileUploadDropzone>
+            <MenuGroup>
+              <p className="px-2 py-1.5">
+                <SavedBy of={saved} />
+              </p>
+            </MenuGroup>
+          </MenuContent>
+        </Menu>
+      </FindingsActions>
       {refused && (
-        <>
+        <div className="flex basis-full flex-col gap-1">
           <ProblemView error={refused} uncoded="rules/refused" />
           <p className="text-muted-foreground text-xs">Nothing changed: the graph keeps {saved.name}.</p>
-        </>
+        </div>
       )}
       {check && (
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="min-w-0 flex-1">
-            <p className="text-muted-foreground text-xs" data-slot="rules-scope">{scope}</p>
-            {check.stale && !check.checking && (
-              <p className="text-warning text-xs" data-slot="rules-stale">{STALE[check.stale]}</p>
-            )}
-          </div>
-          {check.checking ? (
-            <Button className="shrink-0" onClick={check.stop} size="sm" variant="outline">
-              Stop
-            </Button>
-          ) : (
-            <Button className="shrink-0" onClick={() => void check.check()} size="sm" variant={checked && !check.stale ? "outline" : "default"}>
-              {checked ? "Check again" : "Check"}
-            </Button>
-          )}
-          <Button
-            aria-pressed={conforms.pressed}
+        <div className="flex basis-full items-center gap-2">
+          <PopoverDescription className={cn("min-w-0 flex-1 text-xs", stale && "text-warning")}>
+            <span data-slot="rules-scope">{scope}</span>
+            {stale && <span data-slot="rules-stale"> · {STALE[stale]}</span>}
+          </PopoverDescription>
+          <Toggle
             className="shrink-0"
-            onClick={() => {
-              // As a row's Show does: the popover closes, and the page shows what it put there.
+            onPressedChange={() => {
+              // As a Show does: the popover closes, and the page shows what it put there.
               popover.setOpen(false);
               conforms.toggle();
             }}
+            pressed={conforms.pressed}
             size="sm"
-            variant={conforms.pressed ? "secondary" : "outline"}
+            variant="outline"
           >
-            Show what conforms
-          </Button>
+            Keep what conforms
+          </Toggle>
         </div>
       )}
-    </PopoverHeader>
+    </>
   );
 }

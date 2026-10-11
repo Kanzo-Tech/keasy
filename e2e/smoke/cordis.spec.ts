@@ -61,5 +61,8 @@ test("the funding rules find what the seed lacks: countries and SME status, and 
 
   // Show puts the finding's organisations on the page.
   expect(await organisation.show("An organisation is registered in a country.")).toBe(5);
+  // The readout counts the view's relation: the dashboard's opens on projects, which a clause on
+  // organisations keeps none of. On the organisations, it keeps the five.
+  await discover.relation("Organisation");
   await expect.poll(() => discover.kept()).toBe("5");
 });

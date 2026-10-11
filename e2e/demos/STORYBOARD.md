@@ -207,7 +207,7 @@ lands in the bar"* is the check of the last step rather than a step of its own.
 | # | Subtitle | Action | Check |
 | --- | --- | --- | --- |
 | 1 | Filter the page: Physics only | *Count by Category.name* `pick({ y: "Physics" })` | `discover.kept()` → `"230"` |
-| 2 | Ask about what's in view, in plain words | `answers.ask("Which universities won the most?")` | the replay held the call |
+| 2 | Ask about what's in view, in plain words | `answers.ask("Which universities won the most prizes?")` | the replay held the call |
 | 3 | The answer is a chart, over the Physics prizes in view | `answers.answer()` | the tile is by *University*; its rows hold UC **16**, not **43** (every category's) · **poster** |
 | 4 | Add it to the dashboard | `answers.addToDashboard()` | a tile `/University/` on the dashboard |
 | 5 | Open it on the dashboard | `answers.openOnDashboard()` | that tile is in view |
@@ -227,7 +227,9 @@ lands in the bar"* is the check of the last step rather than a step of its own.
 **Notes**
 
 - The check that UC reads **16** (not 43) is what proves "over what's in view"; a model that drops
-  the filter fails it.
+  the filter fails it. *Prizes* in the question points it at the awards: asked "which universities
+  won the most?", a small model counted the `University` type alone, which the Physics filter cannot
+  reach, and the answer read no rows. Capture again if it does.
 - Step 6 needs an answer **with a where** (the institution's country, Germany): a model that answers
   over every country leaves *Filter the page to these rows* disabled, and step 7 fails. Capture again.
 - *Filter the page to these rows* keeps what the answer draws: the prizes in the categories its bars

@@ -13,7 +13,10 @@ const DASHBOARD = {
   tiles: [{ id: "category", kind: "chart", span: 1, type: "bar", title: "Count by Category.name", x: "Category.name", y: { op: "count" } }],
 };
 
-const UNIVERSITIES = "Which universities won the most?";
+// "Prizes" points the model at the awards, which the page's Physics filter reaches; asked for
+// universities alone, a small model counted the University type, which the filter cannot narrow, and
+// read no rows.
+const UNIVERSITIES = "Which universities won the most prizes?";
 const GERMANY = "Which ones were won in Germany?";
 
 /** Whether `rows` — an answer's data table — holds a row reading `value` and `n` (thousands separators aside). */

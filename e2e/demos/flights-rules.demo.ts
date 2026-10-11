@@ -36,18 +36,18 @@ demo("flights-rules", "Rules over OpenFlights on the map: the findings, every vi
     {
       subtitle: "44 airports break a rule — show them all",
       action: () => airport.showAll("violations"),
-      check: () => expect.poll(() => graph.counts()).toMatch(/^44 of 3\.2K nodes match/),
+      check: () => expect.poll(() => graph.counts()).toMatch(/^44 match · 3\.2K of 3\.2K placed/),
     },
     {
       subtitle: "Amber warns: 218 airports above 4,000 ft",
       action: () => airport.show(/high-altitude airport/),
-      check: () => expect.poll(() => graph.counts()).toMatch(/^218 of 3\.2K nodes match/),
+      check: () => expect.poll(() => graph.counts()).toMatch(/^218 match · 3\.2K of 3\.2K placed/),
       poster: true,
     },
     {
       subtitle: "The Rockies, the Andes, Iran, Ethiopia, Tibet",
       action: () => graph.frame(),
-      check: () => expect.poll(() => graph.counts()).toMatch(/^218 of 3\.2K nodes match/),
+      check: () => expect.poll(() => graph.counts()).toMatch(/^218 match · 3\.2K of 3\.2K placed/),
     },
   ],
 });

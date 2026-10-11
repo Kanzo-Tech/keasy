@@ -26,8 +26,7 @@ thousand, compact above: `"778"`, `"23.5K"`), or in the Graph view from the foot
 
 Every number below was computed from the example's CSV/JSON with DuckDB; the query is under each
 demo's **Numbers**. The OpenFlights and SNB queries run in `infra/dev/examples/<name>/data` after
-`sh infra/dev/seed.sh`; CORDIS's in PR #118's `infra/dev/examples/cordis/data`; Nobel's in PR #119's
-`infra/dev/examples/nobel/data`.
+`sh infra/dev/seed.sh`; Nobel's in PR #119's `infra/dev/examples/nobel/data`.
 
 ---
 
@@ -320,98 +319,7 @@ mountains. Recommended: the finding. The subtitle of step 4 is 45 characters.
 
 ---
 
-## 6. EU research funding — `cordis-funding` (new)
-
-- **Hero tab:** `cordis` · label **EU research funding**
-- **Stat line:** *€62.5B of Horizon Europe, 145K participations — in your browser*
-- **Example / seed:** `cordis` (PR #118) · `seedGraph(page, "cordis", { name: "Demo · CORDIS Horizon Europe", reuse: true })`
-
-### The story, from the data
-
-Who gets Horizon Europe's money? The graph holds 23,451 projects, 35,122 organisations and 145,274
-participations (an `OrganisationRole` vertex between an organisation and a project, carrying the
-role and the EU contribution) — €62.55B in all. Candidates, and what the data says about each:
-
-| Candidate | What the data says | Kept? |
-| --- | --- | --- |
-| By country | Germany €9.85B (15.7 %), France €6.80B, Spain €6.50B, Italy €5.17B, Netherlands €5.09B. Spain has almost Germany's seats (15,848 vs 16,125) and €3.35B less | as the opening chart |
-| Coordinators vs participants | Coordinators hold 23,451 of 145,274 seats (16 %, one in six) and €26.82B (42.9 %); participants 90,869 seats, €35.6B; associated partners 24,696 seats and **no** contribution | **yes** — one click, both numbers on screen |
-| By kind of organisation | Universities (HES) are 2,903 of 35,122 organisations (8 %) and take €22.99B (36.8 %); companies (PRC) are 20,314 (58 %) and take €15.83B (25.3 %) | **yes** — the most striking ratio |
-| Universities as coordinators | 14,088 of the 23,451 coordinators are universities: **six projects in ten** | **yes**, compounding the two above |
-| By programme | ERC €11.92B over 6,469 projects; MSCA 8,617 projects (the most) for €5.13B | no — the programme is two hops away (Project → topic → programme); a relation of its own |
-| Over time (startDate) | 2022 €9.98B · 2023 €14.99B · 2024 €13.32B · 2025 €10.39B · 2026 €11.57B — flat, no story | no |
-| Organisation network on the graph | ~206.6K vertices (with 145K participation vertices), 1,675 organisations with no position | no — see Risks; kept as an optional sixth step |
-| A rule finding | **12,525 of 23,451 projects (53 %) declare a total cost of 0** — 6,682 of them MSCA postdoctoral fellowships, 1,248 ERC Proof of Concept | **yes**, the ending |
-
-### Arrange (off camera)
-
-1. `env`; seed `cordis`.
-2. Rules: `api(page, "PUT", /v1/graphs/${id}/rules, { name: "cordis.ttl", shapes: <infra/dev/examples/cordis/rules.ttl> })`.
-3. The dashboard, saved through the API so its tiles sum money rather than count rows (the automatic
-   dashboard only counts): `api(page, "PUT", /v1/graphs/${id}/dashboard, { spec: { byRelation: { "OrganisationRole>isRoleOf>Organisation": spec } } })` with `spec.tiles`:
-   - stat *Total ecContribution* (`{ op: "sum", field: "OrganisationRole.ecContribution" }`) and stat *Rows*;
-   - chart *Total OrganisationRole.ecContribution by Organisation.country* (bar, top 12);
-   - chart *Total OrganisationRole.ecContribution by Organisation.activityType*;
-   - chart *Count by OrganisationRole.roleLabel*.
-   The column names and the relation key are the page's (`relationKey`, `alias.name`): pin them by
-   saving the spec once from the UI and reading `GET /v1/graphs/{id}/dashboard`.
-4. `page.goto(discoverUrl(id, { view: "dashboard" }))`; `discover.relation("OrganisationRole", ["isRoleOf → Organisation"])`; `dashboard.settled()`; `rules.check()` resolves (presses *Check*).
-
-### Steps
-
-| # | Subtitle | Action | Check |
-| --- | --- | --- | --- |
-| 1 | €62.5 billion of Horizon Europe — who gets it? | — (the dashboard is read) | stat *Total ecContribution* reads `62.5B` (or `62.55B`); the country chart's top bar is `DE` |
-| 2 | Coordinators: one seat in six, 43% of the money | `(await (await dashboard.tile(/by OrganisationRole\.roleLabel/)).chart()).pick({ y: "coordinator" })` | `discover.figure("Rows")` → `"23.5K"` (23,451 of 145,274); total reads `26.8B` |
-| 3 | Universities coordinate six projects in ten | `(await (await dashboard.tile(/by Organisation\.activityType/)).chart()).pick({ y: "HES" })` | `discover.figure("Rows")` → `"14.1K"` (14,088 of 145,274); total reads `12.5B` · **poster** |
-| 4 | Germany and the Netherlands lead them | — (the country chart, now over university coordinators, is read) | the top two bars are `DE` (€1.88B) and `NL` (€1.40B) |
-| 5 | A rule finds 12,525 projects that declare a cost of 0 | `rules.rule("Project").show(/total cost of 0/)` | its button reads `Showing 12,525` |
-
-Step 4 is optional (it is a reading, not an action); with it the demo is five steps, without it four.
-
-### Numbers (`cordis/data`)
-
-```sql
-create view pr as select * from 'projects.csv';
-create view o  as select * from 'organisations.csv';
-create view pa as select * from 'participations.csv';
-create view r  as select pa.*, o.country, o.activityType from pa join o on o.id = pa.organisation;
-```
-
-| Figure | Value | Query |
-| --- | --- | --- |
-| Projects · organisations · participations | 23,451 · 35,122 · 145,274 | `count(*)` over each file |
-| EU contribution | €62.55B over participations (€62.42B as projects' `ecMaxContribution`) | `select sum(ecContribution) from pa` / `select sum(ecMaxContribution) from pr` |
-| By country | DE €9.85B (16,125 seats) · FR €6.80B (13,241) · ES €6.50B (15,848) · IT €5.17B (13,660) · NL €5.09B (8,845) | `select country, sum(ecContribution), count(*) from r group by 1 order by 2 desc` |
-| By role | coordinator 23,451 / €26.82B / 42.9 % · participant 90,869 / €35.6B / 56.9 % · thirdParty 6,258 / €0.13B · associatedPartner 24,696 / none | `select role, count(*), sum(ecContribution) from pa group by 1` |
-| By kind of organisation | HES 2,903 orgs, 52,017 seats, €22.99B (36.8 %) · REC 3,538 / €17.13B · PRC 20,314 / €15.83B (25.3 %) · OTH 5,340 / €4.20B · PUB 3,026 / €2.41B | `select activityType, count(*) from o group by 1`; `select activityType, count(*), sum(ecContribution) from r group by 1` |
-| University coordinators | 14,088 seats, €12.53B | `select count(*), sum(ecContribution) from r where role='coordinator' and activityType='HES'` |
-| …by country | DE 1,642 / €1.88B · NL 1,303 / €1.40B · IT 1,634 / €1.11B · UK 1,204 / €0.99B | `… group by country order by sum desc` |
-| Total cost 0 | 12,525 projects; by scheme MSCA-PF-EF 6,682 · ERC-POC 1,248 · CSA 877 · MSCA-PF-GF 759 · MSCA-DN 638 | `select fundingScheme, count(*) from pr where totalCost=0 group by 1 order by 2 desc` |
-| By programme | ERC 6,469 / €11.92B · Climate, Energy and Mobility 1,500 / €10.29B · Digital, Industry and Space 1,370 / €9.85B · MSCA 8,617 / €5.13B | `pr join schemes t on t.code=pr.topic join schemes p on p.code=t.parent group by p.code` |
-| By start year | 2022 €9.98B · 2023 €14.99B · 2024 €13.32B · 2025 €10.39B · 2026 €11.57B | `select year(startDate), sum(ecMaxContribution) from pr group by 1` |
-
-### Risks
-
-- **The dashboard is saved through the API**, a shape (`Dashboards`, `byRelation`) the demo now
-  depends on; if it changes, arrange fails loudly. The alternative, editing tiles on camera, is three
-  steps no reader wants.
-- **The relation is not in the URL**: picking the root and the hop is a page-object call
-  (`discover.relation`), done off camera.
-- **Rules over 206.6K vertices in the browser**: the first check may take long; arrange waits on
-  `rules.check()`. Rules validate on demand (*Check*), so steps 2–3 do not re-check: the badge
-  keeps the whole corpus's tally, marked *Filter changed since the last check*, and step 5's *Show
-  12,525* finds that group's projects again over what the check was over — the whole corpus.
-- **No Graph step.** The graph has ~206.6K vertices, 145K of them participations with no position, so
-  a Map placement leaves most of the graph unplaced; the force layout of that size is the timing risk
-  the SNB demos already avoid. Optional sixth step, gated on a GPU timing check: *"The same filter on
-  the map: Europe's university coordinators"* — `discover.view("Graph")`, Map on Organisation's
-  lon/lat, `graph.frame()`.
-- The money figures are formatted by the stat tile (`62.5B`, `€62.5B`, `62,550,…`): pin on the first run.
-
----
-
-## 7. Nobel timeline — `nobel-timeline` (new)
+## 6. Nobel timeline — `nobel-timeline` (new)
 
 - **Hero tab:** `nobel` · label **Nobel timeline**
 - **Stat line:** *1,026 Nobel prizes since 1901 — play them forward in time*
@@ -493,7 +401,7 @@ Beyond the library harnesses (`GraphCanvasHarness`, `ChartHarness`, `TimelineHar
 | `GraphSearch` (`support/app/search.ts`) | `add(query): Promise<number>` — opens *Find anything in the graph*, types, presses *Add N to the subset*, returns N | demo 2's inline steps |
 | `RulesBadge` (`support/app/rules.ts`, on `FindingsBadgeHarness`) | `checked()` (the *Checked over …* line); `rule(name)` → `state()` (the badges), `show(message \| RegExp)` (presses *Show N*, waits for *Showing N*), `showAll("violations" \| "warnings")` (presses *Show all N …*, waits on `aria-pressed`; keasy#127), `conforms()` | keasy's panel is `Diagnostic`s, not the library's `Findings`, so `FindingsHarness` does not drive it |
 | `AskPanel` (`support/app/ask.ts`) | `warmUp()`; `composer()` → `AnswerHarness.with({ name: "Ask about your data…" })` | `warmUp` in `snb-ask.demo.ts` |
-| seeds / API (`support/seeds.ts`, `support/stack/api.ts`) | `saveRules(id, example)`; `saveDashboard(id, relationKey, spec)` | rules PUT exists inline in flights-rules; the dashboard PUT is new (demos 6, 7) |
+| seeds / API (`support/seeds.ts`, `support/stack/api.ts`) | `saveRules(id, example)`; `saveDashboard(id, relationKey, spec)` | rules PUT exists inline in flights-rules; the dashboard PUT is new (demo 6) |
 
 The view switch and dock: `DockHarness` drives any single-select toggle group; it needs the view
 switch's accessible group name (today the demos press `radio "Dashboard"` without one). If the
@@ -503,16 +411,13 @@ group is unnamed, naming it (*View*) is a one-line keasy change and the clean fi
 
 `src/content/demos.ts`:
 
-1. **Two new tabs**, after Assessment:
+1. **One new tab**, first:
    ```ts
-   { id: "cordis", label: "EU research funding",
-     stat: "€62.5B of Horizon Europe, 145K participations — in your browser",
-     steps: [ /* from cordis-funding-{light,dark}.chapters.json */ ], ...files("cordis") },
    { id: "nobel", label: "Nobel timeline",
      stat: "1,026 Nobel prizes since 1901 — play them forward in time",
      steps: [ /* from nobel-timeline-{light,dark}.chapters.json */ ], ...files("nobel") },
    ```
-   and `public/videos/{cordis,nobel}/{light,dark}.mp4` + `poster-{light,dark}.webp`, made as the
+   and `public/videos/nobel/{light,dark}.mp4` + `poster-{light,dark}.webp`, made as the
    handoff note says (ffmpeg `-crf 22 -g 30 -keyint_min 30 -sc_threshold 0 -movflags +faststart`;
    posters via sharp, 1600 wide).
 2. **Steps re-read for every tab** from the new chapters: Hidden patterns gains *Lasso the peninsula* and *Frame what
@@ -520,8 +425,8 @@ group is unnamed, naming it (*View*) is a one-line keasy change and the clean fi
    gains *Filter: women only* and *Add it to the dashboard*; Assessment loses *Or only the ones that
    pass* and gains the warning and the frame.
 3. Stat lines: the five existing ones stand. Assessment's *3,218 airports assessed* is right (3,218).
-4. **Seven tabs** in the hero: check that the tab row wraps or scrolls at phone width (16 px gutter,
-   no horizontal page scroll) — five fit today; seven with *EU research funding* may not.
+4. **Six tabs** in the hero: check that the tab row wraps or scrolls at phone width (16 px gutter,
+   no horizontal page scroll) — five fit today.
 
 ## Anything in the data that contradicts a planned subtitle
 
@@ -532,5 +437,3 @@ group is unnamed, naming it (*View*) is a one-line keasy change and the clean fi
 - **Hidden patterns, framing Spain** — settled: the `PENINSULA` lasso (31, all Spanish) before the frame.
 - **Nobel, "Europe → US after 1945"** — settled: *"in the 1940s"* (US 15 of 32); before 1939 Europe
   held 85 % (112 of 132), from 1946 the US 61 % (425 of 697).
-- **CORDIS, by programme / over time** — not telling enough for a step (flat over 2022–2026), and
-  the programme is two hops away.

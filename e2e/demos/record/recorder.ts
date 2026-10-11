@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { test, type Page } from "@playwright/test";
 import { playwright, type HarnessEnvironment } from "@kanzo-tech/testing";
 
-import { CURSOR, GLIDE, gliding } from "./cursor";
+import { CURSOR, GLIDE, ROLLING, gliding } from "./cursor";
 import { encode, ffmpeg } from "./encode";
 import { hold, readingTime } from "./pace";
 
@@ -18,8 +18,8 @@ import { hold, readingTime } from "./pace";
  * page object's, in data (a brush over 1985–1989, a lasso in lon/lat), and it resolves on the state it
  * caused. The check asserts what must be true after it, so a take whose page did something else fails
  * rather than recording it. `hold` is the only time a demo spends on the clock, and it is the
- * viewer's: the subtitle is left up for its reading time (`readingTime`), counted from when it
- * appeared, so a slow action does not add to it.
+ * viewer's: the subtitle is read while it leads its action (`LEAD`), and the rest of its reading time
+ * (`readingTime`) is held once the action's result is on screen, so a slow action never eats into it.
  *
  * The subtitles are the Screencast API's `showOverlay` (`subtitle`). The cursor is the page's own
  * (`CURSOR`): the API's `showActions` also draws a box round each target and a title for each action,
@@ -57,8 +57,11 @@ const FURNITURE = () => {
   else hide();
 };
 
+/** How long a demo waits for any state — a view over a whole seed, a local model's answer — to come. */
+export const STATE_TIMEOUT = 120_000;
+
 /** How long a subtitle is up before its step's action starts: it leads, the cursor follows. */
-const LEAD = 700;
+const LEAD = 1400;
 
 /** A subtitle: one line, dark, at the foot of the frame, the same on either theme. */
 function subtitle(text: string): string {
@@ -128,7 +131,7 @@ export function demo<T>(name: string, description: string, { arrange, steps, pas
       const page = await context.newPage();
       // Before anything loads: the charts and the canvas register with the hook as they mount. A demo
       // waits on views over whole seeds, so a state is given two minutes to come.
-      const stage: Stage = { page, env: await playwright(page, { timeout: 120_000 }) };
+      const stage: Stage = { page, env: await playwright(page, { timeout: STATE_TIMEOUT }) };
       const file = join(OUT, `${name}-${theme}`);
       const frames = `${file}.frames`;
       const chapters: { text: string; start: number; end: number }[] = [];
@@ -140,6 +143,10 @@ export function demo<T>(name: string, description: string, { arrange, steps, pas
         await passed?.(arranged);
         encode(frames, shot, `${file}.mp4`);
         writeFileSync(`${file}.chapters.json`, `${JSON.stringify(chapters, null, 2)}\n`);
+        // A request still routed when the take ends — a superseded suggestion the page cancelled, which
+        // Playwright's route.fetch cannot — would throw from its handler once the context is gone and
+        // fail the take that passed: the routes go before the context closes.
+        await page.unrouteAll({ behavior: "ignoreErrors" });
       } finally {
         // A failed take leaves nothing behind: its frames are hundreds of JPEGs.
         await context.close();
@@ -160,6 +167,8 @@ async function take(
   const shot: { name: string; at: number }[] = [];
   const began = Date.now();
   const now = () => (Date.now() - began) / 1000;
+  // The cursor draws from here on: what `arrange` clicked off camera left nothing to see.
+  await page.evaluate((flag) => Object.assign(window, { [flag]: true }), ROLLING);
   await page.screencast.start({
     size: SIZE,
     quality: 95,
@@ -174,7 +183,6 @@ async function take(
     for (const step of steps) {
       // The subtitle leads its step, and stays until the next replaces it.
       await shown?.dispose();
-      const up = Date.now();
       const last = chapters.at(-1);
       if (last) last.end = now();
       chapters.push({ text: step.subtitle, start: now(), end: now() });
@@ -183,7 +191,9 @@ async function take(
       await step.action?.();
       await step.check();
       if (step.poster) await page.screenshot({ path: poster });
-      await hold(readingTime(step.subtitle) - (Date.now() - up));
+      // The action's own time is watched, not read: the words are read while they lead it, and what
+      // they caused stays on screen for the rest of their reading time once it is there.
+      await hold(readingTime(step.subtitle) - LEAD);
     }
   });
   await shown?.dispose();

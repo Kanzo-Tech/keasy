@@ -5,11 +5,24 @@
  * page's state, so neither can be waited on; `hold` is that pacing, by the clock of the machine that
  * records, and never a wait for the page.
  */
+/**
+ * **Reading a subtitle.** On screen for a beat to find it (`FIND`) and then about 11 characters a
+ * second (`PER_CHARACTER`), at least `MIN_EVENT` and at most `MAX_EVENT`. The Netflix Timed Text Style
+ * Guide sets ceilings this stays well under — 20 characters a second for adults, 17 for children —
+ * because a demo's viewer reads while watching the screen change; and its maximum event, 7 s, is ours.
+ * The rate and the floor were calibrated against takes side by side (2026-10-11) and are named as such.
+ * https://backlothelp.netflix.com/hc/en-us/articles/215758617
+ */
+const FIND = 1200;
+const PER_CHARACTER = 90;
+const MIN_EVENT = 3200;
+const MAX_EVENT = 7000;
+
 export function hold(ms: number): Promise<void> {
   return new Promise((done) => setTimeout(done, Math.max(0, ms)));
 }
 
-/** How long a subtitle of `text` stays up at the least: a beat to find it, then about 15 characters a second. */
+/** How long a subtitle of `text` must be on screen to be read. */
 export function readingTime(text: string): number {
-  return Math.min(3600, Math.max(1600, 600 + text.length * 45));
+  return Math.min(MAX_EVENT, Math.max(MIN_EVENT, FIND + text.length * PER_CHARACTER));
 }

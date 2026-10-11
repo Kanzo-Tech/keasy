@@ -2,13 +2,24 @@ import type { Locator, Mouse, Page } from "@playwright/test";
 
 import { hold } from "./pace";
 
-/** How long the cursor glides to a target before the action lands there. */
-export const GLIDE = 550;
+/** The page's flag for "the camera is rolling": the cursor draws only while it is set. */
+export const ROLLING = "__demoRolling"; // the name CURSOR reads in the page, where this module is not
+
+/**
+ * How long the cursor glides to a target before the action lands there: about the time a hand takes to
+ * point across a screen, by Fitts' law (a movement of a few bits of index of difficulty runs near a
+ * second). Half of it read as a cursor faster than any hand, in the takes compared side by side.
+ */
+export const GLIDE = 1100;
 
 /**
  * The cursor, drawn by the page itself from the real input events Playwright sends: an arrow that
  * glides to each point and a ring where a button goes down. Nothing but the pointer moves it, so it
  * is where the click is. An init script: `context.addInitScript(CURSOR, GLIDE)`.
+ *
+ * It draws only while the camera rolls (`ROLLING`, set by the recorder when the take starts): the
+ * clicks `arrange` makes off camera leave no ring and no arrow behind for the first frame, and the
+ * arrow appears where the take's first move lands rather than gliding in from the last off-camera click.
  */
 export const CURSOR = (glide: number) => {
   const install = () => {
@@ -24,6 +35,7 @@ export const CURSOR = (glide: number) => {
       zIndex: "2147483647",
       pointerEvents: "none",
       transform: "translate(-100px,-100px)",
+      opacity: "0",
       transition: `transform ${glide - 80}ms cubic-bezier(.3,.7,.2,1)`,
       filter: "drop-shadow(0 2px 3px rgba(0,0,0,.3))",
     });
@@ -32,8 +44,11 @@ export const CURSOR = (glide: number) => {
     addEventListener(
       "mousemove",
       (e) => {
-        cursor.style.transition = down ? "transform 40ms linear" : `transform ${glide - 80}ms cubic-bezier(.3,.7,.2,1)`;
+        if (!(window as unknown as Record<string, unknown>).__demoRolling) return;
+        const first = cursor.style.opacity === "0";
+        cursor.style.transition = first ? "none" : down ? "transform 40ms linear" : `transform ${glide - 80}ms cubic-bezier(.3,.7,.2,1)`;
         cursor.style.transform = `translate(${e.clientX - 2}px,${e.clientY - 2}px)`;
+        cursor.style.opacity = "1";
       },
       true,
     );
@@ -41,6 +56,7 @@ export const CURSOR = (glide: number) => {
       "mousedown",
       (e) => {
         down = true;
+        if (!(window as unknown as Record<string, unknown>).__demoRolling) return;
         const ring = document.createElement("div");
         Object.assign(ring.style, {
           position: "fixed",
@@ -79,7 +95,7 @@ export const CURSOR = (glide: number) => {
 };
 
 /** How fast a demo types: a field filled at once reads as a paste, not as someone asking. */
-const KEYSTROKE = 35;
+const KEYSTROKE = 70;
 /** The moves a drag is drawn through between two of its points, so a brush or a lasso is seen drawn. */
 const DRAWN = 12;
 

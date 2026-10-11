@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import type { Page, Request } from "@playwright/test";
 
 import { AI } from "../../support/fixtures";
+import { STATE_TIMEOUT } from "./recorder";
 
 /**
  * **The model's words, recorded once and replayed** — for a demo that asks the model. The split is
@@ -72,7 +73,9 @@ export async function model(page: Page, demo: string): Promise<Model> {
     const captured: Call[] = [];
     if (RECORD) {
       await page.route(AI, async (route) => {
-        const response = await route.fetch();
+        // A local model answers in its own time: as long as any state a demo waits for, not
+        // Playwright's 30 s default.
+        const response = await route.fetch({ timeout: STATE_TIMEOUT });
         const body = await response.text();
         captured.push({ key: keyOf(route.request()), body });
         await route.fulfill({ response, body });

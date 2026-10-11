@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { createContext, use, useMemo, useState } from "react";
+import { createContext, use, useState } from "react";
 import {
   BarChart3Icon,
   InfoIcon,
@@ -16,17 +16,15 @@ import {
   GraphLegend,
   GraphRoot,
   GraphStatus,
-  GraphTimeline,
   GraphToolbar,
   useGraphPrefs,
   useGraphState,
 } from "@kanzo-tech/graph";
 import {
+  ChartTimeline,
   FilterBar,
   MosaicClients,
-  relationQuery,
   TileEditorAside,
-  useCrossfilter,
   useMosaic,
   useTileEditorOpen,
   type Relation,
@@ -67,7 +65,7 @@ import { toastError } from "@/lib/errors";
  * Discovery, composed as kanzo-ui's `workspace` showcase: the header picks what `ShellMain` shows
  * (Graph · Dashboard), the footer's `ShellDockSwitcher` picks which panel the dock holds (Info · Ask ·
  * Settings) and collapses it when the active icon is pressed again. Both views and every panel read
- * one graph and one crossfilter, so a lasso on the canvas filters the dashboard and a rule shown from
+ * one graph and the page's one selection, so a lasso on the canvas filters the dashboard and a rule shown from
  * the rules' badge lights the canvas. `FilterBar`, under the header, is every clause on the page and
  * the dashboard's filters, in either view, without a readout, and ends with the rules' badge. The
  * saved dashboard is the page's (`./_parts/dashboard-store`), because the Ask panel adds answers to
@@ -178,12 +176,10 @@ function CorpusStatus() {
 
 function Workspace() {
   const { graphId } = useCorpus();
-  const { coordinator } = useMosaic();
-  const { look, sim, placement } = useGraphPrefs();
-  const crossfilter = useCrossfilter();
+  const { coordinator, selection } = useMosaic();
+  const { look, sim, placement, timeline } = useGraphPrefs();
   const graph = useJoinGraph();
   const [relation, setRelation] = useState<Relation>(() => ({ root: graph.types[0]?.name ?? "", path: [] }));
-  const table = useMemo(() => relationQuery(graph, relation), [graph, relation]);
   const [{ view, panel }, setDiscover] = useDiscoverState();
   const panelOpen = panel !== "none";
   // The dock's width while it is open; closed, it collapses to nothing and the main region stays
@@ -208,7 +204,7 @@ function Workspace() {
     >
     <GraphRoot
       coordinator={coordinator}
-      filterBy={crossfilter}
+      filterBy={selection}
       from={graphId}
       look={look}
       sim={sim}
@@ -274,18 +270,20 @@ function Workspace() {
                     shown again. */}
                 <MosaicClients enabled={view === "dashboard"}>
                   <div className="size-full min-h-0" hidden={view !== "dashboard"}>
-                    <DashboardView onRelationChange={setRelation} relation={relation} shown={shown} table={table} />
+                    <DashboardView onRelationChange={setRelation} relation={relation} shown={shown} />
                   </div>
                 </MosaicClients>
               </div>
-              {/* The timeline over the column Settings → Timeline chose: the graph's, drawn under
-                  the canvas as Cosmograph draws it, where a dashboard brushes years with a chart of
-                  its own. Hidden, not unmounted, in Dashboard view: its window keeps filtering the
+              {/* The timeline over the column Settings → Timeline chose, counting `vertices` — every
+                  vertex type as one relation — drawn under the canvas as Cosmograph draws it, where a
+                  dashboard brushes years with a chart of its own. Hidden, not unmounted, in Dashboard view: its window keeps filtering the
                   page and stays in the bar as a chip to let go of, as the dashboard's filters do in
                   Graph view. A strip of its own, so the brush never covers the legend; with no
                   column chosen it draws nothing. */}
               <div className="shrink-0" hidden={view !== "graph"}>
-                <GraphTimeline className="border-t" />
+                <div className="border-t" style={{ minHeight: 44 }}>
+                  {timeline && <ChartTimeline field={timeline} relation="vertices" title={`Timeline: ${timeline}`} />}
+                </div>
               </div>
             </ShellMain>
           </ResizablePanel>

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, use, useMemo, type ReactNode } from "react";
+import { createContext, use, type ReactNode } from "react";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { TableRefNode, column, eq, literal } from "@uwdata/mosaic-sql";
 import { attach, type Attachment } from "@fossil-lang/corpus";
@@ -13,6 +13,7 @@ import {
   useQueryRows,
   type Engine,
   type JoinGraph,
+  type TableExpr,
 } from "@kanzo-tech/ui/analytics";
 import { settled } from "@/lib/api/settled";
 import { toastError } from "@/lib/errors";
@@ -94,13 +95,22 @@ function chartFailed(error: unknown) {
 /**
  * `graphId`'s corpus to everything under it, opened here: suspends while it attaches, and throws to
  * the nearest boundary if it cannot. Its observer of {@link corpusQuery} is what keeps the corpus
- * attached while the page is on screen, so every page that reads a corpus reads it through this.
+ * attached while the page is on screen, so every page that reads a corpus reads it through this. The
+ * corpus's join graph is read before the page's `MosaicProvider`, which builds the page's one
+ * selection over it: a clause on one relation reaches a part reading another.
  */
 export function CorpusProvider({ graphId, children }: { graphId: string; children: ReactNode }) {
   const corpus = settled(useSuspenseQuery(corpusQuery(graphId)));
+  const joins = settled(
+    useSuspenseQuery({
+      queryKey: [...corpusKey(graphId), "join-graph"],
+      queryFn: () => readJoinGraph(corpus.engine.coordinator, graphId),
+      ...ONCE,
+    }),
+  );
   return (
     <CorpusContext value={corpus}>
-      <MosaicProvider coordinator={corpus.engine.coordinator} onFailure={chartFailed}>
+      <MosaicProvider coordinator={corpus.engine.coordinator} joins={joins} onFailure={chartFailed}>
         {children}
       </MosaicProvider>
     </CorpusContext>
@@ -126,40 +136,20 @@ export function useGraphKey(): string {
   return address.column_name;
 }
 
-/**
- * Every vertex of the corpus as one relation — its key, its `subject` (the `identity` column, the
- * IRI the corpus's RDF mapping makes of it) and its `type` — one `SELECT` per vertex table, unioned.
- * It is what a selection on the graph filters whatever the type, so it is the relation a panel scopes
- * by: the Ask panel's subset count, and the rules' focus nodes read back as vertices.
- */
-export function useVertices(): Query {
-  const { graphId } = useCorpus();
-  const key = useGraphKey();
-  const subjects = useQueryRows<{ table_name: string; column_name: string }>(roleColumns(graphId, "identity"));
-  return useMemo(
-    () =>
-      Query.unionAll(
-        ...subjects.map(({ table_name, column_name }) =>
-          Query.from(new TableRefNode([graphId, table_name])).select({
-            [key]: column(key),
-            subject: column(column_name),
-            type: literal(table_name),
-          }),
-        ),
-      ),
-    [graphId, key, subjects],
-  );
+/** The corpus's join graph — its types and the edges between them — the one the page's `MosaicProvider` holds. */
+export function useJoinGraph(): JoinGraph {
+  const { joins } = useMosaic();
+  if (!joins) throw new Error("useJoinGraph must be used within CorpusProvider");
+  return joins;
 }
 
-/** The corpus's join graph — its types and the edges between them — read once from its catalog. */
-export function useJoinGraph(): JoinGraph {
-  const { graphId } = useCorpus();
-  const { coordinator } = useMosaic();
-  return settled(
-    useSuspenseQuery({
-      queryKey: [...corpusKey(graphId), "join-graph"],
-      queryFn: () => readJoinGraph(coordinator, graphId),
-      ...ONCE,
-    }),
-  );
+/**
+ * Every vertex of the corpus as one relation — the join graph's `vertices`, kanzo-ui's union of every
+ * vertex table: its key, its `subject` (the `identity` column, the IRI the corpus's RDF mapping makes
+ * of it) and every column the tables share. It is what a selection on the graph filters whatever the
+ * type, so it is the relation a panel scopes by: the Ask panel's subset count, and the rules' focus
+ * nodes read back as vertices.
+ */
+export function useVertices(): TableExpr {
+  return useJoinGraph().types.find((t) => t.name === "vertices")!.table;
 }

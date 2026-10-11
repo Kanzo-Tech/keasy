@@ -9,9 +9,6 @@ import {
   RelationPicker,
   relationIdentities,
   relationKey,
-  relationRootKey,
-  semiJoinOf,
-  type TableExpr,
 } from "@kanzo-tech/ui/analytics";
 import { SavedBy } from "@/components/provenance";
 import { Boundary, Failed } from "@/components/boundary";
@@ -20,9 +17,9 @@ import { useDashboardStore } from "./dashboard-store";
 
 /**
  * The Dashboard view: kanzo-ui's `Dashboard` over a relation of the graph — a type, or a type and the
- * hops a `RelationPicker` takes from it — on the crossfilter the graph reads. A lasso on the canvas
- * filters it, and its tiles publish to the page as one semi-join on the root's key, so a brush here
- * greys out the canvas. The graph keeps one saved document, a spec per relation; a relation nobody
+ * hops a `RelationPicker` takes from it — on the page's one selection, the graph's too. A lasso on
+ * the canvas filters it, and a brush on its tiles is published on its relation and crossed by key
+ * along the joins, so it greys out the canvas. The graph keeps one saved document, a spec per relation; a relation nobody
  * has edited draws the automatic one; the document is the page's (`./dashboard-store`), because the
  * Ask panel adds its answers to it too. The relation is the page's, and its `FilterBar` draws this
  * dashboard's filters.
@@ -30,8 +27,6 @@ import { useDashboardStore } from "./dashboard-store";
 export interface DashboardViewProps {
   relation: Relation;
   onRelationChange: (relation: Relation) => void;
-  /** `relation` as the query its rows come from. */
-  table: TableExpr;
   /** The tile *Open on the dashboard* asked for: scrolled into view, and ringed for a moment. */
   shown?: AnswerAdded;
 }
@@ -90,7 +85,7 @@ function useShowTile(
   }, [shown]);
 }
 
-function SavedDashboard({ relation, onRelationChange, table, shown }: DashboardViewProps) {
+function SavedDashboard({ relation, onRelationChange, shown }: DashboardViewProps) {
   const graph = useJoinGraph();
   const store = useDashboardStore();
   const board = useRef<HTMLDivElement>(null);
@@ -98,7 +93,6 @@ function SavedDashboard({ relation, onRelationChange, table, shown }: DashboardV
   const key = relationKey(graph, relation);
   useShowTile(board, shown, key, store.status === "ready" ? store.current.byRelation[key]?.tiles : undefined);
   const identities = useMemo(() => relationIdentities(graph, relation), [graph, relation]);
-  const publish = useMemo(() => semiJoinOf(relationRootKey(graph, relation), table, { label: key }), [graph, relation, table, key]);
 
   // The document is read once; a failed read is shown in place of the dashboard, not replaced by
   // the automatic one an edit would then overwrite.
@@ -129,8 +123,7 @@ function SavedDashboard({ relation, onRelationChange, table, shown }: DashboardV
                 }
               : undefined
           }
-          publish={publish}
-          table={table}
+          relation={relation}
           value={current.byRelation[key]}
         />
       </ScrollArea>

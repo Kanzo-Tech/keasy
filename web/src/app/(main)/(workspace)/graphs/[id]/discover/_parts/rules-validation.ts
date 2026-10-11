@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { and, column, count, createTable, type ExprNode, isIn, literal, Query, sql, TableRefNode } from "@uwdata/mosaic-sql";
-import { engine, numbers, useClauses, useCrossfilter, useMosaic } from "@kanzo-tech/ui/analytics";
+import { engine, numbers, useClauses, useMosaic } from "@kanzo-tech/ui/analytics";
 import { usePick } from "@kanzo-tech/graph";
 import type { RdfFindingGroup, RdfFindingGroups, RdfPlace, Shapes, ShapeModelJson, TermValue } from "@kanzo-tech/rudof-wasm";
 import { type FindingSeverity, type FindingTally, tallyFindings } from "@kanzo-tech/ui";
@@ -110,7 +110,7 @@ export function useRules(rules: ReadRules | undefined, text: string) {
   const { coordinator } = useMosaic();
   const pick = usePick(PICK);
   // Re-rendered on every clause, only so the badge can say the subset moved since the last check.
-  useClauses(useCrossfilter());
+  useClauses(useMosaic().selection);
   const vertices = useVertices();
   const key = useGraphKey();
   const predicate = pick.predicate();

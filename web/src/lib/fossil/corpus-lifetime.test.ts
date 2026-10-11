@@ -25,6 +25,7 @@ vi.mock("@kanzo-tech/ui/analytics", () => ({
   engine: async () => ({ coordinator: {} }),
   MosaicProvider: ({ children }: { children: ReactNode }) => children,
 }));
+vi.mock("@kanzo-tech/graph", () => ({ readJoinGraph: async () => ({ types: [], edges: [] }) }));
 vi.mock("@/lib/api/query-client", async () => {
   const { QueryClient } = await import("@tanstack/react-query");
   const { releaseCorpora } = await import("./corpus-cache");

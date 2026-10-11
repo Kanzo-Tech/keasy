@@ -4,7 +4,7 @@ import { Suspense, useMemo } from "react";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Sparkles } from "lucide-react";
 import { count, Query } from "@uwdata/mosaic-sql";
-import { useChartQuery, useClauses, useMosaic, type JoinGraph } from "@kanzo-tech/ui/analytics";
+import { useChartQuery, useClauses, useMosaic, type JoinGraph, type TableExpr } from "@kanzo-tech/ui/analytics";
 import { Badge, EmptyDescription, EmptyHeader, EmptyIndicator, EmptyRoot } from "@kanzo-tech/ui";
 import { Chat, ChatSkeleton, useAgentChat } from "@kanzo-tech/ai";
 import { AnswerCard, answerRelationsOf, dataAgent, dataSuggestions, readAnswerRelations, type AnswerRelation } from "@kanzo-tech/ai/data";
@@ -19,7 +19,7 @@ import { startersQuery } from "./starters";
 
 /**
  * The Ask panel — `@kanzo-tech/ai/data` over the graph: `readAnswerRelations` over the corpus's join
- * graph, `dataAgent` on the page's engine under the page's crossfilter, `dataSuggestions` as the
+ * graph, `dataAgent` on the page's engine under the page's one selection, `dataSuggestions` as the
  * pills, and each answer an `AnswerCard` — the dashboard tile it is, which *Filter the page to these
  * rows* narrows the page to (when it filters at all), *Add to the dashboard* adds to the Dashboard
  * view's saved document, and *Open on the dashboard* then shows there. Nothing here writes SQL, and
@@ -72,15 +72,15 @@ function useRelations(graph: JoinGraph): AnswerRelation[] {
  */
 function useStarters(graph: JoinGraph, relations: readonly AnswerRelation[]) {
   const { graphId } = useCorpus();
-  const { crossfilter } = useMosaic();
+  const { selection } = useMosaic();
   const context = useModelContext("complete");
   // Re-rendered on every clause, so the key below is the filter as it is now.
-  useClauses(crossfilter);
+  useClauses(selection);
   const starters = useQuery({
-    queryKey: [...corpusKey(graphId), "starters", String(crossfilter.predicate(null) ?? "")],
+    queryKey: [...corpusKey(graphId), "starters", String(selection.predicate(null) ?? "")],
     // Each request replaces the last, and one cut short by a filter change leaves nothing behind.
     queryFn: startersQuery(({ signal }) =>
-      dataSuggestions({ model: gateway("complete"), graph, relations, selection: crossfilter, context, abortSignal: signal }),
+      dataSuggestions({ model: gateway("complete"), graph, relations, selection, context, abortSignal: signal }),
     ),
     staleTime: Infinity,
     retry: false,
@@ -110,10 +110,10 @@ function useAdding() {
  * What the next question is asked over, in the composer: the subset's size while the page holds one,
  * and nothing while it does not — every question then reads the whole graph.
  */
-function SubsetPill({ vertices }: { vertices: Query }) {
-  const { crossfilter } = useMosaic();
-  const { row } = useChartQuery({ deps: [vertices], query: (filter) => Query.from(vertices).select({ n: count() }).where(filter) });
-  if (!row || crossfilter.clauses.length === 0) return null;
+function SubsetPill({ vertices }: { vertices: TableExpr }) {
+  const { selection } = useMosaic();
+  const { row } = useChartQuery({ relation: "vertices", deps: [vertices], query: (filter) => Query.from(vertices).select({ n: count() }).where(filter) });
+  if (!row || selection.clauses.length === 0) return null;
   return (
     <Badge pill variant="outline">
       Subset · {Number(row.n).toLocaleString()} nodes
@@ -122,15 +122,15 @@ function SubsetPill({ vertices }: { vertices: Query }) {
 }
 
 function AskChat() {
-  const { crossfilter } = useMosaic();
+  const { selection } = useMosaic();
   const { engine } = useCorpus();
   const context = useModelContext("chat");
   const vertices = useVertices();
   const graph = useJoinGraph();
   const relations = useRelations(graph);
   const agent = useMemo(
-    () => dataAgent({ model: gateway("chat"), engine, graph, relations, selection: crossfilter, context }),
-    [engine, graph, relations, crossfilter, context],
+    () => dataAgent({ model: gateway("chat"), engine, graph, relations, selection, context }),
+    [engine, graph, relations, selection, context],
   );
   const chat = useAgentChat(agent);
   const starters = useStarters(graph, relations);

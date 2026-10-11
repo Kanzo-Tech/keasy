@@ -140,13 +140,12 @@ export function demo<T>(name: string, description: string, { arrange, steps, pas
         rmSync(frames, { recursive: true, force: true });
         mkdirSync(frames);
         const shot = await take(page, frames, `${file}.png`, steps(arranged, stage), chapters);
+        // Every call the take made is answered before it is kept: a model's suggestions for the last
+        // filter may still be streaming, and a capture without it is a replay that asks for it.
+        await page.unrouteAll({ behavior: "wait" });
         await passed?.(arranged);
         encode(frames, shot, `${file}.mp4`);
         writeFileSync(`${file}.chapters.json`, `${JSON.stringify(chapters, null, 2)}\n`);
-        // A request still routed when the take ends — a superseded suggestion the page cancelled, which
-        // Playwright's route.fetch cannot — would throw from its handler once the context is gone and
-        // fail the take that passed: the routes go before the context closes.
-        await page.unrouteAll({ behavior: "ignoreErrors" });
       } finally {
         // A failed take leaves nothing behind: its frames are hundreds of JPEGs.
         await context.close();

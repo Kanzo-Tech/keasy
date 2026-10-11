@@ -2,7 +2,8 @@
 
 import { createContext, use, useMemo, type ReactNode } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { type Dashboards, parseDashboards, type Relation } from "@kanzo-tech/ui/analytics";
+import { type Dashboards, parseDashboards } from "@kanzo-tech/ui/analytics";
+import type { AnswerAdded } from "@kanzo-tech/ai/data";
 import { $api, http, type Schemas } from "@/lib/api/client";
 import { queryClient } from "@/lib/api/query-client";
 import { toastError } from "@/lib/errors";
@@ -14,7 +15,8 @@ import { useDashboardWrites } from "./dashboard-writes";
  * the server has, the edit being typed over it, and the write. It is the page's and not the
  * Dashboard view's because two places change it: the view's editor, and the Ask panel's *Add to the
  * dashboard*. One draft for both, so an answer added while a tile is being edited lands on the edit
- * rather than on what the server held before it, and the view then shows the relation it landed on.
+ * rather than on what the server held before it. *Open on the dashboard* is the page's to do: it
+ * owns the view and the relation.
  *
  * The reads are not suspended: a dashboard that fails to read fails in the Dashboard view, as it
  * did when the view read it, and leaves the graph and the dock drawn.
@@ -33,11 +35,13 @@ export type DashboardStore =
         /** An edit in the editor, saved once editing pauses. */
         change: (next: Dashboards) => void;
         /**
-         * *Add to the dashboard*: `next` saved now, with any pending edit it was made over, and the
-         * Dashboard view turned to `relation`. It settles with the write; its failure is the card's
-         * to draw, so the page does not toast it.
+         * *Add to the dashboard*: `next` saved now, with any pending edit it was made over. It only
+         * writes — the reader stays where they asked — and settles with the write; its failure is
+         * the card's to draw, so the page does not toast it.
          */
-        add: (next: Dashboards, added: { relation: Relation }) => Promise<unknown>;
+        add: (next: Dashboards) => Promise<unknown>;
+        /** *Open on the dashboard*: the Dashboard view, on the relation the tile was added to, showing it. */
+        open: (added: AnswerAdded) => void;
       };
     };
 
@@ -46,9 +50,9 @@ const SAVE_MS = 800;
 
 const StoreContext = createContext<DashboardStore | null>(null);
 
-export function DashboardStoreProvider({ onAdded, children }: {
-  /** The Dashboard view is turned to `relation`, where an answer was just added. */
-  onAdded: (relation: Relation) => void;
+export function DashboardStoreProvider({ onOpen, children }: {
+  /** The page shows the Dashboard view on `added.relation`, and brings the tile `added.id` into view. */
+  onOpen: (added: AnswerAdded) => void;
   children: ReactNode;
 }) {
   const { graphId } = useCorpus();
@@ -100,13 +104,7 @@ export function DashboardStoreProvider({ onAdded, children }: {
             saved: saved.data,
             current,
             edit: graph.data.can.manage
-              ? {
-                  change,
-                  add: (next, { relation }) => {
-                    onAdded(relation);
-                    return addNow(next);
-                  },
-                }
+              ? { change, add: addNow, open: onOpen }
               : undefined,
           };
 

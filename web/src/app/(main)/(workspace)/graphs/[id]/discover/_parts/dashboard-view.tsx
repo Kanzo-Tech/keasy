@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
+import type { AnswerAdded } from "@kanzo-tech/ai/data";
 import { ScrollArea, Skeleton } from "@kanzo-tech/ui";
 import {
   Dashboard,
@@ -31,6 +32,8 @@ export interface DashboardViewProps {
   onRelationChange: (relation: Relation) => void;
   /** `relation` as the query its rows come from. */
   table: TableExpr;
+  /** The tile *Open on the dashboard* asked for: scrolled into view, and ringed for a moment. */
+  shown?: AnswerAdded;
 }
 
 export default function DashboardView(props: DashboardViewProps) {
@@ -41,11 +44,59 @@ export default function DashboardView(props: DashboardViewProps) {
   );
 }
 
-function SavedDashboard({ relation, onRelationChange, table }: DashboardViewProps) {
+/** How long *Open on the dashboard* waits for the tile to be drawn, and how long it rings it. */
+const SHOW_WITHIN_MS = 10_000;
+const RING_MS = 1600;
+
+/**
+ * Brings the tile `shown` names into view once `within` draws it, and rings it for a moment. The
+ * library's `Dashboard` gives a tile no id in the DOM: it draws the figures (`stat` tiles) in one
+ * group and every other tile in another, each in spec order, so the tile is found by its place in
+ * its group. Waited for by frames, never past `SHOW_WITHIN_MS`: the relation's fields are read
+ * before any tile draws.
+ */
+function useShowTile(
+  within: React.RefObject<HTMLElement | null>,
+  shown: AnswerAdded | undefined,
+  key: string,
+  tiles: readonly { id: string; kind: string }[] | undefined,
+) {
+  useEffect(() => {
+    const tile = shown?.key === key ? tiles?.find((t) => t.id === shown.id) : undefined;
+    if (!tile) return;
+    const figure = tile.kind === "stat";
+    const index = tiles!.filter((t) => (t.kind === "stat") === figure).findIndex((t) => t.id === tile.id);
+    const group = figure ? "dashboard-figures" : "dashboard-tiles";
+    const until = performance.now() + SHOW_WITHIN_MS;
+    let frame = 0;
+    const find = () => {
+      const element = within.current?.querySelector(`[data-slot="${group}"]`)?.children[index];
+      if (!element) {
+        if (performance.now() < until) frame = requestAnimationFrame(find);
+        return;
+      }
+      const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      element.scrollIntoView({ block: "center", behavior: still ? "auto" : "smooth" });
+      element.animate(
+        [{ outline: "2px solid var(--color-primary)", outlineOffset: "2px" }, { outline: "2px solid transparent", outlineOffset: "2px" }],
+        { duration: RING_MS, easing: "ease-in" },
+      );
+    };
+    find();
+    return () => cancelAnimationFrame(frame);
+    // Once per press — `shown` is a new object each time *Open on the dashboard* is pressed — and not
+    // again when the reader comes back to the relation later.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shown]);
+}
+
+function SavedDashboard({ relation, onRelationChange, table, shown }: DashboardViewProps) {
   const graph = useJoinGraph();
   const store = useDashboardStore();
+  const board = useRef<HTMLDivElement>(null);
 
   const key = relationKey(graph, relation);
+  useShowTile(board, shown, key, store.status === "ready" ? store.current.byRelation[key]?.tiles : undefined);
   const identities = useMemo(() => relationIdentities(graph, relation), [graph, relation]);
   const publish = useMemo(() => semiJoinOf(relationRootKey(graph, relation), table, { label: key }), [graph, relation, table, key]);
 
@@ -61,7 +112,7 @@ function SavedDashboard({ relation, onRelationChange, table }: DashboardViewProp
         <RelationPicker className="min-w-0" graph={graph} onValueChange={onRelationChange} value={relation} />
         {saved && <SavedBy className="ms-auto shrink-0" of={saved} />}
       </div>
-      <ScrollArea className="min-h-0 flex-1">
+      <ScrollArea className="min-h-0 flex-1" ref={board}>
         <Dashboard
           className="p-4"
           exclude={identities.map((i) => i.column)}

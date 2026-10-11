@@ -50,6 +50,7 @@ import {
   ToggleGroupItem,
   useSidebar,
 } from "@kanzo-tech/ui";
+import type { AnswerAdded } from "@kanzo-tech/ai/data";
 import { HeaderEnd } from "@/app/(main)/_parts/header-end";
 import { AskPanel } from "./_parts/ask-panel";
 import { DashboardStoreProvider } from "./_parts/dashboard-store";
@@ -189,13 +190,22 @@ function Workspace() {
   // mounted where it is, so the dashboard keeps what the reader filtered.
   const [sizes, setSizes] = useState([72, 28]);
   const [failure, setFailure] = useState<unknown>(undefined);
+  // The tile *Open on the dashboard* last asked to see, brought into view once the Dashboard draws it.
+  const [shown, setShown] = useState<AnswerAdded | undefined>(undefined);
 
   const ActiveBody = panelOpen ? PANEL_BODY[panel] : undefined;
   const activeLabel = PANELS.find((p) => p.id === panel)?.label ?? "";
 
   return (
     <GraphFailure value={failure}>
-    <DashboardStoreProvider onAdded={setRelation}>
+    <DashboardStoreProvider
+      // The dock stays as it is, unlike the view switch, which closes it: the reader came from Ask.
+      onOpen={(added) => {
+        setRelation(added.relation);
+        setDiscover({ view: "dashboard" });
+        setShown(added);
+      }}
+    >
     <GraphRoot
       coordinator={coordinator}
       filterBy={crossfilter}
@@ -236,7 +246,7 @@ function Workspace() {
 
       {/* The dashboard's filters stay in the bar to change in either view: the dashboard filters the
           graph while it is hidden. No readout: the dashboard's count tile and the footer count. */}
-      <FilterBar className="shrink-0 border-b px-3 py-1.5">
+      <FilterBar className="shrink-0 border-b px-3 py-0.5">
         {/* The rules' tally, after the filters: read in either view, its findings in its popover. */}
         <Boundary fallback={<Skeleton className="h-5 w-24" />}>
           <RulesBadge />
@@ -264,7 +274,7 @@ function Workspace() {
                     shown again. */}
                 <MosaicClients enabled={view === "dashboard"}>
                   <div className="size-full min-h-0" hidden={view !== "dashboard"}>
-                    <DashboardView onRelationChange={setRelation} relation={relation} table={table} />
+                    <DashboardView onRelationChange={setRelation} relation={relation} shown={shown} table={table} />
                   </div>
                 </MosaicClients>
               </div>

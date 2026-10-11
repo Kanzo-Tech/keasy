@@ -20,9 +20,10 @@ import { startersQuery } from "./starters";
 /**
  * The Ask panel — `@kanzo-tech/ai/data` over the graph: `readAnswerRelations` over the corpus's join
  * graph, `dataAgent` on the page's engine under the page's crossfilter, `dataSuggestions` as the
- * pills, and each answer an `AnswerCard` — the dashboard tile it is, which *Filter to it* narrows the
- * page to and *Add to the dashboard* adds to the Dashboard view's saved document. Nothing here
- * writes SQL, and neither does the model: it names a relation, conditions and a tile.
+ * pills, and each answer an `AnswerCard` — the dashboard tile it is, which *Filter the page to these
+ * rows* narrows the page to (when it filters at all), *Add to the dashboard* adds to the Dashboard
+ * view's saved document, and *Open on the dashboard* then shows there. Nothing here writes SQL, and
+ * neither does the model: it names a relation, conditions and a tile.
  */
 export function AskPanel() {
   return (
@@ -95,13 +96,14 @@ function useStarters(graph: JoinGraph, relations: readonly AnswerRelation[]) {
 
 /**
  * *Add to the dashboard*, for whoever may edit it: the page's saved document, which the card reads
- * *✓ On the dashboard* off, and the write of the next one, which the card waits on and whose failure
- * it draws. Nothing while the document has not been read, or for a reader who may not change it.
+ * whether the tile is there off, the write of the next one, which the card waits on and whose
+ * failure it draws, and *Open on the dashboard* once it is there. Nothing while the document has not
+ * been read, or for a reader who may not change it.
  */
 function useAdding() {
   const store = useDashboardStore();
   if (store.status !== "ready" || !store.edit) return {};
-  return { dashboards: store.current, onAdd: store.edit.add };
+  return { dashboards: store.current, onAdd: store.edit.add, onOpen: store.edit.open };
 }
 
 /**

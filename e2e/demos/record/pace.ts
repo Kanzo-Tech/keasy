@@ -18,6 +18,16 @@ const PER_CHARACTER = 90;
 const MIN_EVENT = 3200;
 const MAX_EVENT = 7000;
 
+/**
+ * **The tail: the result held still before the cut.** Once the last step's check has passed and its
+ * reading time is over, the subtitle goes and the page is held, untouched, for `TAIL` before the
+ * screencast stops. A take that stops as its last subtitle goes cuts away from the result just as
+ * the eye leaves the words for it. About the reading floor (`MIN_EVENT`): long enough to see the
+ * final frame as a frame. Decided with the demos' re-cut, 2026-10-11, and named as such, as the
+ * constants above are. Every demo ends this way, so it is the recorder's, not a step's.
+ */
+export const TAIL = 3000;
+
 export function hold(ms: number): Promise<void> {
   return new Promise((done) => setTimeout(done, Math.max(0, ms)));
 }

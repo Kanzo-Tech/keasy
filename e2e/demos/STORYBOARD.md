@@ -215,7 +215,7 @@ where filters the page.
 | 4 | Add it to the dashboard | `answers.addToDashboard()` (only writes: the reader stays in Ask) | `dashboard.tile(/browserUsed/)` resolves |
 | 5 | Open it on the dashboard | `answers.openOnDashboard()` — keasy's `onOpen`: the Dashboard view on the answer's relation, the tile scrolled into view and ringed | the tile's middle is inside the 900 px viewport |
 | 6 | Ask again: where do the ones on Opera live? | `answers.ask("Where do the ones on Opera live?")`; `answers.answer()` — Ask stayed docked, the conversation goes on | `replay.unrecorded` is empty |
-| 7 | This one filters: keep the 22 women on Opera | `answers.filterTo()` (its where: `Person.browserUsed` Opera) | `discover.figure("Rows")` → `"22"` |
+| 7 | This one filters: keep the women it drew | `answers.filterTo()` (its where: `Person.browserUsed` Opera, and the countries its bars show) | `discover.figure("Rows")` → `"19"` |
 | 8 | The same 22 in the graph, framed | `discover.view("Graph")`; `graph.ready()`; `graph.frame()` | `discover.counts()` → `/^22 of /` |
 
 Step 8 lays out SNB's 327K nodes in the Graph view, on camera: the step waits on `graph.ready()`
@@ -272,8 +272,10 @@ again with `LIVE=1 RECORD=1`.
   a model that drops the filter fails it.
 - Step 6 needs an answer **with a where** (`Person.browserUsed` Opera): a model that answers over
   every browser leaves *Filter the page to these rows* disabled, and step 7 fails. Capture again.
-- Whether the Opera answer is drawn by city (22 bars of one) or by country (16) is the model's
-  choice; no subtitle names either, and step 7 counts the people, 22, either way.
+- *Filter the page to these rows* keeps what the answer draws: the women in the categories its bars
+  show. The recorded answer draws the top 13 of the 16 countries, so step 7 keeps 19 of the 22; an
+  answer drawn by city, or with every country, keeps another figure. Capturing again means reading it
+  off the answer's bars and setting step 7 and 8 to it.
 
 ---
 

@@ -19,7 +19,7 @@ const holds = (rows: Record<string, string>[], value: string, n: number) =>
  * Ask over LDBC SNB, both of an answer's verbs: the page filtered to women, a question about what is
  * in view whose answer keeps everything in it — every browser, so *Filter the page to these rows* is
  * disabled — added to the dashboard and opened there; then a question whose answer has a where —
- * the women on Opera — and the page filtered to it, the same 22 framed in the Graph view.
+ * the women on Opera — and the page filtered to it, the 19 its bars draw framed in the Graph view.
  *
  * The model's words are replayed from `recordings/snb-ask.json` (record/model.ts): the `answer` tool
  * it calls still runs on the page under its filter, so the chart and its rows are DuckDB's on every
@@ -99,19 +99,21 @@ demo("snb-ask", "Ask over LDBC SNB: an answer added to the dashboard and opened 
       check: async () => expect(replay.unrecorded, "model calls the recording does not hold: capture it again").toEqual([]),
     },
     {
-      subtitle: "This one filters: keep the 22 women on Opera",
+      // What the answer draws is what it keeps: the 19 women in the 13 countries its bars show, of
+      // the 22 on Opera in 16 (STORYBOARD.md).
+      subtitle: "This one filters: keep the women it drew",
       action: () => answers.filterTo(),
-      check: () => expect.poll(() => discover.figure("Rows")).toBe("22"),
+      check: () => expect.poll(() => discover.figure("Rows")).toBe("19"),
     },
     {
-      subtitle: "The same 22 in the graph, framed",
+      subtitle: "The same 19 in the graph, framed",
       async action() {
         await discover.view("Graph");
         const graph = await discover.graph();
         await graph.ready();
         await graph.frame();
       },
-      check: () => expect.poll(() => discover.counts()).toMatch(/^22 of /),
+      check: () => expect.poll(() => discover.counts()).toMatch(/^19 of /),
     },
   ],
 

@@ -97,8 +97,21 @@ for (const c of ASK) {
     try {
       for (const question of c.ask) {
         const asked = Date.now();
-        await answers.ask(question);
-        answered = await (await answers.answer()).text();
+        // A call that fails draws the panel's Problem and no card: the case ends there, with its code,
+        // rather than waiting out the clock for a card that is not coming.
+        const problems = page.locator('[data-slot="chat-error"] [data-code], [data-problem][data-code]');
+        const before = await problems.count();
+        const failed = problems
+          .nth(before)
+          .waitFor({ timeout: QUESTION_MS })
+          .then(async () => {
+            const problem = problems.nth(before);
+            throw new Error(`the panel failed: ${await problem.getAttribute("data-code")}: ${(await problem.textContent())?.trim()}`);
+          });
+        await Promise.race([answers.ask(question).then(() => answers.answer()), failed]).then(async (tile) => {
+          answered = await tile.text();
+        });
+        void failed.catch(() => undefined);
         turns.push(Date.now() - asked);
       }
       // An answer that read no rows draws no data table; asked of the harness, that is a wait to its

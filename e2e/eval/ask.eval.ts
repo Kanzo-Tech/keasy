@@ -109,6 +109,7 @@ for (const c of ASK) {
     let rows: Record<string, string>[] = [];
     let failure: string | undefined;
     let answered: string | undefined;
+    let card: { text: string; tables: number } | undefined;
     try {
       for (const question of c.ask) {
         const asked = Date.now();
@@ -154,6 +155,10 @@ for (const c of ASK) {
       ]).catch(() => undefined);
       if (read === undefined) failure = "the answer read no rows";
       else rows = read;
+      // The whole card, not only its chart: it says the clauses it was read under and the ones it
+      // could not answer, which is what an answer over the wrong rows needs to say.
+      const last = page.locator('[data-slot="answer-card"]').last();
+      card = { text: (await last.innerText().catch(() => "")).slice(0, 1500), tables: await last.locator("table").count() };
     } catch (error) {
       failure = error instanceof Error ? error.message.split("\n")[0] : String(error);
       // A run stopped from outside — Ctrl-C, a second run over it — ends the test under every wait,
@@ -168,6 +173,7 @@ for (const c of ASK) {
       failure,
       answered,
       kept,
+      card,
       missing,
       present,
       rows: rows.slice(0, 10),

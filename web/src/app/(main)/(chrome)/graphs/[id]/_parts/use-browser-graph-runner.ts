@@ -2,6 +2,7 @@ import { useSyncExternalStore } from "react";
 import { ApiError, http, invalidate, type Schemas } from "@/lib/api/client";
 import { bounds } from "@/lib/api/spec";
 import { host } from "@/lib/fossil/host";
+import { runInWorker } from "@/lib/fossil/run-worker";
 import { toastError, wireOf } from "@/lib/errors";
 
 /**
@@ -137,7 +138,7 @@ const STOPPED = "Stopped";
 
 /**
  * Run `graph` here — the server has made this caller its runner (`POST /v1/graphs/{id}/run`). The browser
- * is the worker: it runs the program with fossil's executor (`run`) — sources read and the corpus
+ * is the worker: it runs the program with fossil's executor (`run`, in a Web Worker) — sources read and the corpus
  * written through credentials keasy vends to the runner alone — holding the lease while it does, and
  * reports how it ended. Only ever called from an explicit Run; opening a page never runs anything.
  */
@@ -160,12 +161,12 @@ export function startRun(graph: Schemas["Graph"]): void {
 
   void (async () => {
     try {
-      const mod = await import("@fossil-lang/executor");
       // `run` reads every document and source the program names through the host, writes the
-      // corpus under the graph, and answers its report or throws its `FossilError`. The report crosses
-      // untouched — `GraphStatusReport.report` is opaque JSON on the server — and is asked again for as
-      // long as the lease is ours.
-      const report = await mod.run(program, { host, job: graphId, signal: run.signal });
+      // corpus under the graph, and answers its report or throws its `FossilError` — in a worker of
+      // its own, so the page paints and its Stop is pressable while it does (`run-worker.ts`). The
+      // report crosses untouched — `GraphStatusReport.report` is opaque JSON on the server — and is
+      // asked again for as long as the lease is ours.
+      const report = await runInWorker(program, { host, job: graphId, signal: run.signal });
       ran = true;
       await held.report(() => reportStatus(graphId, { status: "completed", report }));
     } catch (err) {

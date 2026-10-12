@@ -1,5 +1,5 @@
 import { DiscoverPage, saveDashboard } from "../support/app";
-import { test } from "../support/fixtures";
+import { expect, test } from "../support/fixtures";
 import { hasExample, seedGraph } from "../support/seeds";
 import { ASK, type Pair } from "./cases";
 import { warmUp } from "./model";
@@ -74,9 +74,19 @@ for (const c of ASK) {
     await discover.relation(c.page.root, c.page.hops ?? []);
     const dashboard = await discover.dashboard();
     await dashboard.settled();
+    // What the page keeps, as its readout says, once the filter has taken: the proof the case asked
+    // under it. A pick takes effect after it returns, so the readout is waited on, as the demo waits.
+    const whole = await discover.kept();
     if (filter && title) await (await (await dashboard.tile(title)).chart()).pick({ y: filter.pick });
-    // What the page keeps once filtered, as its readout says: the proof the case asked under its filter.
-    const kept = await discover.kept();
+    const kept = filter
+      ? await expect.poll(() => discover.kept(), { timeout: 30_000 }).not.toBe(whole).then(
+          () => discover.kept(),
+          () => undefined,
+        )
+      : whole;
+    if (filter && kept === undefined) {
+      return record("ask", { case: c.id, pass: false, failure: "the page was not filtered: the case could not be set up", missing: c.holds, present: [], rows: [], calls: [], turns: [], ms: 0 });
+    }
     await page.addStyleTag({ content: ".tsqd-parent-container { display: none !important; }" });
     await discover.panel("Ask");
     const panel = await discover.ask();
@@ -136,11 +146,14 @@ for (const c of ASK) {
       }
       // An answer that read no rows draws no data table; asked of the harness, that is a wait to its
       // timeout for a table that will not come.
-      const table = page.getByRole("table", { name: /^The rows the answer was read from/ });
-      // The table follows the card's chart; it is given a moment before the answer counts as rowless.
-      await table.last().waitFor({ state: "attached", timeout: 15_000 }).catch(() => undefined);
-      if ((await table.count()) === 0) failure = "the answer read no rows";
-      else rows = await answers.rows();
+      // The rows as the library's harness reads them, the demo's way. It waits for the table as long
+      // as any harness wait; an answer that read no rows draws none, so it is given 20 s, not that.
+      const read = await Promise.race([
+        answers.rows(),
+        new Promise<undefined>((resolve) => setTimeout(resolve, 20_000, undefined)),
+      ]).catch(() => undefined);
+      if (read === undefined) failure = "the answer read no rows";
+      else rows = read;
     } catch (error) {
       failure = error instanceof Error ? error.message.split("\n")[0] : String(error);
     }

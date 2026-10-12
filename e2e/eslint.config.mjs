@@ -51,6 +51,7 @@ const eslintConfig = defineConfig([
       "playwright/no-wait-for-timeout": "off",
       "playwright/no-conditional-in-test": "off",
       "playwright/expect-expect": "off",
+      "playwright/no-conditional-expect": "off",
       "playwright/no-skipped-test": ["warn", { allowConditional: true }],
     },
   },

@@ -106,8 +106,8 @@ headers adds one, and asserts `crossOriginIsolated`.
 
 ## Order
 
-keasy's part of phase 1 is the evaluation set, under `e2e/eval`: Ask's cases (`cases.ts`, growing to
-about a hundred per corpus, each with its expected rows) and the four examples for the assistant,
+keasy's part of phase 1 is the evaluation set, under `e2e/eval`: Ask's cases (`cases.ts`, one or two per
+shape of question: about 25 on Nobel and about 10 on LDBC SNB, each with its expected rows) and the four examples for the assistant,
 kept as data for the new assistant. `EVAL_MODEL=<label> pnpm --filter @keasy/e2e eval` asks today's
 Ask once, as a reference number; `writeProgram` is not measured, it is replaced whole. The first
 pass already says why: Qwen3-4B picked the relation that reaches the page's filter, and the answer

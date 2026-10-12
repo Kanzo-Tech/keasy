@@ -1,11 +1,14 @@
 /**
- * **The evaluation set** — phase 0 of Kanzo Tasks (kanzo-ui's `/docs/design/tasks`, keasy's
+ * **The evaluation set** — phase 1 of Kanzo Tasks (kanzo-ui's `/docs/design/tasks`, keasy's
  * `docs/design/assistant.md`). Written by hand and never trained on: a case is what a reader asks and
  * what the data says the answer is, so the same set scores today's agent, a Task, and every model
  * either is run with.
  *
  * Every figure is the example's own, computed with DuckDB over `infra/dev/examples/<name>/data` — the
  * query beside each, or the storyboard's (`e2e/demos/STORYBOARD.md`, **Numbers**) where it is cited.
+ * Ask's cases are by shape of question, not by count: Nobel for nearly every shape, LDBC SNB for
+ * what Nobel lacks — self-joins and a large graph. The set grows with readers' failures.
+ *
  * A case is scored by **execution accuracy**: the rows the answer was read from (its card's data
  * table, the engine's) hold every `holds` pair and no `lacks` pair. A pair is a label and a count,
  * read as `holds()` in `demos/nobel-ask.demo.ts` reads one; a label of `null` is a figure, any cell.
@@ -96,23 +99,6 @@ export const ASK: readonly AskCase[] = [
     // select co.name, count(*) from laureates l join countries co on co.id = l.country group by 1
     holds: [["USA", 296], ["Germany", 84]],
     tests: "a two-type hop the screen does not show",
-  },
-  // flights-* (STORYBOARD.md, OpenFlights' Numbers).
-  {
-    id: "flights-airports-by-country",
-    example: "openflights",
-    page: { root: "Airport" },
-    ask: ["Which countries have the most airports?"],
-    holds: [["United States", 551], ["Canada", 206], ["China", 173]],
-    tests: "a ranking over the relation on screen",
-  },
-  {
-    id: "flights-spain",
-    example: "openflights",
-    page: { root: "Airport" },
-    ask: ["How many airports are there in Spain?"],
-    holds: [[null, 40]],
-    tests: "a figure with a where on a category's value",
   },
   // snb-explore (STORYBOARD.md §1).
   {

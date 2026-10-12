@@ -108,10 +108,25 @@ for (const c of ASK) {
             const problem = problems.nth(before);
             throw new Error(`the panel failed: ${await problem.getAttribute("data-code")}: ${(await problem.textContent())?.trim()}`);
           });
-        await Promise.race([answers.ask(question).then(() => answers.answer()), failed]).then(async (tile) => {
+        // A model that writes prose and never calls `answer` draws neither: its turn ends, the
+        // composer is ready again, and no card began. That ends the case too, as soon as it happens.
+        const cards = page.locator('[data-slot="answer-card"]');
+        const cardsBefore = await cards.count();
+        const submit = page.locator('[data-slot="prompt-input-submit"]').last();
+        const prose = (async () => {
+          for (;;) {
+            await page.waitForTimeout(2_000);
+            if (Date.now() - asked > 5_000 && (await submit.getAttribute("data-status")) === "ready" && (await cards.count()) === cardsBefore) {
+              throw new Error("the model answered without calling answer");
+            }
+            if ((await cards.count()) > cardsBefore) return new Promise<never>(() => {});
+          }
+        })();
+        await Promise.race([answers.ask(question).then(() => answers.answer()), failed, prose]).then(async (tile) => {
           answered = await tile.text();
         });
         void failed.catch(() => undefined);
+        void prose.catch(() => undefined);
         turns.push(Date.now() - asked);
       }
       // An answer that read no rows draws no data table; asked of the harness, that is a wait to its

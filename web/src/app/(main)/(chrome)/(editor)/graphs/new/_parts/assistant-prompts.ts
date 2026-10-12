@@ -1,7 +1,7 @@
 import type { InferredDescriptor } from "@fossil-lang/types";
 import { FOSSIL_PROMPT } from "@fossil-lang/prompt";
 
-import { type Proposal, suggest } from "@kanzo-tech/ai";
+import type { Proposal } from "@kanzo-tech/ai";
 import { jsonSchema, Output, stream } from "@kanzo-tech/llm";
 import { gateway } from "@/lib/ai";
 
@@ -42,17 +42,25 @@ export function describeFiles(sources: readonly InferredDescriptor[]): string {
     .join("");
 }
 
-/**
- * Competency questions for the data, each arriving as soon as it is whole — `@kanzo-tech/ai`'s
- * `suggest()`, the one door to suggested questions, with the wizard's own instructions and material.
- */
+const QUESTION = jsonSchema<Proposal>({
+  type: "object",
+  properties: {
+    text: { type: "string", description: "The question." },
+    rationale: { type: "string", description: "One sentence naming the columns it rests on." },
+  },
+  required: ["text", "rationale"],
+  additionalProperties: false,
+});
+
+/** Competency questions for the data, each arriving as soon as it is whole. */
 export function suggestQuestions(domain: string, schemas: readonly InferredDescriptor[], signal: AbortSignal) {
-  return suggest({
+  return stream({
     model: gateway("chat"),
-    instructions: SUGGEST_PROMPT,
+    system: SUGGEST_PROMPT,
     prompt: `Domain: ${domain}\n\n${describeFiles(schemas)}`,
+    output: Output.array({ element: QUESTION }),
     abortSignal: signal,
-  });
+  }).elements;
 }
 
 const PROGRAM = jsonSchema<{ program: string }>({

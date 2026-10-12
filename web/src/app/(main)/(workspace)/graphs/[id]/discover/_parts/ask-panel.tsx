@@ -5,24 +5,34 @@ import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Sparkles } from "lucide-react";
 import { useClauses, useMosaic, type JoinGraph } from "@kanzo-tech/ui/analytics";
 import { Badge, EmptyDescription, EmptyHeader, EmptyIndicator, EmptyRoot } from "@kanzo-tech/ui";
-import { Chat, ChatSkeleton, useAgentChat } from "@kanzo-tech/ai";
-import { AnswerCard, answerRelationsOf, dataAgent, dataSuggestions, readAnswerRelations, type AnswerRelation } from "@kanzo-tech/ai/data";
+import { Chat, ChatSkeleton } from "@kanzo-tech/ai";
+import {
+  AnswerCard,
+  answerRelationsOf,
+  askEdit,
+  AskChips,
+  askOffers,
+  readAnswerRelations,
+  useAskChat,
+  type AnswerRelation,
+  type AskOutput,
+} from "@kanzo-tech/ai/data";
 import { problemCopy, ProblemView } from "@/components/problem-view";
 import { gateway } from "@/lib/ai";
 import { settled } from "@/lib/api/settled";
 import { coded } from "@/lib/errors";
-import { useModelContext } from "@/lib/model-windows-context";
 import { corpusKey, ONCE, useCorpus, useJoinGraph } from "@/lib/fossil/corpus";
 import { useDashboardStore } from "./dashboard-store";
-import { startersQuery } from "./starters";
 
 /**
- * The Ask panel — `@kanzo-tech/ai/data` over the graph: `readAnswerRelations` over the corpus's join
- * graph, `dataAgent` on the page's engine under the page's one selection, `dataSuggestions` as the
- * pills, and each answer an `AnswerCard` — the dashboard tile it is, which *Filter the page to these
- * rows* narrows the page to (when it filters at all), *Add to the dashboard* adds to the Dashboard
- * view's saved document, and *Open on the dashboard* then shows there. Nothing here writes SQL, and
- * neither does the model: it names a relation, conditions and a tile.
+ * The Ask panel — `@kanzo-tech/ai/data` over the graph: each type of the corpus's join graph read
+ * alone (`readAnswerRelations`), each question one run of the `ask` Task on the page's engine under
+ * the page's one selection (`useAskChat`), its own checked offers as the pills (`askOffers`), and each
+ * answer an `AnswerCard` — the dashboard tile it is, which *Filter the page to these rows* narrows the
+ * page to (when it filters at all), *Add to the dashboard* adds to the Dashboard view's saved
+ * document, and *Open on the dashboard* then shows there — with `AskChips` under it, each part of
+ * what the answer was read as, open to its checked alternatives and asked again with no model.
+ * Nothing here writes SQL, and neither does the model: it fills a spec, and the relation is computed.
  */
 export function AskPanel() {
   return (
@@ -48,9 +58,8 @@ function AskEmpty() {
 }
 
 /**
- * What may be asked about, as the model reads it, once per graph: each type alone and through each
- * of its hops (`answerRelationsOf`, as the `RelationPicker` first offers them), their fields and their
- * common values.
+ * What may be asked about, once per graph: each type alone (`answerRelationsOf`, no hops — the relation
+ * an answer needs is computed from its spec), its fields and their common values.
  */
 function useRelations(graph: JoinGraph): AnswerRelation[] {
   const { graphId } = useCorpus();
@@ -58,7 +67,7 @@ function useRelations(graph: JoinGraph): AnswerRelation[] {
   return settled(
     useSuspenseQuery({
       queryKey: [...corpusKey(graphId), "answer-relations"],
-      queryFn: ({ signal }) => readAnswerRelations(coordinator, graph, answerRelationsOf(graph), { signal }),
+      queryFn: ({ signal }) => readAnswerRelations(coordinator, graph, answerRelationsOf(graph, { hops: 0 }), { signal }),
       ...ONCE,
     }),
   );
@@ -66,27 +75,23 @@ function useRelations(graph: JoinGraph): AnswerRelation[] {
 
 /**
  * Questions to start from, cached per graph and per filter: a filter changed is a different question
- * to ask. Streamed, so the pills land one by one; a failure is drawn in their place, with a retry,
- * and the chat works the same. A few short questions are a completion: `gateway("complete")`.
+ * to ask. Ask's own offers, each checked before it is shown, so every pill is one the chat answers. A
+ * failure is drawn in their place, with a retry, and the chat works the same.
  */
-function useStarters(graph: JoinGraph, relations: readonly AnswerRelation[]) {
+function useStarters(graph: JoinGraph, types: readonly AnswerRelation[]) {
   const { graphId } = useCorpus();
   const { selection } = useMosaic();
-  const context = useModelContext("complete");
   // Re-rendered on every clause, so the key below is the filter as it is now.
   useClauses(selection);
   const starters = useQuery({
     queryKey: [...corpusKey(graphId), "starters", String(selection.predicate(null) ?? "")],
-    // Each request replaces the last, and one cut short by a filter change leaves nothing behind.
-    queryFn: startersQuery(({ signal }) =>
-      dataSuggestions({ model: gateway("complete"), graph, relations, selection, context, abortSignal: signal }),
-    ),
+    queryFn: ({ signal }) => askOffers({ model: gateway("chat"), graph, types, selection, signal }),
     staleTime: Infinity,
     retry: false,
   });
   return {
-    suggesting: starters.fetchStatus === "fetching",
-    proposals: starters.isError ? [] : (starters.data ?? []),
+    proposing: starters.fetchStatus === "fetching",
+    proposals: starters.isError ? [] : (starters.data ?? []).map(({ text }) => ({ text })),
     failure: starters.isError && (
       <ProblemView className="w-full" error={starters.error} onRetry={() => void starters.refetch()} uncoded="llm/failed" />
     ),
@@ -123,32 +128,37 @@ function SubsetPill() {
 function AskChat() {
   const { selection } = useMosaic();
   const { engine } = useCorpus();
-  const context = useModelContext("chat");
   const graph = useJoinGraph();
-  const relations = useRelations(graph);
-  const agent = useMemo(
-    () => dataAgent({ model: gateway("chat"), engine, graph, relations, selection, context }),
-    [engine, graph, relations, selection, context],
-  );
-  const chat = useAgentChat(agent);
-  const starters = useStarters(graph, relations);
+  const types = useRelations(graph);
+  const chat = useAskChat({ model: gateway("chat"), engine, graph, types, selection });
+  const over = useMemo(() => ({ graph, types }), [graph, types]);
+  const starters = useStarters(graph, types);
   const adding = useAdding();
 
   return (
     <div className="flex h-full min-h-0 flex-col">
       <Chat
-        // What stopped the answer, by its code: a silence or a spent budget as `@kanzo-tech/llm` names
-        // it, and anything uncoded as `llm/failed`, in keasy's words.
+        // What stopped the answer, by its code as `@kanzo-tech/llm` names it, and anything uncoded as
+        // `llm/failed`, in keasy's words.
         chat={{ ...chat, error: chat.error === undefined ? undefined : coded(chat.error, "llm/failed") }}
         copy={problemCopy}
         className="p-2"
         context={<SubsetPill />}
         empty={<AskEmpty />}
         notice={starters.failure}
-        suggesting={starters.suggesting}
-        suggestions={starters.proposals}
+        proposing={starters.proposing}
+        proposals={starters.proposals}
         tools={{
-          answer: (part, { stopped }) => <AnswerCard copy={problemCopy} graph={graph} part={part} stopped={stopped} {...adding} />,
+          answer: (part, { stopped }) => {
+            // What the answer was read as, each part a chip: taking one asks the edited spec, no model.
+            const spec = part.state === "output-available" ? (part.output as AskOutput).spec : undefined;
+            return (
+              <div className="flex flex-col gap-2">
+                <AnswerCard copy={problemCopy} graph={graph} part={part} stopped={stopped} {...adding} />
+                {spec && <AskChips onChange={(next) => void chat.sendMessage(askEdit(next))} over={over} spec={spec} />}
+              </div>
+            );
+          },
         }}
         translations={{ placeholder: "Ask about your data…" }}
       />

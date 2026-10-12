@@ -75,6 +75,8 @@ for (const c of ASK) {
     const dashboard = await discover.dashboard();
     await dashboard.settled();
     if (filter && title) await (await (await dashboard.tile(title)).chart()).pick({ y: filter.pick });
+    // What the page keeps once filtered, as its readout says: the proof the case asked under its filter.
+    const kept = await discover.kept();
     await page.addStyleTag({ content: ".tsqd-parent-container { display: none !important; }" });
     await discover.panel("Ask");
     const panel = await discover.ask();
@@ -135,6 +137,8 @@ for (const c of ASK) {
       // An answer that read no rows draws no data table; asked of the harness, that is a wait to its
       // timeout for a table that will not come.
       const table = page.getByRole("table", { name: /^The rows the answer was read from/ });
+      // The table follows the card's chart; it is given a moment before the answer counts as rowless.
+      await table.last().waitFor({ state: "attached", timeout: 15_000 }).catch(() => undefined);
       if ((await table.count()) === 0) failure = "the answer read no rows";
       else rows = await answers.rows();
     } catch (error) {
@@ -147,6 +151,7 @@ for (const c of ASK) {
       pass: !failure && missing.length === 0 && present.length === 0,
       failure,
       answered,
+      kept,
       missing,
       present,
       rows: rows.slice(0, 10),

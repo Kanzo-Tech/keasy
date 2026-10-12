@@ -109,10 +109,15 @@ headers adds one, and asserts `crossOriginIsolated`.
 keasy's part of phase 1 is the evaluation set, under `e2e/eval`: Ask's cases (`cases.ts`, one or two per
 shape of question: about 25 on Nobel and about 10 on LDBC SNB, each with its expected rows) and the four examples for the assistant,
 kept as data for the new assistant. `EVAL_MODEL=<label> pnpm --filter @keasy/e2e eval` asks today's
-Ask once, as a reference number; `writeProgram` is not measured, it is replaced whole. The first
-pass already says why: Qwen3-4B picked the relation that reaches the page's filter, and the answer
-still read no rows, because today's Ask keeps a page's clause only when the answer's relation has its
-column, where the dashboard's tiles cross it by the prize's key. Phase 1 (Ask as a Task) touches
+Ask once, as a reference number; `writeProgram` is not measured, it is replaced whole. The reference pass (2026-10-12, Qwen3-4B through Model Runner, today's Ask) answered **2 of 10**
+right — prizes by category and airports by country. Two failed on the page's filter: the model picked
+a relation that reaches it, and the answer read no rows, because today's Ask kept a page's clause only
+when the answer's relation had its column (fixed in kanzo-ui, where the answer now crosses a chip as
+the dashboard's tiles do). Five failed on the call itself: the model reasoned its way to the where —
+*gender female*, *country Spain*, *born 1985–1989* — and called `answer` without it, or answered a
+breakdown as one figure. One asked what the spec cannot say (*more than one prize*, a filter on a
+count). Those are what the Task addresses: a small spec decoded against its schema, and oracles that
+send back a spec that drops what the question asked for. Phase 1 (Ask as a Task) touches
 `discover/_parts/ask-panel.tsx`; phase 3 replaces the wizard with the three screens and retires the
 gateway, the BFF's `/api/ai` forward and their configuration. The phases are on
 [Tasks](https://kanzo-tech.github.io/ui/docs/design/tasks#phases).

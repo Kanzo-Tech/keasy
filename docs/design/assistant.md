@@ -106,8 +106,13 @@ headers adds one, and asserts `crossOriginIsolated`.
 
 ## Order
 
-Phase 0 is keasy's first: an evaluation set under `e2e/eval` — Ask's storyboards, and the four
-examples (nobel, openflights, snb, cordis) for the assistant — and a baseline of today's system
-with three or four small models, the WebLLM provider behind `LanguageModel` among them, measured on
-real devices. Phase 1 (Ask as a Task) touches `discover/_parts/ask-panel.tsx`; phase 3 replaces the
-wizard with the three screens. The phases are on [Tasks](https://kanzo-tech.github.io/ui/docs/design/tasks#phases).
+keasy's part of phase 1 is the evaluation set, under `e2e/eval`: Ask's cases (`cases.ts`, growing to
+about a hundred per corpus, each with its expected rows) and the four examples for the assistant,
+kept as data for the new assistant. `EVAL_MODEL=<label> pnpm --filter @keasy/e2e eval` asks today's
+Ask once, as a reference number; `writeProgram` is not measured, it is replaced whole. The first
+pass already says why: Qwen3-4B picked the relation that reaches the page's filter, and the answer
+still read no rows, because today's Ask keeps a page's clause only when the answer's relation has its
+column, where the dashboard's tiles cross it by the prize's key. Phase 1 (Ask as a Task) touches
+`discover/_parts/ask-panel.tsx`; phase 3 replaces the wizard with the three screens and retires the
+gateway, the BFF's `/api/ai` forward and their configuration. The phases are on
+[Tasks](https://kanzo-tech.github.io/ui/docs/design/tasks#phases).

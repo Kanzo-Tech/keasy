@@ -56,6 +56,15 @@ export default defineConfig({
       // The seeds are large graphs, laid out live: on the GPU, as a reader with one sees them.
       use: { storageState: ".auth/editor.json", launchOptions: GPU },
     },
+    // The evaluation set (eval/, Kanzo Tasks' phase 0): every case asked of the model the stack's
+    // aliases point at, scored and written to eval/results/<EVAL_MODEL>/. Live, slow, and never part of
+    // `test`: it names the projects it runs, as for the demos.
+    {
+      name: "eval",
+      testMatch: /eval\/.*\.eval\.ts$/,
+      dependencies: ["setup"],
+      use: { storageState: ".auth/editor.json", trace: "off" },
+    },
     // Product demos, recorded rather than asserted (demos/, `make demo`). Never part of `test`:
     // it names the projects it runs, so CI and `make e2e` do not record.
     {

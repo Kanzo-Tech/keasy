@@ -40,6 +40,20 @@ const eslintConfig = defineConfig([
       "playwright/no-skipped-test": ["warn", { allowConditional: true }],
     },
   },
+  {
+    // An evaluation case measures a model rather than asserting the product: a case the model fails is
+    // a result written down, so its branches are the scoring and not a test that hides a path. The
+    // wizard's requirements stream in with no event that says the last one arrived, so the list is
+    // read once it has stopped growing — a wait on a value, which has no element to wait for. And a
+    // case whose example is not seeded is skipped by that condition.
+    files: ["eval/**/*.ts"],
+    rules: {
+      "playwright/no-wait-for-timeout": "off",
+      "playwright/no-conditional-in-test": "off",
+      "playwright/expect-expect": "off",
+      "playwright/no-skipped-test": ["warn", { allowConditional: true }],
+    },
+  },
   globalIgnores(["node_modules/**", "playwright-report/**", "test-results/**", ".auth/**", "demos/out/**"]),
 ]);
 

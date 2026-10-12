@@ -2,6 +2,7 @@ import { DiscoverPage, saveDashboard } from "../support/app";
 import { test } from "../support/fixtures";
 import { hasExample, seedGraph } from "../support/seeds";
 import { ASK, type Pair } from "./cases";
+import { warmUp } from "./model";
 import { record } from "./record";
 
 /**
@@ -77,9 +78,11 @@ for (const c of ASK) {
     await page.addStyleTag({ content: ".tsqd-parent-container { display: none !important; }" });
     await discover.panel("Ask");
     const panel = await discover.ask();
-    // The model loaded and answering before the clock starts: a first call after a load can outlast
-    // the gateway's 20 s to a first token, which would score the load and not the model.
-    await panel.warmUp();
+    const cold = await warmUp(page, QUESTION_MS).then(
+      () => undefined,
+      (error: Error) => error.message,
+    );
+    if (cold) return record("ask", { case: c.id, pass: false, failure: cold, missing: c.holds, present: [], rows: [], calls: [], turns: [], ms: 0 });
     const answers = await panel.composer();
 
     // Every model call the page makes from here on, as it was streamed back.

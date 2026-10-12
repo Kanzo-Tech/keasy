@@ -1,8 +1,9 @@
-import { expect, type Page } from "@playwright/test";
+import type { Page } from "@playwright/test";
 
 import { test } from "../support/fixtures";
 import { hasExample } from "../support/seeds";
 import { ASSISTANT } from "./cases";
+import { warmUp } from "./model";
 import { record } from "./record";
 
 /**
@@ -41,23 +42,7 @@ for (const c of ASSISTANT) {
     try {
       await page.goto("/graphs/new");
       await page.addStyleTag({ content: ".tsqd-parent-container { display: none !important; }" });
-      // Both aliases loaded and answering before anything is timed, as AskPanel.warmUp does for Ask.
-      for (const alias of ["chat", "complete"]) {
-        await expect
-          .poll(
-            () =>
-              page.evaluate(async (model) => {
-                const response = await fetch("/api/ai/chat/completions", {
-                  method: "POST",
-                  headers: { "content-type": "application/json" },
-                  body: JSON.stringify({ model, messages: [{ role: "user", content: "Reply with: ok" }], max_tokens: 8, stream: false }),
-                });
-                return response.status;
-              }, alias),
-            { timeout: STEP_MS, intervals: [5_000] },
-          )
-          .toBe(200);
-      }
+      await warmUp(page, STEP_MS);
       await page.getByText("Assistant", { exact: true }).click();
 
       // Ark draws a checkbox's control over its input: ticked from the keyboard, as in ai.spec.ts.

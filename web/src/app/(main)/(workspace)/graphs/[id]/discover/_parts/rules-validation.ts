@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { and, column, count, createTable, type ExprNode, isIn, literal, Query, sql, TableRefNode } from "@uwdata/mosaic-sql";
-import { engine, numbers, useClauses, useCrossfilter, useMosaic } from "@kanzo-tech/ui/analytics";
+import { engine, numbers, useClauses, useMosaic } from "@kanzo-tech/ui/analytics";
 import { usePick } from "@kanzo-tech/graph";
 import type { RdfFindingGroup, RdfFindingGroups, RdfPlace, Shapes, ShapeModelJson, TermValue } from "@kanzo-tech/rudof-wasm";
 import { type FindingSeverity, type FindingTally, tallyFindings } from "@kanzo-tech/ui";
@@ -12,8 +12,8 @@ import { corpusKey, useCorpus, useGraphKey, useVertices } from "@/lib/fossil/cor
 /**
  * A graph's rules, run by rudof on the page's one DuckDB over the corpus as RDF — the
  * `"<graph>".triples` view fossil's `attach` creates. rudof parses the file, validates the triples
- * whose subjects are in the page's subset, and writes the Shape Fragment of what conforms; keasy
- * only says which subset and reads the answer back.
+ * whose subjects are in the page's subset, and writes the Shape Fragment of what conforms with the
+ * focus nodes that conform beside it; keasy only says which subset and reads the answer back.
  */
 
 /** rudof's SHACL stack, instantiated once and only when the rules are read: the graph never loads it. */
@@ -85,8 +85,13 @@ export interface Checked {
   subset: string | undefined;
   /** The rules file checked, as it was. */
   shapes: string;
-  /** Per rule, how many vertices each severity flags, each once: the N of *Show all N violations*. */
-  flagged: Record<string, Partial<Record<FindingSeverity, number>>>;
+  /** Per rule, how many vertices it flags, each once whatever the severity: the N of its *Show N*. */
+  flagged: Record<string, number>;
+  /**
+   * How many of the subset's vertices some rule flags, each once: the scope line's *N conform* is
+   * `inScope` less these. A warning is a result too, so a vertex with one does not conform.
+   */
+  broken: number;
 }
 
 /** Why the last check no longer says what the page holds: a filter changed, or the file did. */
@@ -105,7 +110,7 @@ export function useRules(rules: ReadRules | undefined, text: string) {
   const { coordinator } = useMosaic();
   const pick = usePick(PICK);
   // Re-rendered on every clause, only so the badge can say the subset moved since the last check.
-  useClauses(useCrossfilter());
+  useClauses(useMosaic().selection);
   const vertices = useVertices();
   const key = useGraphKey();
   const predicate = pick.predicate();
@@ -155,12 +160,7 @@ export function useRules(rules: ReadRules | undefined, text: string) {
       const counted = Query.from(vertices).select({ total: count(), inScope: predicate.length ? count().where(and(...predicate)) : count() });
       const answer = await attachedTo.query(String(counted), { signal });
       const placed = findings.groups.map((group) => ({ ...group, vertices: nodesOf([group]).length }));
-      const flagged = Object.fromEntries(
-        rulesOf(rules.model, { ...findings, groups: placed }).map((rule) => [
-          rule.id,
-          Object.fromEntries((["violation", "warning", "info"] as const).map((severity) => [severity, nodesOf(rule.groups, severity).length])),
-        ]),
-      );
+      const flagged = Object.fromEntries(rulesOf(rules.model, { ...findings, groups: placed }).map((rule) => [rule.id, nodesOf(rule.groups).length]));
       const groups = placed.map((group) => ({ ...group, places: [] }));
       const checked: Checked = {
         findings: { conforms: findings.conforms, groups, unchecked: findings.unchecked },
@@ -169,6 +169,7 @@ export function useRules(rules: ReadRules | undefined, text: string) {
         subset: over,
         shapes: text,
         flagged,
+        broken: nodesOf(findings.groups).length,
       };
       if (running.current === run) setState({ checked, checking: false });
     } catch (failure) {
@@ -231,19 +232,28 @@ export function useRules(rules: ReadRules | undefined, text: string) {
       const wanted = groupKey(group);
       await showNodes(await nodesAgain(rule, (g) => groupKey(g) === wanted), label);
     },
+    /** Show every vertex `rule` flags, of any severity, found again, each once: the rule's *Show N*. */
+    showRule: async (rule: Rule, label: string) => {
+      await showNodes(await nodesAgain(rule, () => true), label);
+    },
     /** Show every vertex `rule` flags with `severity`, found again, each once. */
     showSeverity: async (rule: Rule, severity: FindingSeverity, label: string) => {
       const wanted = new Set(rule.groups.filter((g) => g.severity === severity).map(groupKey));
       await showNodes(await nodesAgain(rule, (g) => wanted.has(groupKey(g))), label);
     },
-    /** Show what conforms: rudof's Shape Fragment of the subset, its subjects the panel's clause. */
+    /**
+     * Keep what conforms: the focus nodes no rule reports anything for, as rudof names them beside
+     * its Shape Fragment, the panel's clause. Not the fragment's subjects: a fragment holds each
+     * conforming node's neighbourhood, so a `sh:class` on a route took in every airport it reaches.
+     */
     conforming: async (label: string) => {
       const into = String(new TableRefNode([graphId, "rules_fragment"]));
+      const conforming = String(new TableRefNode([graphId, "rules_conforming"]));
       // Asked for by a press, and nothing stops it once asked: a signal that never aborts.
       const { signal } = new AbortController();
       const { attachedTo, focus } = await prepared(subset, "rules_focus", signal);
-      await rules!.shapes.fragment({ table: triples, focus, engine: attachedTo, into, signal });
-      await publish(sql`${column("subject")} IN (SELECT s_value FROM ${into})`, label);
+      await rules!.shapes.fragment({ table: triples, focus, engine: attachedTo, into, conforming, signal });
+      await publish(sql`${column("subject")} IN (SELECT s_value FROM ${conforming})`, label);
     },
   };
 }
@@ -304,7 +314,7 @@ export const tallyOf = (rules: readonly Rule[]): FindingTally => tallyFindings(r
 
 /**
  * The focus nodes of groups, each once: a node that fails two constraints is one vertex on the page.
- * `severity` keeps the groups of one severity, as a rule's *Show all N violations* does.
+ * `severity` keeps the groups of one severity.
  */
 export function nodesOf(groups: readonly Pick<RdfFindingGroup, "places" | "severity">[], severity?: FindingSeverity): string[] {
   const kept = severity ? groups.filter((group) => group.severity === severity) : groups;

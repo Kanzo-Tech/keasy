@@ -71,9 +71,10 @@ test("the flights dashboard draws every tile kind, and holds under a brush and a
   expect(kept).toBeGreaterThan(0);
   expect(kept).toBeLessThan(AIRPORTS);
   await (await (await dashboard.tile("Altitude against latitude")).chart()).settled();
-  // A clause chip reads its source, then its field and range: *Airport Airport.altitude 3976.6 – 7990.0*.
-  expect((await bar.chips()).some((chip) => chip.startsWith("Airport Airport.altitude "))).toBe(true);
-  await bar.remove("Airport Airport.altitude");
+  // A clause chip reads its field and range: *Airport.altitude 3976.6 – 7990.0*. It shows once the
+  // page delivers the brush's clause, a while after the brush.
+  await expect.poll(async () => (await bar.chips()).some((chip) => chip.startsWith("Airport.altitude "))).toBe(true);
+  await bar.remove("Airport.altitude");
   await expect.poll(() => unfiltered(discover, "Airports")).toBe(UNFILTERED);
 
   // The dashboard's filter chip: the 40 airports in Spain. The control's value list is the library's
@@ -113,7 +114,7 @@ test("leaving Discover with a dashboard filter in force logs nothing, and the pa
   expect(counted(await agreedCount(discover, { figure: "Airports" }))).toBeLessThan(AIRPORTS);
   // The dashboard hidden, its clause still on the page, the canvas drawing what it keeps.
   await discover.view("Graph");
-  await expect.poll(() => discover.counts()).toMatch(/ of 3\.2K nodes match/);
+  await expect.poll(async () => (await discover.filters()).readout()).toMatch(/ of 3,218 nodes$/);
 
   // Leaving by a link unmounts the page in the browser: the dashboard withdraws its clause as it
   // goes, and every client still connected asks again. Those queries must not outlive their clients
@@ -135,7 +136,8 @@ test("the flights rules find what the seed lacks: IATA codes, four-letter ICAO c
   // infra/dev/examples/openflights/rules.ttl, dropped on the badge as a person drops it.
   await panel.drop("rules.ttl", rules("openflights"));
   await expect.poll(() => panel.tally(), { timeout: 30_000 }).toBe("Not checked");
-  expect(await panel.check()).toMatch(/^Checked over all 3,218 nodes/);
+  // 288 airports carry a result of either severity (44 ∪ 245, one in both), so 2,930 conform.
+  expect(await panel.check()).toBe("All 3,218 nodes checked · 2,930 conform");
 
   const airport = await panel.rule("Airport");
   // airports.csv: 20 rows with an empty `iata`; 24 whose `icao` is not four capitals (CAJ4, S31, VA1P,
@@ -158,12 +160,11 @@ test("the flights rules find what the seed lacks: IATA codes, four-letter ICAO c
 
   // Show puts the finding's airports on the page.
   expect(await airport.show("The airport has no IANA time zone.")).toBe(29);
-  await expect.poll(() => discover.counts()).toMatch(/^29 of 3\.2K nodes match/);
+  await expect.poll(() => discover.kept()).toBe("29");
 
-  // Show all is every airport one severity flags, each once: 20 + 24 violations share no airport,
-  // and two of the 29 without a time zone are high too, so 29 + 218 warnings are 245 airports.
-  expect(await airport.showAll("warnings")).toBe(245);
-  await expect.poll(() => discover.counts()).toMatch(/^245 of 3\.2K nodes match/);
-  expect(await airport.showAll("violations")).toBe(44);
-  await expect.poll(() => discover.counts()).toMatch(/^44 of 3\.2K nodes match/);
+  // The rule's own Show is every airport it flags, each once, of either severity: 20 + 24 violations
+  // share no airport, two of the 29 without a time zone are high too (245 with a warning), and one
+  // airport has both a violation and a warning — 288.
+  expect(await airport.showAll()).toBe(288);
+  await expect.poll(() => discover.kept()).toBe("288");
 });

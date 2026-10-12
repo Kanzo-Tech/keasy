@@ -284,11 +284,11 @@ Playwright's frames into the MP4. The demos project runs Chromium on the GPU (Me
 `playwright.config.ts`), which the Graph view needs: in software it paints at a frame or two a second.
 
 `make demo` touches no container for a graph demo: Next's dev indicator and React Query's devtools
-are hidden in the recording's browser. A demo that asks the model (`snb-ask`) swaps the AI gateway onto
+are hidden in the recording's browser. A demo that asks the model (`nobel-ask`) swaps the AI gateway onto
 `e2e/demos/models.yml` for the recording and puts the dev models back after. Its model is replayed by
-default, from `e2e/demos/recordings/snb-ask.json`: the model's words are the recording's, and the tool
+default, from `e2e/demos/recordings/nobel-ask.json`: the model's words are the recording's, and the tool
 it calls still runs on the page, so the figures on screen are the corpus's. `LIVE=1` asks the model
-instead, and `make demo DEMO=snb-ask LIVE=1 RECORD=1` captures a new recording, written only once every
+instead, and `make demo DEMO=nobel-ask LIVE=1 RECORD=1` captures a new recording, written only once every
 check of the take has passed (`e2e/demos/record/model.ts`).
 
 **Adding a demo** is a file `e2e/demos/<name>.demo.ts` calling `demo(name, description, { arrange,

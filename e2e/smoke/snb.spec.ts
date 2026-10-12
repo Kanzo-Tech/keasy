@@ -63,8 +63,10 @@ test("the social network's dashboard over a hop draws every tile kind, and holds
   expect(kept).toBeGreaterThan(0);
   expect(kept).toBeLessThan(PATHS);
   await (await (await dashboard.tile("Fit of reply against post")).chart()).settled();
-  // A clause chip reads its source first, here the relation: *Comment>replyOfPost>Post Comment.length …*.
-  await bar.remove(`${RELATION} Comment.length`);
+  // A clause chip reads its field and range: *Comment.length 100.0 – 300.0*. It shows once the page
+  // delivers the brush's clause, a while after the brush.
+  await expect.poll(async () => (await bar.chips()).some((chip) => chip.startsWith("Comment.length "))).toBe(true);
+  await bar.remove("Comment.length");
   await expect.poll(() => unfiltered(discover, "Replies")).toBe(figured(PATHS));
 
   // The filter chip: the 28,807 replies written in Firefox. The control's value list is the

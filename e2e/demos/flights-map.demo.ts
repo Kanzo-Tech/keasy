@@ -19,15 +19,14 @@ const PENINSULA: Point[] = [
   [-8.2, 41.9], [-9.3, 41.9],
 ];
 
-/** Frames the force layout draws off camera before it is paused: enough to spread the cloud. Tuned once per machine. */
-const SPREAD = 300;
-
 /**
- * Hidden patterns: OpenFlights moving as the force layout spreads it, then put on a map on camera
- * (x = lon, y = lat), so the moving cloud snaps into the world; then every airport in Spain searched
- * into the subset, the peninsula lassoed, and the camera framed on what was kept. Off camera the
- * layout spreads the cloud and is paused, and the 36.9K routes are hidden so the points read. The
- * demos project runs Chromium on the GPU (playwright.config.ts).
+ * Hidden patterns: OpenFlights as the force layout leaves it, a cloud, then put on a map on camera
+ * (x = lon, y = lat), so the cloud snaps into the world; then every airport in Spain searched
+ * into the subset and framed — the Canaries and Melilla with the peninsula — then the peninsula
+ * lassoed, and the camera framed on what was kept. The layout is not waited on: spread, the cloud
+ * looked as it did before, so the wait was a stretch of take where nothing changed. Off camera the
+ * 36.9K routes are hidden so the points read. The demos project runs Chromium on the GPU
+ * (playwright.config.ts).
  */
 demo("flights-map", "OpenFlights put on a map: the force layout's scatter, then longitude and latitude, then Spain lassoed", {
   async arrange({ page, env }) {
@@ -35,8 +34,6 @@ demo("flights-map", "OpenFlights put on a map: the force layout's scatter, then 
     const discover = await DiscoverPage.open(page, env, id);
     const graph = await discover.graph();
     await graph.ready();
-    await graph.run();
-    await env.until(async () => (await graph.frames()) > SPREAD, "the layout did not spread the cloud");
     await graph.pause();
     const settings = await discover.settings();
     await settings.marks("Legible");
@@ -49,7 +46,7 @@ demo("flights-map", "OpenFlights put on a map: the force layout's scatter, then 
 
   steps: ({ discover, graph, settings }) => [
     {
-      subtitle: "A graph of airports, spread by its routes",
+      subtitle: "A graph of airports and their routes",
       // Woken, so the cloud is moving when the map takes over.
       action: () => graph.run(),
       check: () => expect.poll(() => graph.counts()).toMatch(/\b(3,218|3\.2K) nodes\b/),
@@ -62,24 +59,30 @@ demo("flights-map", "OpenFlights put on a map: the force layout's scatter, then 
         await graph.pause();
       },
       // `placement` resolves once Map is checked and both axes read their columns.
-      check: () => expect.poll(() => graph.frames()).toBeGreaterThan(SPREAD),
+      check: () => expect.poll(() => graph.counts()).toMatch(/\b(3,218|3\.2K) of (3,218|3\.2K) (nodes )?placed\b/),
       poster: true,
     },
     {
       subtitle: "Find anything — here, every airport in Spain",
       action: async () => (await discover.search()).add("country:Spain", 40),
-      check: () => expect.poll(() => graph.counts()).toMatch(/^40 match · 3\.2K of 3\.2K placed/),
+      check: () => expect.poll(() => discover.kept()).toBe("40"),
+    },
+    {
+      subtitle: "Frame Spain",
+      // The toolbar's one Frame, on what the search kept: the 40, the Canaries and Melilla with them.
+      action: () => graph.frame(),
+      check: () => expect.poll(() => discover.kept()).toBe("40"),
     },
     {
       subtitle: "Lasso the peninsula — the Canaries stay out",
       action: () => graph.lasso(PENINSULA, { in: "data" }),
-      check: () => expect.poll(() => graph.counts()).toMatch(/^31 match · 3\.2K of 3\.2K placed/),
+      check: () => expect.poll(() => discover.kept()).toBe("31"),
     },
     {
       subtitle: "Frame what you kept",
       // Resolves on a frame drawn after the press: the camera moved onto what is in full colour.
       action: () => graph.frame(),
-      check: () => expect.poll(() => graph.counts()).toMatch(/^31 match · 3\.2K of 3\.2K placed/),
+      check: () => expect.poll(() => discover.kept()).toBe("31"),
     },
   ],
 });

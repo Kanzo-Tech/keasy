@@ -1,12 +1,14 @@
-import { type By, FindingGroupRowHarness, FindingsBadgeHarness, type Handle, type Severity } from "@kanzo-tech/testing";
+import { type By, FindingsBadgeHarness, FindingsItemHarness, type Handle, type Severity } from "@kanzo-tech/testing";
 
 import { nameOf } from "./controls";
 
-const CHECKED = /^Checked over /;
-const SHOW = /^Show(ing)? ([\d,]+)$/;
-const CONFORMS = "Show what conforms";
-/** keasy#127's per-rule buttons: *Show all 44 violations*, *Show the 1 warning*. */
-const SHOW_ALL = (severity: "violations" | "warnings") => new RegExp(`^Show (all [\\d,]+ ${severity}|the 1 ${severity.slice(0, -1)})$`);
+/** The scope line once a check has ended: *All 3,218 nodes checked · 2,930 conform*, *4 of 20 nodes checked · 4 conform*. */
+const CHECKED = /\bnodes checked\b/;
+/** A Show — of a rule, at the end of its heading, or of one of its groups — a toggle named *Show N*. */
+const SHOW = /^Show [\d,]+$/;
+const CONFORMS = "Keep what conforms";
+/** A rule's own Show, at the end of its heading: the group's items hold theirs in a line of their own. */
+const RULE_SHOW = { css: '[data-slot="findings-actions"] [data-slot="findings-action"]' };
 const count = (words: string) => Number(/[\d,]+/.exec(words)?.[0]?.replace(/,/g, "") ?? Number.NaN);
 const pressed = async (button: Handle) => (await button.attribute("aria-pressed")) === "true";
 const WORD: Record<Severity, "Violation" | "Warning" | "Note"> = { violation: "Violation", warning: "Warning", info: "Note" };
@@ -15,9 +17,10 @@ const NOUN: Record<Severity, string> = { violation: "violation", warning: "warni
 /**
  * **The rules' badge** — kanzo-ui's `FindingsBadge` at the end of the filter bar, named by its tally
  * (*2 violations · 2 warnings*, *Conforms to the rules*, *Not checked*, *No rules*), and the popover
- * it opens: the file, *Check*, what the last check was over, and each rule a region of
- * `FindingGroupRow`s. Nothing validates until *Check* is pressed. Every read
- * opens the popover, and every Show closes it, as a person's press does.
+ * it opens: the file, *Check*, what the last check was over and how much of it conforms, *Keep what
+ * conforms*, and each rule a region with its own *Show N* and a `FindingsItem` per group. Nothing
+ * validates until *Check* is pressed. Every read opens the popover, and every Show closes it, as a
+ * person's press does.
  */
 export class RulesBadge extends FindingsBadgeHarness {
   /**
@@ -41,7 +44,7 @@ export class RulesBadge extends FindingsBadgeHarness {
 
   /**
    * Presses *Check* (or *Check again*) and waits for the check to end: rules validate only when
-   * asked. Resolves with what they were checked over, *Checked over all 3,218 nodes*.
+   * asked. Resolves with what they were checked over, *All 3,218 nodes checked · 2,930 conform*.
    */
   async check(): Promise<string> {
     await this.start();
@@ -57,7 +60,7 @@ export class RulesBadge extends FindingsBadgeHarness {
     // so `checked()` waits for this check, not the last one.
   }
 
-  /** What the last check was over, once one has ended: *Checked over all 3,218 nodes*. */
+  /** What the last check was over, once one has ended: *All 3,218 nodes checked · 2,930 conform*. */
   async checked(): Promise<string> {
     const dialog = await this.open();
     return this.env.until(async () => {
@@ -67,11 +70,14 @@ export class RulesBadge extends FindingsBadgeHarness {
     }, "the rules have not been checked");
   }
 
-  /** Why the last check is out of date — *Filter changed since the last check* — or `null`. */
+  /**
+   * Why the last check is out of date — *Filter changed since the last check*, said at the end of
+   * the scope line, which turns the warning colour — or `null`.
+   */
   async stale(): Promise<string | null> {
     const dialog = await this.open();
-    const [line] = await dialog.find({ css: '[data-slot="rules-stale"]' });
-    return line ? line.text() : null;
+    const [reason] = await dialog.find({ css: '[data-slot="rules-stale"]' });
+    return reason ? (await reason.text()).replace(/^\s*·\s*/, "") : null;
   }
 
   /**
@@ -90,12 +96,15 @@ export class RulesBadge extends FindingsBadgeHarness {
     return Promise.resolve(new Rule(this, name));
   }
 
-  /** Presses *Show what conforms* (or presses it again, `false`), and waits for it to say so. */
+  /**
+   * Presses *Keep what conforms* (or presses it again, `false`), and resolves once the press has
+   * closed the popover: the page is what shows what it kept, so the popover is not opened again.
+   */
   async conforms(on = true): Promise<void> {
-    const button = async () => this.one({ role: "button", name: CONFORMS }, "the rules offer no Show what conforms", await this.open());
-    if ((await pressed(await button())) === on) return;
-    await (await button()).click();
-    await this.env.until(async () => (await pressed(await button())) === on, `Show what conforms did not turn ${on ? "on" : "off"}`);
+    const button = await this.one({ role: "button", name: CONFORMS }, "the rules offer no Keep what conforms", await this.open());
+    if ((await pressed(button)) === on) return;
+    await button.click();
+    await this.env.until(async () => (await this.openDialogs()) === 0 || null, "the rules did not close");
   }
 
   /** The popover's region for the rule `name`. */
@@ -111,9 +120,9 @@ export class RulesBadge extends FindingsBadgeHarness {
     return this.one(by, what, within);
   }
 
-  /** The library's group rows `within`. */
-  rows(within: Handle): Promise<FindingGroupRowHarness[]> {
-    return this.env.harnesses(FindingGroupRowHarness, within);
+  /** The library's items `within`. */
+  rows(within: Handle): Promise<FindingsItemHarness[]> {
+    return this.env.harnesses(FindingsItemHarness, within);
   }
 
   /** How many dialogs the page holds open: the popover's, or none. */
@@ -181,12 +190,12 @@ export class Rule {
   }
 
   /**
-   * Presses *Show all N violations* (or *warnings*), keasy#127: every vertex the rule flags with that
-   * severity, as the rules' one clause. Resolves with N once the press has closed the popover; the
-   * page shows the vertices, so the popover is not opened again to read it pressed.
+   * Presses the rule's own *Show N*, at the end of its heading: every vertex the rule flags, of any
+   * severity, each once, as the rules' one clause. Resolves with N once the press has closed the
+   * popover; the page shows the vertices, so the popover is not opened again to read it pressed.
    */
-  async showAll(severity: "violations" | "warnings"): Promise<number> {
-    const button = await this.badge.findOne({ role: "button", name: SHOW_ALL(severity) }, `the rule offers no Show all ${severity}`, await this.region());
+  async showAll(): Promise<number> {
+    const button = await this.badge.findOne(RULE_SHOW, "the rule offers no Show", await this.region());
     const n = count(await nameOf(button));
     if (!(await pressed(button))) {
       await button.click();
@@ -195,17 +204,17 @@ export class Rule {
     return n;
   }
 
-  /** Presses *Show all N violations* (or *warnings*) again, which takes those vertices off the page. */
-  async hideAll(severity: "violations" | "warnings"): Promise<void> {
-    const button = async () => this.badge.findOne({ role: "button", name: SHOW_ALL(severity) }, `the rule offers no Show all ${severity}`, await this.region());
+  /** Presses the rule's *Show N* again, which takes those vertices off the page. */
+  async hideAll(): Promise<void> {
+    const button = async () => this.badge.findOne(RULE_SHOW, "the rule offers no Show", await this.region());
     if (!(await pressed(await button()))) return;
     await (await button()).click();
-    await this.badge.until(async () => !(await pressed(await button())), `Show all ${severity} is still pressed`);
+    await this.badge.until(async () => !(await pressed(await button())), "the rule's Show is still pressed");
   }
 
-  /** Whether the rule offers *Show all* for `severity`: it does only when something has that severity. */
-  async offersShowAll(severity: "violations" | "warnings"): Promise<boolean> {
-    return (await (await this.region()).find({ role: "button", name: SHOW_ALL(severity) })).length > 0;
+  /** Whether the rule offers its own *Show N*: it does only when it flags something. */
+  async offersShowAll(): Promise<boolean> {
+    return (await (await this.region()).find(RULE_SHOW)).length > 0;
   }
 
   /** The first element `by` finds `within`, waited for. */
@@ -213,8 +222,8 @@ export class Rule {
     return this.badge.findOne(by, what, within);
   }
 
-  /** The library's row for the group reading `message` exactly. */
-  async row(message: string): Promise<FindingGroupRowHarness> {
+  /** The library's item for the group reading `message` exactly. */
+  async row(message: string): Promise<FindingsItemHarness> {
     return this.badge.until(async () => {
       for (const row of await this.badge.rows(await this.region())) if ((await row.message()) === message) return row;
       return null;
@@ -223,8 +232,8 @@ export class Rule {
 }
 
 /**
- * **One group of a rule** — a `FindingGroupRow`: its severity, its message, and *Show N*, which puts
- * the N vertices it flags on the page as the rules' one clause and reads *Showing N* while it does.
+ * **One group of a rule** — a `FindingsItem`: its severity, its message, and *Show N*, a toggle that
+ * puts the N vertices it flags on the page as the rules' one clause and reads pressed while it does.
  */
 export class RuleFinding {
   constructor(
@@ -244,18 +253,19 @@ export class RuleFinding {
 
   /**
    * Presses *Show N* and resolves with N once the popover has closed, as the press closes it: the
-   * page is what shows the N vertices, so it is not opened again to read *Showing N*.
+   * page is what shows the N vertices, so it is not opened again to read it pressed.
    */
   async show(): Promise<number> {
-    const label = await nameOf(await this.button());
-    if (!SHOWING.test(label)) await (await this.rule.row(this.message)).act(SHOW);
+    const button = await this.button();
+    const label = await nameOf(button);
+    if (!(await pressed(button))) await (await this.rule.row(this.message)).act(SHOW);
     return count(label);
   }
 
-  /** Presses *Showing N* again, which takes the group's vertices off the page. */
+  /** Presses *Show N* again, which takes the group's vertices off the page. */
   async hide(): Promise<void> {
-    if (!SHOWING.test(await nameOf(await this.button()))) return;
-    await (await this.rule.row(this.message)).act(SHOWING);
+    if (!(await pressed(await this.button()))) return;
+    await (await this.rule.row(this.message)).act(SHOW);
   }
 
   private async button(): Promise<Handle> {
@@ -263,5 +273,3 @@ export class RuleFinding {
     return this.rule.findOne({ role: "button", name: SHOW }, "the finding has no Show", row.host);
   }
 }
-
-const SHOWING = /^Showing [\d,]+$/;

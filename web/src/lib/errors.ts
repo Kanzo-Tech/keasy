@@ -99,7 +99,6 @@ const registry: Partial<Record<ErrorCode | NoBodyCode | ClientCode | Code | Kanz
   },
   "graph/context-lost": { title: "The graph's drawing context was lost. Reload to draw it again." },
   "graph/nothing-to-draw": { title: "Nothing in this output has a position to draw." },
-  "graph/unfilterable": { title: "The graph cannot apply that filter." },
   "engine/unavailable": { title: "The in-browser engine would not start." },
   "storage/host-silent": { title: "keasy did not answer the data reader in time." },
   "module/unreachable": { title: "Part of the app could not be downloaded. Check the connection and retry." },

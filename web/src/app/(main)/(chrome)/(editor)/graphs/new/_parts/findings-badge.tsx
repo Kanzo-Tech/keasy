@@ -4,14 +4,17 @@ import { useMemo } from "react";
 import {
   type DescribePlace,
   type Finding,
-  FindingRow,
   FindingsBadge as Badge,
   FindingsContent,
   FindingsGroup,
+  FindingsHeader,
+  FindingsItem,
+  FindingsList,
   FindingsRoot,
+  FindingsSource,
   type FindingSeverity,
   type FindingTally,
-  PopoverHeader,
+  PopoverDescription,
   tallyFindings,
 } from "@kanzo-tech/ui";
 import type { Diagnostic } from "@fossil-lang/types";
@@ -38,6 +41,11 @@ function tally(t: FindingTally | undefined): string {
   return parts.length ? parts.join(" · ") : t.info ? plural(t.info, "note") : "Valid";
 }
 
+/** What the popover says it covered: *2 errors · 1 warning*, and the notes when there are any. */
+function scope(t: FindingTally): string {
+  return [plural(t.violation, "error"), plural(t.warning, "warning"), t.info ? plural(t.info, "note") : ""].filter(Boolean).join(" · ");
+}
+
 /** A diagnostic as one result: keasy's title for its code when it has one, the compiler's otherwise. */
 function findingOf(row: Diagnostic): Finding<Diagnostic> {
   const copy = copyOf(row.code, row.data);
@@ -52,7 +60,8 @@ function findingOf(row: Diagnostic): Finding<Diagnostic> {
 
 /**
  * The compiler's tally, and the findings behind it: pressing it lists every finding, errors first
- * and each by line, with the line to go to. The same rows the gutter shows.
+ * and each by line, each with *Go to line*. The same rows the gutter shows. The header says what was
+ * checked — the program, `graph.fossil` — and how much was found.
  */
 export function FindingsBadge({
   findings,
@@ -75,7 +84,6 @@ export function FindingsBadge({
     const page = pageOf(row.code);
     return {
       where: `Line ${row.range.start.line + 1}`,
-      action: { label: "Go to line", run: () => onSelect(row) },
       detail: page && (
         <a className="underline underline-offset-2" href={page} rel="noreferrer" target="_blank">
           What {row.code} means
@@ -84,24 +92,33 @@ export function FindingsBadge({
     };
   };
 
+  const counted = tallyFindings(listed);
   return (
-    <FindingsRoot labels={LABELS} onOpenChange={(d) => onOpenChange(d.open)} open={open} tally={tallyFindings(listed)}>
+    <FindingsRoot labels={LABELS} onOpenChange={(d) => onOpenChange(d.open)} open={open} tally={counted}>
       <Badge size="lg">{tally}</Badge>
-      <FindingsContent
-        empty={<p className="text-muted-foreground text-sm">The compiler found nothing in the program.</p>}
-        header={<PopoverHeader description="What the compiler found in the program." title="Findings" />}
-      >
-        {GROUPS.map(({ severity, title }) => {
-          const rows = listed.filter((f) => f.severity === severity);
-          if (rows.length === 0) return null;
-          return (
-            <FindingsGroup key={severity} tally={tallyFindings(rows)} title={title}>
-              {rows.map((finding, i) => (
-                <FindingRow describe={describe} finding={finding} key={i} />
-              ))}
-            </FindingsGroup>
-          );
-        })}
+      <FindingsContent>
+        <FindingsHeader>
+          <FindingsSource>graph.fossil</FindingsSource>
+          <PopoverDescription className="text-xs">{scope(counted)}</PopoverDescription>
+        </FindingsHeader>
+        <FindingsList empty={<p className="text-muted-foreground text-sm">The compiler found nothing in the program.</p>}>
+          {GROUPS.map(({ severity, title }) => {
+            const rows = listed.filter((f) => f.severity === severity);
+            if (rows.length === 0) return null;
+            return (
+              <FindingsGroup key={severity} tally={tallyFindings(rows)} title={title}>
+                {rows.map((finding, i) => (
+                  <FindingsItem
+                    action={{ label: "Go to line", run: () => onSelect(finding.place) }}
+                    describe={describe}
+                    finding={finding}
+                    key={i}
+                  />
+                ))}
+              </FindingsGroup>
+            );
+          })}
+        </FindingsList>
       </FindingsContent>
     </FindingsRoot>
   );

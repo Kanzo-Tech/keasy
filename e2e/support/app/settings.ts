@@ -50,13 +50,12 @@ export class SettingsPanel extends ComponentHarness {
 
   /**
    * The backdrop the graph sits on: the darkened rim (Vignette) and the dot grid that pans with the
-   * camera (Dot grid). Each is Ark's Switch, which reaches the accessibility tree as the checkbox it
-   * renders (no `role="switch"`): found as one, and pressed with Space, as assistive technology does,
-   * until it reads `on`.
+   * camera (Dot grid). Each is kanzo-ui's Switch, a `role="switch"` over Ark's native checkbox: found
+   * as a switch, and pressed with Space, as assistive technology does, until it reads `on`.
    */
   async backdrop({ vignette, grid }: { vignette: boolean; grid: boolean }): Promise<void> {
     for (const [name, on] of [["Vignette", vignette], ["Dot grid", grid]] as const) {
-      const toggle = await this.one({ role: "checkbox", name }, `the panel has no ${name}`);
+      const toggle = await this.one({ role: "switch", name }, `the panel has no ${name}`);
       if ((await isChecked(toggle)) !== on) await toggle.press("Space");
       await this.env.until(async () => (await isChecked(toggle)) === on, `${name} did not turn ${on ? "on" : "off"}`);
     }

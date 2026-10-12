@@ -86,7 +86,7 @@ test("rules are validated over the corpus's triples: what fails, what conforms, 
 
   // Over the whole corpus: the two people outside GB and US break the Person rule; every order
   // keeps its own.
-  expect(await rules.check()).toMatch(/^Checked over all 20 nodes/);
+  expect(await rules.check()).toBe("All 20 nodes checked · 18 conform");
   // The badge reads the tally in either view: here, the two people.
   await expect.poll(() => rules.tally()).toBe("2 violations");
   const shipping = await (await rules.rule("Person")).finding("Ships only to GB and US");
@@ -95,23 +95,24 @@ test("rules are validated over the corpus's triples: what fails, what conforms, 
 
   // Show puts the finding's vertices on the page as its clause.
   expect(await shipping.show()).toBe(2);
-  await expect.poll(() => discover.counts()).toMatch(/^2 of 20 nodes match/);
+  await expect.poll(() => discover.kept()).toBe("2");
   // The rules' own clause is no filter of theirs: the check is not out of date for it.
   expect(await rules.stale()).toBeNull();
   expect(await rules.tally()).toBe("2 violations");
   await shipping.hide();
 
-  // Show all puts every vertex a rule flags at one severity on the page: here the same two people.
+  // A rule's own Show puts every vertex it flags on the page, of any severity: here the same two
+  // people. A rule that flags nothing offers none.
   const people = await rules.rule("Person");
-  expect(await people.offersShowAll("warnings")).toBe(false);
-  expect(await people.showAll("violations")).toBe(2);
-  await expect.poll(() => discover.counts()).toMatch(/^2 of 20 nodes match/);
-  await people.hideAll("violations");
+  expect(await order.offersShowAll()).toBe(false);
+  expect(await people.showAll()).toBe(2);
+  await expect.poll(() => discover.kept()).toBe("2");
+  await people.hideAll();
   await expect.poll(() => discover.counts()).toMatch(/^20 nodes/);
 
-  // What conforms is rudof's Shape Fragment, read back by its subjects: six people and every order.
+  // What conforms is the focus nodes rudof names beside its Shape Fragment: six people and every order.
   await rules.conforms();
-  await expect.poll(() => discover.counts()).toMatch(/^18 of 20 nodes match/);
+  await expect.poll(() => discover.kept()).toBe("18");
   expect(await rules.stale()).toBeNull();
   await rules.conforms(false);
   await expect.poll(() => discover.counts()).toMatch(/^20 nodes/);
@@ -120,12 +121,12 @@ test("rules are validated over the corpus's triples: what fails, what conforms, 
   // A subset picked elsewhere on the page leaves the last check behind, and keeps its tally until
   // Check again: then the rules check the four people in the US, all of whom the Person rule admits.
   expect(await (await discover.search()).add("country:US", 4)).toBe(4);
-  await expect.poll(() => discover.counts()).toMatch(/^4 of 20 nodes match/);
+  await expect.poll(() => discover.kept()).toBe("4");
   const subset = await discover.rules();
   expect(await subset.stale()).toBe("Filter changed since the last check");
   // The tally is kept, and its name says it is out of date.
   expect(await subset.tally()).toBe("2 violations, out of date");
-  expect(await subset.check()).toMatch(/^Checked over the selection: 4 of 20 nodes/);
+  expect(await subset.check()).toBe("4 of 20 nodes checked · 4 conform");
   expect(await subset.stale()).toBeNull();
   const person = await subset.rule("Person");
   await expect.poll(() => person.state()).toBe("In order");

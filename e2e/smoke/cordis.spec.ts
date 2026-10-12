@@ -30,7 +30,7 @@ test("the funding rules find what the seed lacks: countries and SME status, and 
   // Saved, and not checked until asked: then over the whole corpus.
   await expect.poll(() => rules.tally(), { timeout: 30_000 }).toBe("Not checked");
   await rules.start();
-  await expect.poll(() => rules.checked(), { timeout: 240_000 }).toMatch(/^Checked over all 206,629 nodes/);
+  await expect.poll(() => rules.checked(), { timeout: 240_000 }).toMatch(/^All 206,629 nodes checked · /);
 
   const expectFinding = async (rule: string, message: string, severity: "Violation" | "Warning", flagged: number) => {
     const finding = await (await rules.rule(rule)).finding(message);
@@ -61,5 +61,8 @@ test("the funding rules find what the seed lacks: countries and SME status, and 
 
   // Show puts the finding's organisations on the page.
   expect(await organisation.show("An organisation is registered in a country.")).toBe(5);
-  await expect.poll(() => discover.counts()).toMatch(/^5 of 206\.6K nodes match/);
+  // The readout counts the view's relation: the dashboard's opens on projects, which a clause on
+  // organisations keeps none of. On the organisations, it keeps the five.
+  await discover.relation("Organisation");
+  await expect.poll(() => discover.kept()).toBe("5");
 });

@@ -8,7 +8,8 @@ table here. Review the stories first; the code follows them.
 native 1600×900; each step's subtitle **leads** it (the `chapter()` call comes before the action it
 describes); short waits, and every wait is on a state (a harness method), never on a time; map demos
 hide edges and labels and use legible marks; a demo starts from a configured state, set off camera in
-`arrange`, unless the configuration is the point.
+`arrange`, unless the configuration is the point. Every demo ends on its result held still: after the last
+step the subtitle goes and the page is held for `TAIL` (3 s, `record/pace.ts`) before the cut.
 
 **How to read a step**
 
@@ -19,10 +20,9 @@ hide edges and labels and use legible marks; a demo starts from a configured sta
 `env` is `await playwright(page)`, made **before** the first `page.goto` (the hook registers charts
 and canvases as they mount). `bar` is `await env.harness(FilterBarHarness)`. `discover`, `settings`,
 `search`, `rules`, `ask` are the keasy page objects listed at the end
-([Page objects](#the-keasy-page-objects-the-demos-need)). The filter bar has no readout: what the
-filters keep is read from the dashboard's count figure, `discover.figure("Rows")` (in full under ten
-thousand, compact above: `"778"`, `"23.5K"`), or in the Graph view from the footer's GraphCounts,
-`graph.counts()` → `/^132 of 3\.2K nodes match/` (compact, the total being every node).
+([Page objects](#the-keasy-page-objects-the-demos-need)). What the filters keep is the page's one
+count, the filter bar's readout, read in full by `discover.kept()`: `"778"` of the Dashboard view's
+relation, `"132"` of the Graph view's nodes.
 
 Every number below was computed from the example's CSV/JSON with DuckDB; the query is under each
 demo's **Numbers**. The OpenFlights and SNB queries run in `infra/dev/examples/<name>/data` after
@@ -85,9 +85,8 @@ depends on which relations the mapping writes as edges); read it off GraphCounts
 
 1. `env = await playwright(page)`; seed; `discover.open(id)` (Graph view, Info docked).
 2. `graph = await env.harness(GraphCanvasHarness); await graph.ready()`.
-3. Let the force layout spread the cloud: `await graph.run()`, then wait on frames, not time —
-   `await env.until(async () => (await graph.frames()) > 300, "the layout spread")` — then
-   `graph.pause()`.
+3. `graph.pause()` — the layout is not waited on: spread, the cloud looked as it did before, so the
+   wait was a stretch of take where nothing changed.
 4. `settings.marks("Legible"); settings.edges("Hidden"); settings.labels(0)` — the 36,906 routes are fog.
 5. Dock back to Info (`dock.open("Info")`).
 
@@ -95,16 +94,17 @@ depends on which relations the mapping writes as edges); read it off GraphCounts
 
 | # | Subtitle | Action | Check |
 | --- | --- | --- | --- |
-| 1 | A graph of airports, spread by its routes | `graph.run()` (woken, so the cloud moves on camera) | the transport reads *Pause the layout*; `graph.counts()` → `/3,218 nodes/` (or `3.2K`) |
-| 2 | Put it on a map: longitude across, latitude up | `settings.placement("Map", { x: "lon", y: "lat" })` then `graph.pause()` | `graph.frames()` grew; the placement radio *Map* is checked · **poster** |
-| 3 | Find anything — here, every airport in Spain | `search.add("country:Spain")` (Info → *Find anything in the graph* → type → *Add 40 to the subset*) | the add button read `Add 40 to the subset`; `graph.counts()` → `/^40 of 3\.2K nodes match/` |
-| 4 | Lasso the peninsula — the Canaries stay out | `graph.lasso(PENINSULA)` (the polygon below, in lon/lat) | `graph.counts()` → `/^31 of 3\.2K nodes match/` |
-| 5 | Frame what you kept | `graph.frame()` | `graph.frame()` resolved (a frame drawn after the press); `graph.counts()` still `/^31 of 3\.2K nodes match/` |
+| 1 | A graph of airports and their routes | `graph.run()` (woken, so the cloud moves on camera) | the transport reads *Pause the layout*; `graph.counts()` → `/3,218 nodes/` (or `3.2K`) |
+| 2 | Put it on a map: longitude across, latitude up | `settings.placement("Map", { x: "lon", y: "lat" })` then `graph.pause()` | `graph.counts()` → `/3,218 of 3,218 placed/` (or `3.2K`); the placement radio *Map* is checked · **poster** |
+| 3 | Find anything — here, every airport in Spain | `search.add("country:Spain")` (Info → *Find anything in the graph* → type → *Add 40 to the subset*) | the add button read `Add 40 to the subset`; `discover.kept()` → `"40"` |
+| 4 | Frame Spain | `graph.frame()` — the toolbar's one Frame (kanzo-ui #179), on what the search kept | `discover.kept()` still `"40"` |
+| 5 | Lasso the peninsula — the Canaries stay out | `graph.lasso(PENINSULA, { in: "data" })` (the polygon below, in lon/lat) | `discover.kept()` → `"31"` |
+| 6 | Frame what you kept | `graph.frame()` | `graph.frame()` resolved (a frame drawn after the press); `discover.kept()` still `"31"` |
 
-The last step replaces *"The map keeps only what you picked"*: `frame()` frames what is in full
-colour since kanzo-ui #112, which is what the old take could not do (keasy #112's comment). Framing
-the 40 would take in the Canaries and the Atlantic down to Morocco's latitude, so step 4 lassoes the
-peninsula first, as decided.
+Step 4 frames the 40 as the search kept them: the camera takes in the Canaries and the Atlantic
+down to their latitude (27.8° N), and Melilla across the strait — which is what makes step 5's
+lasso worth doing. The last frame is the peninsula and the Balearics alone. `frame()` frames what is
+in full colour since kanzo-ui #112.
 
 **The lasso, in data** (`x` = lon, `y` = lat, the Map placement's own axes):
 
@@ -160,12 +160,14 @@ is 31 whether the lasso's clause is ANDed with the search's or stands alone. Lef
 | --- | --- | --- | --- |
 | 1 | Click a country — every chart follows | `(await (await dashboard.tile(/Count by Airport\.country/)).chart()).pick({ y: "United States" })` | `discover.figure("Rows")` → `"551"`; `dashboard.settled()` |
 | 2 | Drag across longitude — just the West | `(await (await dashboard.tile(/Count by Airport\.lon$/)).chart()).brush({ x: [-125, -100] })` | `discover.figure("Rows")` → `"132"` · **poster** |
-| 3 | Switch to the graph — the same filter, on the map | `discover.view("Graph")`; `graph.ready()` | `graph.counts()` → `/^132 of 3\.2K nodes match/` |
-| 4 | Frame what the filters keep | `graph.frame()` | resolved; `bar.chips()` has the country and the lon clauses |
+| 3 | Switch to the graph — the same filter, framed on the map | `discover.view("Graph")`; `graph.ready()`; `graph.frame()` — one step | `discover.kept()` → `"135"`; `bar.chips()` has the country and the lon clauses |
 
-The old opening chapter *"One filter, every chart"* (a subtitle with no action under it) goes: the
-first subtitle now leads the first click. The old last chapter *"Every filter lands in the bar"*
-becomes the check of step 4 rather than a step of its own — the frame is the stronger ending.
+The take brushes `[-128, -98.98]`, whose edges both sit in gaps of the data, so it reads **135** (US
+airports west of 98.98° W) whatever a pixel does; the `[-125, -100]` figures below are the first
+plan's. The switch and the frame are one step: a view that appears and is framed at once, under one
+subtitle, rather than a subtitle for each half. The old opening chapter *"One filter, every chart"*
+(a subtitle with no action under it) went: the first subtitle leads the first click. *"Every filter
+lands in the bar"* is the check of the last step rather than a step of its own.
 
 **Numbers**
 
@@ -179,81 +181,60 @@ becomes the check of step 4 rather than a step of its own — the frame is the s
 
 - Whether the lon brush filters by its extent or by the bins it covers: by extent it is 132; read the
   figure on the first run and pin it.
-- `graph.counts()` reads GraphCounts' sentence; with a type filter it may read *132 of 3.2K nodes
-  match*. Match the leading figure only.
+- `discover.kept()` reads the readout's leading figure, in full.
 
 ---
 
-## 4. Ask — `snb-ask`
+## 4. Ask — `nobel-ask`
 
 - **Hero tab:** `ask` · label **Ask**
 - **Stat line:** *Every answer is a query over what's in view — with its chart* (unchanged)
-- **Example / seed:** `snb`, same graph as demo 1
+- **Example / seed:** `nobel`, same graph as demo 6
+- **Why Nobel, not SNB:** the last step frames the answer on the graph. LDBC's graph is 327K nodes and
+  the frame lagged on camera even on the GPU; Nobel's is 2.5K and already on the map. And SNB's
+  browsers were `snb-explore`'s filter already.
 
 **Arrange (off camera)**
 
-1. `env`; seed; `page.goto(discoverUrl(id, { view: "dashboard", panel: "ask" }))`.
-2. `discover.relation("Person")`; `dashboard.settled()`.
-3. `ask.warmUp()` — both model aliases loaded (today's `warmUp`, moved into the page object).
-4. `answer = await env.harness(AnswerHarness.with({ name: "Ask about your data…" }))`.
+1. `env`; seed; save the dashboard on `LaureateAward>category>Category` (one tile, *Count by
+   Category.name*); `discover.open(id)`.
+2. `discover.onMap()` — the Graph view on the map for step 8 — then `view("Dashboard")`,
+   `relation("LaureateAward", [">category>Category"])`, `dashboard.settled()`, `panel("Ask")`.
+3. `LIVE=1`: `ask.warmUp()`.
 
 **Steps**
 
 | # | Subtitle | Action | Check |
 | --- | --- | --- | --- |
-| 1 | Filter the page: women only | `(await (await dashboard.tile("Count by Person.gender")).chart()).pick({ y: "female" })` | `discover.figure("Rows")` → `"778"` |
-| 2 | Ask about what's in view, in plain words | `answer.ask("Which browsers do they use most?")` | a new answer card began (the method's own wait) |
-| 3 | The answer is a chart, over the women in view | `tile = await answer.answer()` | `tile.text()` contains `Firefox` and `324` (not `628`, the count over everyone) · **poster** |
-| 4 | Add it to the dashboard | `answer.addToDashboard()` | the card reads *✓ On the dashboard*; `dashboard.tile(/browserUsed/)` resolves |
+| 1 | Filter the page: Physics only | *Count by Category.name* `pick({ y: "Physics" })` | `discover.kept()` → `"230"` |
+| 2 | Ask about what's in view, in plain words | `answers.ask("Which universities won the most prizes?")` | the replay held the call |
+| 3 | The answer is a chart, over the Physics prizes in view | `answers.answer()` | the tile is by *University*; its rows hold UC **16**, not **43** (every category's) · **poster** |
+| 4 | Add it to the dashboard | `answers.addToDashboard()` | a tile `/University/` on the dashboard |
+| 5 | Open it on the dashboard | `answers.openOnDashboard()` | that tile is in view |
+| 6 | Ask again: which ones were won in Germany? | `answers.ask("Which ones were won in Germany?")`; `answers.answer()` | the replay held the call |
+| 7 | This one filters: keep what it found | `answers.filterTo()` | `discover.kept()` > 0 — pin it on the take that captures it |
+| 8 | The same prizes on the map, framed on Germany | `view("Graph")`; `graph.frame()` | the Graph view's readout reads the same; ≤ 22 |
 
-*"Send the answer back as a filter"* is dropped as decided: the answer ends on the dashboard.
-
-**Replaying the model**
-
-kanzo-ui's workspace showcase (`docs/showcases/workspace/graph-view.tsx`, `GraphAsk`) shows Ask
-without a model: `dataAgent` runs over `mockModel` (`docs/lib/mock-model.ts`, the AI SDK's
-`MockLanguageModelV4`), a *recording* that matches the question to an intent and returns the
-`answer` tool call with that intent's tile, then reads its sentence off the rows the tool brought
-back. The language is canned; the tool still queries the corpus for real under the page's
-crossfilter. Swapping the recording for the gateway model is one line.
-
-keasy's model is behind the BFF, so the demo records at the network instead, with the same split —
-the model's words replayed, the `answer` tool run for real by the page:
-
-1. **Capture, once, from a good live run** — `make demo DEMO=snb-ask LIVE=1 RECORD=1`. In arrange,
-   `page.route(AI, async (route) => { const r = await route.fetch(); calls.push({ ask: lastUser(route.request()), body: await r.text() }); await route.fulfill({ response: r }); })`
-   (`AI` = `**/api/ai/chat/completions`, `support/fixtures.ts`). After the take's checks pass (the
-   tile says `Firefox`/`324`, the card is on the dashboard), write `calls` to
-   `e2e/demos/recordings/snb-ask.json`: one SSE body per model call, in order — the tool-call turn,
-   then the turn after the tool. A take whose checks fail writes nothing, so a refused query is
-   never recorded.
-2. **Replay, for the site take** (the default) — `page.route(AI, (route) => route.fulfill({ status: 200, contentType: "text/event-stream", body: next(route.request()) }))`,
-   where `next` serves the recorded bodies in order and throws when a request's last user message
-   is not the recorded one (the question changed: re-capture). `sse()`/`text()` in
-   `support/fixtures.ts` already build this stream format for the e2e tests.
-3. `ask.warmUp()` is skipped on replay (no model to load); it stays on `LIVE=1`.
-
-Because the tool runs on the page, the chart's numbers (Firefox 324 over the women in view) are
-still DuckDB's, and the check still fails if the recorded tool call drops the filter. Re-capture
-when the prompt, the tool's schema or the SNB example change.
-
-**Numbers**
+**Numbers** (`nobel/data`; `affiliations` joins an award to its institutions)
 
 | Figure | Value | Query |
 | --- | --- | --- |
-| Women | 778 of 1,528 | `select gender, count(*) from p group by 1` |
-| Women's browsers | Firefox 324 · Chrome 224 · Internet Explorer 182 · Safari 26 · Opera 22 | `select browserUsed, count(*) from p where gender='female' group by 1 order by 2 desc` |
-| Everyone's browsers | Firefox 628 · Chrome 438 · IE 364 · Safari 54 · Opera 44 | the same, without the `where` |
+| Physics prizes | **230** | `select count(*) from awards where category = 'physics'` |
+| Physics prizes by institution | UC **16**, Princeton 10, Stanford 9, Caltech 9, MIT 8, Cambridge 8, Harvard 8, Lebedev 6 | `select i.name, count(distinct a.id) from awards a join affiliations af on af.award = a.id join institutions i on i.id = af.institution where a.category = 'physics' group by 1 order by 2 desc` |
+| UC's prizes, every category | 43 | the same, without the category |
+| Physics prizes at a German institution | **22**, all on the map | `… where a.category = 'physics' and i.country = 'germany'` |
 
-**Risks**
+**Notes**
 
-- **The model — decided: the site take replays a recorded answer; the live model stays covered by
-  the e2e tests** (`e2e/tests/ai.spec.ts` and the smoke runs). See *Replaying the model* below.
-- The check that the answer counts **women** (324, not 628) is what proves "over what's in view";
-  a model that drops the filter fails it.
-- **keasy must wire `AnswerCard`'s `onAdd`.** kanzo-ui main has the AnswerCard with *Add to the
-  dashboard*, but keasy's `ask-panel.tsx` passes no `onAdd` today (no match for `onAdd` in `web/src`):
-  without it `addToDashboard()` rejects with *the host gave it no onAdd*. Part of the v0.35 upgrade.
+- The check that UC reads **16** (not 43) is what proves "over what's in view"; a model that drops
+  the filter fails it. *Prizes* in the question points it at the awards: asked "which universities
+  won the most?", a small model counted the `University` type alone, which the Physics filter cannot
+  reach, and the answer read no rows. Capture again if it does.
+- Step 6 needs an answer **with a where** (the institution's country, Germany): a model that answers
+  over every country leaves *Filter the page to these rows* disabled, and step 7 fails. Capture again.
+- *Filter the page to these rows* keeps what the answer draws: the prizes in the categories its bars
+  show. An answer drawn by university keeps those universities' prizes, at most the 22; read the
+  figure off the take that captures it and pin steps 7 and 8 to it.
 
 ---
 
@@ -262,27 +243,29 @@ when the prompt, the tool's schema or the SNB example change.
 - **Hero tab:** `rules` · label **Assessment**
 - **Stat line:** *3,218 airports assessed against your rules — in your browser* (unchanged)
 - **Example / seed:** `openflights`, same graph; rules from `infra/dev/examples/openflights/rules.ttl`
+- **Depends on:** kanzo-ui 0.40's Findings (#179) — a rule's one *Show N* at the end of its
+  heading, each finding's *Show N* a toggle — and keasy's popover on it: the scope line
+  *All 3,218 nodes checked · 2,930 conform* with one toggle beside it, **Keep what conforms**.
 
 **Arrange (off camera)**
 
-1. `env`; seed; `api(page, "PUT", /v1/graphs/${id}/rules, { name: "geo.ttl", shapes })` (as today).
-2. `discover.open(id, { panel: "none" })`; `graph.ready()`; `graph.pause()`; `settings`: Map, lon/lat, Legible, Hidden edges, no labels (the shared `onMap`, as a page-object method `discover.onMap()`); then the dock is closed: the rules are the filter bar's badge.
-3. `rules.check()` (presses *Check*: the rules validate only when asked) → `/^Checked over all 3,218 nodes$/`.
+1. `env`; seed; `saveRules(page, id, "openflights")` (the rules PUT).
+2. `discover.open(id, { panel: "none" })`; `discover.onMap()` (Map, lon/lat, Legible, Hidden edges, no labels); then the dock is closed: the rules are the filter bar's badge.
+3. `rules.check()` (presses *Check*: the rules validate only when asked) → `"All 3,218 nodes checked · 2,930 conform"`.
 
 **Steps**
 
 | # | Subtitle | Action | Check |
 | --- | --- | --- | --- |
-| 1 | Every airport, checked against your rules | — (the panel is read) | `rules.rule("Airport").state()` → *44 violations · 247 warnings* (the tally counts results) |
-| 2 | 44 airports break a rule — show them all | `rules.rule("Airport").showAll("violations")` (presses *Show all 44 violations*) | the button is pressed; `graph.counts()` → `/^44 of 3\.2K nodes match/` |
-| 3 | Amber warns: 218 airports above 4,000 ft | `rules.rule("Airport").show(/high-altitude airport/)` | button `Showing 218`; `graph.counts()` → `/^218 of 3\.2K nodes match/` · **poster** |
-| 4 | The Rockies, the Andes, Iran, Ethiopia, Tibet | `graph.frame()` | resolved |
+| 1 | Every airport, checked against your rules | — (the popover is read) | `rules.rule("Airport").state()` → *44 violations · 247 warnings* (the tally counts results) |
+| 2 | 288 airports break the rule — show them all | `rules.rule("Airport").showAll()` (presses the rule's *Show 288*) | `discover.kept()` → `"288"` |
+| 3 | Frame them | `graph.frame()` | still `"288"` |
+| 4 | Amber warns: 218 airports above 4,000 ft | `rules.rule("Airport").show(/high-altitude airport/)` (the finding's *Show 218*, which replaces the rule's: the rules are one clause) | `discover.kept()` → `"218"` · **poster** |
+| 5 | Frame them: the Rockies, the Andes, Tibet | `graph.frame()` | still `"218"` |
+| 6 | Keep what conforms: 2,930 airports pass every rule | `rules.conforms()` (presses *Keep what conforms*; the popover closes) | `discover.kept()` → `"2,930"` — the clean set is the page, and every view counts it |
 
-Step 3 is the high-altitude finding (218), not *Show all 245 warnings*: the subtitle and the frame
-are about altitude, and the 29 airports without a time zone would add points that are not high. If
-a take wants the severity instead, step 3 is `showAll("warnings")` → `/^245 of 3,218\b/` and its
-subtitle *Amber warns: 245 airports, most of them high* — but step 4 then frames more than the
-mountains. Recommended: the finding. The subtitle of step 4 is 45 characters.
+The take ends on the clean set: what conforms, kept, is the page. Step 4 is the high-altitude finding
+(218), not the rule's 288: the subtitle and the frame are about altitude.
 
 **Numbers** (`data/airports.csv`; the rules are `rules.ttl`)
 
@@ -290,100 +273,111 @@ mountains. Recommended: the finding. The subtitle of step 4 is 45 characters.
 | --- | --- | --- |
 | No IATA code (violation) | 20 | `select count(*) from a where iata is null` (none present-but-malformed: 0) |
 | ICAO not four letters (violation) | 24 | `select count(*) from a where icao is not null and not regexp_full_match(icao,'[A-Z]{4}')` |
-| Airports with a violation | 44 (the two sets are disjoint) — *Show all 44 violations* | `… where iata is null or (icao is not null and not regexp_full_match(icao,'[A-Z]{4}'))` |
+| Airports with a violation | 44 (the two sets are disjoint) | `… where iata is null or (icao is not null and not regexp_full_match(icao,'[A-Z]{4}'))` |
 | No time zone (warning) | 29 | `select count(*) from a where timezone is null` |
 | Above 4,000 ft (warning) | 218 | `select count(*) from a where altitude > 4000` |
-| Airports with a warning | 245 (29 + 218, two airports in both) — *Show all 245 warnings* | `… where timezone is null or altitude > 4000` |
-| …where | US 46 · China 29 · Mexico 15 · Iran 14 · Ethiopia 9 · Peru 8 · Colombia 8 · Mongolia 7 · Bolivia 6 · Turkey 6 | `select country, count(*) from a where altitude>4000 group by 1 order by 2 desc limit 10` |
+| Airports with a warning | 245 (29 + 218, two airports in both) | `… where timezone is null or altitude > 4000` |
+| **Airports the rule flags** — *Show 288* | **288** (44 + 245, one airport in both) | `select count(*) from a where iata is null or (icao is not null and not regexp_full_match(icao,'[A-Z]{4}')) or timezone is null or altitude > 4000` |
+| **Airports that conform** — *2,930 conform* | **2,930** (3,218 − 288) | `select count(*) from a where not (iata is null or (icao is not null and not regexp_full_match(icao,'[A-Z]{4}')) or timezone is null or altitude > 4000)` |
+| …where the 218 are | US 46 · China 29 · Mexico 15 · Iran 14 · Ethiopia 9 · Peru 8 · Colombia 8 · Mongolia 7 · Bolivia 6 · Turkey 6 | `select country, count(*) from a where altitude>4000 group by 1 order by 2 desc limit 10` |
 | …by region (boxes) | Rockies/US–Mexico west 48 · Andes 30 · Tibet/Qinghai 17 · Iran 14 · Mexican plateau 13 · Ethiopian highlands 9 · elsewhere 87 | `case when lon between -125 and -100 and lat>25 … end` over the same 218 |
 | Highest | Daocheng Yading 14,472 ft (China); El Alto, La Paz 13,355 ft | `select name, country, altitude from a order by altitude desc limit 5` |
 
-**Was in the way — now settled**
-
-- **"Show 44" is a product change**, Kanzo-Tech/keasy#127: per rule, *Show all N violations* and
-  *Show all N warnings* publish the union of that severity's focus nodes as the panel's one clause
-  (`Airport · violations`). Over OpenFlights: 44 violations, 245 warnings. The demo needs it merged
-  and `RulesBadge`'s `rule(name).showAll("violations" | "warnings")` (presses *Show all N …*, and
-  resolves once the popover has closed).
-- The rule's tally counts **results** (*44 violations · 247 warnings*), not airports: 29 + 218
-  warnings are 245 airports, so the Show-all button is what names 245.
-- Step 4's subtitle names the regions the 218 sit in by weight: the Rockies and the US–Mexico west
-  (48), the Andes (30), Iran (14), the Ethiopian highlands (9), Tibet and Qinghai (17). The US (46),
-  China (29) and Mexico (15) lead by country. The frame of 218 points over four continents is close
-  to the world view; the step reads as "where they are" rather than a zoom.
+The popover's *N conform* is what was checked less what any rule flags, at either severity — a
+warning is a result, and a node with one does not conform in SHACL. *Keep what conforms* keeps the
+subjects of rudof's Shape Fragment instead, so step 6's check is what proves the two agree here.
 
 **Risks**
 
-- Rules validate in the browser (rudof); arrange waits on *Checked over all*, up to 120 s today.
-- The removed step *"Or only the airports that pass"* stays out, as decided.
+- Rules validate in the browser (rudof); arrange waits on *All 3,218 nodes checked*, within two minutes.
+- If the Shape Fragment's subjects ever include a neighbour that does not conform (an airport reached
+  by `of:routeTo`), step 6 reads more than 2.9K and the take fails rather than records it; the
+  subtitle's 2,930 is then the scope line's figure, and the step is re-read.
 
 ---
 
-## 6. Nobel timeline — `nobel-timeline` (new)
+## 6. Nobel timeline — `nobel-timeline`
 
 - **Hero tab:** `nobel` · label **Nobel timeline**
 - **Stat line:** *1,026 Nobel prizes since 1901 — play them forward in time*
-- **Example / seed:** `nobel` (PR #119) · `seedGraph(page, "nobel", { name: "Demo · Nobel laureates", reuse: true })`
-- **Depends on:** `GraphTimeline` on its own crossfilter, its brush snapped to five-year bars
-  (kanzo-ui #152, v0.37.0; keasy #132), under both views (keasy #133); the setting `time-by`,
-  labelled **Timeline** in the graph's Settings.
+- **Example / seed:** `nobel` · `seedGraph(page, "nobel", { name: "Demo · Nobel laureates", reuse: true })`
+- **The story:** a century of science moving west — every prize at the city it was won in, the
+  century played, Europe's early decades against the US's 1990s, then only the women.
+- **Depends on:** `GraphTimeline` (its brush snapped to five-year bars; Play inside the brushed
+  range, accumulating, stopping at its end), under the graph only; the setting `time-by`, labelled
+  **Timeline**. To be replaced by `ChartTimeline` in a later kanzo-ui change: the steps stay.
 
 **Arrange (off camera)**
 
-1. `env`; seed; `discover.open(id)`; `graph.ready()`.
-2. `settings.timeline("date")` — the Settings select *Timeline* set to `date` (the award's year,
-   `xsd:gYear`; `birthday` is the other temporal column it offers).
-3. `settings.marks("Legible"); settings.labels(0)`; run the layout to a spread (frames, as demo 2), pause.
-4. Save the dashboard for the relation `LaureateAward>university>University>addressCountry>Country`
-   with the chart *Count by Country.name* (bar, top 8), as demo 6 does — the reading of step 4.
-5. `timeline = await env.harness(TimelineHarness.with({ title: "Timeline: date" }))`.
+1. `env`; seed; `saveDashboard(id, "LaureateAward>laureate>Laureate>birthPlace>Country", …)` — two
+   bar tiles, *Count by Laureate.gender* and *Count by Country.name*: each award with its laureate
+   and the country the laureate was born in, rooted at the award so a pick keeps awards, the dots on
+   the map. (A dashboard's pick is withdrawn when its relation changes, so the gender and the
+   country the story ends on are one relation.)
+2. `discover.open(id)`; `discover.onMap()` (each award at its first affiliation's city, edges hidden);
+   `settings.timeline("date")`.
+3. `discover.view("Dashboard")`; `discover.relation("LaureateAward", [">laureate>Laureate", ">birthPlace>Country"])`; back to Graph; `panel("Info")`.
+4. `timeline = env.harness(TimelineHarness.with({ title: /^Timeline: / }))`.
 
 **Steps**
 
 | # | Subtitle | Action | Check |
 | --- | --- | --- | --- |
-| 1 | Every Nobel prize since 1901, on one time axis | — (the timeline is read) | `timeline.range()` → `null` (no window); `graph.counts()` names the whole graph |
-| 2 | Brush 1900–1930: German universities lead | `timeline.brush([1900, 1930])` (the axis is the year as a number) | `timeline.range()` → `/^19(00\|01) – 19(29\|30)$/` (a harness drag lands on pixels, a hand's snaps to bars); `bar.chips()` holds the `date` clause |
-| 3 | Play it forward — in the 1940s the prizes go west | `timeline.play()`; poll the window's start year to ≥ 1950; `timeline.pause()` | the start year is ≥ 1950 (a bar a tick, a tenth of a second each: where it stops varies) |
-| 4 | 1990–2000: 66 of 89 affiliations are American | `bar.remove("date")` (a drag inside the paused window would move it), then `timeline.brush([1990, 2000])` | `timeline.range()` → `"1990 – 2000"` |
-| 5 | One filter, every view | `discover.view("Dashboard")`; `discover.relation("LaureateAward", ["university → University", "addressCountry → Country"])` (the Dashboard opens on the first type) | `dashboard.tile("Count by Country.name")` top bar `USA`; `bar.chips()` still holds the `date` clause · **poster** |
+| 1 | 749 Nobel prizes since 1901, each where it was won | — (the map is read: the first frame is the world, the Atlantic in the middle) | `timeline.range()` → `null`; `graph.counts()` → `/^1\.1K of 2\.5K nodes placed/` (749 awards + 370 universities) |
+| 2 | Play the whole century | `timeline.brush([1900, 2029])`; `timeline.play()`; poll the window's end to ≥ 2025 | the end year ≥ 2025 |
+| 3 | 1900–1930: 9 in 10 mapped prizes were won in Europe | `bar.remove("date")`; `timeline.brush([1900, 1930])`; `graph.frame()` | `timeline.range()` → `/^19(00\|01) – 19(29\|30)$/`; `discover.kept()` → `/^(156\|151)$/` (every prize in the window; 93 or 90 of them mapped) |
+| 4 | 1990–2000: 65 of 86 mapped prizes were won in the US | `bar.remove("date")`; `timeline.brush([1990, 2000])`; `graph.frame()` | `timeline.range()` → `"1990 – 2000"`; `discover.kept()` → `"117"` (86 mapped) · **poster** |
+| 5 | Only the women — play the century again | `discover.view("Dashboard")`; *Count by Laureate.gender* `pick({ y: "female" })`; `discover.view("Graph")`; `bar.remove("date")`; brush 1900–2029 and play to the end | `discover.kept()` → `"68"` (29 mapped); `bar.chips()` holds `Laureate.gender` |
+| 6 | One filter, every view | `discover.view("Dashboard")` | *Count by Country.name*'s top bar is `USA`; `bar.chips()` holds `date` and `Laureate.gender` |
 
-**Numbers** (`nobel/data`, JSON)
+*Mapped* is said because the map places 749 of the 1,026 awards — those whose first affiliation has
+a city on record — and the readout counts every prize the window keeps, mapped or not (`select
+count(*) from awards where year::int between 1900 and 1930` → 156; 1990–2000 → 117; to women → 68). The 9 in 10 holds whichever year the drag's
+right edge reads: 83 of 93 through 1930, 82 of 90 through 1929.
+
+**The frames do not zoom into a continent.** Steps 3 and 4 frame what the window keeps, and both
+windows keep prizes on either side of the Atlantic and beyond: 1900–1930 runs from Pasadena
+(−118°) to Calcutta (88°, 1930), 1990–2000 from Vancouver (−123°) to Tsukuba (140°). Each
+frame is close to the world view; the subtitles say where the prizes were won, not where the camera
+goes. A take that wants the camera on Europe needs a lasso or a narrower window, not a frame.
+
+**Numbers** (`nobel/data`, JSON; `make seed` or `sh infra/dev/examples/nobel/fetch.sh`)
 
 ```sql
-create view aw as select * from read_json('awards.json');
-create view af as select * from read_json('affiliations.json');
-create view i  as select * from read_json('institutions.json');
-create view x  as select aw.year::int y, i.country from af join aw on aw.id = af.award join i on i.id = af.institution;
+create view awards as select * from read_json('awards.json');  -- and affiliations, institutions, laureates, countries
+-- An award is placed at its first affiliation's city (fetch.sh). affiliations.json is sorted, so the
+-- first is found again as the affiliation whose institution sits at the award's own position; no
+-- award has two such institutions in different countries (checked: 0).
+create view placed as
+select aw.id, aw.year::int y, aw.lat, aw.lon, aw.laureate,
+  (select any_value(i.country) from affiliations af join institutions i on i.id = af.institution
+    where af.award = aw.id and i.lat = aw.lat and i.lon = aw.lon) country
+from awards aw where aw.lat is not null;
+-- Europe: austria, belgium, czech-republic, denmark, finland, france, germany, hungary, ireland,
+-- italy, norway, portugal, russia, spain, sweden, switzerland, the-netherlands, united-kingdom
 ```
 
 | Figure | Value | Query |
 | --- | --- | --- |
-| Awards (laureate × prize) | 1,026, 1901–2025, to 1,018 laureates (990 people, 28 organisations) | `select count(*), count(distinct laureate), min(year), max(year) from aw` |
-| Universities · countries | 379 · 86 | `count(*)` over institutions.json, countries.json |
-| Affiliations | 847, on 758 awards | `select count(*), count(distinct award) from af` |
-| 1901–1929 | 151 awards; 92 affiliations: Germany 28, UK 16, France 15, Sweden 6, USA 5 | `select country, count(*) from x where y < 1930 group by 1 order by 2 desc` |
-| 1901–1938 | 132 affiliations, 112 in Europe (85 %); Germany 41, UK 23, France 17 | the same, `y <= 1938`, Europe as a country list |
-| 1939–1945 | no prizes 1940–1942; USA 7, Germany 4, UK 3 | `select count(*) from aw where year between 1940 and 1942` → 0 |
-| 1946–2025 | 697 affiliations, USA 425 (61 %), UK 74, Germany 41 | `select count(*), count(*) filter (where country='usa') from x where y >= 1946` |
-| 1990–1999 | 104 awards; 78 affiliations, USA 58, Germany 5, France 4 | `… where y between 1990 and 1999` |
-| 1900–1930, the take's window | Germany 29, UK 16, France 15, Netherlands 6 (by university the Sorbonne leads, 6) | `… where y between 1900 and 1930` (the window is inclusive) |
-| 1990–2000, the take's window | 117 awards; 89 affiliations, USA 66, Germany 5, UK 4 | `… where y between 1990 and 2000` |
-| US share by decade | 1900s 1/34 · 1920s 2/33 · 1930s 12/45 · 1940s 15/32 · 1950s 33/62 · 1990s 58/78 · 2000s 79/114 | `select y//10*10, count(*) filter (where country='usa'), count(*) from x group by 1` |
-
-The crossover is in the 1940s (US 15 of 32), so the subtitle says *"in the 1940s"*; the US holds
-≥ 50 % in every decade after it.
+| Awards (laureate × prize) | 1,026, 1901–2025 | `select count(*), min(year), max(year) from awards` |
+| Placed on the map | 749 awards (each with a country: 749) and 370 universities — 1,119, "1.1K" | `select count(*), count(country) from placed`; `select count(*) from institutions where lat is not null` |
+| 1901–1930, the take's window | 93 placed; 83 in Europe (89 %), 6 in the US | `select count(*), count(*) filter (where country in (<Europe>)), count(*) filter (where country = 'usa') from placed where y between 1901 and 1930` |
+| 1901–1929, a pixel short | 90 placed; 82 in Europe (91 %), 5 in the US | the same, `between 1901 and 1929` |
+| 1990–2000, the take's window | 86 placed; 65 in the US, 18 in Europe | the same, `between 1990 and 2000` (the window is inclusive) |
+| By decade, placed · US · Europe | 1900s 33·1·32 · 1910s 24·2·22 · 1920s 33·2·28 · 1930s 39·11·27 · 1940s 30·15·14 · 1950s 54·31·23 · 1960s 60·29·28 · 1970s 77·44·31 · 1980s 76·46·28 · 1990s 75·57·16 · 2000s 96·66·19 · 2010s 91·53·24 · 2020s 61·40·16 | `select y // 10 * 10, count(*), count(*) filter (where country = 'usa'), count(*) filter (where country in (<Europe>)) from placed group by 1 order by 1` |
+| Prizes to women | 68, 29 of them placed | `select count(*), count(aw.lat) from awards aw join laureates l on l.id = aw.laureate where l.gender = 'female'` |
+| …by decade | 1900s 3 · 1910s 1 · 1920s 2 · 1930s 3 · 1940s 3 · 1960s 3 · 1970s 4 · 1980s 4 · 1990s 7 · 2000s 11 · 2010s 13 · 2020s 14 | `… group by aw.year::int // 10 * 10` |
+| …by the laureate's birth country (step 6's tile) | USA 18 · France 6 · Poland 5 · Iran 3 · Canada 2 · Czech Republic 2 | `select co.name, count(*) from awards aw join laureates l on l.id = aw.laureate join countries co on co.id = l.country where l.gender = 'female' group by 1 order by 2 desc` |
+| The gender tile, everyone | male 924 · female 68 (an organisation has no gender, nor a birth country) | `select l.gender, count(*) from awards aw join laureates l on l.id = aw.laureate join countries co on co.id = l.country group by 1` |
 
 **Risks**
 
-- The window is inclusive (`BETWEEN`): 1990–2000 holds 2000, hence *66 of 89*, not 1990–1999's 58 of 78.
-- Playback is a clock: the subtitle leads it and the step ends on a state (the start past 1950), but
-  the 1940s pass in about 0.3 s on camera.
-- *"66 of 89 affiliations"* counts affiliation rows (an award with two universities counts twice);
-  the dashboard relation's rows are the same rows.
-- `Timeline: date` assumes the setting's value is the bare column name; if it is `LaureateAward.date`
-  the title follows. The `TimelineHarness.with({ title: /^Timeline: / })` form avoids it.
-- Nobel's PR #119 is another session's; this storyboard only reads it.
+- Playback is a clock: each step waits on a state (the window's end past 2025), and the century plays
+  a five-year bar per tick, each paced by the page's answer.
+- A harness drag lands on pixels, not on the bars a hand snaps to: step 3's edge may read 1929; its
+  subtitle holds either way. Step 4 asserts `"1990 – 2000"` exactly, as the last take read it.
+- Brushing to 2029 assumes the axis runs to the last bar's edge (2030); if the drag lands off the
+  plot, brush to 2025.
 
 ---
 
@@ -399,8 +393,8 @@ Beyond the library harnesses (`GraphCanvasHarness`, `ChartHarness`, `TimelineHar
 | `DiscoverPage` (`support/app/discover.ts`) | `open(id, { view?, panel? })` (deep link, `discoverUrl`); `view("Graph" \| "Dashboard")` (the view switch through `DockHarness.with({ name: <its group name> })`); `relation(root, hops?)` (*Root type* select, *Hop* menu items `label → Type`); `widenDock(px)`; `onMap()` (the shared OpenFlights arrange); `figure(title)` (a figure tile's value); `counts()` (the footer's GraphCounts, in either view); `hoverChip(field)` | `openGraphView`, `onMap`, `widenDock`, the `dispatchEvent("click")` on *Dashboard*. The relation is not in the URL, so it is a call |
 | `SettingsPanel` (`support/app/settings.ts`) | `placement("Map", { x, y })`; `marks("Legible")`; `edges("Hidden")`; `labels(n)`; `timeline(column)` | `placeOnMap`, `hideEdges`, `choose`; `timeline` is new (the *Timeline* select, `time-by`) |
 | `GraphSearch` (`support/app/search.ts`) | `add(query): Promise<number>` — opens *Find anything in the graph*, types, presses *Add N to the subset*, returns N | demo 2's inline steps |
-| `RulesBadge` (`support/app/rules.ts`, on `FindingsBadgeHarness`) | `checked()` (the *Checked over …* line); `rule(name)` → `state()` (the badges), `show(message \| RegExp)` (presses *Show N*, waits for *Showing N*), `showAll("violations" \| "warnings")` (presses *Show all N …*, waits on `aria-pressed`; keasy#127), `conforms()` | keasy's panel is `Diagnostic`s, not the library's `Findings`, so `FindingsHarness` does not drive it |
-| `AskPanel` (`support/app/ask.ts`) | `warmUp()`; `composer()` → `AnswerHarness.with({ name: "Ask about your data…" })` | `warmUp` in `snb-ask.demo.ts` |
+| `RulesBadge` (`support/app/rules.ts`, on `FindingsBadgeHarness`) | `check()` / `checked()` (the scope line, *All 3,218 nodes checked · 2,930 conform*); `stale()` (the reason the scope line gives once it is out of date); `rule(name)` → `state()` (the tally badges), `showAll()` / `hideAll()` / `offersShowAll()` (the rule's own *Show N* at the end of its heading), `show(message \| RegExp)` (a finding's *Show N* toggle, through `FindingsItemHarness.act`); `conforms(on?)` (*Keep what conforms*; resolves once the popover has closed) | the library's `FindingsItemHarness` reads each finding |
+| `AskPanel` (`support/app/ask.ts`) | `warmUp()`; `composer()` → `AnswerHarness.with({ name: "Ask about your data…" })` | `warmUp` in `nobel-ask.demo.ts` |
 | seeds / API (`support/seeds.ts`, `support/stack/api.ts`) | `saveRules(id, example)`; `saveDashboard(id, relationKey, spec)` | rules PUT exists inline in flights-rules; the dashboard PUT is new (demo 6) |
 
 The view switch and dock: `DockHarness` drives any single-select toggle group; it needs the view
@@ -420,20 +414,23 @@ group is unnamed, naming it (*View*) is a one-line keasy change and the clean fi
    and `public/videos/nobel/{light,dark}.mp4` + `poster-{light,dark}.webp`, made as the
    handoff note says (ffmpeg `-crf 22 -g 30 -keyint_min 30 -sc_threshold 0 -movflags +faststart`;
    posters via sharp, 1600 wide).
-2. **Steps re-read for every tab** from the new chapters: Hidden patterns gains *Lasso the peninsula* and *Frame what
-   you kept*; Crossfilter loses *One filter, every chart* and gains *Frame what the filters keep*; Ask
-   gains *Filter: women only* and *Add it to the dashboard*; Assessment loses *Or only the ones that
-   pass* and gains the warning and the frame.
+2. **Steps re-read for every tab** from the new chapters (the 0.40 re-cut): Hidden patterns gains
+   *Frame Spain* before the lasso; Crossfilter's switch to the graph and its frame are one step;
+   Ask moves to Nobel: Physics, the universities, *Open it on the dashboard*, Germany and the frame on the map;
+   Assessment shows the rule's 288, frames twice and ends on *Keep what conforms*; Nobel is
+   re-cut as a century moving west, then the women.
 3. Stat lines: the five existing ones stand. Assessment's *3,218 airports assessed* is right (3,218).
 4. **Six tabs** in the hero: check that the tab row wraps or scrolls at phone width (16 px gutter,
    no horizontal page scroll) — five fit today.
 
 ## Anything in the data that contradicts a planned subtitle
 
-- **Assessment, "show the violations (44)"** — settled by keasy#127 (*Show all 44 violations*);
-  warnings are 245 as a severity, 218 as the high-altitude finding the take shows.
+- **Assessment, "show the violations (44)"** — superseded by the rule's one *Show N* (kanzo-ui
+  0.40): 288 airports, of either severity; 218 is the high-altitude finding the take shows.
 - **Assessment, "the Andes, Rockies, Ethiopia, Tibet"** — settled: *"The Rockies, the Andes, Iran,
   Ethiopia, Tibet"*.
 - **Hidden patterns, framing Spain** — settled: the `PENINSULA` lasso (31, all Spanish) before the frame.
-- **Nobel, "Europe → US after 1945"** — settled: *"in the 1940s"* (US 15 of 32); before 1939 Europe
-  held 85 % (112 of 132), from 1946 the US 61 % (425 of 697).
+- **Nobel, "the camera into Europe" / "across the Atlantic"** — the frames cannot say it: both
+  windows keep prizes from California to India or Japan, so each frame is near the world view. The
+  subtitles name where the prizes were won (9 in 10 in Europe; 65 of 86 in the US), and the frame
+  stays as the gesture.

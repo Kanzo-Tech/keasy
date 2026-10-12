@@ -3,8 +3,7 @@
 import { Suspense, useMemo } from "react";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Sparkles } from "lucide-react";
-import { count, Query } from "@uwdata/mosaic-sql";
-import { useChartQuery, useClauses, useMosaic, type JoinGraph } from "@kanzo-tech/ui/analytics";
+import { useClauses, useMosaic, type JoinGraph } from "@kanzo-tech/ui/analytics";
 import { Badge, EmptyDescription, EmptyHeader, EmptyIndicator, EmptyRoot } from "@kanzo-tech/ui";
 import { Chat, ChatSkeleton, useAgentChat } from "@kanzo-tech/ai";
 import { AnswerCard, answerRelationsOf, dataAgent, dataSuggestions, readAnswerRelations, type AnswerRelation } from "@kanzo-tech/ai/data";
@@ -13,16 +12,17 @@ import { gateway } from "@/lib/ai";
 import { settled } from "@/lib/api/settled";
 import { coded } from "@/lib/errors";
 import { useModelContext } from "@/lib/model-windows-context";
-import { corpusKey, ONCE, useCorpus, useJoinGraph, useVertices } from "@/lib/fossil/corpus";
+import { corpusKey, ONCE, useCorpus, useJoinGraph } from "@/lib/fossil/corpus";
 import { useDashboardStore } from "./dashboard-store";
 import { startersQuery } from "./starters";
 
 /**
  * The Ask panel — `@kanzo-tech/ai/data` over the graph: `readAnswerRelations` over the corpus's join
- * graph, `dataAgent` on the page's engine under the page's crossfilter, `dataSuggestions` as the
- * pills, and each answer an `AnswerCard` — the dashboard tile it is, which *Filter to it* narrows the
- * page to and *Add to the dashboard* adds to the Dashboard view's saved document. Nothing here
- * writes SQL, and neither does the model: it names a relation, conditions and a tile.
+ * graph, `dataAgent` on the page's engine under the page's one selection, `dataSuggestions` as the
+ * pills, and each answer an `AnswerCard` — the dashboard tile it is, which *Filter the page to these
+ * rows* narrows the page to (when it filters at all), *Add to the dashboard* adds to the Dashboard
+ * view's saved document, and *Open on the dashboard* then shows there. Nothing here writes SQL, and
+ * neither does the model: it names a relation, conditions and a tile.
  */
 export function AskPanel() {
   return (
@@ -71,15 +71,15 @@ function useRelations(graph: JoinGraph): AnswerRelation[] {
  */
 function useStarters(graph: JoinGraph, relations: readonly AnswerRelation[]) {
   const { graphId } = useCorpus();
-  const { crossfilter } = useMosaic();
+  const { selection } = useMosaic();
   const context = useModelContext("complete");
   // Re-rendered on every clause, so the key below is the filter as it is now.
-  useClauses(crossfilter);
+  useClauses(selection);
   const starters = useQuery({
-    queryKey: [...corpusKey(graphId), "starters", String(crossfilter.predicate(null) ?? "")],
+    queryKey: [...corpusKey(graphId), "starters", String(selection.predicate(null) ?? "")],
     // Each request replaces the last, and one cut short by a filter change leaves nothing behind.
     queryFn: startersQuery(({ signal }) =>
-      dataSuggestions({ model: gateway("complete"), graph, relations, selection: crossfilter, context, abortSignal: signal }),
+      dataSuggestions({ model: gateway("complete"), graph, relations, selection, context, abortSignal: signal }),
     ),
     staleTime: Infinity,
     retry: false,
@@ -95,40 +95,40 @@ function useStarters(graph: JoinGraph, relations: readonly AnswerRelation[]) {
 
 /**
  * *Add to the dashboard*, for whoever may edit it: the page's saved document, which the card reads
- * *✓ On the dashboard* off, and the write of the next one, which the card waits on and whose failure
- * it draws. Nothing while the document has not been read, or for a reader who may not change it.
+ * whether the tile is there off, the write of the next one, which the card waits on and whose
+ * failure it draws, and *Open on the dashboard* once it is there. Nothing while the document has not
+ * been read, or for a reader who may not change it.
  */
 function useAdding() {
   const store = useDashboardStore();
   if (store.status !== "ready" || !store.edit) return {};
-  return { dashboards: store.current, onAdd: store.edit.add };
+  return { dashboards: store.current, onAdd: store.edit.add, onOpen: store.edit.open };
 }
 
 /**
- * What the next question is asked over, in the composer: the subset's size while the page holds one,
- * and nothing while it does not — every question then reads the whole graph.
+ * What the next question is asked over, in the composer: *Filtered* while the page holds a filter,
+ * and nothing while it does not — every question then reads the whole graph. Not how many: that is
+ * the page's one count, the filter bar's readout.
  */
-function SubsetPill({ vertices }: { vertices: Query }) {
-  const { crossfilter } = useMosaic();
-  const { row } = useChartQuery({ deps: [vertices], query: (filter) => Query.from(vertices).select({ n: count() }).where(filter) });
-  if (!row || crossfilter.clauses.length === 0) return null;
+function SubsetPill() {
+  const { selection } = useMosaic();
+  if (useClauses(selection).length === 0) return null;
   return (
     <Badge pill variant="outline">
-      Subset · {Number(row.n).toLocaleString()} nodes
+      Filtered
     </Badge>
   );
 }
 
 function AskChat() {
-  const { crossfilter } = useMosaic();
+  const { selection } = useMosaic();
   const { engine } = useCorpus();
   const context = useModelContext("chat");
-  const vertices = useVertices();
   const graph = useJoinGraph();
   const relations = useRelations(graph);
   const agent = useMemo(
-    () => dataAgent({ model: gateway("chat"), engine, graph, relations, selection: crossfilter, context }),
-    [engine, graph, relations, crossfilter, context],
+    () => dataAgent({ model: gateway("chat"), engine, graph, relations, selection, context }),
+    [engine, graph, relations, selection, context],
   );
   const chat = useAgentChat(agent);
   const starters = useStarters(graph, relations);
@@ -142,7 +142,7 @@ function AskChat() {
         chat={{ ...chat, error: chat.error === undefined ? undefined : coded(chat.error, "llm/failed") }}
         copy={problemCopy}
         className="p-2"
-        context={<SubsetPill vertices={vertices} />}
+        context={<SubsetPill />}
         empty={<AskEmpty />}
         notice={starters.failure}
         suggesting={starters.suggesting}

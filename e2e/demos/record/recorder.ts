@@ -6,7 +6,7 @@ import { playwright, type HarnessEnvironment } from "@kanzo-tech/testing";
 
 import { CURSOR, GLIDE, ROLLING, gliding } from "./cursor";
 import { encode, ffmpeg } from "./encode";
-import { hold, readingTime } from "./pace";
+import { TAIL, hold, readingTime } from "./pace";
 
 /**
  * A product demo: a Playwright test that records a story, step by step. `make demo` lists them by
@@ -20,6 +20,7 @@ import { hold, readingTime } from "./pace";
  * rather than recording it. `hold` is the only time a demo spends on the clock, and it is the
  * viewer's: the subtitle is read while it leads its action (`LEAD`), and the rest of its reading time
  * (`readingTime`) is held once the action's result is on screen, so a slow action never eats into it.
+ * After the last step the page is held still for `TAIL`, its subtitle gone, before the cut.
  *
  * The subtitles are the Screencast API's `showOverlay` (`subtitle`). The cursor is the page's own
  * (`CURSOR`): the API's `showActions` also draws a box round each target and a title for each action,
@@ -197,6 +198,8 @@ async function take(
   });
   await shown?.dispose();
   chapters.at(-1)!.end = now();
+  // The result, held still before the cut, with no subtitle over it.
+  await hold(TAIL);
   await page.screencast.stop();
   return shot;
 }

@@ -1,4 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { createServer } from "node:http";
+import type { AddressInfo } from "node:net";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Page, Request } from "@playwright/test";
@@ -19,17 +21,45 @@ import { STATE_TIMEOUT } from "./recorder";
  *
  * - **Replay** is the default: each call is answered with the next recorded body under its key, and a
  *   call the recording does not hold is refused and named — the question, the prompt or the tool's
- *   schema changed, and the recording is to be captured again.
+ *   schema changed, and the recording is to be captured again. The body is streamed as a model
+ *   streams it — a pause before the first event, then one event at a time — from a server in this
+ *   process the call is sent on to: `route.fulfill` hands the page the body whole, so the answer
+ *   painted at once and the page's waiting and streaming states were never on camera.
  * - **`LIVE=1`** asks the model through the gateway (`make demo` swaps it onto e2e/demos/models.yml).
  * - **`LIVE=1 RECORD=1`** does that and keeps what the model said; the demo writes it to
  *   `e2e/demos/recordings/<demo>.json` only once every check of the take has passed, so a refused
  *   query or an answer over the wrong rows is never recorded.
  *
- * Capture, with the stack and the seeds up: `make demo DEMO=snb-ask LIVE=1 RECORD=1`, then commit
+ * Capture, with the stack and the seeds up: `make demo DEMO=nobel-ask LIVE=1 RECORD=1`, then commit
  * the recording. Capture again when the prompt, the tool's schema or the example changes.
  */
 
 const RECORDINGS = join(dirname(fileURLToPath(import.meta.url)), "..", "recordings");
+
+/** The pause before a replayed call's first event: the model reading the question. */
+const FIRST_EVENT_MS = 1200;
+/** Between two of a replayed call's events: a token or a few, as a local model writes them. */
+const EVENT_MS = 35;
+
+/** Serves `bodies[i]` at `/i` as server-sent events, paced. Closed with the page. */
+async function pacer(page: Page, bodies: readonly string[]): Promise<string> {
+  const server = createServer(async (request, response) => {
+    const body = bodies[Number(request.url?.slice(1))];
+    if (body === undefined) return void response.writeHead(404).end();
+    response.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-cache", connection: "keep-alive" });
+    const events = body.split(/(?<=\n\n)/);
+    await new Promise((resolve) => setTimeout(resolve, FIRST_EVENT_MS));
+    for (const event of events) {
+      if (response.destroyed) return;
+      response.write(event);
+      await new Promise((resolve) => setTimeout(resolve, EVENT_MS));
+    }
+    response.end();
+  });
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  page.once("close", () => server.close());
+  return `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+}
 
 export const LIVE = process.env.LIVE === "1";
 export const RECORD = process.env.RECORD === "1";
@@ -96,6 +126,7 @@ export async function model(page: Page, demo: string): Promise<Model> {
     throw new Error(`${demo} replays the model from demos/recordings/${demo}.json, which is not there: capture it with make demo DEMO=${demo} LIVE=1 RECORD=1`);
   }
   const { calls } = JSON.parse(readFileSync(file, "utf8")) as { calls: Call[] };
+  const paced = await pacer(page, calls.map((call) => call.body));
   const served = new Set<number>();
   const unrecorded: string[] = [];
   await page.route(AI, async (route) => {
@@ -106,7 +137,7 @@ export async function model(page: Page, demo: string): Promise<Model> {
       return route.abort("failed");
     }
     served.add(at);
-    return route.fulfill({ status: 200, contentType: "text/event-stream", body: calls[at]!.body });
+    return route.continue({ url: `${paced}/${at}` });
   });
   return { live: false, unrecorded, keep() {} };
 }

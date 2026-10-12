@@ -19,7 +19,7 @@ const QUESTION_MS = Number(process.env.EVAL_QUESTION_MS ?? 8 * 60_000);
  * and the tool calls it wrote — so a failed case says whether the model called `answer`, wrote prose
  * instead, or thought until the time ran out. Cut to the tail: the end is where a call is decided.
  */
-function said(sse: string): { text: string; reasoning: string; calls: string; tokens?: number } {
+function said(sse: string, status: number): { status: number; text: string; reasoning: string; calls: string; tokens?: number; body?: string } {
   let text = "";
   let reasoning = "";
   let calls = "";
@@ -38,7 +38,9 @@ function said(sse: string): { text: string; reasoning: string; calls: string; to
     }
   }
   const tail = (s: string) => (s.length > 600 ? `…${s.slice(-600)}` : s);
-  return { text: tail(text), reasoning: tail(reasoning), calls: tail(calls), tokens };
+  // Nothing read as a stream: a refusal or an error the gateway answered instead, kept as it came.
+  const body = text || reasoning || calls ? undefined : sse.slice(0, 600);
+  return { status, text: tail(text), reasoning: tail(reasoning), calls: tail(calls), tokens, body };
 }
 
 /** Whether `rows` — an answer's data table — holds a row reading `label` and `n` (separators aside). */
@@ -74,13 +76,17 @@ for (const c of ASK) {
     if (filter && title) await (await (await dashboard.tile(title)).chart()).pick({ y: filter.pick });
     await page.addStyleTag({ content: ".tsqd-parent-container { display: none !important; }" });
     await discover.panel("Ask");
-    const answers = await (await discover.ask()).composer();
+    const panel = await discover.ask();
+    // The model loaded and answering before the clock starts: a first call after a load can outlast
+    // the gateway's 20 s to a first token, which would score the load and not the model.
+    await panel.warmUp();
+    const answers = await panel.composer();
 
     // Every model call the page makes from here on, as it was streamed back.
     const calls: ReturnType<typeof said>[] = [];
     page.on("response", (response) => {
       if (!response.url().includes("/api/ai/chat/completions")) return;
-      void response.text().then((body) => calls.push(said(body)), () => undefined);
+      void response.text().then((body) => calls.push(said(body, response.status())), () => undefined);
     });
 
     const started = Date.now();

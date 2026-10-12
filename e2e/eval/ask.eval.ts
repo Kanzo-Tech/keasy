@@ -14,6 +14,33 @@ import { record } from "./record";
 /** How long one question may take, on the CPU a baseline runs on. */
 const QUESTION_MS = Number(process.env.EVAL_QUESTION_MS ?? 8 * 60_000);
 
+/**
+ * What the model said in one call, read from the stream the page received: its text, its reasoning
+ * and the tool calls it wrote — so a failed case says whether the model called `answer`, wrote prose
+ * instead, or thought until the time ran out. Cut to the tail: the end is where a call is decided.
+ */
+function said(sse: string): { text: string; reasoning: string; calls: string; tokens?: number } {
+  let text = "";
+  let reasoning = "";
+  let calls = "";
+  let tokens: number | undefined;
+  for (const line of sse.split("\n")) {
+    if (!line.startsWith("data: ") || line === "data: [DONE]") continue;
+    try {
+      const chunk = JSON.parse(line.slice(6));
+      const delta = chunk.choices?.[0]?.delta ?? {};
+      text += delta.content ?? "";
+      reasoning += delta.reasoning_content ?? "";
+      for (const call of delta.tool_calls ?? []) calls += `${call.function?.name ?? ""}${call.function?.arguments ?? ""}`;
+      tokens = chunk.usage?.completion_tokens ?? tokens;
+    } catch {
+      // A line cut by the stream's end: what came before it is kept.
+    }
+  }
+  const tail = (s: string) => (s.length > 600 ? `…${s.slice(-600)}` : s);
+  return { text: tail(text), reasoning: tail(reasoning), calls: tail(calls), tokens };
+}
+
 /** Whether `rows` — an answer's data table — holds a row reading `label` and `n` (separators aside). */
 function holds(rows: readonly Record<string, string>[], [label, n]: Pair): boolean {
   return rows.some((row) => {
@@ -49,6 +76,13 @@ for (const c of ASK) {
     await discover.panel("Ask");
     const answers = await (await discover.ask()).composer();
 
+    // Every model call the page makes from here on, as it was streamed back.
+    const calls: ReturnType<typeof said>[] = [];
+    page.on("response", (response) => {
+      if (!response.url().includes("/api/ai/chat/completions")) return;
+      void response.text().then((body) => calls.push(said(body)), () => undefined);
+    });
+
     const started = Date.now();
     const turns: number[] = [];
     let rows: Record<string, string>[] = [];
@@ -79,6 +113,7 @@ for (const c of ASK) {
       missing,
       present,
       rows: rows.slice(0, 10),
+      calls,
       turns,
       ms: Date.now() - started,
     });

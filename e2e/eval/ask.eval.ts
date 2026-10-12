@@ -6,8 +6,8 @@ import { warmUp } from "./model";
 import { record } from "./record";
 
 /**
- * Ask's cases, asked of the model the stack points `chat` at — today's `dataAgent`, end to end: the
- * panel, the BFF, the gateway and the page's engine. Live only, never replayed: what is measured is
+ * Ask's cases, asked of the model the stack points `chat` at, through whatever the Ask panel runs —
+ * end to end: the panel, the BFF, the gateway and the page's engine. Live only, never replayed: what is measured is
  * the model. Each case is one result line in `results/<EVAL_MODEL>/ask.jsonl`, scored or failed, and
  * a case that fails is a result, not a failed test — the suite fails only when it cannot ask at all.
  */
@@ -110,8 +110,12 @@ for (const c of ASK) {
     let failure: string | undefined;
     let answered: string | undefined;
     let card: { text: string; tables: number } | undefined;
+    // A case that must end in words — a question back, or no answer — is scored on the reply, which a
+    // turn that draws no card leaves as the conversation's last message.
+    const words = c.expects === "question" || c.expects === "refusal";
+    let replied: string | undefined;
     try {
-      for (const question of c.ask) {
+      for (const [n, question] of c.ask.entries()) {
         const asked = Date.now();
         // A call that fails draws the panel's Problem and no card: the case ends there, with its code,
         // rather than waiting out the clock for a card that is not coming.
@@ -138,13 +142,21 @@ for (const c of ASK) {
             if ((await cards.count()) > cardsBefore) return new Promise<never>(() => {});
           }
         })();
-        await Promise.race([answers.ask(question).then(() => answers.answer()), failed, prose]).then(async (tile) => {
-          answered = await tile.text();
-        });
+        await Promise.race([answers.ask(question).then(() => answers.answer()), failed, prose]).then(
+          async (tile) => {
+            answered = await tile.text();
+          },
+          async (error: Error) => {
+            if (!(words && n === c.ask.length - 1 && /without calling answer/.test(error.message))) throw error;
+            const reply = page.locator('[data-slot="message"][data-role="assistant"]').last();
+            replied = (await reply.innerText().catch(() => "")).slice(0, 1500);
+          },
+        );
         void failed.catch(() => undefined);
         void prose.catch(() => undefined);
         turns.push(Date.now() - asked);
       }
+      if (words) throw new Error(replied === undefined ? `answered where it should have ${c.expects === "question" ? "asked which" : "said it cannot"}` : "");
       // An answer that read no rows draws no data table; asked of the harness, that is a wait to its
       // timeout for a table that will not come.
       // The rows as the library's harness reads them, the demo's way. It waits for the table as long
@@ -160,18 +172,23 @@ for (const c of ASK) {
       const last = page.locator('[data-slot="answer-card"]').last();
       card = { text: (await last.innerText().catch(() => "")).slice(0, 1500), tables: await last.locator("table").count() };
     } catch (error) {
-      failure = error instanceof Error ? error.message.split("\n")[0] : String(error);
+      failure = (error instanceof Error ? error.message.split("\n")[0] : String(error)) || undefined;
       // A run stopped from outside — Ctrl-C, a second run over it — ends the test under every wait,
       // and that is no result of the model's: nothing is written.
-      if (/Test ended|has been closed/.test(failure)) throw error;
+      if (/Test ended|has been closed/.test(failure ?? "")) throw error;
     }
     const missing = c.holds.filter((pair) => !holds(rows, pair));
     const present = (c.lacks ?? []).filter((pair) => holds(rows, pair));
+    // A question back offers the relations as numbered options, two at least.
+    if (c.expects === "question" && replied !== undefined && !/^\s*1\.\s.+\n\s*2\.\s/m.test(replied)) {
+      failure = "it did not ask which, with the relations as options";
+    }
     record("ask", {
       case: c.id,
       pass: !failure && missing.length === 0 && present.length === 0,
       failure,
       answered,
+      replied,
       kept,
       card,
       missing,

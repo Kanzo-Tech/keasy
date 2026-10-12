@@ -107,8 +107,12 @@ headers adds one, and asserts `crossOriginIsolated`.
 ## Order
 
 keasy's part of phase 1 is the evaluation set, under `e2e/eval`: Ask's cases (`cases.ts`, one or two per
-shape of question: about 25 on Nobel and about 10 on LDBC SNB, each with its expected rows) and the four examples for the assistant,
-kept as data for the new assistant. `EVAL_MODEL=<label> pnpm --filter @keasy/e2e eval` asks today's
+shape of question — 25 on Nobel and 11 on LDBC SNB, each with its expected rows, computed with DuckDB
+over the example's files) and the four examples for the assistant, kept as data for the new
+assistant. Four cases end in words and not in rows: two ties (a prize's country, a person's
+friends), which must be asked back with the relations as numbered options, and two questions the data
+cannot answer (prize money, an age), which must draw no card. The figures that need a date in a
+cell are left out until the harness reads one. `EVAL_MODEL=<label> pnpm --filter @keasy/e2e eval` asks today's
 Ask once, as a reference number; `writeProgram` is not measured, it is replaced whole. The reference pass (2026-10-12, Qwen3-4B through Model Runner, today's Ask) answered **2 of 10**
 right — prizes by category and airports by country. Two failed on the page's filter: the model picked
 a relation that reaches it, and the answer read no rows, because today's Ask kept a page's clause only

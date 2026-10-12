@@ -156,6 +156,9 @@ for (const c of ASK) {
       else rows = read;
     } catch (error) {
       failure = error instanceof Error ? error.message.split("\n")[0] : String(error);
+      // A run stopped from outside — Ctrl-C, a second run over it — ends the test under every wait,
+      // and that is no result of the model's: nothing is written.
+      if (/Test ended|has been closed/.test(failure)) throw error;
     }
     const missing = c.holds.filter((pair) => !holds(rows, pair));
     const present = (c.lacks ?? []).filter((pair) => holds(rows, pair));

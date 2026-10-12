@@ -102,6 +102,8 @@ for (const c of ASSISTANT) {
       result.checker = result.program ? await tally(page) : null;
     } catch (error) {
       result.failure = error instanceof Error ? error.message.split("\n")[0] : String(error);
+      // A run stopped from outside ends the test under every wait: no result of the model's.
+      if (/Test ended|has been closed/.test(String(result.failure))) throw error;
     }
     record("assistant", {
       ...result,

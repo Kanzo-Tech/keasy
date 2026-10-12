@@ -87,21 +87,22 @@ executor moves to a worker of its own.
 Only needed if a threaded WASM fallback for the model is ever decided (kanzo-ui's page says why
 there is none at first). What was checked on 2026-10-12, with `Cross-Origin-Opener-Policy:
 same-origin` and `Cross-Origin-Embedder-Policy: require-corp` added to `next.config.ts`'s headers
-locally:
+locally, against the dev stack:
 
-- The dev web's page was `crossOriginIsolated`, `SharedArrayBuffer` was defined, and none of its own
-  requests were blocked.
-- From that page, a ranged `fetch` of a presigned `e2e/data/people.csv` on the dev S3 store
+- `auth.spec.ts` and `discover.spec.ts`: 14 of 15 passed — sign-in through Keycloak, a graph run to
+  completion in the browser over the dev S3 store (`runToCompletion`), and Discover over its corpus.
+  The one that failed, *the view and the dock's panel are the URL's*, fails the same way with the
+  headers off: React Query's dev-only devtools overlay takes the dock's click.
+- A test that opened Discover over that corpus read `crossOriginIsolated` true and `SharedArrayBuffer`
+  defined, and saw no request blocked by COEP.
+- From the isolated page, a ranged `fetch` of a presigned `e2e/data/people.csv` on the dev S3 store
   (`s3.localhost:9000`, another origin) answered 206 with `Content-Range` exposed: a CORS read, which
-  COEP admits, and the shape of every read the executor and DuckDB-WASM make with a vended credential.
+  COEP admits.
 - By reading: the CSP keeps scripts, workers, `.wasm`, images and fonts on this origin; sign-in is a
   redirect to Keycloak with no popup; the two `target="_blank"` links carry `noopener`.
 
-**Not checked**, and owed before the headers ship: sign-in through Keycloak, `runToCompletion` and
-Discover over the e2e corpus (`e2e/tests/discover.spec.ts`), and a read from Azure. The sandbox's
-network policy denied `registry.terraform.io` (the dev realm) and the image registries the stack
-pulls from, and the dev stack has no Azure emulator. The e2e that ships with the headers runs those
-three and asserts `crossOriginIsolated`.
+**Not checked:** a read from Azure — the dev stack has no Azure emulator. The e2e that ships with the
+headers adds one, and asserts `crossOriginIsolated`.
 
 ## Order
 

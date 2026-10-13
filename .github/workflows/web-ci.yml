@@ -42,3 +42,8 @@ jobs:
       - run: pnpm exec tsc --noEmit
       - run: pnpm test
       - run: pnpm build
+      # The e2e suite's model double is development's alone: the bundle just built must not carry it.
+      - name: No model double in the production bundle
+        run: pnpm exec vitest run src/lib/model-double.test.ts
+        env:
+          KEASY_BUNDLE_CHECK: "1"

@@ -77,6 +77,21 @@ const UNSERVED: LanguageModel = {
   doStream: () => Promise.reject(unserved()),
 };
 
+/**
+ * The end-to-end suite's model double (`e2e/support/model.ts`): a model, and how its load goes, put on
+ * the page before it loads, which every screen then asks in place of WebLLM — CI's browsers have no
+ * WebGPU. Development builds only: `process.env.NODE_ENV` is inlined when the bundle is built, so a
+ * production bundle keeps neither this branch nor the name it reads (`model-double.test.ts`).
+ */
+interface ModelDouble {
+  model: LanguageModel;
+  load?: () => Promise<void>;
+}
+function modelDouble(): ModelDouble | undefined {
+  if (process.env.NODE_ENV === "production") return undefined;
+  return (window as { __keasyModelDouble?: ModelDouble }).__keasyModelDouble;
+}
+
 // One engine per page, in a worker of its own: the first caller's settings are the engine's for good.
 let settings: LocalModelSettings | undefined;
 function settingsFor(base: URL): LocalModelSettings {
@@ -93,10 +108,11 @@ function settingsFor(base: URL): LocalModelSettings {
 /** Starts the download and load, unless it is under way or done: a failed one is tried again. */
 function start(url: string | undefined) {
   if (load.state === "loading" || load.state === "ready") return;
+  const double = modelDouble();
   const base = servedFrom(url);
-  if (!base) return publish({ state: "failed", error: unserved() });
+  if (!double && !base) return publish({ state: "failed", error: unserved() });
   publish({ state: "loading", progress: 0, text: "" });
-  loadLocalModel(MODEL, settingsFor(base)).then(
+  (double ? (double.load?.() ?? Promise.resolve()) : loadLocalModel(MODEL, settingsFor(base!))).then(
     () => publish({ state: "ready" }),
     (error: unknown) => publish({ state: "failed", error }),
   );
@@ -107,7 +123,7 @@ export function useModel(): LanguageModel {
   const url = useContext(ModelUrl);
   if (typeof window === "undefined") return UNSERVED;
   const base = servedFrom(url);
-  return base ? localModel(MODEL, settingsFor(base)) : UNSERVED;
+  return modelDouble()?.model ?? (base ? localModel(MODEL, settingsFor(base)) : UNSERVED);
 }
 
 /** Starts the download and load now — or again, after a failure: a retry's action. */

@@ -2,19 +2,22 @@
 
 import { ArrowRight, Check, CircleCheck, CircleHelp, CircleX, Hammer, Lightbulb, MessageCircleQuestion, Sparkles } from "lucide-react";
 import { Link } from "@kanzo-tech/navigation/next";
-import { Message, MessageContent } from "@kanzo-tech/ai";
+import {
+  Message,
+  MessageContent,
+  Question,
+  QuestionDescription,
+  QuestionOption,
+  QuestionOptions,
+  QuestionPrompt,
+  Working,
+} from "@kanzo-tech/ai";
 import {
   Alert,
-  AlertDescription,
   AlertTitle,
   Badge,
   Button,
   Progress,
-  RadioGroup,
-  RadioGroupCard,
-  RadioGroupIndicator,
-  RadioGroupText,
-  Spinner,
   StatDescription,
   StatLabel,
   StatRoot,
@@ -30,7 +33,7 @@ import {
   type BuildProgress,
   type DecisionItem,
   optionOf,
-  type Question,
+  type Question as AskedQuestion,
   type QuestionOffer,
   type ReadingProgress,
   type Relation,
@@ -123,15 +126,12 @@ export function PickTurn({ live, onPicked, reason, ...picker }: PickTurnProps) {
   );
 }
 
-/** Work under way, as a status: its words beside a spinner, and its bar — indeterminate without a value. */
-function Working({ label, children, value }: { label: string; children: React.ReactNode; value?: number }) {
+/** Work under way: `Working`'s words beside a spinner, and its bar under them — indeterminate without a value. */
+function UnderWay({ children, value }: { children: React.ReactNode; value?: number }) {
   return (
-    <div className="flex flex-col gap-2" role="status">
-      <span className="flex items-center gap-2 text-muted-foreground">
-        <Spinner aria-hidden />
-        {children}
-      </span>
-      <Progress aria-label={label} className="max-w-xs" indeterminate={value === undefined} value={value} />
+    <div className="flex flex-col gap-2">
+      <Working>{children}</Working>
+      <Progress className="max-w-xs" indeterminate={value === undefined} value={value} />
     </div>
   );
 }
@@ -154,9 +154,9 @@ export function ReadingTurn({
           Read {total === 1 ? "the file" : `all ${total} files`}.
         </p>
       ) : (
-        <Working label="Reading your files" value={(reading.done / reading.total) * 100}>
+        <UnderWay value={(reading.done / reading.total) * 100}>
           Reading your files… {reading.done} of {reading.total}
-        </Working>
+        </UnderWay>
       )}
       {problems.map(({ id, problem }) => (
         <ProblemView error={problem} key={id} />
@@ -254,26 +254,32 @@ export function UnderstoodTurn({ things, relations }: { things: readonly Thing[]
 
 // ── Decisions ───────────────────────────────────────────────────────────────
 
-/** A decision as its options, each a card with its radio before its label — never a free answer. */
-export function DecisionChoice({ item, onChoose }: { item: DecisionItem; onChoose: (option: string) => void }) {
+/**
+ * A decision as `@kanzo-tech/ai`'s `Question`: its question, and its options to pick one of — never a
+ * free answer. An option's `detail` is not drawn: the label is the option.
+ */
+export function DecisionChoice({
+  item,
+  description,
+  onChoose,
+}: {
+  item: DecisionItem;
+  description?: string;
+  onChoose: (option: string) => void;
+}) {
   const { decision } = item;
   return (
-    <RadioGroup
-      aria-label={decision.question}
-      className="gap-2"
-      onValueChange={(d) => d.value && onChoose(d.value)}
-      value={optionOf(item)}
-    >
-      {decision.options.map((option) => (
-        <RadioGroupCard className="items-start gap-3" key={option.id} value={option.id}>
-          <RadioGroupIndicator className="mt-0.5" />
-          <div className="flex min-w-0 flex-col gap-0.5">
-            <RadioGroupText>{option.label}</RadioGroupText>
-            {option.detail && <span className="text-muted-foreground text-xs">{option.detail}</span>}
-          </div>
-        </RadioGroupCard>
-      ))}
-    </RadioGroup>
+    <Question onValueChange={(d) => d.value && onChoose(d.value)} value={optionOf(item)}>
+      <QuestionPrompt>{decision.question}</QuestionPrompt>
+      {description && <QuestionDescription>{description}</QuestionDescription>}
+      <QuestionOptions>
+        {decision.options.map((option) => (
+          <QuestionOption key={option.id} value={option.id}>
+            {option.label}
+          </QuestionOption>
+        ))}
+      </QuestionOptions>
+    </Question>
   );
 }
 
@@ -296,19 +302,15 @@ export function DecideTurn({
           {of === 1 ? "One thing has no safe answer, so it is yours to decide." : `${inWords(of, "thing")} have no safe answer, so they are yours to decide.`}
         </p>
       )}
-      <div className="flex flex-col gap-1">
-        {of > 1 && <Label>{`Decision ${index + 1} of ${of}`}</Label>}
-        <p className="font-medium text-base">{item.decision.question}</p>
-      </div>
-      <DecisionChoice item={item} onChoose={onChoose} />
+      <DecisionChoice description={of > 1 ? `Decision ${index + 1} of ${of}` : undefined} item={item} onChoose={onChoose} />
     </Said>
   );
 }
 
 /**
  * A default taken without asking, said as what was taken — *I assumed: A fraction of the prize* —
- * with the question it answers, and its options under it as a decision's are, the one taken selected:
- * picking another is how it changes. It blocks nothing.
+ * and the question it answers under it as a decision's is, the one taken selected: picking another is
+ * how it changes. It blocks nothing.
  */
 export function AssumedTurn({ item, onChoose }: { item: DecisionItem; onChoose: (option: string) => void }) {
   return (
@@ -318,7 +320,6 @@ export function AssumedTurn({ item, onChoose }: { item: DecisionItem; onChoose: 
         <AlertTitle>
           I assumed: <span className="font-semibold">{takenLabel(item)}</span>
         </AlertTitle>
-        <AlertDescription>{item.decision.question}</AlertDescription>
       </Alert>
       <DecisionChoice item={item} onChoose={onChoose} />
     </Said>
@@ -355,7 +356,7 @@ export function AskTurn({
   onAsk,
 }: {
   offers: readonly QuestionOffer[] | null;
-  questions: readonly Question[];
+  questions: readonly AskedQuestion[];
   live: boolean;
   onAsk: (id: string, text: string) => void;
 }) {
@@ -366,7 +367,7 @@ export function AskTurn({
       <p className="font-medium text-base">What would you like to know?</p>
       {live ? (
         <p className="text-muted-foreground">
-          {open.length > 0 ? "Take one of these, or write your own below" : "Write your questions below"}. I&rsquo;ll
+          {offers === null || open.length > 0 ? "Take one of these, or write your own below" : "Write your questions below"}. I&rsquo;ll
           check whether these files can answer each one.
         </p>
       ) : (
@@ -377,8 +378,8 @@ export function AskTurn({
           </p>
         )
       )}
-      {live && open.length > 0 && (
-        <Suggestions>
+      {live && (offers === null || open.length > 0) && (
+        <Suggestions pending={offers === null ? 3 : 0}>
           {open.map((o) => (
             <Suggestion description={o.rationale} key={o.id} onSelect={(text) => onAsk(o.id, text)} value={o.text} />
           ))}
@@ -420,7 +421,7 @@ export function BuildTurn({
   /** There is a program to build: the mapping has written it. */
   ready: boolean;
   onBuild: () => void;
-  questions: readonly Question[];
+  questions: readonly AskedQuestion[];
 }) {
   if (build === null) {
     return (
@@ -441,9 +442,9 @@ export function BuildTurn({
       const percent = build.percent === null ? null : Math.round(build.percent);
       return (
         <Said>
-          <Working label="Building your graph" value={percent ?? undefined}>
+          <UnderWay value={percent ?? undefined}>
             {build.graphId === null ? "Making your graph…" : `Building your graph${percent === null ? "…" : `… ${percent}%`}`}
-          </Working>
+          </UnderWay>
         </Said>
       );
     }

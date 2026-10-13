@@ -220,8 +220,8 @@ describe("the assistant, as a conversation", () => {
     await through(host);
     const note = host.querySelector('[data-assumption="share"]');
     expect(note?.textContent).toContain("I assumed: A fraction of the prize");
-    expect(note?.textContent).toContain(share.decision.question);
-    // Its options are in place, the one taken selected — no button to open them.
+    // The question it answers is the turn's, its options in place, the one taken selected — no button to open them.
+    expect(host.querySelector('[data-decision="share"] [data-slot="question-prompt"]')?.textContent).toBe(share.decision.question);
     const radios = [...host.querySelectorAll<HTMLInputElement>('input[type="radio"]')];
     expect(radios.find((r) => r.checked)?.value).toBe("fraction");
     expect(button(host, "Change")).toBeUndefined();

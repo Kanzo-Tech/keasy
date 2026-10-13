@@ -1,4 +1,6 @@
-import { FossilError, isFossilError, type Access, type Host, type Problem, type Profiled, type RunReport, type Scope } from "@fossil-lang/types";
+import { FossilError, isFossilError, type Access, type Host, type Problem, type Profiled, type Scope } from "@fossil-lang/types";
+
+import type { Into, Ran, RunInto } from "./executor";
 
 /**
  * A graph run off the page's main thread. fossil's executor builds its whole corpus in one call —
@@ -10,7 +12,8 @@ import { FossilError, isFossilError, type Access, type Host, type Problem, type 
  * - The worker asks the page for `connections()` and `credentials(…)`, each a request with an id,
  *   and the page answers it with its own host.
  * - The page's abort reaches the worker as a message; the worker stops the run with it.
- * - The run ends as its report, or as its failure: a `FossilError` crosses as its `Problem` and is
+ * - The run ends as its report — and, run into memory, the corpus's files, whose bytes are transferred
+ *   rather than copied — or as its failure: a `FossilError` crosses as its `Problem` and is
  *   rebuilt with `FossilError.from`, since an error loses its class through a structured clone.
  * - A host's refusal crosses the same way, and one that is not fossil's — keasy's `ApiError`, coded
  *   `store/refused` or `store/silent` — keeps its `code`, `title` and `data` as own properties of the
@@ -26,7 +29,7 @@ export type Failure =
 
 /** What crosses the port, page to worker and back. */
 export type ToWorker =
-  | { kind: "run"; program: string; job: string; profiled?: Profiled }
+  | { kind: "run"; program: string; into: Into; profiled?: Profiled }
   | { kind: "abort" }
   | { kind: "answer"; id: number; value: unknown }
   | ({ kind: "refuse"; id: number } & Failure);
@@ -34,13 +37,13 @@ export type ToWorker =
 export type ToPage =
   | { kind: "ask"; id: number; method: "connections" }
   | { kind: "ask"; id: number; method: "credentials"; args: [Scope, Access] }
-  | { kind: "done"; report: RunReport }
+  | ({ kind: "done" } & Ran)
   | ({ kind: "failed" } & Failure)
   | { kind: "aborted" };
 
 /** The part of a port both sides use: a `MessagePort`, or a worker's own scope. */
 export interface Port {
-  postMessage(message: unknown): void;
+  postMessage(message: unknown, transfer?: Transferable[]): void;
   addEventListener(type: "message", listener: (event: MessageEvent) => void): void;
   /** A `MessagePort` delivers nothing to an added listener until it is started. */
   start?(): void;
@@ -77,17 +80,8 @@ export function rebuilt(failure: Failure): Error {
   return Object.assign(new Error(message), { name }, coded);
 }
 
-/** What a run is asked with, on either side: fossil's `run` options, less the bytes. */
-export interface RunOptions {
-  host: Host;
-  job: string;
-  /** What the editor's profile answered, so the run checks the program against the same columns. */
-  profiled?: Profiled;
-  signal?: AbortSignal;
-}
-
 /** The worker's side: wait for a run, run it with `execute` over a host that asks the page. */
-export function serveRun(port: Port, execute: (program: string, options: RunOptions & { signal: AbortSignal }) => Promise<RunReport>): void {
+export function serveRun(port: Port, execute: (program: string, options: RunInto & { signal: AbortSignal }) => Promise<Ran>): void {
   const stop = new AbortController();
   const pending = new Map<number, { resolve: (value: unknown) => void; reject: (error: unknown) => void }>();
   let next = 0;
@@ -116,9 +110,14 @@ export function serveRun(port: Port, execute: (program: string, options: RunOpti
       if (message.kind === "answer") waiting?.resolve(message.value);
       else waiting?.reject(rebuilt(message));
     } else if (message.kind === "run") {
-      const { program, job, profiled } = message;
-      execute(program, { host, job, ...(profiled === undefined ? {} : { profiled }), signal: stop.signal }).then(
-        (report) => port.postMessage({ kind: "done", report } satisfies ToPage),
+      const { program, into, profiled } = message;
+      execute(program, { host, into, ...(profiled === undefined ? {} : { profiled }), signal: stop.signal }).then(
+        ({ report, files }) =>
+          port.postMessage(
+            { kind: "done", report, files } satisfies ToPage,
+            // A buffer named twice in a transfer list is a `DataCloneError`: each once.
+            [...new Set(files.map((f) => f.bytes.buffer as ArrayBuffer))],
+          ),
         (error: unknown) => port.postMessage((stop.signal.aborted ? { kind: "aborted" } : { kind: "failed", ...failureOf(error) }) satisfies ToPage),
       );
     }
@@ -127,10 +126,10 @@ export function serveRun(port: Port, execute: (program: string, options: RunOpti
 }
 
 /**
- * The page's side: `run(program, { host, job, profiled, signal })` as fossil's executor answers it, with the run
- * on the far side of `port`. Rejects with the run's `FossilError`, rebuilt, or with `signal`'s reason.
+ * The page's side: {@link runInto} as the executor answers it, with the run on the far side of `port`.
+ * Rejects with the run's `FossilError`, rebuilt, or with `signal`'s reason.
  */
-export function runOver(port: Port, program: string, { host, job, profiled, signal }: RunOptions): Promise<RunReport> {
+export function runOver(port: Port, program: string, { host, into, profiled, signal }: RunInto): Promise<Ran> {
   return new Promise((resolve, reject) => {
     const calls = new AbortController();
     port.addEventListener("message", (event: MessageEvent<ToPage>) => {
@@ -144,22 +143,23 @@ export function runOver(port: Port, program: string, { host, job, profiled, sign
         );
       } else {
         calls.abort();
-        if (message.kind === "done") resolve(message.report);
+        if (message.kind === "done") resolve({ report: message.report, files: message.files });
         else if (message.kind === "aborted") reject(signal?.reason ?? new DOMException("Stopped", "AbortError"));
         else reject(rebuilt(message));
       }
     });
     port.start?.();
     signal?.addEventListener("abort", () => port.postMessage({ kind: "abort" } satisfies ToWorker), { once: true });
-    port.postMessage({ kind: "run", program, job, ...(profiled === undefined ? {} : { profiled }) } satisfies ToWorker);
+    port.postMessage({ kind: "run", program, into, ...(profiled === undefined ? {} : { profiled }) } satisfies ToWorker);
   });
 }
 
 /**
- * fossil's `run(program, { host, job, profiled, signal })`, in a worker of its own that ends with the run. A
- * worker that cannot start — its module did not load — rejects with what the page was told.
+ * {@link runInto}, in a worker of its own that ends with the run: a graph's run under its job, or a
+ * preview into memory. A worker that cannot start — its module did not load — rejects with what the
+ * page was told.
  */
-export function runInWorker(program: string, options: RunOptions): Promise<RunReport> {
+export function runInWorker(program: string, options: RunInto): Promise<Ran> {
   const worker = new Worker(new URL("./run.worker.ts", import.meta.url), { type: "module" });
   const broken = new Promise<never>((_, reject) =>
     worker.addEventListener("error", (event) => reject(new Error(`The run's worker did not start: ${event.message}`)), { once: true }),

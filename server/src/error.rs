@@ -92,6 +92,12 @@ pub enum ErrorCode {
     /// `field` is `folder`.
     #[serde(rename = "graph/folder-taken")]
     GraphFolderTaken,
+    #[serde(rename = "conversation/not-found")]
+    ConversationNotFound,
+    /// A graph was built from the conversation: it is that graph's record, and
+    /// is not saved over.
+    #[serde(rename = "conversation/built")]
+    ConversationBuilt,
     #[serde(rename = "secret/not-found")]
     SecretNotFound,
     #[serde(rename = "connection/not-found")]
@@ -144,6 +150,8 @@ impl ErrorCode {
             Self::ServerSilent => "The server did not answer in time",
             Self::ServerNotReady => "The server is not ready",
             Self::GraphNotFound => "Graph not found",
+            Self::ConversationNotFound => "Conversation not found",
+            Self::ConversationBuilt => "A graph was built from this conversation",
             Self::GraphNotDraft => "Not a draft",
             Self::GraphNotCompleted => "The graph has not completed",
             Self::GraphNotRunning => "The graph is not running",

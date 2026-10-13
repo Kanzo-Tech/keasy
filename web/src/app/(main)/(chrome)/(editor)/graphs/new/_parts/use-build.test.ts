@@ -23,6 +23,12 @@ describe("keasy's build steps", () => {
     expect(graph.id).toBe("g1");
   });
 
+  it("make it with the conversation it was built from", async () => {
+    POST.mockClear();
+    await keasySteps({ conversation: "c1" }).create("program");
+    expect(POST.mock.calls[0]![1].body).toMatchObject({ script: "program", conversation: "c1" });
+  });
+
   it("answer the whole run's problem as theirs", async () => {
     const problem = new Error("over budget");
     startRun.mockResolvedValueOnce({ status: "failed", problem });

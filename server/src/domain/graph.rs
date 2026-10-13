@@ -114,6 +114,10 @@ pub struct Graph {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[schema(value_type = Option<Value>)]
     pub report: Option<serde_json::Value>,
+    /// The assistant's conversation the graph was built from, set when it is
+    /// created and never after: what was decided, and how.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub conversation: Option<String>,
 }
 
 impl Graph {
@@ -143,6 +147,7 @@ impl Graph {
             output: None,
             script: Some(script),
             report: None,
+            conversation: None,
             can: Can::default(),
             can_stop: false,
             id,

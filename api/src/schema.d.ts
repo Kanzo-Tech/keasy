@@ -177,6 +177,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/conversations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start a conversation: with no message yet, or with another's, to continue
+         *     what a built graph decided without changing its record.
+         */
+        post: operations["create_conversation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/conversations/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_conversation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/conversations/{id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Save the conversation after a reply: every message, replacing what was
+         *     stored. Whole, not appended — an earlier answer taken again replaces the
+         *     turns after it, and a save sent twice is one save.
+         */
+        put: operations["save_messages"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/graphs": {
         parameters: {
             query?: never;
@@ -579,6 +636,27 @@ export interface components {
             target: components["schemas"]["StorageTarget"];
             validation?: null | components["schemas"]["ValidationReport"];
         };
+        /**
+         * @description The assistant's conversation, as the web stored it: its messages, opaque to
+         *     keasy — the web strips every row of anyone's data out of them before they
+         *     are sent (`web/src/lib/assistant-conversation.ts`, `toStored`), and keasy
+         *     stores the array and hands it back, never reading an element of it.
+         */
+        Conversation: components["schemas"]["Provenance"] & {
+            /**
+             * @description Whether a graph was built from it: then it is that graph's record, and
+             *     a save is refused (`conversation/built`) — the web saves a copy instead.
+             */
+            built: boolean;
+            id: string;
+            /**
+             * @description The messages, in order, as the web serialises them (AI SDK
+             *     `UIMessage`s, stripped).
+             */
+            messages: unknown[];
+            /** @description Who owns it, and saves it: its creator, to begin with. */
+            owner: components["schemas"]["Actor"];
+        };
         CreateConnectionRequest: {
             /** @description What programs write after `@`, and the connection's key. */
             name: components["schemas"]["ResourceName"];
@@ -587,6 +665,11 @@ export interface components {
             target: components["schemas"]["StorageTarget"];
         };
         CreateGraphRequest: {
+            /**
+             * @description The assistant's conversation the graph is built from: its caller's own.
+             *     From then on it is the graph's record, and is not saved over.
+             */
+            conversation?: string | null;
             folder?: null | components["schemas"]["GraphFolder"];
             name?: null | components["schemas"]["ResourceName"];
             script: string;
@@ -649,7 +732,7 @@ export interface components {
          *     Every refusal the server writes is an [`ErrorBody`] with one of these.
          * @enum {string}
          */
-        ErrorCode: "auth/session-required" | "auth/keys-unavailable" | "rbac/no-membership" | "rbac/insufficient-role" | "rbac/forbidden" | "request/rate-limited" | "request/invalid" | "request/malformed" | "request/method-not-allowed" | "request/too-large" | "route/not-found" | "server/internal" | "server/silent" | "server/not-ready" | "graph/not-found" | "graph/not-draft" | "graph/not-completed" | "graph/not-running" | "graph/ended" | "graph/still-running" | "graph/already-running" | "graph/abandoned" | "graph/interrupted" | "graph/invalid-destination" | "graph/no-destination" | "graph/folder-taken" | "secret/not-found" | "connection/not-found" | "resource/already-exists" | "resource/in-use" | "connection/overlaps" | "probe/failed" | "store/refused" | "store/silent" | "rules/refused";
+        ErrorCode: "auth/session-required" | "auth/keys-unavailable" | "rbac/no-membership" | "rbac/insufficient-role" | "rbac/forbidden" | "request/rate-limited" | "request/invalid" | "request/malformed" | "request/method-not-allowed" | "request/too-large" | "route/not-found" | "server/internal" | "server/silent" | "server/not-ready" | "graph/not-found" | "graph/not-draft" | "graph/not-completed" | "graph/not-running" | "graph/ended" | "graph/still-running" | "graph/already-running" | "graph/abandoned" | "graph/interrupted" | "graph/invalid-destination" | "graph/no-destination" | "graph/folder-taken" | "conversation/not-found" | "conversation/built" | "secret/not-found" | "connection/not-found" | "resource/already-exists" | "resource/in-use" | "connection/overlaps" | "probe/failed" | "store/refused" | "store/silent" | "rules/refused";
         /** @description What a refusal carries beside its words. */
         ErrorData: {
             /**
@@ -735,6 +818,11 @@ export interface components {
             cancel_requested?: boolean;
             /** @description When the last run ended; unset while it runs. */
             completed_at?: string | null;
+            /**
+             * @description The assistant's conversation the graph was built from, set when it is
+             *     created and never after: what was decided, and how.
+             */
+            conversation?: string | null;
             folder?: null | components["schemas"]["GraphFolder"];
             /**
              * @description Who else manages it: people and groups, granted by its owner, a
@@ -893,6 +981,10 @@ export interface components {
          */
         RunSignal: {
             cancel_requested: boolean;
+        };
+        SaveMessagesRequest: {
+            /** @description Every message of the conversation, in order: a JSON array, stored as sent. */
+            messages: unknown[];
         };
         /** @description What a credential is asked for: fossil's `Scope`, verbatim. */
         Scope: {
@@ -1629,6 +1721,152 @@ export interface operations {
             };
         };
     };
+    create_conversation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveMessagesRequest"];
+            };
+        };
+        responses: {
+            /** @description The conversation, started with these messages */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Conversation"];
+                };
+            };
+            /** @description The messages are not a JSON array (`data.field`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description The messages are heavier than a conversation may be */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    get_conversation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Conversation ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The conversation, its messages as they were last saved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Conversation"];
+                };
+            };
+            /** @description Conversation not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    save_messages: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Conversation ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveMessagesRequest"];
+            };
+        };
+        responses: {
+            /** @description The messages, replaced whole */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Conversation"];
+                };
+            };
+            /** @description The messages are not a JSON array (`data.field`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Neither its owner nor an admin (`rbac/forbidden`) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Conversation not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description A graph was built from it (`conversation/built`): start one from its messages instead */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description The messages are heavier than a conversation may be */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
     list_graphs: {
         parameters: {
             query?: never;
@@ -1671,8 +1909,17 @@ export interface operations {
                     "application/json": components["schemas"]["Graph"];
                 };
             };
-            /** @description The destination is not a sink, or the name or folder is misspelled (`data.field`) */
+            /** @description The destination is not a sink, the name or folder is misspelled, or there is no such conversation (`data.field`) */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description The conversation is someone else's (`rbac/forbidden`) */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

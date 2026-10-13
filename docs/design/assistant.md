@@ -2,7 +2,8 @@
 
 Status: a direction. Built: the model in the page, in place of the gateway, served from keasy's own
 origin and preloaded with intent (2026-10-13); the guided chat (2026-10-13); and its three Tasks,
-`model`, `mapping` and `requirements`, over fossil's profile (2026-10-13, below) — the preview build
+`model`, `mapping` and `requirements`, over fossil's profile (2026-10-13, below); the conversation
+kept, and the preview run in memory and shown in the chat (2026-10-13) — the chat's wiring to both
 still to come. The pattern this rests on — a *Task*: a small model in the browser
 fills a small artefact under a JSON Schema, a deterministic oracle checks it, a bounded loop repairs
 it or asks the person — and its API, its model and its decisions are kanzo-ui's, on
@@ -54,8 +55,10 @@ carrying what it is about:
    had a safe default is said, *I assumed …*, with **Change**, and blocks nothing.
 5. *What would you like to know?* — questions already answerable from these files as chips, and the
    composer for one's own; each question kept says whether these files can answer it.
-6. *Preparing a preview over 200 rows…*, then *your graph is ready to explore*, with **Ask your data** and
-   the person's questions as prompts to take there.
+6. *Here is your data over 200 rows* — the preview, in the chat: each question kept is answered there
+   over it with Ask's cards, and a decision changed runs it again. Then **Build the whole graph**, and
+   *your graph is building*, with **Ask your data** and the person's questions as prompts to take to
+   Discover.
 
 **The person's replies are choices, chips or questions — never free-form instructions.** What they pick
 is drawn as their message (*These 6 files*, *Two, one per person*), so the transcript reads as what
@@ -175,30 +178,77 @@ the rest in the background, the way fossil's profile already splits.
 attempts, ends the chat's flow with its problem (`llm/failed` when it has no code of its own) and a
 retry; nothing downstream runs on a refused artefact.
 
-## The build, the preview and the hand-off
+## The preview is in the chat
 
-**Built 2026-10-13, but the preview:** `useBuild(program, profiled)` (`graphs/new/_parts/use-build.ts`)
-makes the graph as the studio does — a draft, submitted, run in this tab's worker under its lease —
-and `lib/fossil/build.ts` is the machine the last turn reads, `preparing` → `preview` → `done` or
-`failed`. A build outlives the assistant's page, so Discover finds it: it opens on the preview's
-corpus, attached under `<id>~preview` beside the graph's own, and switches to the whole graph in a
-transition when it lands. The last turn's links carry the person's question as `?q=`; Ask sends it
-once the model is ready and takes it off the URL as it does, so nothing asks it twice.
+**Built 2026-10-13, but the chat's wiring.** Once there is a program, it runs over the first 200 rows
+of each source **into memory** — fossil's `run(program, { host, into: "memory", limit: 200 })`, in
+this tab's run worker, which answers the corpus's files as bytes and writes nothing — and the files are
+attached to the assistant page's engine from those bytes: each registered with DuckDB-WASM as a buffer
+under a prefix of its own, and fossil's `attach` pointed at that prefix as a corpus at a URL, which
+needs nothing of fossil it lacks (`lib/fossil/memory-corpus.ts`). `usePreview(program, profiled)`
+(`lib/fossil/preview.ts`) is the hook: `idle`, `running` — the last corpus kept on screen —, `ready`
+or `failed`, each corpus named by its program and cached as a graph's is, so a decision changed is a
+preview of its own and the one it replaces is given back once nothing reads it. Inside `CorpusScope`
+over it, `useCorpusAsk()` (`lib/fossil/ask.ts`) is Ask as Discover's panel runs it, and the person's
+questions are answered in the chat with `AnswerCard`s over the sample. One door to fossil's executor,
+`lib/fossil/executor.ts`, maps `{ job }` and `"memory"` onto `run`'s `into`.
 
-**The preview is a seam nothing fills yet**, for two reasons outside keasy's web: fossil's `run`
-reads every row of every source — there is no row limit to ask it for — and a running graph's output
-is its runner's to write and nobody's to read until it completes (`graph/not-completed`; a write
-credential is `PutObject` alone), so a sample run written under the graph's prefix could not be
-opened either. Until one of them gives way the build says *Building your graph…* and Discover opens
-on the whole graph. *What would reverse it:* a row limit on fossil's `run`, and either a read of the
-preview's prefix vended to the runner while it runs or the preview's corpus answered in memory.
+**The whole graph is built once, when the person asks** — *Build the whole graph*: `useBuild(program,
+profiled, { conversation })` (`graphs/new/_parts/use-build.ts`) makes it as the studio does, a draft
+submitted and run under its job (`into: { job }`), and `lib/fossil/build.ts` is the machine its turn
+reads, `building` → `done` or `failed`. A build outlives the assistant's page; the last turn's links
+carry the person's question to Discover as `?q=`, and Ask sends it once the model is ready and takes it
+off the URL as it does, so nothing asks it twice.
 
-**The decisions travel in the program.** A graph holds a script, a name and a folder and nothing the
-web could keep beside them, so the decisions — each with its options, the one taken and whether it
-was assumed — are comments at the program's head (`lib/assumptions.ts`), and Discover's Info panel
-lists them with **Change**. *What would reverse it:* a field for the web on a graph, opaque as its
-`report` is. Change rebuilds as a new graph: a submitted graph's script cannot be edited
-(`graph/not-draft`).
+**Why in the chat, and not in Discover.** The preview is where the decisions are judged: the person
+sees answers over their own rows next to the question that shaped them, changes a decision and sees
+the answer change, before anything is written — 200 rows in memory cost seconds, so running it again
+is cheap where building the graph again is not. And Discover only ever shows a whole graph, the
+graph's own output under its id: no second corpus beside it to switch from, nothing that is not what
+the graph holds. The earlier shape — the preview built with the graph and opened in Discover under
+`<id>~preview` until the whole landed — waited on a decision taken blind and put a sample where a
+graph was expected.
+
+*What would reverse it:* people who never look at the preview and go straight to building — then the
+preview runs behind the build, and the chat goes to Discover as soon as the graph is made. Or a
+preview that cannot answer what the person asked over 200 rows — a question whose answer needs the
+whole of a source — then the chat says so and offers the build in its place.
+
+## The conversation is kept
+
+**Built 2026-10-13**, as reference chat systems keep one — the AI SDK's `UIMessage[]` per chat id,
+resumed with `useChat({ id, messages })`; Vercel's chatbot template's `Chat` and `Message` tables;
+OpenAI's Threads: a `conversations` table (`POST /v1/conversations`, `GET /v1/conversations/{id}`,
+`PUT /v1/conversations/{id}/messages`), its messages a JSON array keasy never reads, under a 256 KiB
+cap; and a `conversation` on each graph, set when it is created from its creator's own. The decisions
+are data parts of those messages (`data-decision`: the options offered, the one taken, whether it was
+assumed), so Discover's *What I decided* reads them from the graph's conversation and **Change**
+opens `/graphs/new/assistant?conversation=<id>&decision=<id>`. `useAssistantConversation(id?)`
+(`lib/assistant-conversation.ts`) is the web's side: `{ id, messages, save, decisions }`.
+
+**Saved whole after each reply, not appended.** The array is small — structure only, below — and
+whole is what the AI SDK hands back on finish; an earlier answer taken again replaces every turn after
+it, which an append cannot say; and a save sent twice, or retried after a timeout, is one save. *What
+would reverse it:* conversations long enough that a reply's save is felt — then messages get rows of
+their own, as the chatbot template's do, and a save sends what changed.
+
+**A conversation a graph was built from is that graph's record**, as a submitted graph's script is
+(`graph/not-draft`): a save over it is refused (`conversation/built`), and the hook carries on in a new
+conversation started from its messages — so Change rebuilds as a new graph with a conversation of its
+own, and the first graph still lists what it was built with.
+
+**What is stored, and what is not.** The premise is that the person's data never leaves the browser,
+and a saved conversation is no exception. Stored: the turns' kinds and ids, the options offered in
+keasy's words, the person's choices, what they typed — their questions and the *what is it about?*
+sentence —, the files they picked as locations (connection and path), and the program. Not stored:
+sample rows, example values, counts, column statistics, an answer's rows, the assistant's prose (which
+quotes a row: *e.g. Marie Curie · Physics · 1903*), a file's contents, and an option's `detail`. They
+are recomputed from the profile when the conversation is opened again. One function holds it,
+`toStored`, through which every save and every read goes: an allow-list, each kept part rebuilt from
+the fields it may hold, so a field added upstream does not ride along unread; its test sends a message
+carrying example rows through it and finds none. *What would reverse it:* a need for the exact
+transcript, rows and all — an audit, a support case — and then it is stored in the person's own
+storage, under their own credential, never in keasy's database.
 
 ## What left keasy's configuration
 
@@ -249,8 +299,8 @@ check (`make models`, then the eval).
 **Confirmed 2026-10-12:** `startRun` (`graphs/[id]/_parts/use-browser-graph-runner.ts`) imports
 `@fossil-lang/executor` and calls `run`, which constructs `FossilExecutor` in the calling realm —
 the page. Nothing in `web/src` creates a `Worker`. Today that blocks only a page whose person is
-waiting for a run; with a preview built while they explore Discover, it would block Discover. The
-executor moves to a worker of its own.
+waiting for a run; with a preview run while they talk to the assistant, it would block the chat. The
+executor moves to a worker of its own — done: `lib/fossil/run.worker.ts` runs both.
 
 ## Cross-origin isolation
 

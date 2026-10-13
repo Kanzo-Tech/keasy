@@ -48,6 +48,8 @@ pub enum Kind {
     /// The workspace's one sink: an admin's, reached through its graphs.
     Sink,
     Graph,
+    /// The assistant's conversation a graph is built from.
+    Conversation,
 }
 
 impl Kind {
@@ -57,6 +59,7 @@ impl Kind {
             Kind::Source => "connection",
             Kind::Sink => "sink",
             Kind::Graph => "graph",
+            Kind::Conversation => "conversation",
         }
     }
 }
@@ -94,6 +97,7 @@ impl Caller {
     /// | source | reader | editor | editor | owner, manager, admin | owner, admin |
     /// | sink | reader | — (its graphs) | admin | admin | — |
     /// | graph | reader | reader | editor | owner, manager, admin | owner, admin |
+    /// | conversation | reader | — | — | owner, admin | owner, admin |
     ///
     /// A grant raises an editor, never a reader: who holds no editor role
     /// here manages nothing, whatever was granted to them or their groups.
@@ -120,7 +124,8 @@ impl Caller {
                 admin || (editor && (manages || owner.is_workspace() || granted(Relation::User)))
             }
             (Kind::Secret, Action::Read | Action::Operate) => editor,
-            (Kind::Source | Kind::Graph, Action::Read) => reader,
+            (Kind::Source | Kind::Graph | Kind::Conversation, Action::Read) => reader,
+            (Kind::Conversation, Action::Use | Action::Operate) => false,
             (Kind::Source, Action::Use) => editor,
             (Kind::Graph, Action::Use) => reader,
             (Kind::Source | Kind::Graph, Action::Operate) => editor,
@@ -265,6 +270,18 @@ mod tests {
             (Kind::Graph, &owner, [true, true, true, true, true]),
             (Kind::Graph, &other, [true, true, true, false, false]),
             (Kind::Graph, &admin, [true, true, true, true, true]),
+            (
+                Kind::Conversation,
+                &reader,
+                [true, false, false, false, false],
+            ),
+            (Kind::Conversation, &owner, [true, false, false, true, true]),
+            (
+                Kind::Conversation,
+                &other,
+                [true, false, false, false, false],
+            ),
+            (Kind::Conversation, &admin, [true, false, false, true, true]),
         ];
         // Each row is named by its place in the table, never by a caller's id.
         for (row, (kind, who, expected)) in table.into_iter().enumerate() {

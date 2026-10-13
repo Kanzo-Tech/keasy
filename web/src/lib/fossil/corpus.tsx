@@ -18,11 +18,7 @@ import {
 import { settled } from "@/lib/api/settled";
 import { toastError } from "@/lib/errors";
 import { corpusKey, RELEASE_FAILED } from "@/lib/fossil/corpus-cache";
-import type { Preview } from "@/lib/fossil/build";
 import { host } from "@/lib/fossil/host";
-
-/** What a graph's preview is attached as: its own name, beside the graph's. */
-export const previewName = (graphId: string) => `${graphId}~preview`;
 
 /** Everything read off a corpus is read once, and dropped with the page. */
 export const ONCE = { staleTime: Infinity, gcTime: 0, retry: false } as const;
@@ -37,25 +33,19 @@ export { corpusKey };
 export const CORPUS_GC_MS = 5 * 60_000;
 
 /**
- * A graph's corpus, attached under {@link Corpus.name} to the page's one engine by fossil's `attach`,
- * which asks {@link host} for the read credential: SQL names it `"<name>"."<Table>"`, and what it
- * holds is its `fossil_tables`, `fossil_columns` and `triples`, asked through the coordinator by
- * whoever needs to know.
- *
- * A graph has two: its output, under its id, and — while this tab builds it — the preview over a
- * sample (`lib/fossil/build.ts`), under {@link previewName}, so the one is attached while the other
- * still is and neither detaches the other. Everything read off a corpus is keyed and named by `name`;
- * `graphId` is the graph the API knows.
+ * A corpus attached under {@link Corpus.name} to the page's one engine: a graph's output, by fossil's
+ * `attach`, which asks {@link host} for the read credential — or the assistant's preview, answered in
+ * memory (`lib/fossil/preview.ts`). SQL names it `"<name>"."<Table>"`, and what it holds is its
+ * `fossil_tables`, `fossil_columns` and `triples`, asked through the coordinator by whoever needs to
+ * know. Everything read off a corpus is keyed and named by `name`.
  */
 export interface Corpus {
-  graphId: string;
   /** What SQL calls it, and what its cached reads are keyed under ({@link corpusKey}). */
   name: string;
   attachment: Attachment;
   /** The page's one engine, the corpus attached to it: what reads outside the coordinator's queue, as the Ask agent does. */
   engine: Engine;
 }
-
 
 /**
  * The attach, cached under {@link corpusKey}: every reader of one graph shares one attachment, and
@@ -72,15 +62,20 @@ export interface Corpus {
  * detached under its own readers. Minutes are not that floor: a page whose first draw has not
  * committed in five has failed already, so the window no longer needs closing by never collecting.
  */
-export function corpusQuery(graphId: string, preview?: Preview) {
-  const name = preview ? previewName(graphId) : graphId;
+export function corpusQuery(graphId: string) {
+  return corpusOf(graphId, (attachedTo, signal) => attach(graphId, { engine: attachedTo, host, signal }));
+}
+
+/**
+ * {@link corpusQuery}'s options, for any corpus: cached under `name`, attached by `attachTo` on the
+ * page's engine, and given back as every corpus is (`releaseCorpora`).
+ */
+export function corpusOf(name: string, attachTo: (engine: Engine, signal: AbortSignal) => Promise<Attachment>) {
   return queryOptions({
     queryKey: corpusKey(name),
     queryFn: async ({ signal }): Promise<Corpus> => {
       const attachedTo = await engine({ signal });
-      const attachment = preview
-        ? await preview.attach(name, { engine: attachedTo, signal })
-        : await attach(graphId, { engine: attachedTo, host, signal });
+      const attachment = await attachTo(attachedTo, signal);
       // The cache gave up on this attach while it was out — the entry removed, reset, or its last
       // reader gone — and drops what it resolves to, so no `removed` event will ever carry it.
       // `attach` rejects on an abort only when a step fails, so one that ran to the end lands here:
@@ -90,7 +85,7 @@ export function corpusQuery(graphId: string, preview?: Preview) {
         await attachment.detach().catch((err: unknown) => toastError(err, RELEASE_FAILED));
         signal.throwIfAborted();
       }
-      return { graphId, name, attachment, engine: attachedTo };
+      return { name, attachment, engine: attachedTo };
     },
     ...ONCE,
     gcTime: CORPUS_GC_MS,
@@ -110,13 +105,20 @@ function chartFailed(error: unknown) {
 /**
  * `graphId`'s corpus to everything under it, opened here: suspends while it attaches, and throws to
  * the nearest boundary if it cannot. Its observer of {@link corpusQuery} is what keeps the corpus
- * attached while the page is on screen, so every page that reads a corpus reads it through this. The
- * corpus's join graph is read before the page's `MosaicProvider`, which builds the page's one
- * selection over it: a clause on one relation reaches a part reading another. With a `preview`, it is
- * the preview's corpus that is opened.
+ * attached while the page is on screen, so every page that reads a graph's corpus reads it through
+ * this.
  */
-export function CorpusProvider({ graphId, preview, children }: { graphId: string; preview?: Preview; children: ReactNode }) {
-  const corpus = settled(useSuspenseQuery(corpusQuery(graphId, preview)));
+export function CorpusProvider({ graphId, children }: { graphId: string; children: ReactNode }) {
+  const corpus = settled(useSuspenseQuery(corpusQuery(graphId)));
+  return <CorpusScope corpus={corpus}>{children}</CorpusScope>;
+}
+
+/**
+ * An attached corpus to everything under it — a graph's, or a preview's. The corpus's join graph is
+ * read before the scope's `MosaicProvider`, which builds its one selection over it: a clause on one
+ * relation reaches a part reading another. Suspends while the join graph is read.
+ */
+export function CorpusScope({ corpus, children }: { corpus: Corpus; children: ReactNode }) {
   const joins = settled(
     useSuspenseQuery({
       queryKey: [...corpusKey(corpus.name), "join-graph"],

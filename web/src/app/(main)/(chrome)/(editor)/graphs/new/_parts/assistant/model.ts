@@ -23,6 +23,8 @@ export interface SourceTreeNode {
   children?: readonly SourceTreeNode[];
   /** Why this branch could not be listed, shown in its place. */
   problem?: unknown;
+  /** A file's size in bytes, as the listing gave it. */
+  size?: number;
 }
 
 /** Every connection the assistant may read, each a root. */

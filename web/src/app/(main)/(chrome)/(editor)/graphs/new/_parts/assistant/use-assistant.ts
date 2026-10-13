@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * The one adaptor between what keasy can read and what the assistant's screens draw (`model.ts`).
- * The screens compute nothing; everything they show is answered here.
+ * The one adaptor between what keasy can read and what the assistant's turns draw (`model.ts`).
+ * The turns compute nothing; everything they show is answered here.
  *
  * What it answers today, from real data: the tree, from the connections' listings (`sources.ts`'s
  * `childrenOf`, the studio's); the reading progress and one thing per file with its columns, from
@@ -104,16 +104,19 @@ export function useAssistant({
     const byId = new Map<string, SourceNode>();
     const fileById = new Map<string, FileEntry>();
     const listingOf = new Map(listed.map((node, i) => [node.id, listings[i]]));
+    // A file's size, by its node's id (`<connection>:<path>`, as `childrenOf` names it).
+    const sizes = new Map<string, number>();
     const build = (node: SourceNode): SourceTreeNode => {
       byId.set(node.id, node);
       if (node.line !== undefined) {
         fileById.set(node.id, { id: node.id, name: node.name, line: node.line });
-        return { id: node.id, name: node.name, kind: "file" };
+        return { id: node.id, name: node.name, kind: "file", size: sizes.get(node.id) };
       }
       const kind = node.under === "" ? "connection" : "folder";
       const listing = listingOf.get(node.id);
       if (listing?.error) return { id: node.id, name: node.name, kind, problem: listing.error };
       if (!listing?.data) return { id: node.id, name: node.name, kind };
+      for (const f of listing.data.files) sizes.set(`${node.connection!.name}:${f.path}`, f.size);
       const children = childrenOf(node, listing.data.files.map((f) => f.path), formats).map(build);
       return { id: node.id, name: node.name, kind, children };
     };

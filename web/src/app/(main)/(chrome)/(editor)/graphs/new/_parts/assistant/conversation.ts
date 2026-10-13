@@ -89,32 +89,6 @@ export function waitingFor(waiting: Waiting, picked: number): string | null {
   }
 }
 
-const NUMBERS = ["no", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
-
-/** "one file", "6 files": a count with its noun, the noun plural unless there is one. */
-export function counted(n: number, noun: string, plural = `${noun}s`): string {
-  return `${n === 1 ? "one" : n} ${n === 1 ? noun : plural}`;
-}
-
-/** "two things to decide": the count in words while it is small, as a sentence says it. */
-export function inWords(n: number, noun: string, plural = `${noun}s`): string {
-  return `${NUMBERS[n] ?? n} ${n === 1 ? noun : plural}`;
-}
-
-const list = new Intl.ListFormat("en-GB", { type: "conjunction" });
-
-/**
- * What each one of a thing holds, from its columns: "name, gender, birth date and 4 more". Column
- * names are the data's own words, so they are made readable (`birth_date` → "birth date") and not
- * renamed.
- */
-export function holdsLine(holds: readonly string[], shown = 4): string | null {
-  if (holds.length === 0) return null;
-  const words = holds.map((h) => h.replace(/[_-]+/g, " ").trim());
-  if (words.length <= shown + 1) return list.format(words);
-  return `${words.slice(0, shown).join(", ")} and ${words.length - shown} more`;
-}
-
 /** The label of the option a decision stands at. */
 export function takenLabel(item: DecisionItem): string | undefined {
   return item.decision.options.find((o) => o.id === optionOf(item))?.label;

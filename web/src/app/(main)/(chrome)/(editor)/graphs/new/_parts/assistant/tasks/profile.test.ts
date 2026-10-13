@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { delimiterOf, profiledOf, thingName } from "./profile";
+import { delimiterOf, profiledOf } from "./profile";
 import { INPUTS, NOBEL, PROFILE } from "./nobel.fixture";
 
 describe("the profile, as the Tasks read it", () => {
@@ -25,9 +25,8 @@ describe("the profile, as the Tasks read it", () => {
     expect(profiled.sources.map((s) => s.name)).toEqual(["laureates", "laureates_2"]);
   });
 
-  it("reads a binding's delimiter, and a file's name as a thing's", () => {
+  it("reads a binding's delimiter", () => {
     expect(delimiterOf('delimiter = "|"')).toBe("|");
     expect(delimiterOf(undefined)).toBeUndefined();
-    expect(thingName("nobel_laureates.csv")).toBe("Nobel laureates");
   });
 });

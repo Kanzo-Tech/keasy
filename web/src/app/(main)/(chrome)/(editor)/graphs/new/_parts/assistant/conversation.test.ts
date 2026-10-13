@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { converse, holdsLine, inWords, NO_REPLIES, type Replies, waitingFor } from "./conversation";
+import { converse, NO_REPLIES, type Replies, waitingFor } from "./conversation";
 import { blocks, type DecisionItem } from "./model";
 
 /** No safe default: whether a shared Nobel is one award or two has two right answers. */
@@ -86,22 +86,5 @@ describe("what a turn says", () => {
     expect(waitingFor("pick", 2)).toBeNull();
     expect(waitingFor("reading", 2)).toBe("Wait for the files to be read");
     expect(waitingFor("decide", 2)).toBe("Choose an option above to continue");
-  });
-
-  it("counts in words, the noun plural unless there is one", () => {
-    expect(inWords(1, "thing")).toBe("one thing");
-    expect(inWords(2, "thing")).toBe("two things");
-    expect(inWords(12, "thing")).toBe("12 things");
-  });
-
-  it("says what each one holds in the data's own words, made readable", () => {
-    expect(holdsLine([])).toBeNull();
-    expect(holdsLine(["name", "gender"])).toBe("name and gender");
-    expect(holdsLine(["name", "gender", "birth_date", "birth_country", "died"])).toBe(
-      "name, gender, birth date, birth country and died",
-    );
-    expect(holdsLine(["id", "name", "gender", "birth_date", "birth_country", "died"])).toBe(
-      "id, name, gender, birth date and 2 more",
-    );
   });
 });

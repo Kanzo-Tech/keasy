@@ -6,6 +6,7 @@
  */
 
 import type { Input, Primitive, Profile } from "@fossil-lang/types";
+import { bindingName } from "../../sources";
 
 /** One column of a source, with what the profile counted of it. */
 export interface Column {
@@ -57,12 +58,6 @@ export const inclusionId = (from: { source: string; column: string }, to: { sour
 /** The last segment of a reference: `@nobel/data/laureates.csv` → `laureates.csv`. */
 const fileOf = (key: string) => key.slice(key.lastIndexOf("/") + 1);
 
-/** A binding for a key that has none, as `sources.ts`' `bindingName` writes one. */
-function bindingOf(key: string): string {
-  const stem = fileOf(key).replace(/\.[^.]*$/, "").replace(/[^A-Za-z0-9_]/g, "_");
-  return /^[0-9]/.test(stem) || stem === "" ? `_${stem}` : stem;
-}
-
 /**
  * The profile, named by binding: each described source with its columns, counts, keys and sample,
  * and each inclusion between two of them. Two bindings that would collide get a numeric suffix, so
@@ -73,7 +68,7 @@ export function profiledOf(profile: Profile, inputs: readonly Input[]): Profiled
   const taken = new Set<string>();
   for (const s of profile.sources) {
     const key = s.descriptor.key;
-    const base = inputs.find((i) => i.key === key)?.binding ?? bindingOf(key);
+    const base = inputs.find((i) => i.key === key)?.binding ?? bindingName(fileOf(key));
     let name = base;
     for (let n = 2; taken.has(name); n++) name = `${base}_${n}`;
     taken.add(name);
@@ -111,12 +106,6 @@ export function profiledOf(profile: Profile, inputs: readonly Input[]): Profiled
 export function delimiterOf(option: string | undefined): string | undefined {
   const m = option?.match(/delimiter\s*=\s*"((?:[^"\\]|\\.)*)"/);
   return m ? m[1]!.replace(/\\(.)/g, "$1") : undefined;
-}
-
-/** "nobel_laureates.csv" → "Nobel laureates": a file's name as a thing's, until `model` names it. */
-export function thingName(file: string): string {
-  const words = file.replace(/\.[^.]*$/, "").replace(/[_\-.]+/g, " ").trim();
-  return words ? words[0]!.toUpperCase() + words.slice(1) : file;
 }
 
 /** A source's row as a record, column by column. */

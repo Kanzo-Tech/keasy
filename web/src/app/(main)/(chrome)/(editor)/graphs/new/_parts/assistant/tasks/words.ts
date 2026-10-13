@@ -41,3 +41,27 @@ const list = new Intl.ListFormat("en-GB", { type: "conjunction" });
 
 /** "a, b and c". */
 export const listed = (items: readonly string[]) => list.format(items);
+
+const NUMBERS = ["no", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
+
+/** "two things to decide": the count in words while it is small, as a sentence says it. */
+export function inWords(n: number, noun: string, many = plural(noun)): string {
+  return `${NUMBERS[n] ?? n} ${n === 1 ? noun : many}`;
+}
+
+/**
+ * What each one of a thing holds, from its columns: "name, gender, birth date and 4 more". Column
+ * names are the data's own words, so they are said (`birth_date` → "birth date") and not renamed.
+ */
+export function holdsLine(holds: readonly string[], shown = 4): string | null {
+  if (holds.length === 0) return null;
+  const words = holds.map(spoken);
+  if (words.length <= shown + 1) return listed(words);
+  return `${words.slice(0, shown).join(", ")} and ${words.length - shown} more`;
+}
+
+/** "nobel_laureates.csv" → "Nobel laureates": a file's name as a thing's, until `model` names it. */
+export function thingName(file: string): string {
+  const words = spoken(file.replace(/\.[^.]*$/, ""));
+  return words ? words[0]!.toUpperCase() + words.slice(1) : file;
+}

@@ -30,9 +30,9 @@ import { useModel } from "@/lib/ai";
 import { type AssistantData, type DecisionItem, optionOf, type Question, type QuestionOffer, type SourceTreeNode, type TaskFailure, type Thing } from "./model";
 import { fossilCheck, mapping, mappingInput, programOf } from "./tasks/mapping";
 import { accept, type Accepted, decisionsOf, defaultsOf, type Draft, modelTask, relationsOf } from "./tasks/model";
-import { type Profiled, profiledOf, thingName } from "./tasks/profile";
+import { type Profiled, profiledOf } from "./tasks/profile";
 import { isAnswerable, requirements } from "./tasks/requirements";
-import { spoken } from "./tasks/words";
+import { spoken, thingName } from "./tasks/words";
 
 /** A picked file as the program reads it: its whole binding line. */
 interface FileEntry {

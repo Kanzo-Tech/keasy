@@ -25,7 +25,8 @@ import {
   Suggestions,
 } from "@kanzo-tech/ui";
 import { ProblemView } from "@/components/problem-view";
-import { holdsLine, inWords, takenLabel } from "./conversation";
+import { takenLabel } from "./conversation";
+import { holdsLine, inWords } from "./tasks/words";
 import {
   type BuildProgress,
   type DecisionItem,

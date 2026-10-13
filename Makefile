@@ -9,7 +9,7 @@
 # a cold compile.
 
 SHELL := bash
-.PHONY: help dev seed clean api e2e demo deploy secrets secret key
+.PHONY: help dev seed models clean api e2e demo deploy secrets secret key
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_%-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
@@ -21,6 +21,12 @@ dev: ## Start or rebuild the dev stack, and wait until the web answers
 
 seed: ## Fetch the dev graphs (LDBC SNB SF0.1, ~17 MB; OpenFlights, ~3.5 MB; Nobel laureates, ~4 MB; checksummed) for the next `make dev` to upload
 	sh infra/dev/seed.sh
+
+# The model runs in the browser, from keasy's own origin: the stack's `models` service serves this
+# directory at /models (KEASY_MODEL_URL). Needed for Ask and the assistant on a machine with WebGPU —
+# not for `make e2e`, whose scenarios put a model double in the page. A deployment runs it on the server.
+models: ## Download the model the page runs (~2.3 GB, pinned, checksummed) into KEASY_MODELS (default infra/models), once
+	sh infra/models.sh
 
 clean: ## Nuclear reset: remove containers, volumes, images
 	docker compose --profile faults down -v --rmi local --remove-orphans

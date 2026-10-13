@@ -45,6 +45,15 @@ services:
       traefik.enable: "true"
       traefik.http.services.web.loadbalancer.server.port: "3000"
 
+  # /models/ on every organization's host is the model's shards (compose.yaml's `models`), ahead of
+  # the web: a path rule outranks the organizations' host rules only by priority.
+  models:
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.models.rule: PathPrefix(`/models/`)
+      traefik.http.routers.models.priority: "1000"
+      traefik.http.services.models.loadbalancer.server.port: "8080"
+
 # The deployment's secrets, from the environment `make deploy` decrypts infra/prod/secrets.sops.env
 # into. Each organization's sealing key is declared in its own file.
 secrets:

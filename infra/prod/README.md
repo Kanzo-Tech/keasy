@@ -16,11 +16,24 @@ deploy`.** `make deploy` changes only what the files changed, and returns when e
 
 ## Serve the model
 
-The model runs in each person's browser, on WebGPU; the server holds no model and no key. In
-`prod.env`, `KEASY_MODEL_URL` says where its shards are served — `<url>/<model>/`, the MLC weights
-directory, and `<url>/<model>.wasm`, its compiled library, for the model `web/src/lib/ai.ts` names —
-and the browser downloads them once. Only the web restarts. Unset, they come from WebLLM's prebuilt:
-Hugging Face and GitHub. A browser without WebGPU says so in Ask and the assistant; the rest works.
+The model runs in each person's browser, on WebGPU; the server holds no key and runs no model, but it
+serves the model's shards, from keasy's own origin and never a third party's. On the server, once:
+
+```sh
+make models
+```
+
+downloads the weights and the compiled library `web/src/lib/ai.ts` pins (about 2.3 GB, each file
+checked) into `KEASY_MODELS` — `infra/models` in the checkout unless `prod.env` says otherwise.
+`make deploy` then serves that directory read-only from the `models` service (nginx), and Traefik
+routes `/models/` on every organization's host to it ahead of the web (`compose.prod.yaml`), so
+`KEASY_MODEL_URL` stays `/models`. Each path names one content for good — the weights by their
+Hugging Face revision, the library by its WebLLM release — so they are served with
+`Cache-Control: public, max-age=31536000, immutable`, and a browser downloads them once. A new pin
+is a new path: `make models` again before `make deploy`, and the old directories can be deleted once
+the release that named them is gone. Without them the browser's download fails and Ask and the
+assistant say so; `KEASY_MODEL_URL=` (empty) turns the model off. A browser without WebGPU says so
+too; the rest of keasy works the same.
 
 ## Add an organization
 

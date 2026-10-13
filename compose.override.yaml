@@ -35,6 +35,8 @@ services:
       # Set by `make demo` alone: the dev server without Next's dev indicator or React Query's
       # devtools, which a recording would otherwise show (web/next.config.ts).
       NEXT_PUBLIC_KEASY_DEMO: ${NEXT_PUBLIC_KEASY_DEMO:-}
+      # /models on this origin is the `models` service's (web/next.config.ts): development has no edge.
+      KEASY_MODELS_UPSTREAM: http://models:8080
     # The first answer is Next compiling the sign-in route — minutes on a small machine after a clean
     # start, which would otherwise look like a stack that never came up. `make dev` waits for it.
     healthcheck:
@@ -44,6 +46,8 @@ services:
     depends_on:
       acme-server:
         condition: service_healthy
+      models:
+        condition: service_started
 
   # acme's server, built from source and hot-reloaded: `server/src` is mounted and cargo-watch
   # rebuilds on a change. Crates compile into the persistent `server-target` volume, so only the

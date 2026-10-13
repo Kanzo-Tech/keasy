@@ -1,9 +1,9 @@
 /**
- * What the assistant's three screens read — and nothing they compute. Each screen is drawn from
- * these shapes alone; `use-assistant.ts` is the one place that fills them, from what keasy can read
+ * What the assistant's conversation reads — and nothing it computes. Each turn is drawn from these
+ * shapes alone (`conversation.ts` orders them); `use-assistant.ts` is the one place that fills them, from what keasy can read
  * today (the connection listings, introspect) and, once they are built, from the `requirements`,
  * `model` and `mapping` Tasks (docs/design/assistant.md). A field a Task will fill is `null` until
- * then: `null` is "not known yet", never "none", so a screen leaves that part out rather than say
+ * then: `null` is "not known yet", never "none", so a turn leaves that part out rather than say
  * there is nothing.
  *
  * None of these carry a shape, an IRI, a predicate or a cardinality: the person reads things, counts,
@@ -12,7 +12,7 @@
 
 import type { Decision } from "@kanzo-tech/ai/task";
 
-// ── Screen 1: Your data ─────────────────────────────────────────────────────
+// ── The data ────────────────────────────────────────────────────────────────
 
 /** A node of the files a person picks from: a connection, a folder under it, or a file it reads. */
 export interface SourceTreeNode {
@@ -54,7 +54,7 @@ export interface Question {
   answerable: boolean | null;
 }
 
-// ── Screen 2: What I understood ─────────────────────────────────────────────
+// ── What is in it ───────────────────────────────────────────────────────────
 
 /** A thing in the data: laureates, prizes, airports. */
 export interface Thing {
@@ -94,7 +94,7 @@ export interface Understanding {
   relations: readonly Relation[] | null;
 }
 
-// ── Screen 3: Explore ───────────────────────────────────────────────────────
+// ── The graph ───────────────────────────────────────────────────────────────
 
 /** Where the graph is: a preview first, over a few rows, then the whole of it. */
 export type BuildProgress =
@@ -103,7 +103,7 @@ export type BuildProgress =
   | { state: "done"; graphId: string }
   | { state: "failed"; problem: unknown };
 
-/** Everything the screens read, as `use-assistant.ts` answers it. */
+/** Everything the conversation reads, as `use-assistant.ts` answers it. */
 export interface AssistantData {
   sources: SourceTree;
   /** The ids of the picked files. */

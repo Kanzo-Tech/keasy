@@ -2,6 +2,8 @@
 import { FossilError, isFossilError, type Host, type RunReport } from "@fossil-lang/types";
 import { describe, expect, it, vi } from "vitest";
 
+import { ApiError } from "@keasy/api";
+
 import { runOver, serveRun } from "./run-worker";
 
 const REPORT = { location: "s3://lake/jobs/j/", dropped: [] } as unknown as RunReport;
@@ -47,6 +49,47 @@ describe("a run in a worker", () => {
     const refusing: Host = { ...host(), credentials: async () => Promise.reject(FossilError.of("internal/bug", { what: "no grant" })) };
     const failed = await runOver(page, "program", { host: refusing, job: "j" }).catch((error: unknown) => error);
     expect(isFossilError(failed, "internal/bug")).toBe(true);
+    page.close();
+  });
+
+  it("rebuilds a FossilError thrown in the worker with its code and data", async () => {
+    const { page, worker } = channel();
+    serveRun(worker, async () => {
+      throw FossilError.of("document/unread", { documents: ["@lake/people.shex"] });
+    });
+    const failed = await runOver(page, "program", { host: host(), job: "j" }).catch((error: unknown) => error);
+    expect(isFossilError(failed, "document/unread")).toBe(true);
+    expect((failed as FossilError).problem.data).toEqual({ documents: ["@lake/people.shex"] });
+    page.close();
+  });
+
+  // fossil reads a host refusal's `code` and `data` off whatever it is rejected with, and names it
+  // as the cause of the run's problem: keasy's `store/refused` must reach it with its code.
+  it("carries a host's ApiError into the worker with its code, title and data", async () => {
+    const { page, worker } = channel();
+    let seen: unknown;
+    serveRun(worker, async (_program, { host: proxied, job, signal }) => {
+      try {
+        await proxied.credentials({ job }, "write", { signal });
+      } catch (error) {
+        seen = error;
+      }
+      return REPORT;
+    });
+    const refusal = new ApiError(
+      { code: "store/refused", title: "The store refused to vend a credential", detail: "AccessDenied", data: { field: "lake" } },
+      502,
+    );
+    const refusing: Host = { ...host(), credentials: async () => Promise.reject(refusal) };
+    await runOver(page, "program", { host: refusing, job: "j" });
+    expect(seen).toBeInstanceOf(Error);
+    expect(seen).toMatchObject({
+      name: "ApiError",
+      message: "AccessDenied",
+      code: "store/refused",
+      title: "The store refused to vend a credential",
+      data: { field: "lake" },
+    });
     page.close();
   });
 

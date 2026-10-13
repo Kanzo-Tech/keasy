@@ -12,20 +12,30 @@ import { FossilError, isFossilError, type Access, type Host, type Problem, type 
  * - The page's abort reaches the worker as a message; the worker stops the run with it.
  * - The run ends as its report, or as its failure: a `FossilError` crosses as its `Problem` and is
  *   rebuilt with `FossilError.from`, since an error loses its class through a structured clone.
+ * - A host's refusal crosses the same way, and one that is not fossil's — keasy's `ApiError`, coded
+ *   `store/refused` or `store/silent` — keeps its `code`, `title` and `data` as own properties of the
+ *   error rebuilt in the worker: fossil reads a cause's `code` and `data` off any object it is
+ *   rejected with, and an `Error` rebuilt from its words alone would leave the run's problem
+ *   without the store's code under it.
  */
+
+/** A failure as it crosses: fossil's as its `Problem`; any other as its name, words and code. */
+export type Failure =
+  | { problem: Problem }
+  | { error: { name: string; message: string; code?: string; title?: string; data?: unknown } };
 
 /** What crosses the port, page to worker and back. */
 export type ToWorker =
   | { kind: "run"; program: string; job: string }
   | { kind: "abort" }
   | { kind: "answer"; id: number; value: unknown }
-  | { kind: "refuse"; id: number; problem?: Problem; message?: string };
+  | ({ kind: "refuse"; id: number } & Failure);
 
 export type ToPage =
   | { kind: "ask"; id: number; method: "connections" }
   | { kind: "ask"; id: number; method: "credentials"; args: [Scope, Access] }
   | { kind: "done"; report: RunReport }
-  | { kind: "failed"; problem?: Problem; message?: string }
+  | ({ kind: "failed" } & Failure)
   | { kind: "aborted" };
 
 /** The part of a port both sides use: a `MessagePort`, or a worker's own scope. */
@@ -36,13 +46,35 @@ export interface Port {
   start?(): void;
 }
 
-/** A failure as it crosses: its `Problem` when it is fossil's, its words otherwise. */
-function failureOf(error: unknown): { problem?: Problem; message?: string } {
-  return isFossilError(error) ? { problem: error.problem } : { message: error instanceof Error ? error.message : String(error) };
+/** A failure as it crosses: its `Problem` when it is fossil's; its name, words and code otherwise. */
+export function failureOf(error: unknown): Failure {
+  if (isFossilError(error)) return { problem: error.problem };
+  const own = (error ?? {}) as { name?: unknown; message?: unknown; code?: unknown; title?: unknown; data?: unknown };
+  return {
+    error: {
+      name: typeof own.name === "string" ? own.name : "Error",
+      message: typeof own.message === "string" ? own.message : String(error),
+      ...(typeof own.code === "string" ? { code: own.code } : {}),
+      ...(typeof own.title === "string" ? { title: own.title } : {}),
+      ...(own.data !== null && typeof own.data === "object" ? { data: asJson(own.data) } : {}),
+    },
+  };
 }
 
-function rebuilt({ problem, message }: { problem?: Problem; message?: string }): unknown {
-  return problem ? FossilError.from(problem) : new Error(message);
+/** `data` as JSON keeps it — what fossil reads off a cause anyway — so the message always clones. */
+function asJson(data: object): unknown {
+  try {
+    return JSON.parse(JSON.stringify(data)) as unknown;
+  } catch {
+    return undefined;
+  }
+}
+
+/** The failure as the far side threw it: a `FossilError` again, or an `Error` with its code kept. */
+export function rebuilt(failure: Failure): Error {
+  if ("problem" in failure) return FossilError.from(failure.problem);
+  const { name, message, ...coded } = failure.error;
+  return Object.assign(new Error(message), { name }, coded);
 }
 
 /** The worker's side: wait for a run, run it with `execute` over a host that asks the page. */

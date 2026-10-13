@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 /** The stack the suite runs against: the dev stack (compose.yaml and compose.override.yaml, which
- * compose reads on its own) without the local models, as `make e2e` and CI bring it up. */
+ * compose reads on its own), as `make e2e` and CI bring it up. */
 function compose(...args: string[]) {
   execFileSync("docker", ["compose", ...args], { cwd: ROOT, stdio: "inherit" });
 }
@@ -32,11 +32,6 @@ export function stop(...services: string[]) {
 /** Start `services` (any profile) and wait until they report healthy. */
 export function up(...services: string[]) {
   compose("--profile", "faults", "up", "-d", "--wait", ...services);
-}
-
-/** Start `services` without waiting on them (the AI gateway has no health check, and restarts until it reaches the realm). */
-export function start(...services: string[]) {
-  compose("--profile", "faults", "up", "-d", ...services);
 }
 
 /** Run `scenario` with `services` stopped, and bring them back whatever happens. */

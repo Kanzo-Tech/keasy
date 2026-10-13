@@ -20,19 +20,6 @@ export async function runToCompletion(
   return id;
 }
 
-/** The model calls the page makes, through the BFF's forward to the AI gateway. */
-export const AI = "**/api/ai/chat/completions";
-
-/** OpenAI chat completion chunks as the gateway streams them, ending the stream. */
-export function sse(...chunks: unknown[]): string {
-  return [...chunks.map((c) => `data: ${typeof c === "string" ? c : JSON.stringify(c)}\n\n`), "data: [DONE]\n\n"].join("");
-}
-
-/** One chunk of an answer's text. */
-export function text(content: string, finish: string | null = null) {
-  return { id: "e2e", object: "chat.completion.chunk", created: 0, model: "chat", choices: [{ index: 0, delta: { content }, finish_reason: finish }] };
-}
-
 /**
  * A graph's Discovery as its URL names it: the `view` in the main region and the dock's `panel`, or
  * `none` for the dock collapsed. Left out, each is the page's default: Graph, and Info beside it —

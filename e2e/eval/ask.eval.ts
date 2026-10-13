@@ -2,47 +2,17 @@ import { DiscoverPage, saveDashboard } from "../support/app";
 import { expect, test } from "../support/fixtures";
 import { hasExample, seedGraph } from "../support/seeds";
 import { ASK, type Pair } from "./cases";
-import { warmUp } from "./model";
 import { record } from "./record";
 
 /**
- * Ask's cases, asked of the model the stack points `chat` at, through whatever the Ask panel runs —
- * end to end: the panel, the BFF, the gateway and the page's engine. Live only, never replayed: what is measured is
- * the model. Each case is one result line in `results/<EVAL_MODEL>/ask.jsonl`, scored or failed, and
+ * Ask's cases, asked of the model the page runs (`web/src/lib/ai.ts`), through whatever the Ask panel
+ * runs — end to end: the panel, the model in its worker on this browser's GPU (WebGPU), and the page's
+ * engine. Live only, never replayed: what is measured is the model. Each case is one result line in `results/<EVAL_MODEL>/ask.jsonl`, scored or failed, and
  * a case that fails is a result, not a failed test — the suite fails only when it cannot ask at all.
  */
 
-/** How long one question may take, on the CPU a baseline runs on. */
+/** How long one question may take — and the model's first load, its download included — on the GPU a baseline runs on. */
 const QUESTION_MS = Number(process.env.EVAL_QUESTION_MS ?? 8 * 60_000);
-
-/**
- * What the model said in one call, read from the stream the page received: its text, its reasoning
- * and the tool calls it wrote — so a failed case says whether the model called `answer`, wrote prose
- * instead, or thought until the time ran out. Cut to the tail: the end is where a call is decided.
- */
-function said(sse: string, status: number): { status: number; text: string; reasoning: string; calls: string; tokens?: number; body?: string } {
-  let text = "";
-  let reasoning = "";
-  let calls = "";
-  let tokens: number | undefined;
-  for (const line of sse.split("\n")) {
-    if (!line.startsWith("data: ") || line === "data: [DONE]") continue;
-    try {
-      const chunk = JSON.parse(line.slice(6));
-      const delta = chunk.choices?.[0]?.delta ?? {};
-      text += delta.content ?? "";
-      reasoning += delta.reasoning_content ?? "";
-      for (const call of delta.tool_calls ?? []) calls += `${call.function?.name ?? ""}${call.function?.arguments ?? ""}`;
-      tokens = chunk.usage?.completion_tokens ?? tokens;
-    } catch {
-      // A line cut by the stream's end: what came before it is kept.
-    }
-  }
-  const tail = (s: string) => (s.length > 600 ? `…${s.slice(-600)}` : s);
-  // Nothing read as a stream: a refusal or an error the gateway answered instead, kept as it came.
-  const body = text || reasoning || calls ? undefined : sse.slice(0, 600);
-  return { status, text: tail(text), reasoning: tail(reasoning), calls: tail(calls), tokens, body };
-}
 
 /** Whether `rows` — an answer's data table — holds a row reading `label` and `n` (separators aside). */
 function holds(rows: readonly Record<string, string>[], [label, n]: Pair): boolean {
@@ -54,7 +24,7 @@ function holds(rows: readonly Record<string, string>[], [label, n]: Pair): boole
 
 test.describe.configure({ mode: "serial" });
 // A harness waits as long as a question may take: an answer begins only once the model has read the
-// whole prompt, which on a CPU is minutes.
+// whole prompt, which on a small GPU is a while.
 test.use({ harnessTimeout: QUESTION_MS });
 
 for (const c of ASK) {
@@ -85,24 +55,18 @@ for (const c of ASK) {
         )
       : whole;
     if (filter && kept === undefined) {
-      return record("ask", { case: c.id, pass: false, failure: "the page was not filtered: the case could not be set up", missing: c.holds, present: [], rows: [], calls: [], turns: [], ms: 0 });
+      return record("ask", { case: c.id, pass: false, failure: "the page was not filtered: the case could not be set up", missing: c.holds, present: [], rows: [], turns: [], ms: 0 });
     }
     await page.addStyleTag({ content: ".tsqd-parent-container { display: none !important; }" });
     await discover.panel("Ask");
     const panel = await discover.ask();
-    const cold = await warmUp(page, QUESTION_MS).then(
+    // The model loaded before the clock starts: the first time on a machine, that is its download.
+    const cold = await panel.warmUp().then(
       () => undefined,
       (error: Error) => error.message,
     );
-    if (cold) return record("ask", { case: c.id, pass: false, failure: cold, missing: c.holds, present: [], rows: [], calls: [], turns: [], ms: 0 });
+    if (cold) return record("ask", { case: c.id, pass: false, failure: cold, missing: c.holds, present: [], rows: [], turns: [], ms: 0 });
     const answers = await panel.composer();
-
-    // Every model call the page makes from here on, as it was streamed back.
-    const calls: ReturnType<typeof said>[] = [];
-    page.on("response", (response) => {
-      if (!response.url().includes("/api/ai/chat/completions")) return;
-      void response.text().then((body) => calls.push(said(body, response.status())), () => undefined);
-    });
 
     const started = Date.now();
     const turns: number[] = [];
@@ -194,7 +158,6 @@ for (const c of ASK) {
       missing,
       present,
       rows: rows.slice(0, 10),
-      calls,
       turns,
       ms: Date.now() - started,
     });

@@ -200,19 +200,19 @@ lands in the bar"* is the check of the last step rather than a step of its own.
    Category.name*); `discover.open(id)`.
 2. `discover.onMap()` — the Graph view on the map for step 8 — then `view("Dashboard")`,
    `relation("LaureateAward", [">category>Category"])`, `dashboard.settled()`, `panel("Ask")`.
-3. `LIVE=1`: `ask.warmUp()`.
+3. `ask.warmUp()`: the page's model loaded, on the recording browser's GPU.
 
 **Steps**
 
 | # | Subtitle | Action | Check |
 | --- | --- | --- | --- |
 | 1 | Filter the page: Physics only | *Count by Category.name* `pick({ y: "Physics" })` | `discover.kept()` → `"230"` |
-| 2 | Ask about what's in view, in plain words | `answers.ask("Which universities won the most prizes?")` | the replay held the call |
+| 2 | Ask about what's in view, in plain words | `answers.ask("Which universities won the most prizes?")` | a new answer card began |
 | 3 | The answer is a chart, over the Physics prizes in view | `answers.answer()` | the tile is by *University*; its rows hold UC **16**, not **43** (every category's) · **poster** |
 | 4 | Add it to the dashboard | `answers.addToDashboard()` | a tile `/University/` on the dashboard |
 | 5 | Open it on the dashboard | `answers.openOnDashboard()` | that tile is in view |
-| 6 | Ask again: which ones were won in Germany? | `answers.ask("Which ones were won in Germany?")`; `answers.answer()` | the replay held the call |
-| 7 | This one filters: keep what it found | `answers.filterTo()` | `discover.kept()` > 0 — pin it on the take that captures it |
+| 6 | Ask again: which ones were won in Germany? | `answers.ask("Which ones were won in Germany?")`; `answers.answer()` | its rows are not empty |
+| 7 | This one filters: keep what it found | `answers.filterTo()` | `discover.kept()` > 0 |
 | 8 | The same prizes on the map, framed on Germany | `view("Graph")`; `graph.frame()` | the Graph view's readout reads the same; ≤ 22 |
 
 **Numbers** (`nobel/data`; `affiliations` joins an award to its institutions)

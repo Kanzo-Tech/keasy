@@ -3,7 +3,7 @@ import type { TileHarness } from "@kanzo-tech/testing";
 
 import { DiscoverPage, saveDashboard } from "../support/app";
 import { seedGraph } from "../support/seeds";
-import { demo, model } from "./record";
+import { demo } from "./record";
 
 /** Each prize with its category: the relation the dashboard's one tile picks Physics on. */
 const RELATION = "LaureateAward>category>Category";
@@ -33,16 +33,14 @@ const holds = (rows: Record<string, string>[], value: string, n: number) =>
  * on the map, where the graph is 2.5K nodes and the frame is instant. It replaced `snb-ask`, whose last
  * frame laid out LDBC's 327K nodes, and whose browsers `snb-explore` had already filtered by.
  *
- * The model's words are replayed from `recordings/nobel-ask.json` (record/model.ts): the `answer` tool
- * it calls still runs on the page under its filter, so the chart and its rows are DuckDB's on every
- * take. The check that the University of California reads 16 — its Physics prizes, not its 43 in every
- * category — proves, on the take that captures it, that the answer is over what is in view. `LIVE=1`
- * asks the model instead; `LIVE=1 RECORD=1` asks it and, once every check has passed, keeps what it
- * said as the recording. The figures are `nobel/data`'s (STORYBOARD.md has the queries).
+ * The model is everyone's, in the recording's browser on its GPU (`web/src/lib/ai.ts`), loaded before
+ * the take; what it fills is read on the page under its filter, so the chart and its rows are DuckDB's
+ * on every take. The check that the University of California reads 16 — its Physics prizes, not its 43
+ * in every category — proves that the answer is over what is in view. The figures are `nobel/data`'s
+ * (STORYBOARD.md has the queries).
  */
 demo("nobel-ask", "Ask over the Nobel prizes: an answer added to the dashboard and opened there, then one that filters the map", {
   async arrange({ page, env }) {
-    const replay = await model(page, "nobel-ask");
     const id = await seedGraph(page, "nobel", { name: "Demo · Nobel laureates", reuse: true });
     await saveDashboard(page, id, RELATION, DASHBOARD);
     const discover = await DiscoverPage.open(page, env, id);
@@ -55,12 +53,13 @@ demo("nobel-ask", "Ask over the Nobel prizes: an answer added to the dashboard a
     await dashboard.settled();
     await discover.panel("Ask");
     const ask = await discover.ask();
-    if (replay.live) await ask.warmUp();
+    // The model loaded off camera: the first time on a machine, that is its download.
+    await ask.warmUp();
     const answers = await ask.composer();
-    return { replay, discover, graph, dashboard, answers, answered: { tile: undefined as TileHarness | undefined } };
+    return { discover, graph, dashboard, answers, answered: { tile: undefined as TileHarness | undefined } };
   },
 
-  steps: ({ replay, discover, graph, dashboard, answers, answered }) => [
+  steps: ({ discover, graph, dashboard, answers, answered }) => [
     {
       subtitle: "Filter the page: Physics only",
       action: async () => (await (await dashboard.tile("Count by Category.name")).chart()).pick({ y: "Physics" }),
@@ -70,7 +69,8 @@ demo("nobel-ask", "Ask over the Nobel prizes: an answer added to the dashboard a
       subtitle: "Ask about what's in view, in plain words",
       // Resolves once a new answer card has begun.
       action: () => answers.ask(UNIVERSITIES),
-      check: async () => expect(replay.unrecorded, "model calls the recording does not hold: capture it again").toEqual([]),
+      // The action is the check: it resolves only once a new answer card has begun.
+      check: async () => {},
     },
     {
       subtitle: "The answer is a chart, over the Physics prizes in view",
@@ -113,11 +113,12 @@ demo("nobel-ask", "Ask over the Nobel prizes: an answer added to the dashboard a
         await answers.ask(GERMANY);
         answered.tile = await answers.answer();
       },
-      check: async () => expect(replay.unrecorded, "model calls the recording does not hold: capture it again").toEqual([]),
+      // An answer read from rows, the engine's: the next step keeps them.
+      check: async () => expect((await answers.rows()).length).toBeGreaterThan(0),
     },
     {
       // What the answer draws is what it keeps: of the 22 Physics prizes won at a German institution,
-      // the ones in the categories its bars show (STORYBOARD.md). Pinned on the take that captures it.
+      // the ones in the categories its bars show (STORYBOARD.md).
       subtitle: "This one filters: keep what it found",
       action: () => answers.filterTo(),
       check: () =>
@@ -138,7 +139,4 @@ demo("nobel-ask", "Ask over the Nobel prizes: an answer added to the dashboard a
       check: async () => expect(Number((await discover.kept()).replace(/,/g, ""))).toBeLessThanOrEqual(22),
     },
   ],
-
-  // Only a take whose every check passed is kept as the recording (LIVE=1 RECORD=1).
-  passed: ({ replay }) => replay.keep(),
 });

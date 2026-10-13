@@ -22,6 +22,15 @@ const GPU = {
   args: [...(process.platform === "darwin" ? ["--use-angle=metal"] : []), "--enable-gpu", "--ignore-gpu-blocklist"],
 };
 
+/**
+ * The GPU, with WebGPU on: the model runs in the page (`web/src/lib/ai.ts`), and headless Chromium
+ * offers WebGPU only when asked — on Linux, over Vulkan. A machine with no GPU still has none, and
+ * Ask says so (`ai/unavailable`).
+ */
+const WEBGPU = {
+  args: [...GPU.args, "--enable-unsafe-webgpu", ...(process.platform === "linux" ? ["--enable-features=Vulkan"] : [])],
+};
+
 export default defineConfig({
   testDir: ".",
   fullyParallel: false,
@@ -56,14 +65,14 @@ export default defineConfig({
       // The seeds are large graphs, laid out live: on the GPU, as a reader with one sees them.
       use: { storageState: ".auth/editor.json", launchOptions: GPU },
     },
-    // The evaluation set (eval/, Kanzo Tasks' phase 0): every case asked of the model the stack's
-    // aliases point at, scored and written to eval/results/<EVAL_MODEL>/. Live, slow, and never part of
-    // `test`: it names the projects it runs, as for the demos.
+    // The evaluation set (eval/, Kanzo Tasks' phase 1): every case asked of the model the page runs,
+    // on this machine's GPU, scored and written to eval/results/<EVAL_MODEL>/. Live, slow, and never
+    // part of `test`: it names the projects it runs, as for the demos.
     {
       name: "eval",
       testMatch: /eval\/.*\.eval\.ts$/,
       dependencies: ["setup"],
-      use: { storageState: ".auth/editor.json", trace: "off" },
+      use: { storageState: ".auth/editor.json", trace: "off", launchOptions: WEBGPU },
     },
     // Product demos, recorded rather than asserted (demos/, `make demo`). Never part of `test`:
     // it names the projects it runs, so CI and `make e2e` do not record.
@@ -79,7 +88,8 @@ export default defineConfig({
         // An action waits for its element without bound by default, so a demo whose step never appears
         // hangs instead of failing; 30 s names the step that did not come.
         actionTimeout: 30_000,
-        launchOptions: GPU,
+        // A demo that asks the model asks the page's, on this machine's GPU.
+        launchOptions: WEBGPU,
       },
     },
   ],

@@ -95,8 +95,6 @@ export interface Demo<T> {
   arrange(stage: Stage): Promise<T>;
   /** The story. A demo has no title card, at the start or the end: only the steps' subtitles. */
   steps(arranged: T, stage: Stage): readonly Step[];
-  /** Once every step's check has passed, before the page closes: what a good take keeps (a recording). */
-  passed?(arranged: T): Promise<void> | void;
   /** Why the demo cannot be recorded yet, when it cannot: it is listed, and skipped. */
   skip?: string | false;
 }
@@ -110,7 +108,7 @@ function themes(): readonly Theme[] {
   return [one as Theme];
 }
 
-export function demo<T>(name: string, description: string, { arrange, steps, passed, skip }: Demo<T>) {
+export function demo<T>(name: string, description: string, { arrange, steps, skip }: Demo<T>) {
   // eslint-disable-next-line playwright/expect-expect -- the checks are the steps', run in order by `take`
   test(`${name}: ${description}`, async ({ browser, baseURL }) => {
     test.skip(Boolean(skip), skip || undefined);
@@ -141,10 +139,6 @@ export function demo<T>(name: string, description: string, { arrange, steps, pas
         rmSync(frames, { recursive: true, force: true });
         mkdirSync(frames);
         const shot = await take(page, frames, `${file}.png`, steps(arranged, stage), chapters);
-        // Every call the take made is answered before it is kept: a model's suggestions for the last
-        // filter may still be streaming, and a capture without it is a replay that asks for it.
-        await page.unrouteAll({ behavior: "wait" });
-        await passed?.(arranged);
         encode(frames, shot, `${file}.mp4`);
         writeFileSync(`${file}.chapters.json`, `${JSON.stringify(chapters, null, 2)}\n`);
       } finally {

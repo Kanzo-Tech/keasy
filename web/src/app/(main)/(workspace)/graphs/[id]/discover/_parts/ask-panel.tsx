@@ -1,34 +1,24 @@
 "use client";
 
-import { Suspense, useCallback, useMemo } from "react";
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { Suspense, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Sparkles } from "lucide-react";
 import { useClauses, useMosaic, type JoinGraph } from "@kanzo-tech/ui/analytics";
 import { Badge, EmptyDescription, EmptyHeader, EmptyIndicator, EmptyRoot } from "@kanzo-tech/ui";
 import { Chat, ChatSkeleton } from "@kanzo-tech/ai";
-import {
-  AnswerCard,
-  answerRelationsOf,
-  askEdit,
-  AskChips,
-  askOffers,
-  readAnswerRelations,
-  useAskChat,
-  type AnswerRelation,
-  type AskOutput,
-} from "@kanzo-tech/ai/data";
+import { AnswerCard, askEdit, AskChips, askOffers, type AnswerRelation, type AskOutput } from "@kanzo-tech/ai/data";
 import { problemCopy, ProblemView } from "@/components/problem-view";
 import { ModelStatus } from "@/components/model-status";
 import { useModel, useModelLoad } from "@/lib/ai";
-import { settled } from "@/lib/api/settled";
 import { coded } from "@/lib/errors";
-import { corpusKey, ONCE, useCorpus, useJoinGraph } from "@/lib/fossil/corpus";
+import { useCorpusAsk } from "@/lib/fossil/ask";
+import { corpusKey, useCorpus } from "@/lib/fossil/corpus";
 import { useHandedQuestion } from "./ask-handoff";
 import { useDashboardStore } from "./dashboard-store";
 
 /**
- * The Ask panel — `@kanzo-tech/ai/data` over the graph: each type of the corpus's join graph read
- * alone (`readAnswerRelations`), each question one run of the `ask` Task on the page's engine under
+ * The Ask panel — `@kanzo-tech/ai/data` over the graph (`useCorpusAsk`, which the assistant's chat
+ * reads its preview through too): each type of the corpus's join graph read alone, each question one run of the `ask` Task on the page's engine under
  * the page's one selection (`useAskChat`), its own checked offers as the pills (`askOffers`), and each
  * answer an `AnswerCard` — the dashboard tile it is, which *Filter the page to these rows* narrows the
  * page to (when it filters at all), *Add to the dashboard* adds to the Dashboard view's saved
@@ -56,22 +46,6 @@ function AskEmpty() {
         </EmptyDescription>
       </EmptyHeader>
     </EmptyRoot>
-  );
-}
-
-/**
- * What may be asked about, once per graph: each type alone (`answerRelationsOf`, no hops — the relation
- * an answer needs is computed from its spec), its fields and their common values.
- */
-function useRelations(graph: JoinGraph): AnswerRelation[] {
-  const { name: corpus } = useCorpus();
-  const { coordinator } = useMosaic();
-  return settled(
-    useSuspenseQuery({
-      queryKey: [...corpusKey(corpus), "answer-relations"],
-      queryFn: ({ signal }) => readAnswerRelations(coordinator, graph, answerRelationsOf(graph, { hops: 0 }), { signal }),
-      ...ONCE,
-    }),
   );
 }
 
@@ -132,18 +106,12 @@ function SubsetPill() {
 }
 
 function AskChat() {
-  const { selection } = useMosaic();
-  const { engine } = useCorpus();
-  const graph = useJoinGraph();
-  const types = useRelations(graph);
+  const { chat, graph, types, over } = useCorpusAsk();
   // The download started when the graph opened (`usePreloadModel`); the panel says how it stands.
   const load = useModelLoad();
-  const model = useModel();
-  const chat = useAskChat({ model, engine, graph, types, selection });
   // The question the assistant handed over (`?q=`), asked once the model is ready.
   const { sendMessage } = chat;
   useHandedQuestion(useCallback((text: string) => void sendMessage({ text }), [sendMessage]), load.state === "ready");
-  const over = useMemo(() => ({ graph, types }), [graph, types]);
   const starters = useStarters(graph, types);
   const adding = useAdding();
 

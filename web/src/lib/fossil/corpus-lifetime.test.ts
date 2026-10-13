@@ -53,7 +53,7 @@ const GRAPH = "00000000-0000-4000-8000-000000000001";
 /** A child that reads the corpus for `ms` before it can draw, and records whether it was still there; the cache keeps what it read until the corpus goes. */
 function slowChild(ms: number, seen: boolean[]) {
   return function Child() {
-    const { graphId } = useCorpus();
+    const { name: graphId } = useCorpus();
     useSuspenseQuery({
       queryKey: [...corpusKey(graphId), "child", ms],
       gcTime: Infinity,

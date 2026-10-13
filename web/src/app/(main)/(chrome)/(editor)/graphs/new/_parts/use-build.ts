@@ -1,11 +1,9 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useCallback } from "react";
 import type { Profiled } from "@fossil-lang/types";
-import type { Decision } from "@kanzo-tech/ai/task";
 import { http, invalidate, type Schemas } from "@/lib/api/client";
 import { queryClient } from "@/lib/api/query-client";
-import { taken, withDecisions } from "@/lib/assumptions";
 import { startBuild, useProgramBuild, type BuildProgress, type BuildSteps } from "@/lib/fossil/build";
 import { startRun } from "@/app/(main)/(chrome)/graphs/[id]/_parts/use-browser-graph-runner";
 import { folderSlug, FOLDER_MAX } from "./folder";
@@ -16,6 +14,11 @@ export interface BuildOutput {
   sink?: string;
   /** The graph's name. */
   name?: string;
+  /**
+   * The assistant's conversation the graph is built from (`lib/assistant-conversation.ts`): what was
+   * decided travels with the graph there, and Discover lists it.
+   */
+  conversation?: string;
 }
 
 const UNNAMED = "New graph";
@@ -40,14 +43,8 @@ async function sinkOf(named: string | undefined): Promise<string> {
 
 /**
  * keasy's steps of a build (`lib/fossil/build.ts`): the graph made as the studio makes one — a draft,
- * submitted, then run with this tab as its runner — and run here, in the run's worker, under the
- * graph's lease (`startRun`).
- *
- * **No preview yet.** fossil's `run` reads every row of every source — it has no row limit — and a
- * running graph's output is the runner's to write and nobody's to read until it completes
- * (`graph/not-completed`), so a sample written under the graph's prefix could be neither taken nor
- * opened. The build goes from `preparing` to the whole graph until one of them gives way; the
- * machine, Discover's switch and the hand-off already take a {@link BuildSteps.preview}.
+ * submitted, then run with this tab as its runner — with the conversation it was built from, and run
+ * here, in the run's worker, under the graph's lease (`startRun`), its corpus written under its job.
  */
 export function keasySteps(output: BuildOutput = {}): BuildSteps<Schemas["Graph"]> {
   return {
@@ -55,7 +52,13 @@ export function keasySteps(output: BuildOutput = {}): BuildSteps<Schemas["Graph"
       const name = output.name?.trim() || UNNAMED;
       const sink_connection = await sinkOf(output.sink);
       const { data: draft } = await http.POST("/v1/graphs", {
-        body: { script, name, folder: freshFolder(name), sink_connection },
+        body: {
+          script,
+          name,
+          folder: freshFolder(name),
+          sink_connection,
+          ...(output.conversation ? { conversation: output.conversation } : {}),
+        },
       });
       const id = draft!.id;
       await http.POST("/v1/graphs/{id}/submit", { params: { path: { id } }, body: {} });
@@ -71,27 +74,19 @@ export function keasySteps(output: BuildOutput = {}): BuildSteps<Schemas["Graph"
   };
 }
 
-/** A decision as the assistant holds it: the default it assumed, and the person's pick over it. */
-interface HeldDecision {
-  decision: Decision;
-  assumed: string | null;
-  chosen: string | null;
-}
-
 /**
- * The graph `program` builds, as the assistant's last turn reads it: `null` until there is a program,
- * then the build's progress. The build starts once per program — `decisions` written at its head,
- * so a decision changed is a build of its own — and outlives the page, so Discover finds it.
+ * The whole graph `program` builds, on request: `progress` is `null` until `build()` is called — the
+ * assistant's *Build the whole graph* — then the build's. One build per program, which outlives the
+ * page, so the person can go to Discover while it runs. Save the conversation first: once a graph is
+ * built from it, it is that graph's record.
  */
 export function useBuild(
   program: string | null,
   profiled: Profiled | null,
-  { decisions = [], ...output }: BuildOutput & { decisions?: readonly HeldDecision[] } = {},
-): BuildProgress | null {
-  const script = useMemo(() => (program === null ? null : withDecisions(program, taken(decisions))), [program, decisions]);
-  const { sink, name } = output;
-  useEffect(() => {
-    if (script !== null) startBuild(script, profiled ?? undefined, keasySteps({ sink, name }));
-  }, [script, profiled, sink, name]);
-  return useProgramBuild(script)?.progress ?? null;
+  { sink, name, conversation }: BuildOutput = {},
+): { progress: BuildProgress | null; build: () => void } {
+  const build = useCallback(() => {
+    if (program !== null) startBuild(program, profiled ?? undefined, keasySteps({ sink, name, conversation }));
+  }, [program, profiled, sink, name, conversation]);
+  return { progress: useProgramBuild(program), build };
 }

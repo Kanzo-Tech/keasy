@@ -1,11 +1,11 @@
 "use client";
 
+import { useParams } from "next/navigation";
 import { Link } from "@kanzo-tech/navigation/next";
 import { Badge, Button } from "@kanzo-tech/ui";
 import { $api } from "@/lib/api/client";
 import { settled } from "@/lib/api/settled";
 import { decisionsOf, labelOf } from "@/lib/assumptions";
-import { useCorpus } from "@/lib/fossil/corpus";
 
 /** The assistant opened on graph `graphId` with decision `decision` to take again. */
 export const changeHref = (graphId: string, decision: string) =>
@@ -19,7 +19,7 @@ export const changeHref = (graphId: string, decision: string) =>
  * a graph the assistant did not build.
  */
 export function GraphAssumptions() {
-  const { graphId } = useCorpus();
+  const { id: graphId } = useParams<{ id: string }>();
   const graph = settled($api.useSuspenseQuery("get", "/v1/graphs/{id}", { params: { path: { id: graphId } } }));
   const decisions = decisionsOf(graph.script);
   if (decisions.length === 0) return null;

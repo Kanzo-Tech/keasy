@@ -177,7 +177,9 @@ describe("the assistant, as a conversation", () => {
   it("the reply shows what was picked, and the files are read under it", async () => {
     const { host, render } = mount({ selected: new Set(["nobel:laureates.csv", "nobel:awards.csv"]) });
     await act(async () => button(host, "Read these files")!.click());
-    expect(replies(host)[0]).toContain("These 2 files");
+    expect(replies(host)[0]).toBe("These 2 files");
+    // A reply is what was sent, with nothing under it to undo it.
+    expect([...host.querySelectorAll("[data-reply] button")]).toEqual([]);
     render({ reading: { done: 1, total: 2 } });
     expect(host.querySelector('[role="status"]')?.textContent).toBe("Reading your files… 1 of 2");
   });
@@ -195,27 +197,36 @@ describe("the assistant, as a conversation", () => {
     expect(onChoose).toHaveBeenCalledWith("award-key", "one");
   });
 
-  it("a chosen option is the person's reply, and the next decision follows it", async () => {
+  it("a chosen option is said once, selected in its turn, and the next decision follows it", async () => {
+    const onChoose = vi.fn();
     const { host } = mount({
       selected: new Set(["nobel:laureates.csv"]),
       decisions: [{ ...award, chosen: "one" }, country],
+      onChoose,
     });
     await through(host);
-    expect(replies(host)).toContain("One, shared");
+    expect(replies(host)).not.toContain("One, shared");
+    const options = host.querySelector(`[data-decision="award-key"]`)!.querySelectorAll<HTMLInputElement>('input[type="radio"]');
+    expect([...options].find((r) => r.checked)?.value).toBe("one");
     expect(host.textContent).toContain("Decision 2 of 2");
+    // Picking the other option in its turn is how it changes.
+    await act(async () => [...options].find((r) => r.value === "two")!.click());
+    expect(onChoose).toHaveBeenCalledWith("award-key", "two");
   });
 
-  it("an assumption is said as what was taken, asks nothing, and can be changed", async () => {
+  it("an assumption is said as what was taken, with its options, and blocks nothing", async () => {
     const onChoose = vi.fn();
     const { host } = mount({ selected: new Set(["nobel:laureates.csv"]), decisions: [share], onChoose });
     await through(host);
     const note = host.querySelector('[data-assumption="share"]');
     expect(note?.textContent).toContain("I assumed: A fraction of the prize");
     expect(note?.textContent).toContain(share.decision.question);
-    expect(host.querySelector('input[type="radio"]')).toBeNull();
+    // Its options are in place, the one taken selected — no button to open them.
+    const radios = [...host.querySelectorAll<HTMLInputElement>('input[type="radio"]')];
+    expect(radios.find((r) => r.checked)?.value).toBe("fraction");
+    expect(button(host, "Change")).toBeUndefined();
     // It blocks nothing: the questions are already asked.
     expect(host.textContent).toContain("What would you like to know?");
-    await act(async () => button(host, "Change")!.click());
     const amount = [...host.querySelectorAll<HTMLInputElement>('input[type="radio"]')].find((r) => r.value === "amount")!;
     await act(async () => amount.click());
     expect(onChoose).toHaveBeenCalledWith("share", "amount");
@@ -422,7 +433,6 @@ describe("the assistant, wired", () => {
     expect(replies(host)).toEqual([
       expect.stringContaining("This file"),
       "Nobel prizes",
-      "Two, one per person",
       expect.stringContaining("Who has won more than one Nobel?"),
       "That's all. Show me.",
     ]);

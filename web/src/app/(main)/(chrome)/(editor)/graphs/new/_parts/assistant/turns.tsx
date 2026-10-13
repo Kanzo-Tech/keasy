@@ -1,12 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import { ArrowRight, Check, CircleCheck, CircleHelp, CircleX, Hammer, Lightbulb, MessageCircleQuestion, Sparkles } from "lucide-react";
 import { Link } from "@kanzo-tech/navigation/next";
 import { Message, MessageContent } from "@kanzo-tech/ai";
 import {
   Alert,
-  AlertAction,
   AlertDescription,
   AlertTitle,
   Badge,
@@ -53,17 +51,18 @@ export function Said({ children, label, decision }: { children: React.ReactNode;
 }
 
 /**
- * The person's reply: what they picked, chose or asked, as their message — with the way to undo it
- * under it (*Change the files*, *Remove*) while that is still theirs to change.
+ * The person's reply: what they sent or wrote, as their message — the files, what it is about, a
+ * question. A choice made on a turn's options is not said again here: it stays selected in its turn,
+ * which is where it is changed. A question can be removed under it while the questions are asked.
  */
-export function Reply({ children, change }: { children: React.ReactNode; change?: { label: string; onClick: () => void } }) {
+export function Reply({ children, onRemove }: { children: React.ReactNode; onRemove?: () => void }) {
   return (
     <Message data-reply="" role="user">
       <MessageContent>{children}</MessageContent>
-      {change && (
+      {onRemove && (
         <div className="flex basis-full justify-end">
-          <Button className="-mt-3 text-muted-foreground text-xs" onClick={change.onClick} size="sm" variant="ghost">
-            {change.label}
+          <Button className="-mt-3 text-muted-foreground text-xs" onClick={onRemove} size="sm" variant="ghost">
+            Remove
           </Button>
         </div>
       )}
@@ -301,45 +300,20 @@ export function DecideTurn({
 
 /**
  * A default taken without asking, said as what was taken — *I assumed: A fraction of the prize* —
- * with the question it answers under it, and **Change**, which opens its options in place. It blocks
- * nothing.
+ * with the question it answers, and its options under it as a decision's are, the one taken selected:
+ * picking another is how it changes. It blocks nothing.
  */
-export function AssumedTurn({
-  item,
-  onChoose,
-  reopened = false,
-}: {
-  item: DecisionItem;
-  onChoose: (option: string) => void;
-  /** Opened at its options: **Change** pressed in Discover's *What I decided*. */
-  reopened?: boolean;
-}) {
-  const [changing, setChanging] = useState(reopened);
+export function AssumedTurn({ item, onChoose }: { item: DecisionItem; onChoose: (option: string) => void }) {
   return (
-    <Said decision={item.decision.id}>
+    <Said decision={item.decision.id} label={item.decision.question}>
       <Alert data-assumption={item.decision.id}>
         <Lightbulb aria-hidden />
         <AlertTitle>
           I assumed: <span className="font-semibold">{takenLabel(item)}</span>
         </AlertTitle>
         <AlertDescription>{item.decision.question}</AlertDescription>
-        {!changing && (
-          <AlertAction>
-            <Button onClick={() => setChanging(true)} size="sm" variant="ghost">
-              Change
-            </Button>
-          </AlertAction>
-        )}
       </Alert>
-      {changing && (
-        <DecisionChoice
-          item={item}
-          onChoose={(option) => {
-            onChoose(option);
-            setChanging(false);
-          }}
-        />
-      )}
+      <DecisionChoice item={item} onChoose={onChoose} />
     </Said>
   );
 }

@@ -14,7 +14,7 @@ import {
 } from "@kanzo-tech/ai";
 import { Alert, AlertDescription, AlertTitle, Button, InputGroupButton } from "@kanzo-tech/ui";
 import type { AssistantMessage, FileReference } from "@/lib/assistant-conversation";
-import { converse, messagesOf, NO_REPLIES, type Replies, takenLabel, type Turn, waitingFor, type Waiting } from "./conversation";
+import { converse, messagesOf, NO_REPLIES, type Replies, type Turn, waitingFor, type Waiting } from "./conversation";
 import type { AssistantData, BuildProgress, Question } from "./model";
 import { type Preview, PreviewTurn } from "./preview-turn";
 import type { SourcePickerProps } from "./source-picker";
@@ -146,9 +146,7 @@ export function AssistantChat(props: AssistantChatProps) {
         );
       case "picked":
         return (
-          <Reply change={{ label: "Change the files", onClick: () => reply({ picked: false }) }} key={key}>
-            {turn.files === 1 ? "This file" : `These ${turn.files} files`}
-          </Reply>
+          <Reply key={key}>{turn.files === 1 ? "This file" : `These ${turn.files} files`}</Reply>
         );
       case "reading":
         return <ReadingTurn key={key} problems={props.problems} reading={turn.reading} total={props.selected.size} />;
@@ -169,14 +167,14 @@ export function AssistantChat(props: AssistantChatProps) {
           />
         );
       case "decided":
-        return <Reply key={key}>{takenLabel(turn.item)}</Reply>;
+        // Kept in the transcript, not drawn: the option chosen stays selected in the decision's turn.
+        return null;
       case "assumed":
         return (
           <AssumedTurn
             item={turn.item}
             key={turn.item.decision.id}
             onChoose={(option) => onChoose(turn.item.decision.id, option)}
-            reopened={turn.item.decision.id === reopen}
           />
         );
       case "ask":
@@ -186,12 +184,10 @@ export function AssistantChat(props: AssistantChatProps) {
       case "asked":
         return (
           <Reply
-            change={
-              waiting === "ask"
-                ? { label: "Remove", onClick: () => onQuestionsChange(questions.filter((q) => q.id !== turn.question.id)) }
-                : undefined
-            }
             key={turn.question.id}
+            onRemove={
+              waiting === "ask" ? () => onQuestionsChange(questions.filter((q) => q.id !== turn.question.id)) : undefined
+            }
           >
             <span data-question={turn.question.id}>{turn.question.text}</span>
             <Answerable answerable={turn.question.answerable} />

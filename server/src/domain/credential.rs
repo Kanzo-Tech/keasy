@@ -39,12 +39,9 @@ pub enum SecretSpec {
         #[serde(default)]
         external_id: Option<String>,
     },
-    #[schema(title = "Azure Blob — account key")]
-    AzureAccountKey {
-        account: String,
-        #[schema(value_type = String, format = Password, write_only)]
-        key: SecretString,
-    },
+    // Azure's one way in: a service principal, whose Entra token gets a
+    // user-delegation key that signs a SAS over one directory — never an
+    // account key (docs/design/cleanup.md).
     #[schema(title = "Azure Blob — service principal")]
     AzureServicePrincipal {
         account: String,
@@ -68,8 +65,6 @@ pub enum SecretSpecView {
         #[serde(skip_serializing_if = "Option::is_none")]
         external_id: Option<String>,
     },
-    #[schema(title = "Azure Blob — account key")]
-    AzureAccountKey { account: String },
     #[schema(title = "Azure Blob — service principal")]
     AzureServicePrincipal {
         account: String,
@@ -92,9 +87,6 @@ impl SecretSpec {
                 region: region.clone(),
                 role_arn: role_arn.clone(),
                 external_id: external_id.clone(),
-            },
-            Self::AzureAccountKey { account, .. } => SecretSpecView::AzureAccountKey {
-                account: account.clone(),
             },
             Self::AzureServicePrincipal {
                 account,

@@ -2752,7 +2752,7 @@
         ],
         "properties": {
           "problem": {
-            "description": "Why the run failed (on `failed`): the run's problem, stored verbatim\nand opaque."
+            "description": "Why the run failed (on `failed`): the run's problem, stored verbatim\nand opaque — but for the title of a code the server owns, which it\nfills in when the problem carries none."
           },
           "report": {
             "description": "fossil's run report (on `completed`), stored verbatim and never read."
@@ -2990,31 +2990,6 @@
           },
           {
             "type": "object",
-            "title": "Azure Blob — account key",
-            "required": [
-              "account",
-              "key",
-              "kind"
-            ],
-            "properties": {
-              "account": {
-                "type": "string"
-              },
-              "key": {
-                "type": "string",
-                "format": "password",
-                "writeOnly": true
-              },
-              "kind": {
-                "type": "string",
-                "enum": [
-                  "azure_account_key"
-                ]
-              }
-            }
-          },
-          {
-            "type": "object",
             "title": "Azure Blob — service principal",
             "required": [
               "account",
@@ -3082,25 +3057,6 @@
                 "type": [
                   "string",
                   "null"
-                ]
-              }
-            }
-          },
-          {
-            "type": "object",
-            "title": "Azure Blob — account key",
-            "required": [
-              "account",
-              "kind"
-            ],
-            "properties": {
-              "account": {
-                "type": "string"
-              },
-              "kind": {
-                "type": "string",
-                "enum": [
-                  "azure_account_key"
                 ]
               }
             }

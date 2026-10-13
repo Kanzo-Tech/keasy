@@ -13,8 +13,8 @@ use aws_sdk_sts::config::{BehaviorVersion, Credentials, Region};
 use aws_sdk_sts::error::SdkError;
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD;
-use chrono::{DateTime, SecondsFormat, Utc};
 use hmac::{Hmac, KeyInit, Mac};
+use jiff::{SignedDuration, Timestamp};
 use secrecy::{ExposeSecret, SecretString};
 use serde::Deserialize;
 use sha2::Sha256;
@@ -28,7 +28,7 @@ pub const VENDED_FOR: Duration = Duration::from_secs(3600);
 
 /// Azure refuses a SAS whose start is ahead of its clock; Polaris backdates by
 /// the same margin.
-const CLOCK_SKEW: Duration = Duration::from_secs(300);
+const CLOCK_SKEW: SignedDuration = SignedDuration::from_secs(300);
 
 /// The role a configured STS endpoint is asked for when the credential names
 /// none. The dev store (`infra/dev/seaweedfs/iam.json`) declares exactly this
@@ -155,21 +155,13 @@ async fn vend_within(
                 user_delegation_sas(account, location, access, start, expiry, &key)?,
             ))
         }
-        SecretSpec::AzureAccountKey { account, key } => {
-            let (start, expiry) = window();
-            Ok(azure_credential(
-                account,
-                location,
-                expiry,
-                service_sas(account, key, location, access, start, expiry)?,
-            ))
-        }
     }
 }
 
-fn window() -> (DateTime<Utc>, DateTime<Utc>) {
-    let now = Utc::now();
-    (now - CLOCK_SKEW, now + VENDED_FOR)
+fn window() -> (Timestamp, Timestamp) {
+    let now = Timestamp::now();
+    let lives = SignedDuration::from_secs(VENDED_FOR.as_secs() as i64);
+    (now - CLOCK_SKEW, now + lives)
 }
 
 /// The object-key prefix a location opens: its path and a `/`, or the whole
@@ -289,7 +281,7 @@ fn aws_error<E: std::error::Error + 'static>(e: &E) -> String {
 fn azure_credential(
     account: &str,
     location: &StorageLocation,
-    expiry: DateTime<Utc>,
+    expiry: Timestamp,
     sas: String,
 ) -> VendedCredential {
     let host = format!("{account}.dfs.core.windows.net");
@@ -297,7 +289,7 @@ fn azure_credential(
     config.insert(format!("adls.sas-token.{host}"), SecretString::from(sas));
     config.insert(
         format!("adls.sas-token-expires-at-ms.{host}"),
-        SecretString::from(expiry.timestamp_millis().to_string()),
+        SecretString::from(expiry.as_millisecond().to_string()),
     );
     VendedCredential {
         prefix: location.to_string(),
@@ -332,8 +324,8 @@ fn permissions(access: Access) -> &'static str {
     }
 }
 
-fn azure_time(t: DateTime<Utc>) -> String {
-    t.to_rfc3339_opts(SecondsFormat::Secs, true)
+fn azure_time(t: Timestamp) -> String {
+    t.strftime("%Y-%m-%dT%H:%M:%SZ").to_string()
 }
 
 fn hmac_base64(key: &[u8], message: &str) -> Result<String, String> {
@@ -406,8 +398,8 @@ async fn user_delegation_key(
     deadlines: Deadlines,
     blob: &str,
     token: &SecretString,
-    start: DateTime<Utc>,
-    expiry: DateTime<Utc>,
+    start: Timestamp,
+    expiry: Timestamp,
 ) -> Result<UserDelegationKey, StoreFailure> {
     let silent = |e| reqwest_error("Azure Blob", deadlines, e);
     let body = format!(
@@ -439,8 +431,8 @@ fn user_delegation_sas(
     account: &str,
     location: &StorageLocation,
     access: Access,
-    start: DateTime<Utc>,
-    expiry: DateTime<Utc>,
+    start: Timestamp,
+    expiry: Timestamp,
     key: &UserDelegationKey,
 ) -> Result<String, String> {
     let (resource, depth) = sas_resource(location);
@@ -494,56 +486,6 @@ fn user_delegation_sas(
     ]))
 }
 
-/// A service SAS over the location's directory, signed with the account key.
-/// A directory SAS needs a hierarchical namespace; on a flat account the store
-/// refuses it, and the connection does not validate.
-fn service_sas(
-    account: &str,
-    key: &SecretString,
-    location: &StorageLocation,
-    access: Access,
-    start: DateTime<Utc>,
-    expiry: DateTime<Utc>,
-) -> Result<String, String> {
-    let (resource, depth) = sas_resource(location);
-    let (st, se) = (azure_time(start), azure_time(expiry));
-    let permissions = permissions(access);
-    let to_sign = [
-        permissions,
-        &st,
-        &se,
-        &canonical_resource(account, location),
-        "", // signedIdentifier
-        "", // signedIP
-        "https",
-        AZURE_VERSION,
-        resource,
-        "", // signedSnapshotTime
-        "", // signedEncryptionScope
-        "",
-        "",
-        "",
-        "",
-        "", // rscc, rscd, rsce, rscl, rsct
-    ]
-    .join("\n");
-    let key_bytes = STANDARD
-        .decode(key.expose_secret())
-        .map_err(|_| "the account key is not base64".to_string())?;
-    let signature = hmac_base64(&key_bytes, &to_sign)?;
-    let depth = depth.map(|d| d.to_string()).unwrap_or_default();
-    Ok(query(&[
-        ("sv", AZURE_VERSION),
-        ("sr", resource),
-        ("sdd", &depth),
-        ("st", &st),
-        ("se", &se),
-        ("sp", permissions),
-        ("spr", "https"),
-        ("sig", &signature),
-    ]))
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -587,11 +529,25 @@ mod tests {
         let root = loc("az://c");
         assert_eq!(sas_resource(&root), ("c", None));
         assert_eq!(canonical_resource("acct", &root), "/blob/acct/c");
-        let key = SecretString::from(STANDARD.encode(b"key"));
+        let key = UserDelegationKey {
+            signed_oid: "oid".into(),
+            signed_tid: "tid".into(),
+            signed_start: "s".into(),
+            signed_expiry: "e".into(),
+            signed_service: "b".into(),
+            signed_version: AZURE_VERSION.into(),
+            value: STANDARD.encode(b"key"),
+        };
         let (st, se) = window();
-        let sas = service_sas("acct", &key, &dir, Access::Read, st, se).unwrap();
+        let sas = user_delegation_sas("acct", &dir, Access::Read, st, se, &key).unwrap();
         assert!(sas.contains("sr=d") && sas.contains("sdd=2") && sas.contains("sp=rl"));
-        assert!(!sas.contains("skoid"));
+        assert!(sas.contains("skoid=oid"));
+        let half: Timestamp = "2026-10-13T12:00:00.5Z".parse().unwrap();
+        assert_eq!(
+            azure_time(half),
+            "2026-10-13T12:00:00Z",
+            "whole seconds, in UTC"
+        );
     }
 
     /// A listener that accepts every connection and never answers: the

@@ -1847,7 +1847,6 @@ dependencies = [
  "aws-sdk-sts",
  "axum",
  "base64",
- "chrono",
  "futures",
  "getrandom 0.2.17",
  "hmac 0.13.0",

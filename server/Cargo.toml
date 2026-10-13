@@ -49,7 +49,6 @@ aws-sdk-sts = { version = "1.97.0", default-features = false, features = ["rustl
 hmac = "0.13.0"
 sha2 = "0.11.0"
 quick-xml = { version = "0.42.0", features = ["serialize"] }
-chrono = { version = "0.4.45", default-features = false, features = ["clock", "std"] }
 # The branding file: the theme generator's YAML, read as-is.
 serde_norway = "0.9"
 

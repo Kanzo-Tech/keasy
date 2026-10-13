@@ -746,7 +746,8 @@ export interface components {
         GraphStatusReport: {
             /**
              * @description Why the run failed (on `failed`): the run's problem, stored verbatim
-             *     and opaque.
+             *     and opaque — but for the title of a code the server owns, which it
+             *     fills in when the problem carries none.
              */
             problem?: unknown;
             /** @description fossil's run report (on `completed`), stored verbatim and never read. */
@@ -853,12 +854,6 @@ export interface components {
             secret_access_key: $Write<string>;
         } | {
             account: string;
-            /** Format: password */
-            key: $Write<string>;
-            /** @enum {string} */
-            kind: "azure_account_key";
-        } | {
-            account: string;
             client_id: string;
             /** Format: password */
             client_secret: $Write<string>;
@@ -874,10 +869,6 @@ export interface components {
             kind: "s3";
             region: string;
             role_arn?: string | null;
-        } | {
-            account: string;
-            /** @enum {string} */
-            kind: "azure_account_key";
         } | {
             account: string;
             client_id: string;

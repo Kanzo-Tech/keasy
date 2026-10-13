@@ -1,7 +1,8 @@
 // @vitest-environment happy-dom
-import { act, createElement as h } from "react";
+import { act, createElement as h, StrictMode, useCallback, useEffect } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { useChat } from "@ai-sdk/react";
 
 import { askHref, takeQuestion, useHandedQuestion } from "./ask-handoff";
 
@@ -59,6 +60,38 @@ describe("the question handed to Ask", () => {
     root = undefined;
     render(send, true);
     expect(send).toHaveBeenCalledTimes(1);
+  });
+
+  it("lands in a chat that is sent into as it mounts, under StrictMode, and is asked once", async () => {
+    window.history.replaceState(null, "", "/graphs/g1/discover?panel=ask&q=How%20many%20prizes%3F");
+    let asked = 0;
+    const drawn = { messages: 0 };
+    const transport = {
+      sendMessages: async () => {
+        asked++;
+        return new ReadableStream({ start: (c) => c.close() });
+      },
+      reconnectToStream: async () => null,
+    };
+    function Chat() {
+      const chat = useChat({ transport: transport as never });
+      const { sendMessage } = chat;
+      useHandedQuestion(
+        useCallback((text: string) => void sendMessage({ text }), [sendMessage]),
+        true,
+      );
+      const count = chat.messages.length;
+      useEffect(() => {
+        drawn.messages = count;
+      });
+      return null;
+    }
+    const strict = createRoot(document.createElement("div"));
+    await act(async () => strict.render(h(StrictMode, null, h(Chat))));
+    await act(() => new Promise((resolve) => setTimeout(resolve, 20)));
+    expect({ messages: drawn.messages, asked }).toEqual({ messages: 1, asked: 1 });
+    expect(new URLSearchParams(window.location.search).get("q")).toBeNull();
+    act(() => strict.unmount());
   });
 
   it("asks nothing when the URL hands no question", () => {

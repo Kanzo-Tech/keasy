@@ -19,6 +19,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
+// eslint-disable-next-line no-restricted-imports -- one listing per opened folder, the profile of the picked files and each Task's answer; each failure is shown in its place, beside the rest
 import { keepPreviousData, useQueries, useQuery } from "@tanstack/react-query";
 import { useTask } from "@kanzo-tech/ai";
 import { type Proposal, runTask } from "@kanzo-tech/ai/task";

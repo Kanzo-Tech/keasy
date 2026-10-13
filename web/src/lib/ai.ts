@@ -98,7 +98,8 @@ function start(url: string | undefined) {
   if (modelDouble() || !base) return;
   const { state } = localModelLoad(MODEL);
   if (state === "loading" || state === "ready") return;
-  loadLocalModel(MODEL, settingsFor(base)).catch(() => {}); // Not lost: localModelLoad says it failed, and why.
+  // eslint-disable-next-line no-restricted-syntax -- not lost: localModelLoad says it failed, and why
+  loadLocalModel(MODEL, settingsFor(base)).catch(() => {});
 }
 
 /** The model, for a screen that asks it. A call made while it loads waits for the load. */

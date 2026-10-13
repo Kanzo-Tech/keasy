@@ -12,6 +12,7 @@
  */
 
 import { useEffect, useState } from "react";
+// eslint-disable-next-line no-restricted-imports -- follows every pause in typing; the editor shows the failure beside the program
 import { useQuery } from "@tanstack/react-query";
 import { type FossilProgram, inputs } from "@fossil-lang/wasm";
 import { engine } from "@kanzo-tech/ui/analytics";

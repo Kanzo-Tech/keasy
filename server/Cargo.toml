@@ -61,3 +61,9 @@ regex = "1"
 [profile.release]
 lto = "thin"
 strip = "debuginfo"
+
+# A failure dropped on the floor is said at the site, as `#[expect(…, reason = "…")]`.
+[lints.clippy]
+let_underscore_must_use = "warn"
+let_underscore_future = "warn"
+unused_result_ok = "warn"

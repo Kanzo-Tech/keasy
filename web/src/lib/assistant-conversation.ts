@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+// eslint-disable-next-line no-restricted-imports -- a failed read is the hook's `problem`, for the chat to say beside the turns it can draw
 import { useQuery } from "@tanstack/react-query";
 import type { UIMessage } from "ai";
 import type { Decision } from "@kanzo-tech/ai/task";
@@ -227,7 +228,8 @@ export function useAssistantConversation(id?: string | null): AssistantConversat
       setSaved(conversation.id);
       return conversation.id;
     });
-    queue.current = next.catch(() => undefined); // The caller hears this save's failure; the next save still goes.
+    // eslint-disable-next-line no-restricted-syntax -- the caller hears this save's failure; the next save still goes
+    queue.current = next.catch(() => undefined);
     return next;
   }, []);
 

@@ -218,7 +218,8 @@ function GraphStudio({ draft }: { draft?: Schemas["Graph"] }) {
     mutationFn: () => {
       // The id lands in the chain itself: Create awaits this promise, and `onSuccess` runs later.
       const run = (savingRef.current ?? Promise.resolve())
-        .catch(() => undefined) // the last save toasted its own failure
+        // eslint-disable-next-line no-restricted-syntax -- the last save toasted its own failure
+        .catch(() => undefined)
         .then(writeDraft)
         .then((id) => (draftIdRef.current = id));
       savingRef.current = run;
@@ -254,7 +255,8 @@ function GraphStudio({ draft }: { draft?: Schemas["Graph"] }) {
     mutationFn: async (sent: { name: string; folder: string }) => {
       submittingRef.current = true;
       clearTimeout(autosaveRef.current);
-      await savingRef.current?.catch(() => undefined); // a failed save toasted itself; Create sends the script anyway
+      // eslint-disable-next-line no-restricted-syntax -- a failed save toasted itself; Create sends the script anyway
+      await savingRef.current?.catch(() => undefined);
       // A graph begins as a draft, always; submitting it is what makes it run. The script crosses
       // once: in the draft written now, or in the submit when the last save did not carry it.
       const existing = draftIdRef.current;

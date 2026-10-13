@@ -1,5 +1,6 @@
 "use client";
 
+// eslint-disable-next-line no-restricted-imports -- the preview fails as a state of the chat's, beside the decisions that changed it, and keeps the corpus it had
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import type { Profiled } from "@fossil-lang/types";
 

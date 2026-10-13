@@ -58,7 +58,9 @@ export function DashboardStoreProvider({ onOpen, children }: {
   const { id: graphId } = useParams<{ id: string }>();
   const init = { params: { path: { id: graphId } } };
   const read = $api.queryOptions("get", "/v1/graphs/{id}/dashboard", init);
+  // eslint-disable-next-line no-restricted-properties -- a failed read is drawn in the Dashboard view, and the graph and the dock stay
   const saved = $api.useQuery("get", "/v1/graphs/{id}/dashboard", init);
+  // eslint-disable-next-line no-restricted-properties -- as above: the page holds the graph for the whole of it
   const graph = $api.useQuery("get", "/v1/graphs/{id}", init);
 
   // What the server holds, checked whole: a document an earlier release wrote is refused, not

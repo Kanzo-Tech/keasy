@@ -33,13 +33,12 @@ import {
   SelectTrigger,
   SelectValue,
   Skeleton,
-  toast,
 } from "@kanzo-tech/ui";
 import { revalidateLogic, useForm } from "@tanstack/react-form";
 import * as z from "zod";
 import { Link, useRouter } from "@kanzo-tech/navigation/next";
 import { UnsavedChangesGuard } from "@/lib/ui/unsaved-changes-guard";
-import { $api, type Inputs, invalidate } from "@/lib/api/client";
+import { $api, type Inputs } from "@/lib/api/client";
 import { cloudOf, type Credential } from "@/lib/connections";
 import { requiredName } from "@/lib/resource-name";
 import { getProviderIcon } from "@/lib/ui/provider-icons";
@@ -94,11 +93,8 @@ function Credentials({ holds }: { holds: Holds }) {
 function Form({ credentials, holds }: { credentials: Credential[]; holds: Holds }) {
   const router = useRouter();
   const create = $api.useMutation("post", "/v1/connections", {
-    onSuccess: async (_, { body }) => {
-      toast.create({ title: "Connection validated and created", type: "success" });
-      await invalidate("/v1/connections", "/v1/secrets");
-      router.push(`/connections?type=${body.target.kind}`);
-    },
+    meta: { success: "Connection validated and created", invalidates: ["/v1/connections", "/v1/secrets"] },
+    onSuccess: (_, { body }) => router.push(`/connections?type=${body.target.kind}`),
   });
   const sending = create.isPending || create.isSuccess;
   const collection = useMemo(

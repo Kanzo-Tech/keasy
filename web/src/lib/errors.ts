@@ -5,7 +5,7 @@ import type { AiError } from "@kanzo-tech/llm";
 import type { EngineError } from "@kanzo-tech/mosaic";
 import { type ProblemCopy, toast } from "@kanzo-tech/ui";
 
-import { ApiError, type ErrorCode, type NoBodyCode } from "@/lib/api/client";
+import { ApiError, type ErrorCode, type NoBodyCode } from "@keasy/api";
 import { lower, WORDS } from "@/lib/vocabulary";
 
 /**

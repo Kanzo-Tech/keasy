@@ -28,14 +28,12 @@ import {
   SelectTrigger,
   SelectValue,
   Skeleton,
-  toast,
 } from "@kanzo-tech/ui";
 import { ValidationBadge } from "@/components/validation-badge";
 import { Boundary, Loading } from "@/components/boundary";
 import { settled } from "@/lib/api/settled";
-import { $api, invalidate } from "@/lib/api/client";
+import { $api } from "@/lib/api/client";
 import type { Connection, Credential } from "@/lib/connections";
-import { toastError } from "@/lib/errors";
 
 /** Workspace storage: the sink, the one storage connection where graph outputs land. An admin's. */
 export default function WorkspaceStoragePage() {
@@ -100,13 +98,13 @@ function Form({ credentials, sink }: { credentials: Credential[]; sink?: Connect
     [credentials],
   );
 
-  const onSuccess = async () => {
-    toast.create({ title: "Workspace storage validated and saved", type: "success" });
-    await invalidate("/v1/connections", "/v1/secrets");
-  };
-  const onError = (err: unknown) => toastError(err, "Workspace storage was not saved");
-  const create = $api.useMutation("post", "/v1/connections", { onSuccess, onError });
-  const update = $api.useMutation("patch", "/v1/connections/{name}", { onSuccess, onError });
+  const meta = {
+    success: "Workspace storage validated and saved",
+    failure: "Workspace storage was not saved",
+    invalidates: ["/v1/connections", "/v1/secrets"],
+  } as const;
+  const create = $api.useMutation("post", "/v1/connections", { meta });
+  const update = $api.useMutation("patch", "/v1/connections/{name}", { meta });
   const target = { url: url.trim(), kind: "data" as const, direction: "sink" as const };
 
   const save = () =>

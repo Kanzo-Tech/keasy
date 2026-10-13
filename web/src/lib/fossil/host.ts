@@ -2,7 +2,7 @@ import "client-only";
 
 import type { Access, Host, Scope, StorageCredential } from "@fossil-lang/types";
 
-import { http } from "@/lib/api/client";
+import { connectionsQuery, http } from "@/lib/api/client";
 import { queryClient } from "@/lib/api/query-client";
 
 /**
@@ -27,11 +27,7 @@ export const host: Host = {
   // The map is the query cache's, shared by every check, so fossil's `signal` does not reach its
   // request: fossil stops waiting on its own, and the request finishes into the cache.
   connections: async () => {
-    const connections = await queryClient.fetchQuery({
-      queryKey: ["get", "/v1/connections", {}],
-      queryFn: async ({ signal }) => (await http.GET("/v1/connections", { signal })).data ?? [],
-      staleTime: CONNECTIONS_FRESH_MS,
-    });
+    const connections = await queryClient.fetchQuery({ ...connectionsQuery, staleTime: CONNECTIONS_FRESH_MS });
     return Object.fromEntries(
       connections.flatMap((c) => (c.target.direction === "source" ? [[c.name, c.target.url]] : [])),
     );

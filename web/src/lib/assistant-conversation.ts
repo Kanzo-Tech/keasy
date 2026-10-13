@@ -1,11 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 // eslint-disable-next-line no-restricted-imports -- a failed read is the hook's `problem`, for the chat to say beside the turns it can draw
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type { UIMessage } from "ai";
 import type { Decision } from "@kanzo-tech/ai/task";
-import { http, type Schemas } from "@/lib/api/client";
+import { $api, http, type Schemas } from "@/lib/api/client";
 import { queryClient } from "@/lib/api/query-client";
 
 /**
@@ -157,11 +157,7 @@ export const changeHref = (conversation: string, decision: string) =>
 // ── The hook ────────────────────────────────────────────────────────────────
 
 /** The conversation's read, under the API's own key. */
-export const conversationQuery = (id: string) => ({
-  queryKey: ["get", "/v1/conversations/{id}", { params: { path: { id } } }] as const,
-  queryFn: async ({ signal }: { signal: AbortSignal }) =>
-    (await http.GET("/v1/conversations/{id}", { params: { path: { id } }, signal })).data!,
-});
+export const conversationQuery = (id: string) => $api.queryOptions("get", "/v1/conversations/{id}", { params: { path: { id } } });
 
 export interface AssistantConversation {
   /** The conversation's id: `null` until the first save of a new one. */
@@ -198,7 +194,6 @@ export function useAssistantConversation(id?: string | null): AssistantConversat
     enabled: current !== null,
     staleTime: Infinity,
   });
-  const queue = useRef<Promise<unknown>>(Promise.resolve());
   // Where the next save goes: the conversation as read, until a save answers where it went.
   const resumed = useRef({ id: current, built: false });
   const afterSave = useRef<{ id: string; built: boolean } | null>(null);
@@ -207,9 +202,11 @@ export function useAssistantConversation(id?: string | null): AssistantConversat
     resumed.current = { id: current, built };
   }, [current, built]);
 
-  const save = useCallback((messages: readonly UIMessage[]) => {
-    const body = { messages: toStored(messages) as unknown as Schemas["SaveMessagesRequest"]["messages"] };
-    const next = queue.current.then(async () => {
+  // One save at a time, in the order they were made: a mutation scope is TanStack's queue.
+  const { mutateAsync: save } = useMutation({
+    scope: { id: `conversation ${useId()}` },
+    mutationFn: async (messages: readonly UIMessage[]) => {
+      const body = { messages: toStored(messages) as unknown as Schemas["SaveMessagesRequest"]["messages"] };
       const { id: at, built } = afterSave.current ?? resumed.current;
       let conversation: Schemas["Conversation"];
       if (at === null || built) {
@@ -227,11 +224,8 @@ export function useAssistantConversation(id?: string | null): AssistantConversat
       queryClient.setQueryData(conversationQuery(conversation.id).queryKey, conversation);
       setSaved(conversation.id);
       return conversation.id;
-    });
-    // eslint-disable-next-line no-restricted-syntax -- the caller hears this save's failure; the next save still goes
-    queue.current = next.catch(() => undefined);
-    return next;
-  }, []);
+    },
+  });
 
   const messages = useMemo(
     () => (current === null ? [] : read.data ? toStored(read.data.messages) : undefined),

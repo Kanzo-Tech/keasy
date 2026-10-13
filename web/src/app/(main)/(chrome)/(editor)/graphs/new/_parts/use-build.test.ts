@@ -5,7 +5,7 @@ const POST = vi.fn(async (path: string, init: { params?: { path: { id: string } 
   calls.push(path);
   return { data: { id: init.params?.path.id ?? "g1", script: "program" } };
 });
-vi.mock("@/lib/api/client", () => ({ http: { POST, GET: vi.fn() }, invalidate: vi.fn() }));
+vi.mock("@/lib/api/client", () => ({ http: { POST, GET: vi.fn() }, invalidate: vi.fn(), connectionsQuery: {} }));
 vi.mock("@/lib/api/query-client", () => ({
   queryClient: { fetchQuery: async () => [{ name: "lake", target: { direction: "source" } }, { name: "out", target: { direction: "sink" } }] },
 }));

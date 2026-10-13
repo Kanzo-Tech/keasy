@@ -20,7 +20,13 @@ const PUT = vi.fn(async (_path: string, { params, body }: { params: { path: { id
   return { data: row };
 });
 const GET = vi.fn(async (_path: string, { params }: { params: { path: { id: string } } }) => ({ data: rows.get(params.path.id)! }));
-vi.mock("@/lib/api/client", () => ({ http: { GET, POST, PUT } }));
+const $api = {
+  queryOptions: (method: string, path: string, init: { params: { path: { id: string } } }) => ({
+    queryKey: [method, path, init],
+    queryFn: async () => (await GET(path, init)).data,
+  }),
+};
+vi.mock("@/lib/api/client", () => ({ http: { GET, POST, PUT }, $api }));
 
 const { QueryClient, QueryClientProvider } = await import("@tanstack/react-query");
 vi.mock("@/lib/api/query-client", async () => ({ queryClient: client }));

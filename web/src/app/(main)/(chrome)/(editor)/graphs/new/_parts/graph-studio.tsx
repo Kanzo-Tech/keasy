@@ -25,7 +25,7 @@ import {
 } from "@kanzo-tech/ui";
 import { Check, ChevronDown, FolderTree, Save } from "lucide-react";
 import { useRouter } from "@kanzo-tech/navigation/next";
-import { $api, http, invalidate, type Schemas } from "@/lib/api/client";
+import { $api, http,  type Schemas } from "@/lib/api/client";
 import { Boundary, Loading } from "@/components/boundary";
 import { settled } from "@/lib/api/settled";
 import { storageConnections } from "@/lib/connections";
@@ -225,12 +225,11 @@ function GraphStudio({ draft }: { draft?: Schemas["Graph"] }) {
       savingRef.current = run;
       return run;
     },
-    onSuccess: async (id) => {
+    meta: { failure: "Failed to save draft", invalidates: ["/v1/graphs"] },
+    onSuccess: (id) => {
       setDraftId(id);
       setSaved(true);
-      await invalidate("/v1/graphs");
     },
-    onError: (err) => toastError(err, "Failed to save draft"),
   });
 
   const save = draftMutation.mutate;
@@ -267,10 +266,8 @@ function GraphStudio({ draft }: { draft?: Schemas["Graph"] }) {
       const { data: graph } = await http.POST("/v1/graphs/{id}/submit", { params: { path: { id } }, body });
       return graph!;
     },
-    onSuccess: async (graph) => {
-      await invalidate("/v1/graphs");
-      router.push(`/graphs/${graph.id}`);
-    },
+    meta: { invalidates: ["/v1/graphs"] },
+    onSuccess: (graph) => router.push(`/graphs/${graph.id}`),
     onError: (err, sent) => {
       submittingRef.current = false;
       const problem = fieldProblem(err);

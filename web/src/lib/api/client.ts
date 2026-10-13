@@ -1,13 +1,13 @@
-import { createApiClient, type paths } from "@keasy/api";
+import { createApiClient } from "@keasy/api";
 import createQueryHooks from "openapi-react-query";
 
 import { API } from "@/lib/routes";
 
-import { queryClient } from "./query-client";
 import { auth } from "./session";
 
 export { ApiError } from "@keasy/api";
 export type { ErrorCode, Inputs, NoBodyCode, Schemas, paths } from "@keasy/api";
+export { invalidate } from "./query-client";
 
 /**
  * The one runtime client. `paths` is the interface: every call names a spec
@@ -16,16 +16,8 @@ export type { ErrorCode, Inputs, NoBodyCode, Schemas, paths } from "@keasy/api";
  */
 export const http = createApiClient({ baseUrl: API, fetch: auth.fetch });
 
-/** React Query bound to `http`; its keys are `[method, path, init]`. */
+/** React Query bound to `http`; its keys are `[method, path, init]`. A read is named by its options. */
 export const $api = createQueryHooks(http);
 
-type GetPath = {
-  [P in keyof paths]: paths[P] extends { get: object } ? P : never;
-}[keyof paths];
-
-/** Drop every cached read under these paths, whatever its params. */
-export function invalidate(...resources: GetPath[]): Promise<void> {
-  return Promise.all(
-    resources.map((path) => queryClient.invalidateQueries({ queryKey: ["get", path] })),
-  ).then(() => undefined);
-}
+/** The workspace's connections, the sink among them: one read, whoever asks. */
+export const connectionsQuery = $api.queryOptions("get", "/v1/connections");

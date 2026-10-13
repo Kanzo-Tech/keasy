@@ -24,13 +24,12 @@ import {
   SectionTitleGroup,
   Spinner,
   Status,
-  toast,
 } from "@kanzo-tech/ui";
 import { useSession } from "@kanzo-tech/auth";
 import { useRouter } from "@kanzo-tech/navigation/next";
 import { useMutation } from "@tanstack/react-query";
-import { http, invalidate, type Schemas } from "@/lib/api/client";
-import { copyOf, toastError } from "@/lib/errors";
+import { $api, http, invalidate, type Schemas } from "@/lib/api/client";
+import { copyOf } from "@/lib/errors";
 import { formatDate } from "@/lib/ui/format";
 import { Blocked, BlockedMenuItem } from "@/components/blocked";
 import { Provenance } from "@/components/provenance";
@@ -90,7 +89,8 @@ export function GraphHeader({ id }: { id: string }) {
   const primary = primaryAction(graph, { editor, me, runsHere: !!live });
   const seen = useSecondsSince(graph.heartbeat_at ?? undefined, graph.status === "running");
 
-  const settle = () => invalidate("/v1/graphs", "/v1/graphs/{id}");
+  const CHANGES = ["/v1/graphs", "/v1/graphs/{id}"] as const;
+  const settle = () => invalidate(...CHANGES);
 
   // Run (again): the server makes this caller the runner, and this tab runs it.
   const run = useMutation({
@@ -99,14 +99,9 @@ export function GraphHeader({ id }: { id: string }) {
       const { data } = await http.POST("/v1/graphs/{id}/run", { params: { path: { id } } });
       return data!;
     },
-    onSuccess: async (started) => {
-      startRun(started);
-      await settle();
-    },
-    onError: async (err) => {
-      toastError(err, `Could not ${lower(WORDS.run)} the ${lower(WORDS.graph)}`);
-      await settle();
-    },
+    meta: { failure: `Could not ${lower(WORDS.run)} the ${lower(WORDS.graph)}`, invalidates: CHANGES },
+    onSuccess: (started) => startRun(started),
+    onError: settle,
   });
 
   // Stop: here, at once, when this tab runs it; elsewhere, asked of whoever runs it.
@@ -115,40 +110,30 @@ export function GraphHeader({ id }: { id: string }) {
       if (live) return live.stop();
       await http.POST("/v1/graphs/{id}/stop", { params: { path: { id } } });
     },
+    meta: { failure: "Could not stop the run" },
     onSettled: settle,
-    onError: (err) => toastError(err, "Could not stop the run"),
   });
 
-  const remove = useMutation({
-    mutationFn: () => http.DELETE("/v1/graphs/{id}", { params: { path: { id } } }),
-    onSuccess: async () => {
-      toast.create({ title: `${WORDS.graph} deleted`, type: "success" });
-      await invalidate("/v1/graphs");
-      router.push("/graphs");
+  const remove = $api.useMutation("delete", "/v1/graphs/{id}", {
+    meta: {
+      success: `${WORDS.graph} deleted`,
+      failure: `Could not delete the ${lower(WORDS.graph)}`,
+      invalidates: ["/v1/graphs"],
     },
-    onError: (err) => toastError(err, `Could not delete the ${lower(WORDS.graph)}`),
+    onSuccess: () => router.push("/graphs"),
   });
 
   // Duplicate: a new draft of the same recipe, writing to a folder of its own.
-  const duplicate = useMutation({
-    mutationFn: async () => {
-      const name = `${graph.name ?? graph.id.slice(0, 8)} copy`;
-      const { data } = await http.POST("/v1/graphs", {
-        body: {
-          name,
-          script: graph.script ?? "",
-          sink_connection: graph.sink_connection,
-          folder: freshFolder(name),
-        },
-      });
-      return data!;
-    },
-    onSuccess: async (copy) => {
-      await invalidate("/v1/graphs");
-      router.push(`/graphs/new?draft=${copy.id}`);
-    },
-    onError: (err) => toastError(err, `Could not duplicate the ${lower(WORDS.graph)}`),
+  const duplicate = $api.useMutation("post", "/v1/graphs", {
+    meta: { failure: `Could not duplicate the ${lower(WORDS.graph)}`, invalidates: ["/v1/graphs"] },
+    onSuccess: (copy) => router.push(`/graphs/new?draft=${copy.id}`),
   });
+  const copy = () => {
+    const name = `${graph.name ?? graph.id.slice(0, 8)} copy`;
+    duplicate.mutate({
+      body: { name, script: graph.script ?? "", sink_connection: graph.sink_connection, folder: freshFolder(name) },
+    });
+  };
 
   const busy = run.isPending || stop.isPending;
   const act = (p: Primary) => {
@@ -228,7 +213,7 @@ export function GraphHeader({ id }: { id: string }) {
                 </Button>
               </MenuTrigger>
               <MenuContent>
-                <MenuItem disabled={duplicate.isPending} onSelect={() => duplicate.mutate()} value="duplicate">
+                <MenuItem disabled={duplicate.isPending} onSelect={copy} value="duplicate">
                   <Copy />
                   Duplicate
                 </MenuItem>
@@ -256,7 +241,7 @@ export function GraphHeader({ id }: { id: string }) {
           />
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => remove.mutate()} variant="destructive">
+            <AlertDialogAction onClick={() => remove.mutate({ params: { path: { id } } })} variant="destructive">
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

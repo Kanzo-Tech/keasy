@@ -28,7 +28,6 @@ import {
   DataTableSearch,
   DataTableToolbar,
   DataTableViewOptions,
-  selectColumn,
   sortableHeader,
   useDataTable,
 } from "@kanzo-tech/ui/table";
@@ -116,7 +115,6 @@ function Connections({ tab }: { tab: Tab }) {
 
   const columns = useMemo<ColumnDef<Connection>[]>(
     () => [
-      selectColumn<Connection>(),
       {
         accessorKey: "name",
         header: sortableHeader("Name"),

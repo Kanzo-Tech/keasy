@@ -73,13 +73,13 @@ impl Application {
         // the keys are fetched on the first request that needs them.
         let auth = Arc::new(Validator::new(
             &oidc.issuer_url,
-            &oidc.audience,
+            crate::configuration::AUDIENCE,
             &oidc.client_id,
             oidc.internal_base_url.as_deref(),
         ));
         info!(
             issuer = %oidc.issuer_url,
-            audience = %oidc.audience,
+            audience = crate::configuration::AUDIENCE,
             client_id = %oidc.client_id,
             "Bearer tokens validated against"
         );

@@ -23,7 +23,6 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
 object_store = { version = "0.12", features = ["aws", "azure"] }
 futures = "0.3"
-tokio-stream = { version = "0.1", features = ["sync"] }
 url = "2"
 aes-gcm = "0.10"
 getrandom = "0.2"

@@ -77,8 +77,7 @@ export function Providers({
         <AuthProvider auth={auth}>
           <QueryClientProvider client={queryClient}>
             {children}
-            {/* Off while `make demo` records (next.config.ts, `NEXT_PUBLIC_KEASY_DEMO`): it is not the product. */}
-            {!process.env.NEXT_PUBLIC_KEASY_DEMO && <ReactQueryDevtools initialIsOpen={false} />}
+            <ReactQueryDevtools initialIsOpen={false} />
           </QueryClientProvider>
         </AuthProvider>
       </BrandingProvider>

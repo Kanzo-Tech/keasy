@@ -439,12 +439,9 @@ export function BuildTurn({
   }
   switch (build.state) {
     case "building": {
-      const percent = build.percent === null ? null : Math.round(build.percent);
       return (
         <Said>
-          <UnderWay value={percent ?? undefined}>
-            {build.graphId === null ? "Making your graph…" : `Building your graph${percent === null ? "…" : `… ${percent}%`}`}
-          </UnderWay>
+          <UnderWay>{build.graphId === null ? "Making your graph…" : "Building your graph…"}</UnderWay>
         </Said>
       );
     }

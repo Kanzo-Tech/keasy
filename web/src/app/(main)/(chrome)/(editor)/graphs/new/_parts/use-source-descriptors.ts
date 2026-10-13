@@ -18,7 +18,7 @@ import { engine } from "@kanzo-tech/ui/analytics";
 
 import { host } from "@/lib/fossil/host";
 
-export const sourceDescriptorsKey = (sources: readonly string[]) => ["source-descriptors", sources] as const;
+const sourceDescriptorsKey = (sources: readonly string[]) => ["source-descriptors", sources] as const;
 
 /** What could be described, and each source that could not, with its problem — shown, never dropped. */
 type Described = Awaited<ReturnType<FossilProgram["describe"]>>;

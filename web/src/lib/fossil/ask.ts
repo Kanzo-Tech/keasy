@@ -12,7 +12,7 @@ import { corpusKey, ONCE, useCorpus, useJoinGraph } from "./corpus";
  * What may be asked about a corpus, once per corpus: each type alone (`answerRelationsOf`, no hops —
  * the relation an answer needs is computed from its spec), its fields and their common values.
  */
-export function useAnswerRelations(graph: JoinGraph): AnswerRelation[] {
+function useAnswerRelations(graph: JoinGraph): AnswerRelation[] {
   const { name: corpus } = useCorpus();
   const { coordinator } = useMosaic();
   return settled(

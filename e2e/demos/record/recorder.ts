@@ -45,8 +45,8 @@ const SIZE = { width: 1600, height: 900 };
 
 /**
  * The dev server's furniture, which is not the product: Next's dev indicator (its "N Issues" badge
- * lives in `nextjs-portal`) and React Query's devtools button. Hidden in the page rather than by
- * restarting the web with `NEXT_PUBLIC_KEASY_DEMO`, so a graph demo touches no container.
+ * lives in `nextjs-portal`) and React Query's devtools button, hidden in the page, so a demo touches
+ * no container.
  */
 const FURNITURE = () => {
   const hide = () => {
@@ -95,8 +95,6 @@ export interface Demo<T> {
   arrange(stage: Stage): Promise<T>;
   /** The story. A demo has no title card, at the start or the end: only the steps' subtitles. */
   steps(arranged: T, stage: Stage): readonly Step[];
-  /** Why the demo cannot be recorded yet, when it cannot: it is listed, and skipped. */
-  skip?: string | false;
 }
 
 /** `DEMO_THEME=light|dark` records one side; unset, both. The app follows `prefers-color-scheme`
@@ -108,10 +106,9 @@ function themes(): readonly Theme[] {
   return [one as Theme];
 }
 
-export function demo<T>(name: string, description: string, { arrange, steps, skip }: Demo<T>) {
+export function demo<T>(name: string, description: string, { arrange, steps }: Demo<T>) {
   // eslint-disable-next-line playwright/expect-expect -- the checks are the steps', run in order by `take`
   test(`${name}: ${description}`, async ({ browser, baseURL }) => {
-    test.skip(Boolean(skip), skip || undefined);
     // A first run builds the dev server's pages and runs the graph; a recording is minutes, not seconds.
     test.setTimeout(20 * 60_000);
     ffmpeg("-version");

@@ -53,7 +53,6 @@ const ROUTES: Record<string, RouteDef> = {
  */
 const DYNAMIC: { pattern: RegExp; name: string; label?: (id: string) => CrumbLabel }[] = [
   { pattern: /^\/graphs\/([^/]+)$/, name: WORDS.graph, label: (id) => ({ kind: "graph", id }) },
-  { pattern: /^\/graphs\/[^/]+\/recipe$/, name: WORDS.recipe },
   { pattern: /^\/graphs\/[^/]+\/discover$/, name: WORDS.explore },
 ];
 

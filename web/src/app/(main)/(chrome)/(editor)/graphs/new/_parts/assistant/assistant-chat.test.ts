@@ -334,8 +334,8 @@ describe("the assistant, as a conversation", () => {
     expect(onBuild).toHaveBeenCalledTimes(1);
     const kinds = (onBuild.mock.calls[0][0] as AssistantMessage[]).map((m) => m.id);
     expect(kinds.slice(-3)).toEqual(["asked-all", "preview", "build"]);
-    render({ program: "program", build: { state: "building", graphId: "g1", percent: 38.2 } });
-    expect(host.textContent).toContain("Building your graph… 38%");
+    render({ program: "program", build: { state: "building", graphId: "g1" } });
+    expect(host.textContent).toContain("Building your graph…");
   });
 
   it("once built, hands off to Ask in Discover, with the person's questions as prompts", async () => {

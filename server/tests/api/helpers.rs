@@ -104,7 +104,6 @@ pub async fn spawn_app_with(options: Options) -> TestApp {
         oidc: OidcSettings {
             issuer_url: realm.issuer.clone(),
             client_id: CLIENT.into(),
-            audience: "keasy-api".into(),
             internal_base_url: None,
         },
     };

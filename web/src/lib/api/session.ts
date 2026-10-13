@@ -6,7 +6,7 @@ import { bffAuth } from "@kanzo-tech/auth";
 import { deadlineFetch } from "@/lib/deadline";
 
 /** Nothing came back from the BFF or the server behind it within `ms`. */
-export function serverSilent(ms: number): ApiError {
+function serverSilent(ms: number): ApiError {
   return new ApiError(
     {
       code: "server/silent",

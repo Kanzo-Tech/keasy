@@ -32,7 +32,7 @@ export interface OutputValues {
 }
 
 /** The sink's base URL without its trailing slash. */
-export const sinkBase = (sink: StorageConnection | undefined) => sink?.url.replace(/\/+$/, "");
+const sinkBase = (sink: StorageConnection | undefined) => sink?.url.replace(/\/+$/, "");
 
 /**
  * Where the graph's output is written — a sink, and a folder under it — shown beside its name the

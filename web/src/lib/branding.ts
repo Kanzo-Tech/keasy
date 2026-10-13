@@ -20,7 +20,7 @@ const cached = new Map<string, Promise<Branding>>();
 
 const bounded = deadlineFetch((ms) => new Error(`GET /v1/branding did not answer within ${ms / 1000} s`));
 
-export function getBranding(tenant: string): Promise<Branding> {
+function getBranding(tenant: string): Promise<Branding> {
   const known = cached.get(tenant);
   if (known) return known;
   const read = bounded(`${serverOf(tenant)}/v1/branding`, { cache: "no-store" }).then(async (res) => {

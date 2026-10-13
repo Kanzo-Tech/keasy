@@ -24,8 +24,7 @@ function steps(overrides: Partial<BuildSteps<{ id: string }>> = {}) {
   const full = deferred();
   const s: BuildSteps<{ id: string }> = {
     create: vi.fn(async () => ({ id: "g1" })),
-    full: vi.fn(async (_graph, _profiled, onPercent) => {
-      onPercent(40);
+    full: vi.fn(async () => {
       await full.promise;
     }),
     ...overrides,
@@ -42,9 +41,8 @@ describe("a build", () => {
     full.resolve();
     expect(await done).toEqual({ state: "done", graphId: "g1" });
     expect(seen).toEqual([
-      { state: "building", graphId: null, percent: null },
-      { state: "building", graphId: "g1", percent: null },
-      { state: "building", graphId: "g1", percent: 40 },
+      { state: "building", graphId: null },
+      { state: "building", graphId: "g1" },
       { state: "done", graphId: "g1" },
     ]);
   });
@@ -84,7 +82,7 @@ describe("the builds of this tab", () => {
       startBuild("one program", undefined, s);
       await vi.waitFor(() => expect(s.full).toHaveBeenCalled());
     });
-    expect(seen.at(-1)).toEqual({ state: "building", graphId: "g1", percent: 40 });
+    expect(seen.at(-1)).toEqual({ state: "building", graphId: "g1" });
     await act(async () => full.resolve());
     expect(seen.at(-1)).toEqual({ state: "done", graphId: "g1" });
     startBuild("one program", undefined, s);

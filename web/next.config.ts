@@ -69,13 +69,6 @@ function contentSecurityPolicy(): string {
 }
 
 /**
- * A product-demo recording (`make demo`, e2e/demos/): the dev server with its own furniture off.
- * Demos record against `next dev`, as the e2e suite runs, and the dev indicator is not the product.
- * Read in the browser too (`providers.tsx`), hence `NEXT_PUBLIC_`. Nothing outside `make demo` sets it.
- */
-const demo = !!process.env.NEXT_PUBLIC_KEASY_DEMO;
-
-/**
  * Development's `/models`: the model's shards, from compose's `models` service, on this origin as a
  * deployment serves them (`KEASY_MODEL_URL=/models`). A deployment's edge routes `/models/` to that
  * service itself (compose.prod.yaml), so `next build` has no upstream and the image carries no rewrite.
@@ -84,7 +77,6 @@ const models = process.env.KEASY_MODELS_UPSTREAM;
 
 const nextConfig: NextConfig = {
   output: "standalone",
-  ...(demo && { devIndicators: false }),
   ...(models && { rewrites: async () => [{ source: "/models/:path*", destination: `${models}/models/:path*` }] }),
   // Dev serves every organization at its own subdomain (acme.localhost:3000), as prod does.
   allowedDevOrigins: ["*.localhost"],

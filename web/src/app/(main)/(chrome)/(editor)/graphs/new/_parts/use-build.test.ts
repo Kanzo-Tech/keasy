@@ -32,8 +32,8 @@ describe("keasy's build steps", () => {
   it("answer the whole run's problem as theirs", async () => {
     const problem = new Error("over budget");
     startRun.mockResolvedValueOnce({ status: "failed", problem });
-    await expect(keasySteps().full({ id: "g1" } as never, undefined, () => {})).rejects.toBe(problem);
+    await expect(keasySteps().full({ id: "g1" } as never, undefined)).rejects.toBe(problem);
     startRun.mockResolvedValueOnce({ status: "completed" });
-    await expect(keasySteps().full({ id: "g1" } as never, undefined, () => {})).resolves.toBeUndefined();
+    await expect(keasySteps().full({ id: "g1" } as never, undefined)).resolves.toBeUndefined();
   });
 });

@@ -89,9 +89,6 @@ importers:
       '@fossil-lang/executor':
         specifier: ^0.3.0-alpha.31
         version: 0.3.0-alpha.31
-      '@fossil-lang/storage':
-        specifier: 0.3.0-alpha.31
-        version: 0.3.0-alpha.31
       '@fossil-lang/types':
         specifier: ^0.3.0-alpha.31
         version: 0.3.0-alpha.31
@@ -173,9 +170,6 @@ importers:
       next:
         specifier: 16.3.7
         version: 16.3.7(@babel/core@7.29.7)(@opentelemetry/api@1.9.0)(@playwright/test@1.63.0)(@types/node@20.19.37)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      openapi-fetch:
-        specifier: ^0.17.0
-        version: 0.17.0
       openapi-react-query:
         specifier: ^0.5.4
         version: 0.5.4(@tanstack/react-query@5.95.2(react@19.2.3))(openapi-fetch@0.17.0)
@@ -197,9 +191,6 @@ importers:
       server-only:
         specifier: ^0.0.1
         version: 0.0.1
-      streamdown:
-        specifier: ^2.5.0
-        version: 2.6.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       zod:
         specifier: ^4.3.6
         version: 4.3.6

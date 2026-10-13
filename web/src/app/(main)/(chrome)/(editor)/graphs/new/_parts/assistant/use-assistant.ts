@@ -69,7 +69,7 @@ function keptFile(file: FileReference, connections: readonly StorageConnection[]
 const fileOf = (picked: readonly SourceFile[], key: string) => picked.find((f) => f.line.includes(`"${key}"`))?.id ?? key;
 
 /** One thing per file read, with its count and what it holds: what the profile says before any model. */
-export function thingsOf(profiled: Profiled, picked: readonly SourceFile[]): Thing[] {
+function thingsOf(profiled: Profiled, picked: readonly SourceFile[]): Thing[] {
   return profiled.sources.map((s) => ({
     id: fileOf(picked, s.key),
     name: thingName(s.file),
@@ -82,7 +82,7 @@ export function thingsOf(profiled: Profiled, picked: readonly SourceFile[]): Thi
  * The decisions a draft raises, each with the default the profile settles it with, if any, and the
  * person's pick over it.
  */
-export function decisionItems(draft: Draft, profiled: Profiled, chosen: Readonly<Record<string, string>>): DecisionItem[] {
+function decisionItems(draft: Draft, profiled: Profiled, chosen: Readonly<Record<string, string>>): DecisionItem[] {
   const defaults = defaultsOf(profiled);
   return decisionsOf(draft, profiled).map((decision) => ({
     decision,

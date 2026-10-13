@@ -15,7 +15,7 @@ import type { Profiled } from "@fossil-lang/types";
 
 /** Where the build is. `graphId` is `null` until the graph is made. */
 export type BuildProgress =
-  | { state: "building"; graphId: string | null; percent: number | null }
+  | { state: "building"; graphId: string | null }
   | { state: "done"; graphId: string }
   | { state: "failed"; problem: unknown };
 
@@ -24,7 +24,7 @@ export interface BuildSteps<G extends { id: string }> {
   /** The graph, made and made this tab's to run. */
   create(program: string): Promise<G>;
   /** The whole graph, run. Resolves once it is written; rejects with why it was not. */
-  full(graph: G, profiled: Profiled | undefined, onPercent: (percent: number | null) => void): Promise<void>;
+  full(graph: G, profiled: Profiled | undefined): Promise<void>;
 }
 
 /**
@@ -41,11 +41,11 @@ export async function build<G extends { id: string }>(
     onChange(next);
     return next;
   };
-  set({ state: "building", graphId: null, percent: null });
+  set({ state: "building", graphId: null });
   try {
     const graph = await steps.create(program);
-    set({ state: "building", graphId: graph.id, percent: null });
-    await steps.full(graph, profiled, (percent) => set({ state: "building", graphId: graph.id, percent }));
+    set({ state: "building", graphId: graph.id });
+    await steps.full(graph, profiled);
     return set({ state: "done", graphId: graph.id });
   } catch (problem) {
     return set({ state: "failed", problem });

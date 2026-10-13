@@ -43,7 +43,7 @@ const FOSSIL_TYPE: Record<Primitive, string> = {
 };
 
 /** `https://acme.example/` → the IRIs of a workspace's vocabulary and of its things, under it. */
-export function irisOf(base: string) {
+function irisOf(base: string) {
   const root = base.endsWith("/") ? base : `${base}/`;
   return {
     type: (name: string) => `${root}vocab/${name}`,

@@ -24,7 +24,6 @@ import {
   DataTableRoot,
   DataTableSearch,
   DataTableToolbar,
-  selectColumn,
   sortableHeader,
   useDataTable,
 } from "@kanzo-tech/ui/table";
@@ -82,7 +81,6 @@ function Credentials() {
 
   const columns = useMemo<ColumnDef<Credential>[]>(
     () => [
-      selectColumn<Credential>(),
       {
         accessorKey: "name",
         header: sortableHeader("Name"),

@@ -52,7 +52,7 @@ export interface Profiled {
 }
 
 /** `a.b → c.d`. */
-export const inclusionId = (from: { source: string; column: string }, to: { source: string; column: string }) =>
+const inclusionId = (from: { source: string; column: string }, to: { source: string; column: string }) =>
   `${from.source}.${from.column} → ${to.source}.${to.column}`;
 
 /** The last segment of a reference: `@nobel/data/laureates.csv` → `laureates.csv`. */

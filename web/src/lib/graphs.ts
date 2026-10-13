@@ -30,7 +30,7 @@ export function hasRunningGraphs(graphs: Graph[] | undefined): boolean {
  * How often a page asks after a run under way: soon enough that a finished run shows within a
  * breath, and a tenth of a request a second against the server's twenty per caller.
  */
-export const GRAPH_POLL_MS = 2_000;
+const GRAPH_POLL_MS = 2_000;
 
 /**
  * A `refetchInterval` that polls every {@link GRAPH_POLL_MS} while `running(data)`, and stops once the

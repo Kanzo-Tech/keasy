@@ -32,9 +32,6 @@ services:
     environment:
       # Development runs one organization's server, so every host reaches it.
       KEASY_API_URL: http://acme-server:8080
-      # Set by `make demo` alone: the dev server without Next's dev indicator or React Query's
-      # devtools, which a recording would otherwise show (web/next.config.ts).
-      NEXT_PUBLIC_KEASY_DEMO: ${NEXT_PUBLIC_KEASY_DEMO:-}
       # /models on this origin is the `models` service's (web/next.config.ts): development has no edge.
       KEASY_MODELS_UPSTREAM: http://models:8080
     # The first answer is Next compiling the sign-in route — minutes on a small machine after a clean

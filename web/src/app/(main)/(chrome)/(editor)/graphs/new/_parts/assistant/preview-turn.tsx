@@ -24,7 +24,8 @@ export type Preview = PreviewState & { rerun: () => void };
 /**
  * *Here is your data over 200 rows* — the preview, in the chat (docs/design/assistant.md, *the
  * preview is in the chat*): each question the person kept, answered over it with Ask's cards. A
- * decision changed runs it again, and the answers it replaces stay on screen until the new ones land.
+ * decision changed runs it again: the answers it replaces stay on screen, dimmed under *Updating…*
+ * beside the heading, until the new ones land — and stay dimmed if the run fails.
  */
 export function PreviewTurn({ preview, questions }: { preview: Preview; questions: readonly Question[] }) {
   if (preview.state === "idle") {
@@ -35,21 +36,36 @@ export function PreviewTurn({ preview, questions }: { preview: Preview; question
     );
   }
   const { corpus } = preview;
+  const stale = corpus !== null && preview.state !== "ready";
   return (
     <Said label="Preview">
       {corpus && (
-        <p className="flex items-center gap-2 font-medium text-base">
-          <Sparkles aria-hidden className="size-4 text-primary" />
-          Here is your data over its first {ROWS} rows
+        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 font-medium text-base">
+          <span className="flex items-center gap-2">
+            <Sparkles aria-hidden className="size-4 text-primary" />
+            Here is your data over its first {ROWS} rows
+          </span>
+          {preview.state === "running" && (
+            <span className="flex items-center gap-1.5 font-normal text-muted-foreground text-sm" role="status">
+              <Spinner aria-hidden />
+              Updating…
+            </span>
+          )}
         </p>
       )}
-      {preview.state === "running" && (
-        <Working>
-          {corpus ? "Running the preview again with your change…" : `Running a preview over the first ${ROWS} rows of each file…`}
-        </Working>
-      )}
+      {preview.state === "running" && !corpus && <Working>Running a preview over the first {ROWS} rows of each file…</Working>}
       {preview.state === "failed" && <ProblemView error={preview.problem} onRetry={preview.rerun} />}
-      {corpus && <Answers corpus={corpus} questions={questions} />}
+      {corpus && (
+        // The answers being replaced: still there to read, but plainly not the ones to act on.
+        <div
+          aria-busy={preview.state === "running" || undefined}
+          className={stale ? "opacity-50 transition-opacity" : "transition-opacity"}
+          data-stale={stale || undefined}
+          inert={stale || undefined}
+        >
+          <Answers corpus={corpus} questions={questions} />
+        </div>
+      )}
     </Said>
   );
 }

@@ -273,6 +273,30 @@ describe("the assistant, as a conversation", () => {
     expect(rerun).toHaveBeenCalled();
   });
 
+  it("dims the answers a rerun replaces, under the heading's Updating…, until the new ones land", async () => {
+    const corpus = { name: "preview-1" } as never;
+    const { host, render } = mount({
+      selected: new Set(["nobel:laureates.csv"]),
+      decisions: [],
+      program: "program",
+      preview: { state: "ready", corpus, rerun: () => {} },
+    });
+    await through(host);
+    await act(async () => button(host, "Who has won more than one Nobel?")!.click());
+    await act(async () => button(host, "That's all, show me a preview")!.click());
+    const answers = () => host.querySelector("[data-preview-answers]")!.parentElement!;
+    expect(answers().hasAttribute("data-stale")).toBe(false);
+    render({ program: "program", preview: { state: "running", corpus, rerun: () => {} } });
+    expect(answers().hasAttribute("data-stale")).toBe(true);
+    expect(answers().getAttribute("aria-busy")).toBe("true");
+    const heading = host.querySelector('[aria-label="Preview"] p')!;
+    expect(heading.textContent).toContain("Here is your data over its first 200 rows");
+    expect(heading.querySelector('[role="status"]')?.textContent).toBe("Updating…");
+    render({ program: "program", preview: { state: "ready", corpus: { name: "preview-2" } as never, rerun: () => {} } });
+    expect(answers().hasAttribute("data-stale")).toBe(false);
+    expect(host.textContent).not.toContain("Updating…");
+  });
+
   it("builds the whole graph only on request, from the transcript, and says how far it is", async () => {
     const onBuild = vi.fn();
     const { host, render } = mount({ selected: new Set(["nobel:laureates.csv"]), decisions: [], onBuild });

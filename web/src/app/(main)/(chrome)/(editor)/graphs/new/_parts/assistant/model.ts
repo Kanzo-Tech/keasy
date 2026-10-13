@@ -1,0 +1,157 @@
+/**
+ * What the assistant's three screens read — and nothing they compute. Each screen is drawn from
+ * these shapes alone; `use-assistant.ts` is the one place that fills them, from what keasy can read
+ * today (the connection listings, introspect) and, once they are built, from the `requirements`,
+ * `model` and `mapping` Tasks (docs/design/assistant.md). A field a Task will fill is `null` until
+ * then: `null` is "not known yet", never "none", so a screen leaves that part out rather than say
+ * there is nothing.
+ *
+ * None of these carry a shape, an IRI, a predicate or a cardinality: the person reads things, counts,
+ * sentences and rows.
+ */
+
+import type { Decision } from "@kanzo-tech/ai/task";
+
+// ── Screen 1: Your data ─────────────────────────────────────────────────────
+
+/** A node of the files a person picks from: a connection, a folder under it, or a file it reads. */
+export interface SourceTreeNode {
+  id: string;
+  name: string;
+  kind: "connection" | "folder" | "file";
+  /** A branch's children once listed; absent until it is opened. A file has none. */
+  children?: readonly SourceTreeNode[];
+  /** Why this branch could not be listed, shown in its place. */
+  problem?: unknown;
+}
+
+/** Every connection the assistant may read, each a root. */
+export interface SourceTree {
+  roots: readonly SourceTreeNode[];
+}
+
+/** How far reading the picked files has got: "Reading the files… 4 of 6". */
+export interface ReadingProgress {
+  done: number;
+  total: number;
+}
+
+/** A question on offer for "What would you like to know?" — a `requirements` proposal, as a chip. */
+export interface QuestionOffer {
+  id: string;
+  text: string;
+  /** Why it is on offer: what in the files answers it. */
+  rationale?: string;
+}
+
+/** A question the person kept, written or taken from an offer. */
+export interface Question {
+  id: string;
+  text: string;
+  /** Whether these files can answer it: `null` until an oracle has said. */
+  answerable: boolean | null;
+}
+
+// ── Screen 2: What I understood ─────────────────────────────────────────────
+
+/** A thing in the data: laureates, prizes, airports. */
+export interface Thing {
+  id: string;
+  name: string;
+  /** How many there are: `null` until counted. */
+  count: number | null;
+  /** What each one holds, in the data's own words (its columns), when that is all that is known. */
+  holds: readonly string[];
+}
+
+/** How things hang together, as a sentence and one real row: "Each award has a laureate…". */
+export interface Relation {
+  id: string;
+  sentence: string;
+  /** One real example, a value per part of the sentence: Marie Curie · Physics · 1903. */
+  example: readonly string[] | null;
+}
+
+/**
+ * A question the data raised, as options and never free text — kanzo-ui's `Decision`, MCP's
+ * elicitation. One with `assumed` had a safe default: it is taken and shown as an assumption, and
+ * blocks nothing. One without blocks until it is chosen.
+ */
+export interface DecisionItem {
+  decision: Decision;
+  /** The option taken without asking, when there was a safe default. */
+  assumed: string | null;
+  /** The option the person picked, which wins over `assumed`. */
+  chosen: string | null;
+}
+
+/** What the assistant understood of the picked files. */
+export interface Understanding {
+  things: readonly Thing[];
+  /** `null` until the `model` Task proposes them. */
+  relations: readonly Relation[] | null;
+}
+
+// ── Screen 3: Explore ───────────────────────────────────────────────────────
+
+/** Where the graph is: a preview first, over a few rows, then the whole of it. */
+export type BuildProgress =
+  | { state: "preparing"; previewRows: number }
+  | { state: "preview"; previewRows: number; graphId: string; percent: number | null }
+  | { state: "done"; graphId: string }
+  | { state: "failed"; problem: unknown };
+
+/** Everything the screens read, as `use-assistant.ts` answers it. */
+export interface AssistantData {
+  sources: SourceTree;
+  /** The ids of the picked files. */
+  selected: ReadonlySet<string>;
+  /** `null` when nothing is being read. */
+  reading: ReadingProgress | null;
+  /** What could not be read, each with its problem: shown, never dropped. */
+  problems: readonly { id: string; problem: unknown }[];
+  understanding: Understanding;
+  /** `null` until the `requirements` Task offers them. */
+  offers: readonly QuestionOffer[] | null;
+  /** `null` until the `model` and `mapping` Tasks raise them. */
+  decisions: readonly DecisionItem[] | null;
+  /** `null` until there is a program to build. */
+  build: BuildProgress | null;
+}
+
+// ── Picking from the tree ───────────────────────────────────────────────────
+
+/** The files under `node` that are listed, `node` itself when it is one. */
+export function filesUnder(node: SourceTreeNode): string[] {
+  if (node.kind === "file") return [node.id];
+  return (node.children ?? []).flatMap(filesUnder);
+}
+
+/**
+ * A node's box: a file is picked or not; a branch is checked when every listed file under it is,
+ * mixed when some are, and has no box at all (`null`) while nothing under it is listed.
+ */
+export function checkState(node: SourceTreeNode, selected: ReadonlySet<string>): boolean | "indeterminate" | null {
+  const files = filesUnder(node);
+  if (files.length === 0) return null;
+  const picked = files.filter((id) => selected.has(id)).length;
+  return picked === files.length ? true : picked === 0 ? false : "indeterminate";
+}
+
+/** The selection with `node` toggled: a branch picks every listed file under it, or drops them all. */
+export function toggle(node: SourceTreeNode, selected: ReadonlySet<string>): Set<string> {
+  const files = filesUnder(node);
+  const next = new Set(selected);
+  const all = files.every((id) => selected.has(id));
+  for (const id of files) {
+    if (all) next.delete(id);
+    else next.add(id);
+  }
+  return next;
+}
+
+/** The option a decision stands at: the person's, else the default taken. */
+export const optionOf = (item: DecisionItem): string | null => item.chosen ?? item.assumed;
+
+/** A decision that stops the flow: no safe default, and nobody has chosen. */
+export const blocks = (item: DecisionItem): boolean => optionOf(item) === null;

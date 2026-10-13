@@ -11,7 +11,7 @@
 import { jsonSchema } from "ai";
 import { defineTask, type Decision, type Finding } from "@kanzo-tech/ai/task";
 import type { Relation } from "../model";
-import { type Inclusion, type Profiled, rowOf, type Source, sourceNamed } from "./profile";
+import { type Inclusion, type Profiled, rowsOf, type Source, sourceNamed, valuesOf } from "./profile";
 import { camel, listed, pascal, plural, singular, spoken, withArticle } from "./words";
 
 // ── The artefact ────────────────────────────────────────────────────────────
@@ -116,9 +116,8 @@ export function decisionsOf(draft: Draft, profiled: Profiled): Decision[] {
 
 /** A source's first value of `column`: what an option's detail shows. */
 function exampleOf(source: Source, column: string): string | undefined {
-  const i = source.columns.findIndex((c) => c.name === column);
-  const value = source.sample.find((row) => row[i] != null)?.[i];
-  return value == null ? undefined : `e.g. ${value}`;
+  const [value] = valuesOf(source, column);
+  return value === undefined ? undefined : `e.g. ${value}`;
 }
 
 /**
@@ -395,7 +394,7 @@ export function relationsOf(accepted: Accepted, profiled: Profiled): Relation[] 
   const find = (type: AcceptedType, value: string | null) => {
     const source = sourceNamed(profiled, type.source);
     if (!source || value === null) return undefined;
-    return source.sample.map((r) => rowOf(source, r)).find((r) => r[type.identity[0]!] === value);
+    return rowsOf(source).find((r) => r[type.identity[0]!] === value);
   };
   /** What a row of `type` is called: its first text field, else its identity. */
   const display = (type: AcceptedType, row: Record<string, string | null>) => {
@@ -421,13 +420,13 @@ export function relationsOf(accepted: Accepted, profiled: Profiled): Relation[] 
       if (edge.join) {
         // Across a link file: the first link of this row, and its other end.
         const link = sourceNamed(profiled, edge.on);
-        const ofThis = link?.sample.map((r) => rowOf(link, r)).find((r) => r[edge.join!.column] === row[type.identity[0]!]);
+        const ofThis = (link ? rowsOf(link) : []).find((r) => r[edge.join!.column] === row[type.identity[0]!]);
         value = ofThis?.[edge.column];
       }
       const end = find(to, value ?? null);
       return end ? display(to, end) : null;
     };
-    const rows = source.sample.map((r) => rowOf(source, r));
+    const rows = rowsOf(source);
     const full = rows.map((row) => parts.map((p) => valueOf(row, p))).find((values) => values.every((v) => v !== null));
     return [
       {

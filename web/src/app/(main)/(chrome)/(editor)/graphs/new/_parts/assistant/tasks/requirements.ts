@@ -8,10 +8,10 @@
 
 import { jsonSchema, type LanguageModel } from "ai";
 import { resolveRelation, type JoinGraph } from "@kanzo-tech/mosaic";
-import { ask, type AnswerField, type AnswerRelation, type AskInput } from "@kanzo-tech/ai/data";
+import { answerRelationsOf, ask, type AnswerField, type AnswerRelation, type AskInput } from "@kanzo-tech/ai/data";
 import { defineTask, type Finding, runTask } from "@kanzo-tech/ai/task";
 import type { Accepted } from "./model";
-import { type Profiled, sourceNamed } from "./profile";
+import { type Profiled, sourceNamed, valuesOf } from "./profile";
 
 /** A question, as the model offers it: what it counts and the fields it reads. */
 export interface Requirement {
@@ -101,24 +101,26 @@ const KIND: Record<string, AnswerField["kind"]> = { integer: "numeric", float: "
  * rest categories with the values the profile's sample holds.
  */
 export function askInputOf(question: string, accepted: Accepted, profiled: Profiled): AskInput {
-  const types = accepted.types.map((t): AnswerRelation => {
+  const graph = joinGraphOf(accepted);
+  // Each type alone, as Discover's Ask offers them.
+  const types = answerRelationsOf(graph, { hops: 0 }).map((relation): AnswerRelation => {
+    const t = accepted.types.find((x) => x.name === relation.root)!;
     const source = sourceNamed(profiled, t.source);
     const fields = t.fields.map((f): AnswerField => {
       const kind = KIND[f.primitive] ?? "categorical";
-      const at = source?.columns.findIndex((c) => c.name === f.column) ?? -1;
-      const values = at < 0 ? [] : [...new Set(source!.sample.map((r) => r[at]).filter((v): v is string => v != null))].slice(0, 6);
+      const values = source ? [...new Set(valuesOf(source, f.column))].slice(0, 6) : [];
       return {
         name: `${t.name}.${f.name}`,
         type: f.primitive,
         kind,
         role: kind === "numeric" ? "measure" : "dimension",
-        distinct: source?.columns[at]?.distinct ?? values.length,
+        distinct: source?.columns.find((c) => c.name === f.column)?.distinct ?? values.length,
         ...(kind === "categorical" && values.length > 0 ? { values } : {}),
       };
     });
-    return { relation: { root: t.name, path: [] }, fields, columns: ["id", ...fields.map((f) => f.name)] };
+    return { relation, fields, columns: ["id", ...fields.map((f) => f.name)] };
   });
-  return { question, graph: joinGraphOf(accepted), types };
+  return { question, graph, types };
 }
 
 /**

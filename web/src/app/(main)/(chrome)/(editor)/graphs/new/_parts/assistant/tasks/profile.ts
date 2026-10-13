@@ -108,10 +108,14 @@ export function delimiterOf(option: string | undefined): string | undefined {
   return m ? m[1]!.replace(/\\(.)/g, "$1") : undefined;
 }
 
-/** A source's row as a record, column by column. */
-export function rowOf(source: Source, row: readonly (string | null)[]): Record<string, string | null> {
-  return Object.fromEntries(source.columns.map((c, i) => [c.name, row[i] ?? null]));
+/** A source's sample rows as records, column by column. */
+export function rowsOf(source: Source): Record<string, string | null>[] {
+  return source.sample.map((row) => Object.fromEntries(source.columns.map((c, i) => [c.name, row[i] ?? null])));
 }
+
+/** The values of `column` in a source's sample rows, empty ones left out. */
+export const valuesOf = (source: Source, column: string) =>
+  rowsOf(source).flatMap((row) => (row[column] == null ? [] : [row[column]]));
 
 /** The source named `name`. */
 export const sourceNamed = (profiled: Profiled, name: string) => profiled.sources.find((s) => s.name === name);

@@ -13,14 +13,9 @@ const startRun = vi.fn();
 vi.mock("@/app/(main)/(chrome)/graphs/[id]/_parts/use-browser-graph-runner", () => ({ startRun }));
 vi.mock("@/lib/api/spec", () => ({ stringRule: () => ({ maxLength: 63 }), stringProblem: () => null }));
 
-const { freshFolder, keasySteps } = await import("./use-build");
+const { keasySteps } = await import("./use-build");
 
 describe("keasy's build steps", () => {
-  it("name a folder no graph has, within the server's rule", () => {
-    expect(freshFolder("Nobel prizes", () => 0.123456789)).toMatch(/^nobel-prizes-[a-z0-9]{6}$/);
-    expect(freshFolder("x".repeat(80), () => 0.5).length).toBeLessThanOrEqual(63);
-  });
-
   it("make the graph as the studio does — a draft, submitted, run here — in the workspace's sink", async () => {
     const graph = await keasySteps({ name: "Nobel" }).create("program");
     expect(calls).toEqual(["/v1/graphs", "/v1/graphs/{id}/submit", "/v1/graphs/{id}/run"]);

@@ -8,7 +8,7 @@ import { taken, withDecisions } from "@/lib/assumptions";
 import { startBuild, useProgramBuild, type BuildProgress, type BuildSteps } from "@/lib/fossil/build";
 import { startRun } from "@/app/(main)/(chrome)/graphs/[id]/_parts/use-browser-graph-runner";
 import type { DecisionItem } from "./assistant/model";
-import { folderSlug, FOLDER_MAX } from "./folder";
+import { freshFolder } from "./folder";
 
 /** Where the graph lands and what it is called, when the caller knows; otherwise chosen here. */
 export interface BuildOutput {
@@ -19,12 +19,6 @@ export interface BuildOutput {
 }
 
 const UNNAMED = "New graph";
-
-/** A folder for `name` no other graph has: its slug and a few random characters. */
-export function freshFolder(name: string, random: () => number = Math.random): string {
-  const tail = random().toString(36).slice(2, 8).padEnd(6, "0");
-  return `${folderSlug(name).slice(0, FOLDER_MAX - tail.length - 1).replace(/-+$/, "")}-${tail}`;
-}
 
 /** The sink the graph lands in: the one named, else the workspace's first. */
 async function sinkOf(named: string | undefined): Promise<string> {

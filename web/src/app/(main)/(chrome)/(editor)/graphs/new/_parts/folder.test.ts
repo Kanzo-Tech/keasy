@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { schemaOf } from "@/lib/api/spec";
-import { FOLDER_MAX, folderProblem, folderSlug } from "./folder";
+import { FOLDER_MAX, folderProblem, folderSlug, freshFolder } from "./folder";
 
 describe("folderSlug", () => {
   it("turns a name into a folder the server accepts", () => {
@@ -34,5 +34,14 @@ describe("folderProblem", () => {
     for (const ok of ["people", "hr-2026", "0", "a-", "x".repeat(FOLDER_MAX)]) {
       expect(folderProblem(ok)).toBeNull();
     }
+  });
+});
+
+describe("freshFolder", () => {
+  it("names a folder no graph has, within the server's rule", () => {
+    expect(freshFolder("Nobel prizes", () => 0.123456789)).toMatch(/^nobel-prizes-[a-z0-9]{6}$/);
+    const long = freshFolder("x".repeat(200), () => 0.5);
+    expect(long.length).toBeLessThanOrEqual(FOLDER_MAX);
+    expect(folderProblem(long)).toBeNull();
   });
 });

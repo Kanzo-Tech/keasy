@@ -37,7 +37,7 @@ import { Provenance } from "@/components/provenance";
 import { type Primary, primaryAction, runProblem, STATUS } from "@/lib/graphs";
 import { blocked } from "@/lib/permissions";
 import { lower, WORDS } from "@/lib/vocabulary";
-import { folderSlug } from "@/app/(main)/(chrome)/(editor)/graphs/new/_parts/folder";
+import { freshFolder } from "@/app/(main)/(chrome)/(editor)/graphs/new/_parts/folder";
 import { markInterrupted, startRun, useLiveRun } from "./use-browser-graph-runner";
 import { useGraph } from "./use-graph";
 
@@ -138,7 +138,7 @@ export function GraphHeader({ id }: { id: string }) {
           name,
           script: graph.script ?? "",
           sink_connection: graph.sink_connection,
-          folder: `${folderSlug(name).slice(0, 40)}-${crypto.randomUUID().slice(0, 6)}`,
+          folder: freshFolder(name),
         },
       });
       return data!;

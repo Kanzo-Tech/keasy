@@ -7,6 +7,10 @@ import { useEffect, useRef } from "react";
  * it again.
  */
 
+/** Discover's Ask over graph `graphId`, handed `question` when there is one: what the assistant links to. */
+export const askHref = (graphId: string, question?: string) =>
+  `/graphs/${graphId}/discover?panel=ask${question ? `&q=${encodeURIComponent(question)}` : ""}`;
+
 /** The question `href` carries, and `href` without it. */
 export function takeQuestion(href: string): { question: string | null; rest: string } {
   const url = new URL(href);

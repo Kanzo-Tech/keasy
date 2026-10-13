@@ -3,7 +3,7 @@ import { act, createElement as h } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { takeQuestion, useHandedQuestion } from "./ask-handoff";
+import { askHref, takeQuestion, useHandedQuestion } from "./ask-handoff";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -15,6 +15,14 @@ describe("the question handed to Ask", () => {
     });
     expect(takeQuestion("https://k.test/graphs/g1/discover?panel=ask&q=%20%20").question).toBeNull();
     expect(takeQuestion("https://k.test/graphs/g1/discover").question).toBeNull();
+  });
+
+  it("is read as the assistant wrote it", () => {
+    expect(takeQuestion(`https://k.test${askHref("g1", "Who won in 1903?")}`)).toEqual({
+      question: "Who won in 1903?",
+      rest: "/graphs/g1/discover?panel=ask",
+    });
+    expect(askHref("g1")).toBe("/graphs/g1/discover?panel=ask");
   });
 
   let root: Root | undefined;

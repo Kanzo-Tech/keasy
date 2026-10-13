@@ -25,6 +25,7 @@ import {
   Suggestions,
 } from "@kanzo-tech/ui";
 import { ProblemView } from "@/components/problem-view";
+import { askHref } from "@/app/(main)/(workspace)/graphs/[id]/discover/_parts/ask-handoff";
 import { takenLabel } from "./conversation";
 import { holdsLine, inWords } from "./tasks/words";
 import {
@@ -398,10 +399,6 @@ export function AskDone({ questions, onDone }: { questions: number; onDone: () =
 }
 
 // ── The graph ───────────────────────────────────────────────────────────────
-
-/** Discover's Ask over the graph, with a question to start from when there is one. */
-const askHref = (graphId: string, question?: string) =>
-  `/graphs/${graphId}/discover?panel=ask${question ? `&q=${encodeURIComponent(question)}` : ""}`;
 
 /**
  * The hand-off: the preview's state and the full build's progress, **Ask your data** as the one

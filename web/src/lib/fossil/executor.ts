@@ -1,4 +1,4 @@
-import { run } from "@fossil-lang/executor";
+import { type CorpusFile, run } from "@fossil-lang/executor";
 import type { Host, Profiled, RunReport } from "@fossil-lang/types";
 
 /**
@@ -13,13 +13,6 @@ import type { Host, Profiled, RunReport } from "@fossil-lang/types";
 
 /** The rows of each source a preview reads. */
 export const PREVIEW_ROWS = 200;
-
-/** One file of a corpus answered in memory: its path under the corpus's root, and its bytes. */
-export interface CorpusFile {
-  /** `fossil.json`, `vertex/<Type>.parquet`, … */
-  path: string;
-  bytes: Uint8Array;
-}
 
 /** Where a run's corpus goes: under a job, or back to the caller over the first {@link PREVIEW_ROWS} rows. */
 export type Into = { job: string } | "memory";
@@ -39,22 +32,9 @@ export interface Ran {
   files: CorpusFile[];
 }
 
-/** fossil's `run`, as alpha.31 types it. */
-interface FossilRun {
-  (program: string, options: { host: Host; into: { job: string }; profiled?: Profiled; signal?: AbortSignal }): Promise<RunReport>;
-  (
-    program: string,
-    options: { host: Host; into: "memory"; limit: number; profiled?: Profiled; signal?: AbortSignal },
-  ): Promise<{ report: RunReport; files: CorpusFile[] }>;
-}
-
-// The published alpha.30 still types `run` as `{ host, job }`; alpha.31's `into` is the shape above.
-// Once alpha.31 is installed, this assertion is the one line to drop.
-const fossilRun = run as unknown as FossilRun;
-
 /** Run `program` into `into` (see {@link Into}). Rejects with fossil's `FossilError`, or `signal`'s reason. */
 export async function runInto(program: string, { host, into, profiled, signal }: RunInto): Promise<Ran> {
   const asked = { host, ...(profiled === undefined ? {} : { profiled }), ...(signal === undefined ? {} : { signal }) };
-  if (into === "memory") return fossilRun(program, { ...asked, into, limit: PREVIEW_ROWS });
-  return { report: await fossilRun(program, { ...asked, into }), files: [] };
+  if (into === "memory") return run(program, { ...asked, into, limit: PREVIEW_ROWS });
+  return { report: await run(program, { ...asked, into }), files: [] };
 }

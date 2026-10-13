@@ -1,6 +1,5 @@
 # keasy, as it runs anywhere: the one web that serves every organization, its session store, and
-# keasy's registration with the platform realm. The platform itself — identity and the AI gateway —
-# is kanzo-ui's, included by the environment's overlay at the release keasy is built against:
+# keasy's registration with the platform realm. The platform itself — identity — is kanzo-ui's, included by the environment's overlay at the release keasy is built against:
 #
 #   docker compose up                                  development: compose.override.yaml, read on its own
 #   make deploy                                        a deployment: compose.prod.yaml + infra/prod/
@@ -14,8 +13,7 @@ name: keasy
 services:
   # The relying party for every organization: it holds the client secret, seals the session cookie,
   # reads the organization from the host (<alias>.<KEASY_DOMAIN>), and forwards /api/v1 to that
-  # organization's server and /api/ai to the gateway, each with a token exchanged for it and that
-  # organization.
+  # organization's server with a token exchanged for it and that organization.
   web:
     image: ghcr.io/kanzo-tech/keasy-web:${KEASY_VERSION:-dev}
     environment:
@@ -29,12 +27,9 @@ services:
       KEASY_SESSION_STORE_URL: redis://valkey:6379
       # The server of the organization a request addresses: each answers as <alias>-server.
       KEASY_API_URL: http://{tenant}-server:8080
-      # The gateway's OpenAI-compatible API, the only path on which it resolves an alias.
-      KEASY_AI_URL: http://ai-gateway:4000/v1
-      # Each alias's context window, as the platform declares it beside its model (kanzo-ui
-      # services/ai): Ask fits its prompts into it. Unset, it is passed no budget.
-      KEASY_AI_CHAT_CONTEXT: ${AI_CHAT_CONTEXT:-}
-      KEASY_AI_COMPLETE_CONTEXT: ${AI_COMPLETE_CONTEXT:-}
+      # Where the model's shards are served: <url>/<model>/ and <url>/<model>.wasm. The model runs
+      # in the browser, which downloads them once. Unset, WebLLM's own: Hugging Face and GitHub.
+      KEASY_MODEL_URL: ${KEASY_MODEL_URL:-}
     secrets: [keasy-oidc, keasy-session]
     # Healthy once the sign-in route answers: what a rolling update waits for before it lets the old
     # web go, and what `make dev` waits for.
@@ -49,8 +44,6 @@ services:
         condition: service_healthy
       auth-realm:
         condition: service_completed_successfully
-      ai-gateway:
-        condition: service_started
     restart: unless-stopped
 
   # The web's session store: tokens behind the cookie's ticket. No volume — losing it signs people
@@ -82,8 +75,6 @@ configs:
         description: keasy — a Backend-For-Frontend for every organization. The browser never holds a token.
         # The API every organization's server validates `aud` against.
         api: keasy-api
-        # The platform's AI gateway, which the web exchanges the session's token for too.
-        apis: [ai-gateway]
         # One web for every organization, at <alias>.<domain>.
         origin: ${KEASY_ORIGIN:-http://{organization}.localhost:3000}
         callback: /api/auth/callback

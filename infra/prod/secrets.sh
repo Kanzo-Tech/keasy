@@ -48,7 +48,6 @@ want() {  # want NAME GENERATOR
 
 want KC_ADMIN_PASSWORD random
 want KC_DB_PASSWORD random
-want AI_DB_PASSWORD random
 want KEASY_OIDC_CLIENT_SECRET random
 want KEASY_SESSION_SECRET random
 for org in orgs/*.yaml; do

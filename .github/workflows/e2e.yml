@@ -53,8 +53,8 @@ jobs:
       - name: Fetch the dev seeds
         run: make seed
 
-      # The dev stack — the platform included from kanzo-ui at KANZO_UI_REF — without the local
-      # models: the runners have no Docker Model Runner and no scenario needs one.
+      # The dev stack — the platform included from kanzo-ui at KANZO_UI_REF. The model runs in the
+      # browser, and the runners have no WebGPU: the scenarios force a browser without one.
       - name: Bring up the stack
         run: docker compose up -d --build --wait --wait-timeout 3600 web
 

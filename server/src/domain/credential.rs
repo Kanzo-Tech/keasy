@@ -1,6 +1,5 @@
-//! Secrets: who keasy is when it reaches a store. Models are not here: every
-//! model call goes from the web to the platform's AI gateway with the person's
-//! own token, exchanged for the gateway, and no server holds a model key.
+//! Secrets: who keasy is when it reaches a store. Models are not here: the
+//! model runs in the browser, and no server holds a model key.
 //!
 //! A spec comes twice. [`SecretSpec`] is what a request carries: its values
 //! included, as [`SecretString`], and it only deserializes. [`SecretSpecView`]

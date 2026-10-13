@@ -22,7 +22,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Development resolves
-        run: docker compose --profile local-models --profile faults config --quiet
+        run: docker compose --profile faults config --quiet
 
       # The secrets' values are stand-ins: what is checked is that every one a file names is
       # supplied — each organization's sealing key among them.
@@ -30,7 +30,7 @@ jobs:
         run: |
           orgs=(infra/prod/orgs/*.yaml)
           {
-            for name in KC_ADMIN_PASSWORD KC_DB_PASSWORD AI_DB_PASSWORD KEASY_OIDC_CLIENT_SECRET KEASY_SESSION_SECRET; do
+            for name in KC_ADMIN_PASSWORD KC_DB_PASSWORD KEASY_OIDC_CLIENT_SECRET KEASY_SESSION_SECRET; do
               echo "$name=stand-in"
             done
             for org in "${orgs[@]}"; do

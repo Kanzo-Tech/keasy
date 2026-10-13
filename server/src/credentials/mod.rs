@@ -1,6 +1,6 @@
 //! Credentials — `/v1/secrets` on the wire: the keys keasy reaches a store
 //! with, shared by the routes, the connections and the bootstrap file. Model
-//! calls hold none; they go through the AI gateway.
+//! calls hold none; the model runs in the browser.
 
 pub mod persistence;
 pub mod probe;

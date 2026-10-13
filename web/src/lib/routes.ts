@@ -4,9 +4,3 @@ export const PROBLEM_PAGE = "/auth/error";
 /** The BFF's API proxy: same origin, forwarded to the resource server with the session's token. */
 export const API = "/api";
 
-/**
- * Model calls: the BFF's own mount, forwarded to the platform's AI gateway with a token exchanged
- * for it. `@kanzo-tech/llm`'s `createGateway` bounds them itself, so `deadlineFetch` passes them
- * through whole.
- */
-export const MODEL_CALLS = `${API}/ai`;

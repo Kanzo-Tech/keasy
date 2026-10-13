@@ -61,26 +61,6 @@ describe("the deadline", () => {
     await stalled;
   });
 
-  it("leaves a model call to the gateway, which bounds it itself", async () => {
-    vi.useFakeTimers();
-    const fetch = silentFetch();
-    vi.stubGlobal("fetch", fetch);
-    const stop = new AbortController();
-    const init = { method: "POST", signal: stop.signal };
-    const url = "https://keasy.test/api/ai/chat/completions";
-    let settled = false;
-    const answer = deadlineFetch((ms) => new Silent(ms), 1_000)(url, init);
-    answer.then(
-      () => (settled = true),
-      () => (settled = true),
-    );
-    await vi.advanceTimersByTimeAsync(5_000);
-    expect(settled).toBe(false);
-    expect(fetch).toHaveBeenCalledWith(url, init);
-    stop.abort(new Error("stopped"));
-    await expect(answer).rejects.toThrow("stopped");
-  });
-
   it("lets a caller's own abort be itself", async () => {
     vi.stubGlobal("fetch", silentFetch());
     const stop = new AbortController();

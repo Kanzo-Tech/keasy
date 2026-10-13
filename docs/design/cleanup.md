@@ -235,8 +235,11 @@ Each is TanStack Query's own pattern, already a dependency.
 - **Formats are fossil's.** `connections/new/page.tsx` hard-codes *CSV, Parquet, JSON* and *ShEx,
   SHACL, RDF* while the connection page reads fossil's `formats()`; the source picker picks an icon
   from the extension while each file carries its `reader`. Both read `formats()` (`formatsQuery`).
-  `bindingName` re-derives `grammar.bnf`'s `IDENT`, and goes once `@fossil-lang/wasm` exports the
-  identifier rule beside `formats`. ~15. *What would reverse it:* nothing keasy can see — the formats
+  `bindingName` re-derives `grammar.bnf`'s `IDENT`. fossil 0.3.0-alpha.32 exports the identifier rule
+  as `bindingName(file, { signal })` from `@fossil-lang/wasm`, derived from the lexer: when keasy moves
+  to alpha.32, its own `bindingName` (`sources.ts`) is deleted and both call sites (`sources.ts`,
+  `assistant/tasks/profile.ts`) call fossil's. keasy passes a bare file name, so names are unchanged,
+  but fossil's also prefixes `_` to a reserved word, which keasy's copy misses. ~15. *What would reverse it:* nothing keasy can see — the formats
   and the grammar are fossil's to say.
 
 **Landed (2026-10-13)** but two. Credential field labels are still the property names: utoipa 5 has

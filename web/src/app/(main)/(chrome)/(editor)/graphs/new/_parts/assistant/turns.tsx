@@ -448,9 +448,15 @@ export function BuildTurn({ build, questions }: { build: BuildProgress | null; q
           <div className="flex flex-col gap-2" role="status">
             <span className="flex items-center gap-2 text-muted-foreground">
               <Spinner aria-hidden />
-              Preparing a preview over {count.format(build.previewRows)} rows…
+              {build.previewRows === null
+                ? "Building your graph…"
+                : `Preparing a preview over ${count.format(build.previewRows)} rows…`}
             </span>
-            <Progress aria-label="Preparing a preview" className="max-w-xs" indeterminate />
+            <Progress
+              aria-label={build.previewRows === null ? "Building your graph" : "Preparing a preview"}
+              className="max-w-xs"
+              indeterminate
+            />
           </div>
         </Said>
       );

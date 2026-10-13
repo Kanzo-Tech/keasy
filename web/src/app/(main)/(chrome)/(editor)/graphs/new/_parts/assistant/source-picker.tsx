@@ -13,9 +13,30 @@ import {
   TreeViewTree,
   createTreeCollection,
 } from "@kanzo-tech/ui";
-import { Database, FileText } from "lucide-react";
+import { Database, FileSpreadsheet, FileText, Folder } from "lucide-react";
 import { ProblemView } from "@/components/problem-view";
 import { checkState, type SourceTree, type SourceTreeNode, toggle } from "./model";
+
+/**
+ * Ark marks the first row `data-focus` as the tree mounts, before anyone has moved to it, and the
+ * row paints that like a hover — so at rest the first row looked picked. A row is lit by focus only
+ * when the focus is the keyboard's; the pointer's hover stays as it is.
+ */
+const ROW = [
+  "data-focus:not-focus-visible:bg-transparent data-focus:not-focus-visible:text-muted-foreground",
+  "data-focus:not-focus-visible:hover:bg-muted data-focus:not-focus-visible:hover:text-foreground",
+].join(" ");
+
+/** A table's file reads as one; anything else as a document. */
+const FILE_ICONS = {
+  ".csv": FileSpreadsheet,
+  ".tsv": FileSpreadsheet,
+  ".parquet": FileSpreadsheet,
+  ".xlsx": FileSpreadsheet,
+};
+
+const bytes = new Intl.NumberFormat("en", { notation: "compact", style: "unit", unit: "byte", unitDisplay: "narrow" });
+const size = (n: number) => bytes.format(n).replace(/(\d)([KMGT]?B)$/, "$1 $2");
 
 interface Node {
   id: string;
@@ -59,6 +80,7 @@ export function SourcePicker({ tree, selected, onSelectedChange, expanded, onExp
     <TreeView
       aria-label="Files"
       collection={collection}
+      fileIcons={FILE_ICONS}
       expandedValue={[...expanded]}
       onExpandedChange={(d) => onExpandedChange(d.expandedValue)}
     >
@@ -109,20 +131,25 @@ function Branch({
   if (source.kind === "file") {
     return (
       <TreeViewNode indexPath={indexPath} node={node}>
-        <TreeViewContent>
+        <TreeViewContent className={ROW}>
           <Pick node={source} onSelectedChange={onSelectedChange} selected={selected} />
           <TreeViewItem icon={FileText}>{node.name}</TreeViewItem>
+          {source.size !== undefined && (
+            <span className="ms-auto shrink-0 text-muted-foreground text-xs tabular-nums">{size(source.size)}</span>
+          )}
         </TreeViewContent>
       </TreeViewNode>
     );
   }
-  const icon = source.kind === "connection" ? Database : undefined;
+  const connection = source.kind === "connection";
   return (
     <TreeViewNode indexPath={indexPath} node={node}>
       <TreeViewBranch>
-        <TreeViewBranchItem expandedIcon={icon} icon={icon}>
+        {/* The box before the icon, as a file's row has it: the icons are drawn here, not by the title. */}
+        <TreeViewBranchItem className={ROW} expandedIcon={null} icon={null}>
           <Pick node={source} onSelectedChange={onSelectedChange} selected={selected} />
-          <span>{node.name}</span>
+          {connection ? <Database aria-hidden /> : <Folder aria-hidden />}
+          <span className={connection ? "font-medium text-foreground" : undefined}>{node.name}</span>
         </TreeViewBranchItem>
         <TreeViewBranchContent>
           {source.problem !== undefined && <ProblemView error={source.problem} />}

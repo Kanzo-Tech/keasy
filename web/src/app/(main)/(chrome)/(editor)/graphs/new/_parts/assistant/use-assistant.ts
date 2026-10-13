@@ -4,8 +4,8 @@
  * The one adaptor between what keasy can read and what the assistant's turns draw (`model.ts`).
  * The turns compute nothing; everything they show is answered here.
  *
- * What it answers, from real data: the tree, from the connections' listings (`sources.ts`'s
- * `childrenOf`, the studio's); one thing per file with its count and columns, from fossil's profile
+ * What it answers, from real data: the tree, from the connections' listings (`useSources`, the
+ * studio's); one thing per file with its count and columns, from fossil's profile
  * of the picked files, read once over all of them (`tasks/profile.ts`) — before any model is asked;
  * and then the Tasks of docs/design/assistant.md, in order, on the page's model (`useModel`):
  * `model` once the files are read and *what is it about?* is answered — the relations and the
@@ -22,34 +22,27 @@ import { type Proposal, runTask } from "@kanzo-tech/ai/task";
 import type { Format } from "@fossil-lang/types";
 import { inputs, profile } from "@fossil-lang/wasm";
 import { engine } from "@kanzo-tech/ui/analytics";
-import { $api } from "@/lib/api/client";
 import type { StorageConnection } from "@/lib/connections";
 import { ClientError } from "@/lib/errors";
 import { host } from "@/lib/fossil/host";
-import { childrenOf, connectionNode, type SourceNode } from "../sources";
+import type { SourceFile } from "../sources";
+import { useSources } from "../use-sources";
 import { useModel } from "@/lib/ai";
-import { type AssistantData, type DecisionItem, optionOf, type Question, type QuestionOffer, type SourceTreeNode, type TaskFailure, type Thing } from "./model";
+import { type AssistantData, type DecisionItem, optionOf, type Question, type QuestionOffer, type TaskFailure, type Thing } from "./model";
 import { fossilCheck, mapping, mappingInput, programOf } from "./tasks/mapping";
 import { accept, type Accepted, decisionsOf, defaultsOf, type Draft, modelTask, relationsOf } from "./tasks/model";
 import { type Profiled, profiledOf } from "./tasks/profile";
 import { isAnswerable, requirements } from "./tasks/requirements";
 import { spoken, thingName } from "./tasks/words";
 
-/** A picked file as the program reads it: its whole binding line. */
-interface FileEntry {
-  id: string;
-  name: string;
-  line: string;
-}
-
 /** The rows the profile keeps of each file: enough for one row of each relation to be found across files. */
 const SHOWN = 50;
 
 /** The picked file a source's reference names, by its id; the reference itself when none does. */
-const fileOf = (picked: readonly FileEntry[], key: string) => picked.find((f) => f.line.includes(`"${key}"`))?.id ?? key;
+const fileOf = (picked: readonly SourceFile[], key: string) => picked.find((f) => f.line.includes(`"${key}"`))?.id ?? key;
 
 /** One thing per file read, with its count and what it holds: what the profile says before any model. */
-export function thingsOf(profiled: Profiled, picked: readonly FileEntry[]): Thing[] {
+export function thingsOf(profiled: Profiled, picked: readonly SourceFile[]): Thing[] {
   return profiled.sources.map((s) => ({
     id: fileOf(picked, s.key),
     name: thingName(s.file),
@@ -57,10 +50,6 @@ export function thingsOf(profiled: Profiled, picked: readonly FileEntry[]): Thin
     holds: s.columns.map((c) => c.name),
   }));
 }
-
-/** What the tree reads of a listing; one reference for as long as the answers do not change. */
-const answers = <T,>(results: readonly { data?: T; error: unknown }[]) =>
-  results.map(({ data, error }) => ({ data, error }));
 
 /**
  * The decisions a draft raises, each with the default the profile settles it with, if any, and the
@@ -119,56 +108,18 @@ export function useAssistant({
   questions: readonly Question[];
 }): Assistant {
   // The sink is written to, not read from.
-  const roots = useMemo(
-    () => connections.filter((c) => c.kind === "data" && c.direction !== "sink").map(connectionNode),
-    [connections],
+  const sources = useSources(
+    connections.filter((c) => c.kind === "data" && c.direction !== "sink"),
+    formats,
   );
-  const [expanded, setExpandedState] = useState<string[]>([]);
-  // Every branch ever opened stays listed, so a folder closed keeps its picks.
-  const [listed, setListed] = useState<SourceNode[]>([]);
+  const [expanded, setExpanded] = useState<string[]>([]);
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
   const [chosen, setChosen] = useState<Record<string, string>>({});
 
-  const listings = useQueries({
-    combine: answers,
-    queries: listed.map((node) =>
-      $api.queryOptions("get", "/v1/connections/{name}/files", {
-        params: { path: { name: node.connection!.name }, query: node.under ? { prefix: node.under } : {} },
-      }),
-    ),
+  const picked = [...selected].flatMap((id) => {
+    const node = sources.collection.findNode(id);
+    return node?.kind === "file" ? [node] : [];
   });
-
-  // The tree, built down from the roots through every listing that has answered.
-  const { tree, nodes, files } = useMemo(() => {
-    const byId = new Map<string, SourceNode>();
-    const fileById = new Map<string, FileEntry>();
-    const listingOf = new Map(listed.map((node, i) => [node.id, listings[i]]));
-    // A file's size, by its node's id (`<connection>:<path>`, as `childrenOf` names it).
-    const sizes = new Map<string, number>();
-    const build = (node: SourceNode): SourceTreeNode => {
-      byId.set(node.id, node);
-      if (node.line !== undefined) {
-        fileById.set(node.id, { id: node.id, name: node.name, line: node.line });
-        return { id: node.id, name: node.name, kind: "file", size: sizes.get(node.id) };
-      }
-      const kind = node.under === "" ? "connection" : "folder";
-      const listing = listingOf.get(node.id);
-      if (listing?.error) return { id: node.id, name: node.name, kind, problem: listing.error };
-      if (!listing?.data) return { id: node.id, name: node.name, kind };
-      for (const f of listing.data.files) sizes.set(`${node.connection!.name}:${f.path}`, f.size);
-      const children = childrenOf(node, listing.data.files.map((f) => f.path), formats).map(build);
-      return { id: node.id, name: node.name, kind, children };
-    };
-    return { tree: { roots: roots.map(build) }, nodes: byId, files: fileById };
-  }, [roots, listed, listings, formats]);
-
-  const setExpanded = (next: string[]) => {
-    setExpandedState(next);
-    const fresh = next.filter((id) => !listed.some((n) => n.id === id)).flatMap((id) => nodes.get(id) ?? []);
-    if (fresh.length > 0) setListed((prev) => [...prev, ...fresh]);
-  };
-
-  const picked = [...selected].flatMap((id) => files.get(id) ?? []);
   const lines = picked.map((f) => f.line).sort();
   // The files are read together, once: the inclusions between two of them are part of the answer.
   const read = useQuery({
@@ -272,7 +223,7 @@ export function useAssistant({
   ];
 
   return {
-    sources: tree,
+    sources,
     selected,
     reading: picked.length > 0 && read.isPending ? { done: 0, total: picked.length } : null,
     problems,

@@ -1,31 +1,50 @@
 import type { Format } from "@fossil-lang/types";
 import { formatFor } from "@fossil-lang/wasm";
-import type { TreeNodeType } from "@kanzo-tech/ui";
+import { createTreeCollection } from "@kanzo-tech/ui";
+import type { Schemas } from "@/lib/api/client";
 import { reference, type StorageConnection } from "@/lib/connections";
 
 /**
- * A node of the sources explorer: a connection, a folder under it, or a file a format reads. A
- * connection or folder carries `childrenCount` and no children until it is opened — Ark's lazy
- * branch — and `under` is the folder it lists, relative to the connection, as the files endpoint
- * takes its `prefix`.
+ * A node of the files a program reads from: a connection, a folder under it, or a file a format
+ * reads. The one shape of the tree: the studio's Sources and the assistant's picker both draw it
+ * through `use-sources.ts`, and `childrenOf` is the one way it grows.
  */
-export interface SourceNode extends TreeNodeType {
+export type SourceNode = SourceBranch | SourceFile;
+
+/** A connection or a folder under it: listed when it is opened, and not before. */
+export interface SourceBranch {
+  id: string;
+  name: string;
+  kind: "connection" | "folder";
+  connection: StorageConnection;
+  /** The folder it lists, relative to the connection, as the files endpoint takes its `prefix`. */
+  under: string;
+  /** Its children once listed; absent until it is opened. */
   children?: SourceNode[];
-  childrenCount?: number;
-  connection?: StorageConnection;
-  under?: string;
-  /** A file's whole line, `name := io.<reader>("@conn/path")`. */
-  line?: string;
-  /** A file's reader, the `io.` constructor its extension names. */
-  reader?: string;
+  /** Why its last listing failed, shown beside it while it has no children; opening it again retries. */
+  problem?: unknown;
+}
+
+/** A file a format reads. */
+export interface SourceFile {
+  id: string;
+  name: string;
+  kind: "file";
+  /** Its whole line, `name := io.<reader>("@conn/path")`. */
+  line: string;
+  /** Its reader, the `io.` constructor its extension names. */
+  reader: string;
+  /** Its size in bytes, as the listing gave it. */
+  size: number;
+  children?: never;
 }
 
 /** What a program reads a connection's files as: a vocabulary's are schemas, the rest data. */
 export const roleOf = (c: StorageConnection) => (c.kind === "vocab" ? "schema" : "data");
 
 /** A connection, unopened. */
-export function connectionNode(c: StorageConnection): SourceNode {
-  return { id: c.name, name: `@${c.name}`, connection: c, under: "", childrenCount: 1 };
+export function connectionNode(c: StorageConnection): SourceBranch {
+  return { id: c.name, name: `@${c.name}`, kind: "connection", connection: c, under: "" };
 }
 
 /**
@@ -39,22 +58,23 @@ export function bindingName(file: string): string {
 
 /**
  * The children of `parent` from one listing of its folder: the folders directly under it that hold
- * a readable file, unopened, then the readable files directly in it, each with its whole line. A
- * file's path under the connection is fossil's `referenceTo`, so nothing here re-derives a prefix.
+ * a readable file, unopened, then the readable files directly in it, each with its whole line and
+ * size. A file's path under the connection is fossil's `referenceTo`, so nothing here re-derives a
+ * prefix.
  */
 export function childrenOf(
-  parent: SourceNode,
-  keys: readonly string[],
+  parent: SourceBranch,
+  listing: readonly Schemas["FileEntry"][],
   formats: readonly Format[],
 ): SourceNode[] {
-  const c = parent.connection!;
-  const under = parent.under ?? "";
+  const c = parent.connection;
+  const { under } = parent;
   const role = roleOf(c);
   const at = `@${c.name}/`;
-  const folders = new Map<string, SourceNode>();
-  const files: SourceNode[] = [];
-  for (const key of keys) {
-    const ref = reference(c, key);
+  const folders = new Map<string, SourceBranch>();
+  const files: SourceFile[] = [];
+  for (const { path, size } of listing) {
+    const ref = reference(c, path);
     if (!ref.startsWith(at + under)) continue;
     const rest = ref.slice(at.length + under.length);
     const format = formatFor(rest, role, formats);
@@ -63,17 +83,29 @@ export function childrenOf(
     if (slash >= 0) {
       const folder = `${under}${rest.slice(0, slash + 1)}`;
       if (!folders.has(folder)) {
-        folders.set(folder, { id: `${c.name}/${folder}`, name: rest.slice(0, slash + 1), connection: c, under: folder, childrenCount: 1 });
+        folders.set(folder, { id: `${c.name}/${folder}`, name: rest.slice(0, slash + 1), kind: "folder", connection: c, under: folder });
       }
     } else {
       files.push({
-        id: `${c.name}:${key}`,
+        id: `${c.name}:${path}`,
         name: rest,
+        kind: "file",
         reader: format.name,
         line: `${bindingName(rest)} := io.${format.name}("${ref}")`,
+        size,
       });
     }
   }
   const byName = (a: SourceNode, b: SourceNode) => a.name.localeCompare(b.name);
   return [...[...folders.values()].sort(byName), ...files.sort(byName)];
 }
+
+/**
+ * The tree's collection over `roots`. A branch is one by its count of children (Ark's lazy branch):
+ * an unlisted one counts one and opens through `loadChildren`, a listed empty one counts none.
+ */
+export const sourceCollection = (roots: readonly SourceNode[]) =>
+  createTreeCollection<SourceNode>({
+    rootNode: { id: "", name: "", kind: "folder", children: [...roots] } as SourceNode,
+    nodeToChildrenCount: (node) => (node.kind === "file" ? undefined : (node.children?.length ?? 1)),
+  });

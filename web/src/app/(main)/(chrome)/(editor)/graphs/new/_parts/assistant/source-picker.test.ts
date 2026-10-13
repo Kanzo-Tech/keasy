@@ -3,36 +3,41 @@ import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { checkState, type SourceTree, toggle } from "./model";
+import type { StorageConnection } from "@/lib/connections";
+import { type SourceBranch, type SourceNode, sourceCollection } from "../sources";
 import { SourcePicker } from "./source-picker";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const tree: SourceTree = {
-  roots: [
+const connection: StorageConnection = { name: "nobel", url: "s3://lake/nobel/", kind: "data", direction: "source", secret: "aws" };
+const file = (path: string, name: string): SourceNode => ({
+  id: `nobel:${path}`,
+  name,
+  kind: "file",
+  reader: "csv",
+  line: `x := io.csv("@nobel/${path}")`,
+  size: 1200,
+});
+const nobel: SourceBranch = {
+  id: "nobel",
+  name: "@nobel",
+  kind: "connection",
+  connection,
+  under: "",
+  children: [
     {
-      id: "nobel",
-      name: "@nobel",
-      kind: "connection",
-      children: [
-        {
-          id: "nobel/prizes/",
-          name: "prizes/",
-          kind: "folder",
-          children: [
-            { id: "nobel:prizes/awards.csv", name: "awards.csv", kind: "file" },
-            { id: "nobel:prizes/categories.csv", name: "categories.csv", kind: "file" },
-          ],
-        },
-        { id: "nobel/archive/", name: "archive/", kind: "folder" },
-        { id: "nobel:laureates.csv", name: "laureates.csv", kind: "file" },
-      ],
+      id: "nobel/prizes/",
+      name: "prizes/",
+      kind: "folder",
+      connection,
+      under: "prizes/",
+      children: [file("prizes/awards.csv", "awards.csv"), file("prizes/categories.csv", "categories.csv")],
     },
+    { id: "nobel/archive/", name: "archive/", kind: "folder", connection, under: "archive/" },
+    file("laureates.csv", "laureates.csv"),
   ],
 };
-const [nobel] = tree.roots;
-const prizes = nobel.children![0];
-const archive = nobel.children![1];
+const PRIZES = ["nobel:prizes/awards.csv", "nobel:prizes/categories.csv"];
 
 const mounted: ReturnType<typeof createRoot>[] = [];
 afterEach(() => {
@@ -47,7 +52,12 @@ function mount(selected: ReadonlySet<string>) {
   act(() =>
     root.render(
       createElement(SourcePicker, {
-        tree,
+        sources: {
+          collection: sourceCollection([nobel]),
+          loadChildren: async () => [],
+          onLoadChildrenComplete: () => {},
+          onLoadChildrenError: () => {},
+        },
         selected,
         onSelectedChange,
         expanded: ["nobel", "nobel/prizes/"],
@@ -72,21 +82,20 @@ describe("picking files from the tree", () => {
   it("a folder's box picks every file listed under it, and a second press drops them", async () => {
     const { box, onSelectedChange } = mount(new Set());
     await act(async () => box("prizes/")!.click());
-    expect([...onSelectedChange.mock.calls[0][0]].sort()).toEqual([
-      "nobel:prizes/awards.csv",
-      "nobel:prizes/categories.csv",
-    ]);
-    expect(toggle(prizes, new Set(["nobel:prizes/awards.csv", "nobel:prizes/categories.csv"])).size).toBe(0);
+    expect([...onSelectedChange.mock.calls[0][0]].sort()).toEqual(PRIZES);
+
+    const again = mount(new Set(PRIZES));
+    await act(async () => again.box("prizes/")!.click());
+    expect([...again.onSelectedChange.mock.calls[0][0]]).toEqual([]);
   });
 
   it("a folder never opened has no box: nobody picks what they have not seen", () => {
     const { box } = mount(new Set());
     expect(box("archive/")).toBeNull();
-    expect(checkState(archive, new Set())).toBeNull();
   });
 
   it("a folder with some of its files picked is mixed", () => {
-    expect(checkState(prizes, new Set(["nobel:prizes/awards.csv"]))).toBe("indeterminate");
-    expect(checkState(nobel, new Set(["nobel:prizes/awards.csv", "nobel:prizes/categories.csv", "nobel:laureates.csv"]))).toBe(true);
+    expect(mount(new Set([PRIZES[0]])).box("prizes/")!.getAttribute("aria-checked")).toBe("mixed");
+    expect(mount(new Set([...PRIZES, "nobel:laureates.csv"])).box("@nobel")!.getAttribute("aria-checked")).toBe("true");
   });
 });

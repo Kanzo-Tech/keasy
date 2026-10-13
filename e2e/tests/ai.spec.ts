@@ -52,12 +52,10 @@ async function askForRequirements(page: Page) {
   // In the dev stack TanStack's devtools button floats over the chat's corner.
   await page.addStyleTag({ content: ".tsqd-parent-container { display: none !important; }" });
   // The connection is listed when it is opened; its files have a box only then.
-  await page.getByRole("tree", { name: "Files" }).getByText(SOURCE, { exact: true }).click();
-  // Ark draws the checkbox's control over its input, so it is ticked from the keyboard, as a reader
-  // without a pointer ticks it, rather than clicked through the control.
+  await page.getByRole("tree", { name: "Files" }).getByText(`@${SOURCE}`, { exact: true }).click();
+  // The tree's own box: Space on a row selects it, so the box is pressed.
   const file = page.getByRole("checkbox", { name: "Pick people.csv" });
-  await file.focus();
-  await file.press("Space");
+  await file.click();
   await expect(file).toBeChecked();
   await page.getByRole("button", { name: "Read this file" }).click();
   await page.getByRole("button", { name: "Skip" }).click();

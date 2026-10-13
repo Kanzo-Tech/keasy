@@ -1,4 +1,4 @@
-import { FossilError, isFossilError, type Access, type Host, type Problem, type RunReport, type Scope } from "@fossil-lang/types";
+import { FossilError, isFossilError, type Access, type Host, type Problem, type Profiled, type RunReport, type Scope } from "@fossil-lang/types";
 
 /**
  * A graph run off the page's main thread. fossil's executor builds its whole corpus in one call —
@@ -26,7 +26,7 @@ export type Failure =
 
 /** What crosses the port, page to worker and back. */
 export type ToWorker =
-  | { kind: "run"; program: string; job: string }
+  | { kind: "run"; program: string; job: string; profiled?: Profiled }
   | { kind: "abort" }
   | { kind: "answer"; id: number; value: unknown }
   | ({ kind: "refuse"; id: number } & Failure);
@@ -77,8 +77,17 @@ export function rebuilt(failure: Failure): Error {
   return Object.assign(new Error(message), { name }, coded);
 }
 
+/** What a run is asked with, on either side: fossil's `run` options, less the bytes. */
+export interface RunOptions {
+  host: Host;
+  job: string;
+  /** What the editor's profile answered, so the run checks the program against the same columns. */
+  profiled?: Profiled;
+  signal?: AbortSignal;
+}
+
 /** The worker's side: wait for a run, run it with `execute` over a host that asks the page. */
-export function serveRun(port: Port, execute: (program: string, options: { host: Host; job: string; signal: AbortSignal }) => Promise<RunReport>): void {
+export function serveRun(port: Port, execute: (program: string, options: RunOptions & { signal: AbortSignal }) => Promise<RunReport>): void {
   const stop = new AbortController();
   const pending = new Map<number, { resolve: (value: unknown) => void; reject: (error: unknown) => void }>();
   let next = 0;
@@ -107,7 +116,8 @@ export function serveRun(port: Port, execute: (program: string, options: { host:
       if (message.kind === "answer") waiting?.resolve(message.value);
       else waiting?.reject(rebuilt(message));
     } else if (message.kind === "run") {
-      execute(message.program, { host, job: message.job, signal: stop.signal }).then(
+      const { program, job, profiled } = message;
+      execute(program, { host, job, ...(profiled === undefined ? {} : { profiled }), signal: stop.signal }).then(
         (report) => port.postMessage({ kind: "done", report } satisfies ToPage),
         (error: unknown) => port.postMessage((stop.signal.aborted ? { kind: "aborted" } : { kind: "failed", ...failureOf(error) }) satisfies ToPage),
       );
@@ -117,10 +127,10 @@ export function serveRun(port: Port, execute: (program: string, options: { host:
 }
 
 /**
- * The page's side: `run(program, { host, job, signal })` as fossil's executor answers it, with the run
+ * The page's side: `run(program, { host, job, profiled, signal })` as fossil's executor answers it, with the run
  * on the far side of `port`. Rejects with the run's `FossilError`, rebuilt, or with `signal`'s reason.
  */
-export function runOver(port: Port, program: string, { host, job, signal }: { host: Host; job: string; signal?: AbortSignal }): Promise<RunReport> {
+export function runOver(port: Port, program: string, { host, job, profiled, signal }: RunOptions): Promise<RunReport> {
   return new Promise((resolve, reject) => {
     const calls = new AbortController();
     port.addEventListener("message", (event: MessageEvent<ToPage>) => {
@@ -141,15 +151,15 @@ export function runOver(port: Port, program: string, { host, job, signal }: { ho
     });
     port.start?.();
     signal?.addEventListener("abort", () => port.postMessage({ kind: "abort" } satisfies ToWorker), { once: true });
-    port.postMessage({ kind: "run", program, job } satisfies ToWorker);
+    port.postMessage({ kind: "run", program, job, ...(profiled === undefined ? {} : { profiled }) } satisfies ToWorker);
   });
 }
 
 /**
- * fossil's `run(program, { host, job, signal })`, in a worker of its own that ends with the run. A
+ * fossil's `run(program, { host, job, profiled, signal })`, in a worker of its own that ends with the run. A
  * worker that cannot start — its module did not load — rejects with what the page was told.
  */
-export function runInWorker(program: string, options: { host: Host; job: string; signal?: AbortSignal }): Promise<RunReport> {
+export function runInWorker(program: string, options: RunOptions): Promise<RunReport> {
   const worker = new Worker(new URL("./run.worker.ts", import.meta.url), { type: "module" });
   const broken = new Promise<never>((_, reject) =>
     worker.addEventListener("error", (event) => reject(new Error(`The run's worker did not start: ${event.message}`)), { once: true }),

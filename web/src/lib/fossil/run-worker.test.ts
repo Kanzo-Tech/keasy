@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { FossilError, isFossilError, type Host, type RunReport } from "@fossil-lang/types";
+import { FossilError, isFossilError, type Host, type Profiled, type RunReport } from "@fossil-lang/types";
 import { describe, expect, it, vi } from "vitest";
 
 import { ApiError } from "@keasy/api";
@@ -30,6 +30,19 @@ describe("a run in a worker", () => {
     const real = host();
     await expect(runOver(page, "program", { host: real, job: "j" })).resolves.toEqual(REPORT);
     expect(real.credentials).toHaveBeenCalledWith({ job: "j" }, "write", expect.objectContaining({ signal: expect.any(AbortSignal) }));
+    page.close();
+  });
+
+  it("hands the run what the profile answered", async () => {
+    const { page, worker } = channel();
+    const profiled = { descriptors: [], undescribed: [] } as unknown as Profiled;
+    let seen: Profiled | undefined;
+    serveRun(worker, async (_program, options) => {
+      seen = options.profiled;
+      return REPORT;
+    });
+    await runOver(page, "program", { host: host(), job: "j", profiled });
+    expect(seen).toEqual(profiled);
     page.close();
   });
 

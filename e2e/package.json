@@ -11,6 +11,9 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit"
   },
+  "dependencies": {
+    "@keasy/api": "workspace:*"
+  },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
     "@kanzo-tech/testing": "^0.45.0",

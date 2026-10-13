@@ -173,7 +173,9 @@ test("an answer added to the dashboard is saved as a tile of its relation", asyn
   await answers.addToDashboard();
   // Written at once, not after the editor's pause: an addition is a decision, not typing.
   await expect
-    .poll(async () => JSON.stringify((await api(page, "GET", `/v1/graphs/${corpusGraph}/dashboard`)).body), { timeout: 10_000 })
+    .poll(async () => JSON.stringify((await api(page).GET("/v1/graphs/{id}/dashboard", { params: { path: { id: corpusGraph } } })).data), {
+      timeout: 10_000,
+    })
     .toContain(title);
 });
 

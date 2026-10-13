@@ -1,44 +1,55 @@
+import { ApiError, createApiClient } from "@keasy/api";
 import { expect, type Page } from "@playwright/test";
 
-export interface Answer {
-  status: number;
-  body: unknown;
+/** Where the suite reaches keasy: the stack on :3000, the only origin Keycloak admits. */
+export const BASE_URL = process.env.KEASY_URL ?? "http://acme.localhost:3000";
+
+/**
+ * keasy's API as the page's session calls it: `@keasy/api`'s typed client over the page's request
+ * context, which carries the context's cookies through the BFF as the app's own requests do. Every
+ * path is a spec path and every body typed; a refusal throws `ApiError` (see {@link expectRefusal}).
+ */
+export function api(page: Page) {
+  return createApiClient({
+    baseUrl: `${BASE_URL}/api`,
+    fetch: async (input, init) => {
+      const request = input instanceof Request ? input : new Request(input, init);
+      const answer = await page.request.fetch(request.url, {
+        method: request.method,
+        headers: Object.fromEntries(request.headers),
+        data: request.body ? Buffer.from(await request.arrayBuffer()) : undefined,
+        failOnStatusCode: false,
+      });
+      const empty = answer.status() === 204 || answer.status() === 304;
+      return new Response(empty ? null : new Uint8Array(await answer.body()), { status: answer.status(), headers: answer.headers() });
+    },
+  });
+}
+
+/** For the scenarios with no screen: the call is refused, with this status and `code`. */
+export async function expectRefusal(call: Promise<unknown>, status: number, code: string) {
+  const refused = await call.then(
+    () => undefined,
+    (error: unknown) => {
+      if (error instanceof ApiError) return { status: error.status, code: error.code };
+      throw error;
+    },
+  );
+  expect(refused).toEqual({ status, code });
 }
 
 /**
- * A call to keasy's API from inside the page, so it carries the session cookie and the BFF's
- * same-origin check sees what the app's own requests look like. For arranging a scenario, and for
- * the few scenarios whose failure has no screen of its own (23, 26).
+ * A request the typed client cannot make, because it is wrong on purpose (scenario 23): its status
+ * and the `code` of the ErrorBody it answers.
  */
-export async function api(page: Page, method: string, path: string, body?: unknown, raw?: string): Promise<Answer> {
-  if (!page.url().startsWith("http")) await page.goto("/settings/preferences");
-  return page.evaluate(
-    async ({ method, path, body, raw }) => {
-      const init: RequestInit = { method, headers: {} };
-      if (raw !== undefined) {
-        init.body = raw;
-        init.headers = { "content-type": "application/json" };
-      } else if (body !== undefined) {
-        init.body = JSON.stringify(body);
-        init.headers = { "content-type": "application/json" };
-      }
-      const response = await fetch(`/api${path}`, init);
-      const text = await response.text();
-      let parsed: unknown = text;
-      try {
-        parsed = JSON.parse(text);
-      } catch {
-        // Not JSON: the text is the answer.
-      }
-      return { status: response.status, body: parsed };
-    },
-    { method, path, body, raw },
-  );
-}
-
-/** For the scenarios with no screen: the refusal's status and its `code`, the ErrorBody's. */
-export function expectRefusal(answer: Answer, status: number, code: string) {
-  expect({ status: answer.status, code: (answer.body as { code?: string } | null)?.code }).toEqual({ status, code });
+export async function raw(page: Page, method: string, path: string, body?: string) {
+  const answer = await page.request.fetch(`${BASE_URL}/api${path}`, {
+    method,
+    headers: body === undefined ? {} : { "content-type": "application/json" },
+    data: body,
+    failOnStatusCode: false,
+  });
+  return { status: answer.status(), code: ((await answer.json().catch(() => null)) as { code?: string } | null)?.code };
 }
 
 export const SINK = "Workspace output";
@@ -83,14 +94,10 @@ export async function createGraph(
 ) {
   // A graph to run writes to a folder no other graph in the sink writes to.
   const folder = `e2e-${crypto.randomUUID()}`;
-  const created = await api(page, "POST", "/v1/graphs", { script, name, sink_connection: SINK, folder });
-  expect(created.status, JSON.stringify(created.body)).toBeLessThan(300);
-  const { id } = created.body as { id: string };
+  const http = api(page);
+  const { id } = (await http.POST("/v1/graphs", { body: { script, name, sink_connection: SINK, folder } })).data!;
   // A graph begins as a draft; submitting it makes it runnable.
-  if (!draft) {
-    const submitted = await api(page, "POST", `/v1/graphs/${id}/submit`, {});
-    expect(submitted.status, JSON.stringify(submitted.body)).toBeLessThan(300);
-  }
+  if (!draft) await http.POST("/v1/graphs/{id}/submit", { params: { path: { id } }, body: {} });
   return id;
 }
 

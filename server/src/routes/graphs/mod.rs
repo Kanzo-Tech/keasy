@@ -29,6 +29,10 @@ pub struct CreateGraphRequest {
     /// out; it needs one, no other graph's, to be submitted.
     #[schema(value_type = Option<GraphFolder>)]
     pub folder: Option<String>,
+    /// The assistant's conversation the graph is built from: its caller's own.
+    /// From then on it is the graph's record, and is not saved over.
+    #[serde(default)]
+    pub conversation: Option<String>,
 }
 
 /// Edits to a draft: as it is written (PATCH), and as it is submitted.
@@ -126,7 +130,8 @@ pub async fn list_graphs(
     request_body = CreateGraphRequest,
     responses(
         (status = 201, description = "The draft, created; `POST /v1/graphs/{id}/submit` makes it a graph to run", body = Graph),
-        (status = 400, description = "The destination is not a sink, or the name or folder is misspelled (`data.field`)", body = ErrorBody),
+        (status = 400, description = "The destination is not a sink, the name or folder is misspelled, or there is no such conversation (`data.field`)", body = ErrorBody),
+        (status = 403, description = "The conversation is someone else's (`rbac/forbidden`)", body = ErrorBody),
     )
 )]
 /// A graph begins as a draft, always: what it runs, where it lands. Submitting
@@ -147,13 +152,22 @@ pub async fn create_graph(
         ));
     }
 
-    let graph = Graph::new(
-        name(payload.name)?,
-        payload.sink_connection,
-        folder(payload.folder.as_deref())?,
-        payload.script,
-        caller.actor(),
-    );
+    if let Some(id) = &payload.conversation {
+        let conversation = crate::conversations::get(&*state.db.read().await, id)?
+            .ok_or_else(|| Refusal::invalid_field("conversation", "No such conversation"))?;
+        caller.ensure(Action::Manage, &conversation)?;
+    }
+
+    let graph = Graph {
+        conversation: payload.conversation,
+        ..Graph::new(
+            name(payload.name)?,
+            payload.sink_connection,
+            folder(payload.folder.as_deref())?,
+            payload.script,
+            caller.actor(),
+        )
+    };
     persistence::insert(&*state.db.write().await, &graph)?;
 
     let graph = present(&*state.db.read().await, &caller, graph)?;

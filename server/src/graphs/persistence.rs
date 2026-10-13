@@ -11,7 +11,8 @@ use crate::error::{ErrorBody, ErrorCode};
 
 const COLUMNS: &str = "id, name, status, created_at, started_at, completed_at, heartbeat_at, \
                        runner, runner_name, cancel_requested, problem, owner, owner_name, \
-                       created_by, created_by_name, sink_connection, folder, script, report";
+                       created_by, created_by_name, sink_connection, folder, script, report, \
+                       conversation";
 
 /// [`COLUMNS`], and each row's grants.
 fn select() -> String {
@@ -41,7 +42,7 @@ pub fn insert(conn: &Connection, graph: &Graph) -> DbResult<()> {
         &format!(
             "INSERT INTO graphs ({COLUMNS})
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17,
-                     ?18, ?19)"
+                     ?18, ?19, ?20)"
         ),
         params![
             graph.id,
@@ -71,6 +72,7 @@ pub fn insert(conn: &Connection, graph: &Graph) -> DbResult<()> {
                 .as_ref()
                 .map(serde_json::to_string)
                 .transpose()?,
+            graph.conversation,
         ],
     )
     .map_err(|e| refused(graph, e))?;
@@ -222,6 +224,7 @@ fn row_to_graph(row: &rusqlite::Row<'_>) -> rusqlite::Result<Graph> {
         output: None,
         script: row.get("script")?,
         report: json_column_opt(row, "report")?,
+        conversation: row.get("conversation")?,
         can: Default::default(),
         can_stop: false,
     })

@@ -85,6 +85,7 @@ operates it, only an admin manages it. Views answer `owner: { id, name }`.
 | Sink / workspace storage | reader | through its graphs only | admin (Test) | admin | — (the workspace's) | admin |
 | Graph | reader | reader (vend a completed output) | editor (run, run again); stop: runner, owner, manager, admin | owner, manager, admin | owner, admin | editor |
 | Rules, dashboard | reader | — | — | the graph's manage | — | — |
+| The assistant's conversation | reader | — | — | owner, admin (save it; once a graph is built from it, nobody) | owner, admin | editor |
 | Ask | reader | — | — | — | — | — |
 
 A grant raises an editor and never a reader: who holds no editor role manages nothing, whatever was

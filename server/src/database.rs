@@ -311,6 +311,25 @@ CREATE TABLE connections (
 -- Exactly one write sink per workspace.
 CREATE UNIQUE INDEX connections_one_sink ON connections(direction) WHERE direction = 'sink';
 
+-- The assistant's conversation a graph was built from: its messages as the
+-- web stores them — structure only, never a row of anyone's data — opaque to
+-- keasy, read and replaced whole.
+CREATE TABLE conversations (
+    id              TEXT PRIMARY KEY,
+    messages        TEXT NOT NULL CHECK (json_type(messages) = 'array'),
+    -- Who owns it: a `sub`, or 'workspace' once its owner has left.
+    owner           TEXT NOT NULL,
+    owner_name      TEXT NOT NULL,
+    created_by      TEXT NOT NULL,
+    created_by_name TEXT NOT NULL,
+    created_at      TEXT NOT NULL,
+    updated_by      TEXT,
+    updated_by_name TEXT,
+    updated_at      TEXT
+);
+
+-- `conversation` is last, and spelled as `ALTER TABLE … ADD COLUMN` writes it:
+-- the upgrade adds it, and the schema it leaves must read as this one.
 CREATE TABLE graphs (
     id              TEXT PRIMARY KEY,
     name            TEXT,
@@ -338,7 +357,7 @@ CREATE TABLE graphs (
     script          TEXT,
     -- fossil's run report, opaque. What the corpus holds, the corpus says.
     report          TEXT CHECK (report IS NULL OR json_valid(report))
-);
+, conversation TEXT REFERENCES conversations (id) ON DELETE SET NULL);
 -- A folder holds one graph's output: drafts may share one, nothing else does.
 CREATE UNIQUE INDEX graphs_one_folder ON graphs(sink_connection, folder) WHERE status <> 'draft';
 
@@ -400,15 +419,13 @@ CREATE INDEX grants_of_graph ON grants (graph) WHERE graph IS NOT NULL;
 CREATE INDEX grants_to ON grants (principal_kind, principal);
 ";
 
-/// The statements this schema adds to the one before it, by how each begins.
-const ADDED: [&str; 6] = [
-    "CREATE TABLE grants (",
-    "CREATE UNIQUE INDEX grants_one_tuple",
-    "CREATE INDEX grants_of_secret",
-    "CREATE INDEX grants_of_connection",
-    "CREATE INDEX grants_of_graph",
-    "CREATE INDEX grants_to",
-];
+/// The conversations table, which this schema adds to the one before it.
+const CONVERSATIONS: &str = "CREATE TABLE conversations (";
+
+/// The column this schema adds to the graphs, as `ALTER TABLE … ADD COLUMN`
+/// appends it to the table's SQL.
+const CONVERSATION_COLUMN: &str =
+    ", conversation TEXT REFERENCES conversations (id) ON DELETE SET NULL";
 
 /// The statement of [`SCHEMA`] that begins `start`, through its `;`.
 fn statement(start: &str) -> &'static str {
@@ -418,19 +435,23 @@ fn statement(start: &str) -> &'static str {
 }
 
 /// The schema before this one, as a fresh database of it would hold it: this
-/// one without the grants.
+/// one without the conversations, and graphs without theirs.
 fn previous_schema() -> String {
-    ADDED.iter().fold(SCHEMA.to_string(), |schema, start| {
-        schema.replace(statement(start), "")
-    })
+    assert!(SCHEMA.contains(CONVERSATION_COLUMN));
+    SCHEMA
+        .replace(statement(CONVERSATIONS), "")
+        .replace(CONVERSATION_COLUMN, "")
 }
 
-/// From the previous schema to this one: the grants, an empty table and its
-/// indexes. Nothing else moves, so every row is kept as it is — owned, as
-/// phase A left it, by who created it or by the workspace.
+/// From the previous schema to this one: the conversations, an empty table,
+/// and the graphs' reference to theirs, null for every graph there was. Nothing
+/// else moves, so every row is kept as it is.
 fn upgrade() -> String {
-    let added: Vec<&str> = ADDED.iter().map(|start| statement(start)).collect();
-    format!("BEGIN;\n{}\nCOMMIT;", added.join("\n"))
+    format!(
+        "BEGIN;\n{}\nALTER TABLE graphs ADD COLUMN {};\nCOMMIT;",
+        statement(CONVERSATIONS),
+        CONVERSATION_COLUMN.trim_start_matches(", ")
+    )
 }
 
 /// Every table and index a fresh database of `schema` holds.
@@ -471,7 +492,7 @@ pub fn apply_schema(conn: &rusqlite::Connection) -> Result<(), String> {
         if violations > 0 {
             return Err(format!("the upgrade left {violations} broken references"));
         }
-        tracing::info!("schema upgraded: objects can be shared");
+        tracing::info!("schema upgraded: graphs keep their conversation");
     }
     let existing = objects(conn).map_err(|e| format!("read schema: {e}"))?;
     if existing != expected {
@@ -508,17 +529,17 @@ mod tests {
         let tables: i64 = conn
             .query_row(
                 "SELECT count(*) FROM sqlite_master WHERE type='table' AND name IN \
-                 ('credentials','connections','graphs','dashboards','rules')",
+                 ('credentials','connections','graphs','dashboards','rules','conversations')",
                 [],
                 |r| r.get(0),
             )
             .unwrap();
-        assert_eq!(tables, 5);
+        assert_eq!(tables, 6);
     }
 
     /// A database of the previous schema is brought forward in place: every
-    /// row is kept as it was, and the objects can be shared — a grant goes
-    /// with its object's rename and dies with it.
+    /// row is kept as it was, every graph there was has no conversation, and a
+    /// graph made after refers to one.
     #[test]
     fn a_database_of_the_previous_schema_is_upgraded_with_its_rows() {
         let conn = rusqlite::Connection::open_in_memory().unwrap();
@@ -527,12 +548,14 @@ mod tests {
         conn.execute_batch(
             r#"
             INSERT INTO credentials (name, spec, owner, owner_name, created_by, created_by_name, created_at)
-                VALUES ('seed', x'00', 'workspace', 'Workspace', 'bootstrap', 'Bootstrap', 't'),
-                       ('mine', x'00', 'u-1', 'Ana', 'u-1', 'Ana', 't');
+                VALUES ('seed', x'00', 'workspace', 'Workspace', 'bootstrap', 'Bootstrap', 't');
             INSERT INTO connections (name, credential, target, owner, owner_name, created_by, created_by_name, created_at)
                 VALUES ('sink', 'seed', '{"direction":"sink"}', 'workspace', 'Workspace', 'bootstrap', 'Bootstrap', 't');
             INSERT INTO graphs (id, status, created_at, owner, owner_name, created_by, created_by_name, sink_connection, folder)
                 VALUES ('g', 'completed', 't', 'u-2', 'Bruno', 'u-2', 'Bruno', 'sink', 'people');
+            INSERT INTO grants (graph, principal_kind, principal, principal_name, relation,
+                                created_by, created_by_name, created_at)
+                VALUES ('g', 'user', 'u-1', 'Ana', 'manager', 'u-2', 'Bruno', 't');
             "#,
         )
         .unwrap();
@@ -541,28 +564,48 @@ mod tests {
         apply_schema(&conn).unwrap();
 
         let count = |sql: &str| -> i64 { conn.query_row(sql, [], |r| r.get(0)).unwrap() };
-        assert_eq!(count("SELECT count(*) FROM credentials"), 2);
-        assert_eq!(count("SELECT count(*) FROM graphs WHERE owner = 'u-2'"), 1);
-        conn.execute_batch(
-            "INSERT INTO grants (secret, principal_kind, principal, principal_name, relation,
-                                 created_by, created_by_name, created_at)
-                 VALUES ('mine', 'group', 'g-1', 'Research', 'user', 'u-1', 'Ana', 't');
-             INSERT INTO grants (graph, principal_kind, principal, principal_name, relation,
-                                 created_by, created_by_name, created_at)
-                 VALUES ('g', 'user', 'u-1', 'Ana', 'manager', 'u-2', 'Bruno', 't');
-             UPDATE credentials SET name = 'ours' WHERE name = 'mine';
-             DELETE FROM graphs WHERE id = 'g';",
-        )
-        .unwrap();
         assert_eq!(
-            count("SELECT count(*) FROM grants WHERE secret = 'ours'"),
+            count("SELECT count(*) FROM graphs WHERE id = 'g' AND conversation IS NULL"),
             1
         );
-        assert_eq!(
-            count("SELECT count(*) FROM grants"),
-            1,
-            "gone with its graph"
+        assert_eq!(count("SELECT count(*) FROM grants"), 1);
+        conn.execute_batch(
+            "INSERT INTO conversations (id, messages, owner, owner_name, created_by, created_by_name, created_at)
+                 VALUES ('c', '[]', 'u-1', 'Ana', 'u-1', 'Ana', 't');
+             INSERT INTO graphs (id, status, created_at, owner, owner_name, created_by, created_by_name,
+                                 sink_connection, conversation)
+                 VALUES ('h', 'draft', 't', 'u-1', 'Ana', 'u-1', 'Ana', 'sink', 'c');",
+        )
+        .unwrap();
+        assert!(
+            conn.execute_batch("UPDATE graphs SET conversation = 'no-such' WHERE id = 'g'")
+                .is_err(),
+            "a graph refers to a conversation there is"
         );
+        conn.execute_batch("DELETE FROM conversations WHERE id = 'c'")
+            .unwrap();
+        assert_eq!(
+            count("SELECT count(*) FROM graphs WHERE id = 'h' AND conversation IS NULL"),
+            1,
+            "a graph outlives its conversation"
+        );
+    }
+
+    /// Messages are a JSON array, or nothing is stored.
+    #[test]
+    fn a_conversation_holds_an_array_of_messages() {
+        let conn = rusqlite::Connection::open_in_memory().unwrap();
+        apply_schema(&conn).unwrap();
+        let insert = |messages: &str| {
+            conn.execute(
+                "INSERT INTO conversations (id, messages, owner, owner_name, created_by, created_by_name, created_at)
+                     VALUES (?1, ?2, 'u-1', 'Ana', 'u-1', 'Ana', 't')",
+                [messages, messages],
+            )
+        };
+        assert!(insert("[]").is_ok());
+        assert!(insert("{}").is_err());
+        assert!(insert("not json").is_err());
     }
 
     /// One tuple, once; one object a row; and a user only of a secret.

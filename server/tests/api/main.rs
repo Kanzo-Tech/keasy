@@ -1,6 +1,7 @@
 mod authentication;
 mod authorization;
 mod connections;
+mod conversations;
 mod failures;
 mod graphs;
 mod health_check;

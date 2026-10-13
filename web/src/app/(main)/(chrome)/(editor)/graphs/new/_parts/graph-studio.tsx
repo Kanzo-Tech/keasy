@@ -33,7 +33,6 @@ import { type FieldProblem, fieldProblem, toastError } from "@/lib/errors";
 import type { Diagnostic } from "@fossil-lang/types";
 import { inputs } from "@fossil-lang/wasm";
 import * as checker from "@/lib/fossil/checker";
-import { AssistantWizard } from "./assistant-wizard";
 import { ModePicker } from "./mode-picker";
 import { folderProblem, folderSlug } from "./folder";
 import { FindingsBadge } from "./findings-badge";
@@ -303,16 +302,10 @@ function GraphStudio({ draft }: { draft?: Schemas["Graph"] }) {
   // ── Before the studio opens ─────────────────────────────────────────────
 
   if (store.creationMode === null) {
-    return <ModePicker onBack={() => router.push("/graphs")} onSelect={store.setCreationMode} />;
-  }
-
-  if (store.creationMode === "assistant") {
     return (
-      <AssistantWizard
-        connections={connections}
-        onBack={() => store.setCreationMode(null)}
-        onComplete={store.completeAssistant}
-        formats={formats}
+      <ModePicker
+        onBack={() => router.push("/graphs")}
+        onSelect={(mode) => (mode === "assistant" ? router.push("/graphs/new/assistant") : store.setCreationMode(mode))}
       />
     );
   }

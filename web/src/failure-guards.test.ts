@@ -80,8 +80,6 @@ describe("the failure guards", () => {
    */
   it("reads data with useSuspenseQuery, but for the named exceptions", () => {
     const EXCEPTIONS = new Set([
-      // One listing per selected connection; the loaded ones are shown beside the one that failed.
-      "web/src/app/(main)/(chrome)/(editor)/graphs/new/_parts/assistant-wizard.tsx",
       // One listing per opened folder and one description per picked file; each failure is shown in its place, beside the rest.
       "web/src/app/(main)/(chrome)/(editor)/graphs/new/_parts/assistant/use-assistant.ts",
       // Follows every pause in typing; the editor shows the failure beside the program.

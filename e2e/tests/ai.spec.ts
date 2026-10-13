@@ -118,9 +118,11 @@ test("16 an answer the spec does not admit is refused in the reply, and the mode
   expect(asked[1]).toMatch(/It does not hold:[\s\S]*Person\.shoeSize is not a field of Person/);
 });
 
-test("the assistant on a browser without WebGPU fails its step as ai/unavailable, not as no suggestions", async ({ page }) => {
+test("the assistant on a browser without WebGPU says so as ai/unavailable, not as no suggestions", async ({ page }) => {
   await withoutWebGPU(page);
-  await askForRequirements(page);
+  await page.goto("/graphs/new");
+  await page.getByText("Assistant", { exact: true }).click();
+  await expect(page).toHaveURL(/\/graphs\/new\/assistant$/);
   await expectProblem(page, "ai/unavailable", { within: 20_000 });
 });
 

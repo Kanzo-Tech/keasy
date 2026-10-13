@@ -13,9 +13,9 @@ in keasy's own configuration and runtime.
 
 ## The problem
 
-The new-graph wizard (`graphs/new/_parts/assistant-wizard.tsx`, 528 lines) asks one call,
-`writeProgram`, for a whole program, with `FOSSIL_PROMPT`. The model does not see the `.shex`; it
-guesses keys and edges; the studio's checker reports after the fact, and nothing repairs. "Done"
+One call writing a whole program from a prose description of Fossil does not work with a small
+model: it does not see the shapes, it guesses keys and edges, the studio's checker reports after the
+fact, and nothing repairs. "Done"
 means "it compiles". And every call went through the BFF's `/api/ai` forward to the gateway, so the
 question left the browser and the AI was down whenever the gateway was — until 2026-10-13, when the
 model moved into the page (below).
@@ -89,7 +89,7 @@ preview.
 ## What left keasy's configuration
 
 **Done 2026-10-13**, on kanzo-ui 0.44's `localModel`: one model, `MODEL` in `web/src/lib/ai.ts`, in a
-worker of its own, for Ask, its offers and the wizard alike.
+worker of its own, for Ask, its offers and the assistant alike.
 
 | Before | Now |
 | --- | --- |
@@ -113,7 +113,7 @@ the installed WebLLM. The CSP needed nothing: the shards and the worker are `'se
 *What would reverse it:* a deployment that cannot serve 2.3 GB from its own origin, where a CDN of its
 own is the answer — still not WebLLM's prebuilt, whose files change under one URL.
 
-**The download starts with intent** — when a graph opens, or the wizard or the assistant — not when
+**The download starts with intent** — when a graph opens, or the assistant — not when
 Ask's panel does: `usePreloadModel` calls `loadLocalModel` once per page, in the background, and the
 page works without the model meanwhile. Ask and the assistant show *Preparing the model* with its
 progress until it is ready (`ModelStatus`); a question asked meanwhile waits for it. WebLLM keeps it in
@@ -179,7 +179,7 @@ the dashboard's tiles do). Five failed on the call itself: the model reasoned it
 breakdown as one figure. One asked what the spec cannot say (*more than one prize*, a filter on a
 count). Those are what the Task addresses: a small spec decoded against its schema, and oracles that
 send back a spec that drops what the question asked for. Phase 1 (Ask as a Task) touches
-`discover/_parts/ask-panel.tsx`; phase 3 replaces the wizard with the guided chat. The gateway, the
-BFF's `/api/ai` forward and their configuration are already gone (2026-10-13): the wizard asks the
-page's model until it is replaced. The phases are on
+`discover/_parts/ask-panel.tsx`; phase 3 is the guided chat, which replaced the wizard on
+2026-10-13 — "Assistant" in the new-graph picker opens it. The gateway, the BFF's `/api/ai` forward
+and their configuration went the same day. The phases are on
 [Tasks](https://kanzo-tech.github.io/ui/docs/design/tasks#phases).

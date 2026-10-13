@@ -25,7 +25,6 @@
     "@fossil-lang/corpus": "^0.3.0-alpha.29",
     "@fossil-lang/executor": "^0.3.0-alpha.29",
     "@fossil-lang/introspect": "^0.3.0-alpha.29",
-    "@fossil-lang/prompt": "^0.3.0-alpha.29",
     "@fossil-lang/storage": "0.3.0-alpha.29",
     "@fossil-lang/types": "^0.3.0-alpha.29",
     "@fossil-lang/wasm": "^0.3.0-alpha.29",

@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useMemo } from "react";
+import { Suspense, useCallback, useMemo } from "react";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Sparkles } from "lucide-react";
 import { useClauses, useMosaic, type JoinGraph } from "@kanzo-tech/ui/analytics";
@@ -23,6 +23,7 @@ import { useModel, useModelLoad } from "@/lib/ai";
 import { settled } from "@/lib/api/settled";
 import { coded } from "@/lib/errors";
 import { corpusKey, ONCE, useCorpus, useJoinGraph } from "@/lib/fossil/corpus";
+import { useHandedQuestion } from "./ask-handoff";
 import { useDashboardStore } from "./dashboard-store";
 
 /**
@@ -63,11 +64,11 @@ function AskEmpty() {
  * an answer needs is computed from its spec), its fields and their common values.
  */
 function useRelations(graph: JoinGraph): AnswerRelation[] {
-  const { graphId } = useCorpus();
+  const { name: corpus } = useCorpus();
   const { coordinator } = useMosaic();
   return settled(
     useSuspenseQuery({
-      queryKey: [...corpusKey(graphId), "answer-relations"],
+      queryKey: [...corpusKey(corpus), "answer-relations"],
       queryFn: ({ signal }) => readAnswerRelations(coordinator, graph, answerRelationsOf(graph, { hops: 0 }), { signal }),
       ...ONCE,
     }),
@@ -80,7 +81,7 @@ function useRelations(graph: JoinGraph): AnswerRelation[] {
  * failure is drawn in their place, with a retry, and the chat works the same.
  */
 function useStarters(graph: JoinGraph, types: readonly AnswerRelation[]) {
-  const { graphId } = useCorpus();
+  const { name: corpus } = useCorpus();
   const { selection } = useMosaic();
   const model = useModel();
   // Asked once the model is ready: offers are not worth waiting on its download for.
@@ -88,7 +89,7 @@ function useStarters(graph: JoinGraph, types: readonly AnswerRelation[]) {
   // Re-rendered on every clause, so the key below is the filter as it is now.
   useClauses(selection);
   const starters = useQuery({
-    queryKey: [...corpusKey(graphId), "starters", String(selection.predicate(null) ?? "")],
+    queryKey: [...corpusKey(corpus), "starters", String(selection.predicate(null) ?? "")],
     queryFn: ({ signal }) => askOffers({ model, graph, types, selection, signal }),
     staleTime: Infinity,
     retry: false,
@@ -139,6 +140,9 @@ function AskChat() {
   const load = useModelLoad();
   const model = useModel();
   const chat = useAskChat({ model, engine, graph, types, selection });
+  // The question the assistant handed over (`?q=`), asked once the model is ready.
+  const { sendMessage } = chat;
+  useHandedQuestion(useCallback((text: string) => void sendMessage({ text }), [sendMessage]), load.state === "ready");
   const over = useMemo(() => ({ graph, types }), [graph, types]);
   const starters = useStarters(graph, types);
   const adding = useAdding();

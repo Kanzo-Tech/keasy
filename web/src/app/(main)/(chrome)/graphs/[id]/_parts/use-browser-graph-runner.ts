@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import type { Profiled } from "@fossil-lang/types";
 import { ApiError, http, invalidate, type Schemas } from "@/lib/api/client";
 import { bounds } from "@/lib/api/spec";
 import { host } from "@/lib/fossil/host";
@@ -105,10 +106,15 @@ export function lease(
   };
 }
 
+/** How a run this tab ran ended, as it reported it. */
+export type RunOutcome = { status: "completed" } | { status: "failed"; problem: unknown } | { status: "cancelled" };
+
 /** A run this tab is running: what the page re-attaches to when it is opened again. */
 export interface LiveRun {
   /** End it here, now, and report it `cancelled`. */
   stop(): void;
+  /** How it ended, once it has. */
+  ended: Promise<RunOutcome>;
 }
 
 // The runs this tab runs, by graph id. Module-level, so a run outlives the page that started it:
@@ -140,12 +146,16 @@ const STOPPED = "Stopped";
  * Run `graph` here — the server has made this caller its runner (`POST /v1/graphs/{id}/run`). The browser
  * is the worker: it runs the program with fossil's executor (`run`, in a Web Worker) — sources read and the corpus
  * written through credentials keasy vends to the runner alone — holding the lease while it does, and
- * reports how it ended. Only ever called from an explicit Run; opening a page never runs anything.
+ * reports how it ended. Only ever called from an explicit Run — the graph page's, or the assistant's
+ * build; opening a page never runs anything. Answers how the run ended — the one already under way
+ * here, when there is one — with what the profile answered handed to the run (`profiled`).
  */
-export function startRun(graph: Schemas["Graph"]): void {
+export function startRun(graph: Schemas["Graph"], { profiled }: { profiled?: Profiled } = {}): Promise<RunOutcome> {
   const graphId = graph.id;
   const program = graph.script;
-  if (live.has(graphId) || !program) return;
+  const running = live.get(graphId);
+  if (running) return running.ended;
+  if (!program) return Promise.resolve({ status: "failed", problem: new Error("The graph has no program to run") });
 
   const run = new AbortController();
   const stop = () => run.abort(new DOMException(STOPPED, "AbortError"));
@@ -155,24 +165,24 @@ export function startRun(graph: Schemas["Graph"]): void {
   // A closed tab stops the run; it cannot report, so the server's lease sweep ends the graph.
   const closing = () => run.abort(new DOMException("The tab closed", "AbortError"));
   window.addEventListener("pagehide", closing);
-  live.set(graphId, { stop });
-  changed();
   held.hold();
 
-  void (async () => {
+  const ended = (async (): Promise<RunOutcome> => {
     try {
       // `run` reads every document and source the program names through the host, writes the
       // corpus under the graph, and answers its report or throws its `FossilError` — in a worker of
       // its own, so the page paints and its Stop is pressable while it does (`run-worker.ts`). The
       // report crosses untouched — `GraphStatusReport.report` is opaque JSON on the server — and is
       // asked again for as long as the lease is ours.
-      const report = await runInWorker(program, { host, job: graphId, signal: run.signal });
+      const report = await runInWorker(program, { host, job: graphId, profiled, signal: run.signal });
       ran = true;
       await held.report(() => reportStatus(graphId, { status: "completed", report }));
+      return { status: "completed" };
     } catch (err) {
       if (ran) {
         // The output was written; only its report failed, and reporting a failure would be a lie.
         toastError(err, "The run finished, but keasy could not record it");
+        return { status: "completed" };
       } else if (run.signal.aborted) {
         // Stopped — here, or asked from elsewhere and heard in a beat: say so. A closed tab cannot,
         // and the sweep ends the graph instead.
@@ -181,6 +191,7 @@ export function startRun(graph: Schemas["Graph"]): void {
             .report(() => reportStatus(graphId, { status: "cancelled" }))
             .catch((patchErr: unknown) => toastError(patchErr, "The run stopped, and could not be marked so"));
         }
+        return { status: "cancelled" };
       } else {
         // The run failed — its `FossilError`, whose `problem` is the wire form — or never started:
         // the executor did not load. Asked again until the lease would lapse; after that the sweep
@@ -188,6 +199,7 @@ export function startRun(graph: Schemas["Graph"]): void {
         await held
           .report(() => reportStatus(graphId, { status: "failed", problem: wireOf(err) }))
           .catch((patchErr: unknown) => toastError(patchErr, "The run failed, and could not be marked failed"));
+        return { status: "failed", problem: err };
       }
     } finally {
       held.release();
@@ -197,6 +209,9 @@ export function startRun(graph: Schemas["Graph"]): void {
       await invalidate("/v1/graphs", "/v1/graphs/{id}");
     }
   })();
+  live.set(graphId, { stop, ended });
+  changed();
+  return ended;
 }
 
 /**

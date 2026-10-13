@@ -57,6 +57,7 @@ import { GraphInfo } from "./_parts/graph-info";
 import { GraphSettings } from "./_parts/graph-settings";
 import { RulesBadge } from "./_parts/rules-badge";
 import { useDiscoverState, type PanelId, type ViewId } from "./_parts/discover-url";
+import { usePreview } from "./_parts/use-preview";
 import { Boundary } from "@/components/boundary";
 import { usePreloadModel } from "@/lib/ai";
 import { ProblemView } from "@/components/problem-view";
@@ -103,6 +104,9 @@ export default function DiscoverPage({ params }: { params: Promise<{ id: string 
   const { id } = use(params);
   // The model Ask runs on starts downloading as the graph opens, not as its panel does.
   usePreloadModel();
+  // While this tab builds the graph, its preview over a sample is what opens; the whole graph
+  // replaces it when it lands.
+  const preview = usePreview(id);
   // Opening the corpus is the one door: a missing graph (404), one that has not completed (409) and an
   // unreadable output all fail it, and the boundary shows that failure in place of the workspace.
   return (
@@ -118,7 +122,7 @@ export default function DiscoverPage({ params }: { params: Promise<{ id: string 
         }
         frame={(failure) => <ShellMain className="p-4">{failure}</ShellMain>}
       >
-        <CorpusProvider graphId={id}>
+        <CorpusProvider graphId={id} preview={preview}>
           <Workspace />
         </CorpusProvider>
       </Boundary>
@@ -178,7 +182,7 @@ function CorpusStatus() {
 }
 
 function Workspace() {
-  const { graphId } = useCorpus();
+  const { name } = useCorpus();
   const { coordinator, selection } = useMosaic();
   const { look, sim, placement, timeline } = useGraphPrefs();
   const graph = useJoinGraph();
@@ -208,7 +212,7 @@ function Workspace() {
     <GraphRoot
       coordinator={coordinator}
       filterBy={selection}
-      from={graphId}
+      from={name}
       look={look}
       sim={sim}
       onFailure={(error) => {

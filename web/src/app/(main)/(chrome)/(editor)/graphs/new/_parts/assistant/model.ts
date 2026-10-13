@@ -11,6 +11,7 @@
  */
 
 import type { Decision } from "@kanzo-tech/ai/task";
+import type { BuildProgress } from "@/lib/fossil/build";
 
 // ── The data ────────────────────────────────────────────────────────────────
 
@@ -96,12 +97,8 @@ export interface Understanding {
 
 // ── The graph ───────────────────────────────────────────────────────────────
 
-/** Where the graph is: a preview first, over a few rows, then the whole of it. */
-export type BuildProgress =
-  | { state: "preparing"; previewRows: number }
-  | { state: "preview"; previewRows: number; graphId: string; percent: number | null }
-  | { state: "done"; graphId: string }
-  | { state: "failed"; problem: unknown };
+/** Where the graph is: a preview first, over a few rows, then the whole of it (`lib/fossil/build.ts`). */
+export type { BuildProgress } from "@/lib/fossil/build";
 
 /** Everything the conversation reads, as `use-assistant.ts` answers it. */
 export interface AssistantData {

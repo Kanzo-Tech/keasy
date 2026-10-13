@@ -86,6 +86,31 @@ the fact, in a wizard than in the guided chat — then the turns become screens 
 Tasks. And people changing most assumptions after the fact puts those decisions back in front of the
 preview.
 
+## The build, the preview and the hand-off
+
+**Built 2026-10-13, but the preview:** `useBuild(program, profiled)` (`graphs/new/_parts/use-build.ts`)
+makes the graph as the studio does — a draft, submitted, run in this tab's worker under its lease —
+and `lib/fossil/build.ts` is the machine the last turn reads, `preparing` → `preview` → `done` or
+`failed`. A build outlives the assistant's page, so Discover finds it: it opens on the preview's
+corpus, attached under `<id>~preview` beside the graph's own, and switches to the whole graph in a
+transition when it lands. The last turn's links carry the person's question as `?q=`; Ask sends it
+once the model is ready and takes it off the URL as it does, so nothing asks it twice.
+
+**The preview is a seam nothing fills yet**, for two reasons outside keasy's web: fossil's `run`
+reads every row of every source — there is no row limit to ask it for — and a running graph's output
+is its runner's to write and nobody's to read until it completes (`graph/not-completed`; a write
+credential is `PutObject` alone), so a sample run written under the graph's prefix could not be
+opened either. Until one of them gives way the build says *Building your graph…* and Discover opens
+on the whole graph. *What would reverse it:* a row limit on fossil's `run`, and either a read of the
+preview's prefix vended to the runner while it runs or the preview's corpus answered in memory.
+
+**The decisions travel in the program.** A graph holds a script, a name and a folder and nothing the
+web could keep beside them, so the decisions — each with its options, the one taken and whether it
+was assumed — are comments at the program's head (`lib/assumptions.ts`), and Discover's Info panel
+lists them with **Change**. *What would reverse it:* a field for the web on a graph, opaque as its
+`report` is. Change rebuilds as a new graph: a submitted graph's script cannot be edited
+(`graph/not-draft`).
+
 ## What left keasy's configuration
 
 **Done 2026-10-13**, on kanzo-ui 0.44's `localModel`: one model, `MODEL` in `web/src/lib/ai.ts`, in a

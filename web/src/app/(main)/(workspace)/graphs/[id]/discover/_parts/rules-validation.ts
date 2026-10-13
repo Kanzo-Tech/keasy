@@ -42,9 +42,9 @@ export interface ReadRules {
  * `ShapesError` placed by line and column.
  */
 export function useReadRules(text: string | undefined) {
-  const { graphId } = useCorpus();
+  const { name: corpus } = useCorpus();
   const read = useQuery({
-    queryKey: [...corpusKey(graphId), "rules", text],
+    queryKey: [...corpusKey(corpus), "rules", text],
     queryFn: async (): Promise<ReadRules> => {
       const { Shapes } = await rudof();
       const shapes = Shapes.parse(text!);
@@ -106,7 +106,7 @@ export type Stale = "filter" | "rules";
  * each checked against the whole corpus.
  */
 export function useRules(rules: ReadRules | undefined, text: string) {
-  const { graphId } = useCorpus();
+  const { name: corpus } = useCorpus();
   const { coordinator } = useMosaic();
   const pick = usePick(PICK);
   // Re-rendered on every clause, only so the badge can say the subset moved since the last check.
@@ -114,7 +114,7 @@ export function useRules(rules: ReadRules | undefined, text: string) {
   const vertices = useVertices();
   const key = useGraphKey();
   const predicate = pick.predicate();
-  const triples = String(new TableRefNode([graphId, "triples"]));
+  const triples = String(new TableRefNode([corpus, "triples"]));
   const subset = predicate.length
     ? String(Query.from(vertices).select({ s_type: literal("I"), s_value: column("subject") }).where(predicate))
     : undefined;
@@ -132,7 +132,7 @@ export function useRules(rules: ReadRules | undefined, text: string) {
   const prepared = async (over: string | undefined, name: string, signal: AbortSignal) => {
     const attachedTo = await engine({ signal });
     if (over === undefined) return { attachedTo, focus: undefined };
-    const focus = new TableRefNode([graphId, name]);
+    const focus = new TableRefNode([corpus, name]);
     await attachedTo.query(String(createTable(focus, over, { view: true, replace: true })), { signal });
     return { attachedTo, focus: String(focus) };
   };
@@ -247,8 +247,8 @@ export function useRules(rules: ReadRules | undefined, text: string) {
      * conforming node's neighbourhood, so a `sh:class` on a route took in every airport it reaches.
      */
     conforming: async (label: string) => {
-      const into = String(new TableRefNode([graphId, "rules_fragment"]));
-      const conforming = String(new TableRefNode([graphId, "rules_conforming"]));
+      const into = String(new TableRefNode([corpus, "rules_fragment"]));
+      const conforming = String(new TableRefNode([corpus, "rules_conforming"]));
       // Asked for by a press, and nothing stops it once asked: a signal that never aborts.
       const { signal } = new AbortController();
       const { attachedTo, focus } = await prepared(subset, "rules_focus", signal);

@@ -3,7 +3,7 @@ import { expect, type Page } from "@playwright/test";
 import type { HarnessEnvironment } from "@kanzo-tech/testing";
 
 import { api, SOURCE } from "../support/stack/api";
-import { DiscoverPage } from "../support/app";
+import { AskPanel, DiscoverPage } from "../support/app";
 import { test } from "../support/fixtures";
 import { promptsOf, useModelDouble } from "../support/model";
 import { expectProblem } from "../support/stack/problem";
@@ -142,4 +142,24 @@ test("an answer added to the dashboard is saved as a tile of its relation", asyn
   await expect
     .poll(async () => JSON.stringify((await api(page, "GET", `/v1/graphs/${corpusGraph}/dashboard`)).body), { timeout: 10_000 })
     .toContain(title);
+});
+
+test("the assistant's question reaches Ask once: asked as Discover opens, not again on a refresh", async ({ page, env, corpusGraph }) => {
+  const words = "How many people are there?";
+  await useModelDouble(page, {
+    rules: [{ when: question(words), reply: { text: JSON.stringify({ of: "Person", show: { kind: "stat", measure: { op: "count" } } }) } }],
+  });
+  // What the assistant's last turn links to: Ask docked, the person's question handed over.
+  await page.goto(`/graphs/${corpusGraph}/discover?panel=ask&q=${encodeURIComponent(words)}`);
+  const ask = await env.harness(AskPanel);
+  await ask.warmUp();
+  const answers = await ask.composer();
+  expect(await answers.rows()).toEqual([{ count: String(PEOPLE) }]);
+  await expect.poll(() => new URL(page.url()).searchParams.get("q")).toBeNull();
+  expect((await promptsOf(page)).filter((prompt) => prompt.includes(question(words)))).toHaveLength(1);
+
+  // The question left the URL as it was sent: the page opened again asks nothing.
+  await page.reload();
+  await (await env.harness(AskPanel)).warmUp();
+  expect((await promptsOf(page)).filter((prompt) => prompt.includes(question(words)))).toHaveLength(0);
 });

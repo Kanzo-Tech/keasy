@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useMemo } from "react";
+import { Suspense, useCallback, useMemo } from "react";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Sparkles } from "lucide-react";
 import { useClauses, useMosaic, type JoinGraph } from "@kanzo-tech/ui/analytics";
@@ -23,6 +23,7 @@ import { useModel, useModelLoad } from "@/lib/ai";
 import { settled } from "@/lib/api/settled";
 import { coded } from "@/lib/errors";
 import { corpusKey, ONCE, useCorpus, useJoinGraph } from "@/lib/fossil/corpus";
+import { useHandedQuestion } from "./ask-handoff";
 import { useDashboardStore } from "./dashboard-store";
 
 /**
@@ -139,6 +140,9 @@ function AskChat() {
   const load = useModelLoad();
   const model = useModel();
   const chat = useAskChat({ model, engine, graph, types, selection });
+  // The question the assistant handed over (`?q=`), asked once the model is ready.
+  const { sendMessage } = chat;
+  useHandedQuestion(useCallback((text: string) => void sendMessage({ text }), [sendMessage]), load.state === "ready");
   const over = useMemo(() => ({ graph, types }), [graph, types]);
   const starters = useStarters(graph, types);
   const adding = useAdding();

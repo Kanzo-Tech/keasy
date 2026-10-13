@@ -1,13 +1,13 @@
 # The assistant, and time to smile
 
-Status: a direction. Built: the model in the page, in place of the gateway (2026-10-13); not built:
-the screens. The pattern this rests on — a *Task*: a small model in the browser
+Status: a direction. Built: the model in the page, in place of the gateway (2026-10-13), and the guided chat over
+introspect, with the Tasks' turns still to fill. The pattern this rests on — a *Task*: a small model in the browser
 fills a small artefact under a JSON Schema, a deterministic oracle checks it, a bounded loop repairs
 it or asks the person — and its API, its model and its decisions are kanzo-ui's, on
 [Tasks](https://kanzo-tech.github.io/ui/docs/design/tasks). fossil's half — `fossil-profile` in place
 of introspect, and a mapping spec from which Fossil is emitted — is on
 [Profile, and the mapping a model proposes](https://kanzo-tech.github.io/fossil-lang/docs/design/profile).
-This page is keasy's part: the assistant's screens, the metric they are built for, and what changes
+This page is keasy's part: the assistant's conversation, the metric they are built for, and what changes
 in keasy's own configuration and runtime.
 
 ## The problem
@@ -23,7 +23,7 @@ model moved into the page (below).
 
 **The metric is the time from the first file connected to the first answer of Ask in Discover.** The
 smile is on the first answer about one's own data, not on "graph created". Design targets, not
-measurements: the profile in about 5 s, *What I understood* in about 20 s, the first answer under
+measurements: the profile in about 5 s, *what is in your data* in about 20 s, the first answer under
 60 s; the full graph builds in the background, and the model download is preloaded when the
 assistant opens.
 
@@ -32,21 +32,43 @@ Playwright times the whole path over the four examples (median and p90 per versi
 where the tester exports their local journal by hand; and in the app, which can show it to whoever
 uses it.
 
-## Three screens instead of five
+## A guided chat, not a wizard
 
 The person using the assistant knows their data, not RDF or ShEx. ShEx is still how the ontology is
 made operational, but it sits underneath, as SQL sits under a tile.
 
-1. **Your data.** Pick files from a connection. *What is it about?* is optional, with ghost-text
-   suggestions; *What would you like to know?* offers questions already answerable from these files.
-2. **What I understood.** The things in the data with real counts and real example rows — *each
-   award has a laureate, a category and a year; e.g. Marie Curie · Physics · 1903* — never shape,
-   IRI, predicate or cardinality. Rename, remove, add. A question only when there is no safe default.
-3. **Explore.** Discover over a 200-row preview while the full graph builds, with the assumptions
-   taken listed and changeable.
+The assistant is **a conversation built of talk, questions and decisions**, in one centred column, drawn
+with kanzo-ui's chat parts (`Conversation`, `Message`) as Ask's panel is. It speaks in turns, each
+carrying what it is about:
+
+1. *Which data do you want to explore?* — the connections' files as a tree in the turn; the reply is the
+   files picked.
+2. *Reading your files… 4 of 6*, live, and meanwhile *what is it about?* — optional, answered or
+   skipped in the composer.
+3. *Here's what's in your data* — the things with real counts and what each holds, and how they hang
+   together as sentences with one real row: *each award has a laureate, a category and a year; e.g.
+   Marie Curie · Physics · 1903*. Never shape, IRI, predicate or cardinality.
+4. Each decision with no safe default, as a turn of its own: the question and its options. Each one that
+   had a safe default is said, *I assumed …*, with **Change**, and blocks nothing.
+5. *What would you like to know?* — questions already answerable from these files as chips, and the
+   composer for one's own; each question kept says whether these files can answer it.
+6. *Preparing a preview over 200 rows…*, then *your graph is ready to explore*, with **Ask your data** and
+   the person's questions as prompts to take there.
+
+**The person's replies are choices, chips or questions — never free-form instructions.** What they pick
+is drawn as their message (*These 6 files*, *Two, one per person*), so the transcript reads as what
+was decided. Free text goes in only where it is a question, or the optional *what is it about?*; the
+composer is off otherwise, and says what the turn above it is waiting for.
+
+Why a conversation rather than screens: it is **one presentation with Ask**, which is where the person
+goes next, so the hand-off is the same surface continuing; **the transcript keeps what was decided**,
+in order, where a wizard's earlier screens are out of sight once passed; and it is still **bounded by
+the Tasks** — the small model fills `requirements`, `model` and `mapping` under their schemas and the
+oracles check them, and each turn is a Task's output or the person's pick from it. Nothing the person
+types is an instruction to the model.
 
 Shapes, mapping and program are generated and verified in the background (`requirements`, `model`,
-`mapping`, then `emit`, as one `defineFlow`). **Advanced**, one click away, keeps ShEx and the Fossil
+`mapping`, then `emit`, as one `defineFlow`). **Advanced**, in the header, keeps ShEx and the Fossil
 editor under the same checks.
 
 **Competency questions are Ask's questions.** "Done" is each selected question answered by Ask over
@@ -54,13 +76,14 @@ the sample graph, seen in Discover, not a technical checklist. Their queries are
 the shapes, not the mapping, and the person confirms them before they are frozen as tests, so the
 test and the code do not come from the same source.
 
-**Assumptions instead of blocks.** A decision with a safe default — *when two people share a Nobel,
-is it one award or two?* — is taken, recorded as an assumption, and changed later from Discover.
-Only what has no safe answer blocks.
+**Assumptions instead of blocks.** A decision with a safe default — *is "share" a fraction of the
+prize or an amount?* — is taken, said as an assumption, and changed later. Only what has no safe
+answer — *when two people share a Nobel, is it one award or two?* — waits for the person.
 
-**What would reverse it:** time to smile measured worse with three screens than with five on the
-four examples, or people changing most assumptions after the fact — then the decisions go back into
-the flow, in front of the preview.
+**What would reverse it:** an evaluation where people finish faster, or with fewer corrections after
+the fact, in a wizard than in the guided chat — then the turns become screens again, over the same
+Tasks. And people changing most assumptions after the fact puts those decisions back in front of the
+preview.
 
 ## What left keasy's configuration
 
@@ -130,7 +153,7 @@ the dashboard's tiles do). Five failed on the call itself: the model reasoned it
 breakdown as one figure. One asked what the spec cannot say (*more than one prize*, a filter on a
 count). Those are what the Task addresses: a small spec decoded against its schema, and oracles that
 send back a spec that drops what the question asked for. Phase 1 (Ask as a Task) touches
-`discover/_parts/ask-panel.tsx`; phase 3 replaces the wizard with the three screens. The gateway, the
+`discover/_parts/ask-panel.tsx`; phase 3 replaces the wizard with the guided chat. The gateway, the
 BFF's `/api/ai` forward and their configuration are already gone (2026-10-13): the wizard asks the
 page's model until it is replaced. The phases are on
 [Tasks](https://kanzo-tech.github.io/ui/docs/design/tasks#phases).

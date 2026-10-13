@@ -1,9 +1,18 @@
 "use client";
 
-import { type ReactNode, useEffect, useRef, useState } from "react";
-import { ArrowLeft, ArrowUp, Code, SendHorizontal } from "lucide-react";
-import { MessageList } from "@kanzo-tech/ai";
-import { Button, InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } from "@kanzo-tech/ui";
+import { type ReactNode, useEffect, useState } from "react";
+import { ArrowLeft, ArrowUp, Code } from "lucide-react";
+import {
+  Conversation,
+  ConversationContent,
+  ConversationScrollButton,
+  MessageList,
+  PromptInput,
+  PromptInputSubmit,
+  PromptInputTextarea,
+  PromptInputToolbar,
+} from "@kanzo-tech/ai";
+import { Button, InputGroupButton } from "@kanzo-tech/ui";
 import { converse, NO_REPLIES, type Replies, type Turn, waitingFor, type Waiting } from "./conversation";
 import type { AssistantData, Question } from "./model";
 import type { SourcePickerProps } from "./source-picker";
@@ -54,13 +63,6 @@ export function AssistantChat(props: AssistantChatProps) {
   useEffect(() => onReplies?.(replies), [replies, onReplies]);
   const reply = (next: Partial<Replies>) => setReplies((prev) => ({ ...prev, ...next }));
   const { turns, waiting } = converse(props, replies);
-
-  // A turn added is where the person is looking: the transcript follows it. Nothing here streams,
-  // so following each new turn is all the pin there is.
-  const log = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    log.current?.scrollTo({ top: log.current.scrollHeight, behavior: "smooth" });
-  }, [turns.length, waiting]);
 
   const ask = (id: string, text: string) => {
     const t = text.trim();
@@ -152,17 +154,20 @@ export function AssistantChat(props: AssistantChatProps) {
         </Button>
       </header>
 
-      {/* `role="log"`: a turn added is announced after what the reader is on, not over it. */}
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain" ref={log} role="log">
-        <MessageList className="mx-auto max-w-3xl gap-5 px-4 py-8">
-          {props.status}
-          {turns.map(draw)}
-          {props.failures.map((f) => (
-            <TaskFailed failure={f} key={f.task} />
-          ))}
-          {waiting === "ask" && <AskDone onDone={() => reply({ asked: true })} questions={questions.length} />}
-        </MessageList>
-      </div>
+      {/* A turn added takes the pin back, as Conversation's own does; reading back up releases it. */}
+      <Conversation>
+        <ConversationContent className="py-8">
+          <MessageList className="gap-5">
+            {props.status}
+            {turns.map(draw)}
+            {props.failures.map((f) => (
+              <TaskFailed failure={f} key={f.task} />
+            ))}
+            {waiting === "ask" && <AskDone onDone={() => reply({ asked: true })} questions={questions.length} />}
+          </MessageList>
+        </ConversationContent>
+        <ConversationScrollButton />
+      </Conversation>
 
       <Composer
         onAbout={(text) => reply({ about: text })}
@@ -203,38 +208,29 @@ function Composer({
   return (
     <div className="mx-auto w-full max-w-3xl shrink-0 px-4 pb-4">
       {writing ? (
-        <InputGroup asChild className="rounded-xl bg-card shadow-xs/5">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              send();
-            }}
-          >
-            <InputGroupTextarea
-              aria-label={waiting === "about" ? "What is this data about?" : "Your question"}
-              className="max-h-48 min-h-14"
-              onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key !== "Enter" || e.shiftKey || e.nativeEvent.isComposing) return;
-                e.preventDefault();
-                e.currentTarget.form?.requestSubmit();
-              }}
-              placeholder={waiting === "about" ? ABOUT_EXAMPLE : "Ask your own question…"}
-              rows={1}
-              value={draft}
-            />
-            <InputGroupAddon align="block-end" className="justify-end gap-1">
-              {waiting === "about" && (
-                <InputGroupButton onClick={() => onAbout("")} size="sm" variant="ghost">
-                  Skip
-                </InputGroupButton>
-              )}
-              <InputGroupButton aria-label="Send" disabled={!draft.trim()} size="icon-sm" type="submit" variant="default">
-                <SendHorizontal />
+        <PromptInput
+          className="bg-card"
+          onSubmit={(e) => {
+            e.preventDefault();
+            send();
+          }}
+        >
+          <PromptInputTextarea
+            aria-label={waiting === "about" ? "What is this data about?" : "Your question"}
+            className="min-h-14"
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder={waiting === "about" ? ABOUT_EXAMPLE : "Ask your own question…"}
+            value={draft}
+          />
+          <PromptInputToolbar className="justify-end">
+            {waiting === "about" && (
+              <InputGroupButton onClick={() => onAbout("")} size="sm" variant="ghost">
+                Skip
               </InputGroupButton>
-            </InputGroupAddon>
-          </form>
-        </InputGroup>
+            )}
+            <PromptInputSubmit className="ms-0" disabled={!draft.trim()} />
+          </PromptInputToolbar>
+        </PromptInput>
       ) : (
         reason && (
           <p className="flex items-center justify-center gap-2 rounded-xl border border-dashed px-4 py-3 text-muted-foreground text-sm">

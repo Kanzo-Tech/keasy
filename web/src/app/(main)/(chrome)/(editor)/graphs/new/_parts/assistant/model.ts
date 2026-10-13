@@ -12,26 +12,9 @@
 
 import type { Decision } from "@kanzo-tech/ai/task";
 import type { BuildProgress } from "@/lib/fossil/build";
+import type { Sources } from "../use-sources";
 
 // ── The data ────────────────────────────────────────────────────────────────
-
-/** A node of the files a person picks from: a connection, a folder under it, or a file it reads. */
-export interface SourceTreeNode {
-  id: string;
-  name: string;
-  kind: "connection" | "folder" | "file";
-  /** A branch's children once listed; absent until it is opened. A file has none. */
-  children?: readonly SourceTreeNode[];
-  /** Why this branch could not be listed, shown in its place. */
-  problem?: unknown;
-  /** A file's size in bytes, as the listing gave it. */
-  size?: number;
-}
-
-/** Every connection the assistant may read, each a root. */
-export interface SourceTree {
-  roots: readonly SourceTreeNode[];
-}
 
 /** How far reading the picked files has got: "Reading the files… 4 of 6". */
 export interface ReadingProgress {
@@ -102,7 +85,8 @@ export type { BuildProgress } from "@/lib/fossil/build";
 
 /** Everything the conversation reads, as `use-assistant.ts` answers it. */
 export interface AssistantData {
-  sources: SourceTree;
+  /** Every connection the assistant may read, each a root, listed as it is opened. */
+  sources: Sources;
   /** The ids of the picked files. */
   selected: ReadonlySet<string>;
   /** `null` when nothing is being read. */
@@ -125,37 +109,6 @@ export interface TaskFailure {
   task: "model" | "mapping" | "requirements";
   problem: unknown;
   retry: () => void;
-}
-
-// ── Picking from the tree ───────────────────────────────────────────────────
-
-/** The files under `node` that are listed, `node` itself when it is one. */
-export function filesUnder(node: SourceTreeNode): string[] {
-  if (node.kind === "file") return [node.id];
-  return (node.children ?? []).flatMap(filesUnder);
-}
-
-/**
- * A node's box: a file is picked or not; a branch is checked when every listed file under it is,
- * mixed when some are, and has no box at all (`null`) while nothing under it is listed.
- */
-export function checkState(node: SourceTreeNode, selected: ReadonlySet<string>): boolean | "indeterminate" | null {
-  const files = filesUnder(node);
-  if (files.length === 0) return null;
-  const picked = files.filter((id) => selected.has(id)).length;
-  return picked === files.length ? true : picked === 0 ? false : "indeterminate";
-}
-
-/** The selection with `node` toggled: a branch picks every listed file under it, or drops them all. */
-export function toggle(node: SourceTreeNode, selected: ReadonlySet<string>): Set<string> {
-  const files = filesUnder(node);
-  const next = new Set(selected);
-  const all = files.every((id) => selected.has(id));
-  for (const id of files) {
-    if (all) next.delete(id);
-    else next.add(id);
-  }
-  return next;
 }
 
 /** The option a decision stands at: the person's, else the default taken. */

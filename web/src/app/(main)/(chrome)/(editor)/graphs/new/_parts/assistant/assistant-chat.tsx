@@ -81,7 +81,7 @@ export function AssistantChat(props: AssistantChatProps) {
             onSelectedChange={props.onSelectedChange}
             reason={waitingFor("pick", props.selected.size)}
             selected={props.selected}
-            tree={props.sources}
+            sources={props.sources}
           />
         );
       case "picked":

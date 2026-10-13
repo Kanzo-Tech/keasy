@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { AssistantChat, type AssistantChatProps } from "./assistant-chat";
 import type { DecisionItem, Question } from "./model";
+import { sourceCollection } from "../sources";
 
 // Next's `Link` does not load outside Next (`next/link` resolves only under its bundler); the
 // hand-off is an anchor to the same `href` either way.
@@ -55,17 +56,22 @@ const share: DecisionItem = {
 
 const base: AssistantChatProps = {
   sources: {
-    roots: [
+    collection: sourceCollection([
       {
         id: "nobel",
         name: "@nobel",
         kind: "connection",
+        connection: { name: "nobel", url: "s3://lake/nobel/", kind: "data", direction: "source", secret: "aws" },
+        under: "",
         children: [
-          { id: "nobel:laureates.csv", name: "laureates.csv", kind: "file", size: 120_000 },
-          { id: "nobel:awards.csv", name: "awards.csv", kind: "file" },
+          { id: "nobel:laureates.csv", name: "laureates.csv", kind: "file", reader: "csv", line: 'laureates := io.csv("@nobel/laureates.csv")', size: 120_000 },
+          { id: "nobel:awards.csv", name: "awards.csv", kind: "file", reader: "csv", line: 'awards := io.csv("@nobel/awards.csv")', size: 4_000 },
         ],
       },
-    ],
+    ]),
+    loadChildren: async () => [],
+    onLoadChildrenComplete: () => {},
+    onLoadChildrenError: () => {},
   },
   selected: new Set(),
   reading: null,

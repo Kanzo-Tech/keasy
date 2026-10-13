@@ -170,6 +170,11 @@ export interface AssistantConversation {
   /** Why it could not be read. */
   problem: unknown;
   /**
+   * A graph was built from it: it is that graph's record, so the next save starts a new
+   * conversation from these messages rather than change it.
+   */
+  built: boolean;
+  /**
    * Save every message, after each reply: through {@link toStored}, replacing what was stored.
    * The first save of a new conversation creates it; a conversation a graph was built from is that
    * graph's record and is not saved over — the save starts a new one from these messages, and `id`
@@ -231,5 +236,5 @@ export function useAssistantConversation(id?: string | null): AssistantConversat
     [current, read.data],
   );
   const decisions = useMemo(() => decisionsOf(messages ?? []), [messages]);
-  return { id: current, messages, problem: read.error ?? undefined, save, decisions };
+  return { id: current, messages, problem: read.error ?? undefined, built, save, decisions };
 }

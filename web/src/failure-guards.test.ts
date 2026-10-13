@@ -60,8 +60,7 @@ describe("the failure guards", () => {
 
   /**
    * Every wait on the network has a deadline, set in one place: `lib/deadline.ts`, whose
-   * `deadlineFetch` is the BFF auth client's fetch and so every API call's — a model call's
-   * included, which it hands whole to the gateway's own bound.
+   * `deadlineFetch` is the BFF auth client's fetch and so every API call's.
    *
    * Cannot prove: that the figure is right; a request made by a library keasy calls.
    */
@@ -81,14 +80,20 @@ describe("the failure guards", () => {
    */
   it("reads data with useSuspenseQuery, but for the named exceptions", () => {
     const EXCEPTIONS = new Set([
-      // One listing per selected connection; the loaded ones are shown beside the one that failed.
-      "web/src/app/(main)/(chrome)/(editor)/graphs/new/_parts/assistant-wizard.tsx",
+      // One listing per opened folder, the profile of the picked files and each Task's answer; each failure is shown in its place, beside the rest.
+      "web/src/app/(main)/(chrome)/(editor)/graphs/new/_parts/assistant/use-assistant.ts",
       // Follows every pause in typing; the editor shows the failure beside the program.
       "web/src/app/(main)/(chrome)/(editor)/graphs/new/_parts/use-source-descriptors.ts",
       // Follows every pause in typing; a failed question leaves the folder to Create's own answer.
       "web/src/app/(main)/(chrome)/(editor)/graphs/new/_parts/use-folder-availability.ts",
       // A crumb's label: the route's own name stands until the graph's arrives, and the graph's page shows its failure.
       "web/src/app/(main)/_parts/trail.tsx",
+      // The assistant's conversation: a failed read is the hook's `problem`, for the chat to say beside the turns it can draw.
+      "web/src/lib/assistant-conversation.ts",
+      // A footnote: the graph's decisions, read from its conversation; a failed read leaves the Info panel as it was.
+      "web/src/app/(main)/(workspace)/graphs/[id]/discover/_parts/graph-assumptions.tsx",
+      // The assistant's preview: it fails as a state of the chat's, beside the decisions that changed it, and keeps the corpus it had.
+      "web/src/lib/fossil/preview.ts",
       // Suggested questions: a failure leaves no pills, and the chat works the same (`@kanzo-tech/ai/data`).
       "web/src/app/(main)/(workspace)/graphs/[id]/discover/_parts/ask-panel.tsx",
       // The saved dashboard, held for the whole page because Ask adds to it; a failed read is drawn in the Dashboard view, and the graph and the dock stay.

@@ -2,7 +2,7 @@ import type { Page } from "@playwright/test";
 
 import { signIn } from "./auth/sign-in";
 import { expect, test as base } from "./env";
-import { createGraph } from "./stack/api";
+import { api, createGraph } from "./stack/api";
 
 /**
  * A graph the browser has run to completion, so its corpus opens in Discovery: the suite's shop, or
@@ -16,21 +16,22 @@ export async function runToCompletion(
   await page.goto(`/graphs/${id}`);
   // Opening the page runs nothing: the run is asked for.
   await page.getByRole("button", { name: "Run", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Explore" })).toBeEnabled({ timeout: within });
+  // Until the run ends, however it ends: a run that failed in its first second fails here with its
+  // problem, rather than leaving Explore disabled for the whole of `within`.
+  let ended: { status: string; problem?: unknown } | undefined;
+  await expect
+    .poll(
+      async () => {
+        const graph = (await api(page, "GET", `/v1/graphs/${id}`)).body as { status: string; problem?: unknown };
+        if (["completed", "failed", "cancelled"].includes(graph.status)) ended = graph;
+        return ended?.status;
+      },
+      { timeout: within, intervals: [1_000, 2_000, 5_000] },
+    )
+    .toBeDefined();
+  expect(ended, `the run of "${name}" ended ${ended?.status}: ${JSON.stringify(ended?.problem)}`).toMatchObject({ status: "completed" });
+  await expect(page.getByRole("button", { name: "Explore" })).toBeEnabled();
   return id;
-}
-
-/** The model calls the page makes, through the BFF's forward to the AI gateway. */
-export const AI = "**/api/ai/chat/completions";
-
-/** OpenAI chat completion chunks as the gateway streams them, ending the stream. */
-export function sse(...chunks: unknown[]): string {
-  return [...chunks.map((c) => `data: ${typeof c === "string" ? c : JSON.stringify(c)}\n\n`), "data: [DONE]\n\n"].join("");
-}
-
-/** One chunk of an answer's text. */
-export function text(content: string, finish: string | null = null) {
-  return { id: "e2e", object: "chat.completion.chunk", created: 0, model: "chat", choices: [{ index: 0, delta: { content }, finish_reason: finish }] };
 }
 
 /**

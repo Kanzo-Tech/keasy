@@ -2,11 +2,10 @@
 // 3,218 airports some direct route touches and the 36,906 directed routes
 // between them; ODbL, data/NOTICE), mapped onto shapes.shex.
 //
-// A dev graph with a position on every vertex: `lon` and `lat` are WGS 84
-// decimal degrees, numeric, for Discover's Map placement (x = lon, y = lat).
+// A dev graph with a position on every vertex: `long` and `lat` are WGS 84
+// decimal degrees, numeric, for Discover's Map placement (x = long, y = lat).
 // `country` is a column to cluster or colour by.
 
-@rename(Airport, "http://www.w3.org/2003/01/geo/wgs84_pos#long" as lon)
 type { Airport } := io.shex("@OpenFlights shapes/shapes.shex")
 
 AirportRow := io.csv("@OpenFlights/airports.csv")
@@ -18,7 +17,7 @@ Airports : Airport from AirportRow
     iataCode = AirportRow.iata
     icaoCode = AirportRow.icao
     lat      = AirportRow.lat
-    lon      = AirportRow.lon
+    long     = AirportRow.lon
     altitude = AirportRow.altitude
     city     = AirportRow.city
     country  = AirportRow.country
@@ -33,7 +32,7 @@ Routes : Airport from AirportRow.join(RouteRow, on = AirportRow.id == RouteRow.s
     iataCode = AirportRow.iata
     icaoCode = AirportRow.icao
     lat      = AirportRow.lat
-    lon      = AirportRow.lon
+    long     = AirportRow.lon
     altitude = AirportRow.altitude
     city     = AirportRow.city
     country  = AirportRow.country

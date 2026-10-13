@@ -48,7 +48,7 @@ export function ModePicker({ onSelect, onBack }: { onSelect: (mode: CreationMode
             <div className="flex min-w-0 flex-col gap-0.5">
               <RadioGroupText>Assistant</RadioGroupText>
               <span className="text-muted-foreground text-xs leading-snug">
-                Describe the result and let it draft the program.
+                Talk it through: it reads your files and asks what it needs.
               </span>
             </div>
             <RadioGroupIndicator className="order-last mt-0.5 ms-auto" />

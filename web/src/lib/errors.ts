@@ -33,7 +33,7 @@ export class ClientError extends Error {
  * detail that names a figure the problem carries is written from its `data`.
  */
 interface Copy {
-  title?: string;
+  title?: string | ((data: unknown) => string);
   detail?: string | ((data: unknown) => string);
   link?: { label: string; href: string };
 }
@@ -42,6 +42,9 @@ interface Copy {
 function gib(bytes: number): string {
   return `${(bytes / 2 ** 30).toLocaleString("en", { maximumFractionDigits: 1 })} GiB`;
 }
+
+/** Why a failure that says so happened: `data.reason`. */
+const reasonOf = (data: unknown) => (data as { reason?: unknown } | undefined)?.reason;
 
 const signIn = { label: "Sign in again", href: "/api/auth/signin" };
 
@@ -76,16 +79,14 @@ const registry: Partial<Record<ErrorCode | NoBodyCode | ClientCode | Code | Kanz
   "session/silent": { title: "Your session could not be read in time.", link: signIn },
   "idp/silent": { title: "The identity provider did not answer in time.", link: signIn },
   "idp/unreachable": { title: "The identity provider could not be reached.", link: signIn },
-  "ai/silent": { title: "The model stopped answering." },
-  "ai/rate-limited": { title: "This workspace has used its AI budget for now. Try again later." },
-  // The gateway answered with an error: no model behind the alias, a provider's refusal, a hung
-  // upstream. Its own words are the detail.
-  "ai/unavailable": { title: "The model could not answer." },
-  // Even narrowed to the relations the question names, this graph's description does not fit the
-  // window the model was started with; nothing was sent.
-  "ai/context": {
-    title: "This graph is too large to ask about with this model.",
-    detail: "Ask about fewer kinds of things at once, or use a model with a larger context.",
+  // The model runs in the page, and cannot here: this browser has no WebGPU, or this deployment serves
+  // no model (`data.reason`: `webgpu`, `unserved` — lib/ai.ts).
+  "ai/unavailable": {
+    title: (data) => (reasonOf(data) === "unserved" ? "This workspace has no model." : "This browser cannot run the model."),
+    detail: (data) =>
+      reasonOf(data) === "unserved"
+        ? "Ask and the assistant run a model on this device, downloaded from keasy, and this deployment serves none. The rest of keasy works the same."
+        : "Ask and the assistant run their model on this device, through WebGPU, which this browser does not offer. The rest of keasy works the same.",
   },
   "llm/failed": { title: "The model call failed. Please try again." },
   "query/failed": {
@@ -150,7 +151,11 @@ const registry: Partial<Record<ErrorCode | NoBodyCode | ClientCode | Code | Kanz
 export function copyOf(code: string, data?: unknown): ProblemCopy | undefined {
   const copy = registry[code as keyof typeof registry];
   if (!copy) return undefined;
-  return { ...copy, detail: typeof copy.detail === "function" ? copy.detail(data) : copy.detail };
+  return {
+    ...copy,
+    title: typeof copy.title === "function" ? copy.title(data) : copy.title,
+    detail: typeof copy.detail === "function" ? copy.detail(data) : copy.detail,
+  };
 }
 
 /** The page that explains `code`, for a code fossil raised; keasy's own codes have none. */
@@ -177,8 +182,8 @@ const isCoded = (err: unknown): err is Coded =>
 
 /**
  * Any thrown value with a code to branch on: one that carries a code is itself — a model call's
- * `AiError` (`ai/silent`, `ai/rate-limited`, `ai/unavailable`) included; anything else is `uncoded`, in its own words,
- * its cause kept — a refusal the AI gateway answered, or a forward that never reached it.
+ * `AiError` (`ai/unavailable`) included; anything else is `uncoded`, in its own words, its cause
+ * kept — a model that failed to load or to answer.
  */
 export function coded(err: unknown, uncoded: ClientCode | ErrorCode = "web/unknown"): Coded {
   if (isCoded(err)) return err;

@@ -101,14 +101,14 @@ pub fn transfer(conn: &Connection, object: Object<'_>, owner: &Actor) -> DbResul
 }
 
 /// What passes to the workspace when the person `sub` leaves: every secret,
-/// connection and graph they own, and the grants made to them go — a grant to
+/// connection, graph and conversation they own, and the grants made to them go — a grant to
 /// someone who is not here holds for no one. Their name stays where it says
 /// who created something: that never changes. How many objects passed.
 pub fn depart(conn: &Connection, sub: &str) -> DbResult<usize> {
     let workspace = Actor::workspace();
     let tx = conn.unchecked_transaction()?;
     let mut passed = 0;
-    for table in ["credentials", "connections", "graphs"] {
+    for table in ["credentials", "connections", "graphs", "conversations"] {
         passed += tx.execute(
             &format!("UPDATE {table} SET owner = ?1, owner_name = ?2 WHERE owner = ?3"),
             params![workspace.id, workspace.name, sub],

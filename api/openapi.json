@@ -707,6 +707,211 @@
         ]
       }
     },
+    "/v1/conversations": {
+      "post": {
+        "tags": [
+          "Conversations"
+        ],
+        "summary": "Start a conversation: with no message yet, or with another's, to continue\nwhat a built graph decided without changing its record.",
+        "operationId": "create_conversation",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveMessagesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "The conversation, started with these messages",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Conversation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The messages are not a JSON array (`data.field`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The messages are heavier than a conversation may be",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": [
+              "editor"
+            ]
+          }
+        ]
+      }
+    },
+    "/v1/conversations/{id}": {
+      "get": {
+        "tags": [
+          "Conversations"
+        ],
+        "operationId": "get_conversation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Conversation ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The conversation, its messages as they were last saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Conversation"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Conversation not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": [
+              "reader"
+            ]
+          }
+        ]
+      }
+    },
+    "/v1/conversations/{id}/messages": {
+      "put": {
+        "tags": [
+          "Conversations"
+        ],
+        "summary": "Save the conversation after a reply: every message, replacing what was\nstored. Whole, not appended — an earlier answer taken again replaces the\nturns after it, and a save sent twice is one save.",
+        "operationId": "save_messages",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Conversation ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveMessagesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The messages, replaced whole",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Conversation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The messages are not a JSON array (`data.field`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Neither its owner nor an admin (`rbac/forbidden`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Conversation not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A graph was built from it (`conversation/built`): start one from its messages instead",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The messages are heavier than a conversation may be",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": [
+              "editor"
+            ]
+          }
+        ]
+      }
+    },
     "/v1/graphs": {
       "get": {
         "tags": [
@@ -764,7 +969,17 @@
             }
           },
           "400": {
-            "description": "The destination is not a sink, or the name or folder is misspelled (`data.field`)",
+            "description": "The destination is not a sink, the name or folder is misspelled, or there is no such conversation (`data.field`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The conversation is someone else's (`rbac/forbidden`)",
             "content": {
               "application/json": {
                 "schema": {
@@ -2529,6 +2744,42 @@
           }
         ]
       },
+      "Conversation": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Provenance",
+            "description": "Who created it and when, and who saved it last."
+          },
+          {
+            "type": "object",
+            "required": [
+              "id",
+              "messages",
+              "built",
+              "owner"
+            ],
+            "properties": {
+              "built": {
+                "type": "boolean",
+                "description": "Whether a graph was built from it: then it is that graph's record, and\na save is refused (`conversation/built`) — the web saves a copy instead."
+              },
+              "id": {
+                "type": "string"
+              },
+              "messages": {
+                "type": "array",
+                "items": {},
+                "description": "The messages, in order, as the web serialises them (AI SDK\n`UIMessage`s, stripped)."
+              },
+              "owner": {
+                "$ref": "#/components/schemas/Actor",
+                "description": "Who owns it, and saves it: its creator, to begin with."
+              }
+            }
+          }
+        ],
+        "description": "The assistant's conversation, as the web stored it: its messages, opaque to\nkeasy — the web strips every row of anyone's data out of them before they\nare sent (`web/src/lib/assistant-conversation.ts`, `toStored`), and keasy\nstores the array and hands it back, never reading an element of it."
+      },
       "CreateConnectionRequest": {
         "type": "object",
         "required": [
@@ -2557,6 +2808,13 @@
           "sink_connection"
         ],
         "properties": {
+          "conversation": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The assistant's conversation the graph is built from: its caller's own.\nFrom then on it is the graph's record, and is not saved over."
+          },
           "folder": {
             "oneOf": [
               {
@@ -2729,6 +2987,8 @@
           "graph/invalid-destination",
           "graph/no-destination",
           "graph/folder-taken",
+          "conversation/not-found",
+          "conversation/built",
           "secret/not-found",
           "connection/not-found",
           "resource/already-exists",
@@ -2917,6 +3177,13 @@
                   "null"
                 ],
                 "description": "When the last run ended; unset while it runs."
+              },
+              "conversation": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The assistant's conversation the graph was built from, set when it is\ncreated and never after: what was decided, and how."
               },
               "folder": {
                 "oneOf": [
@@ -3233,6 +3500,19 @@
         "properties": {
           "cancel_requested": {
             "type": "boolean"
+          }
+        }
+      },
+      "SaveMessagesRequest": {
+        "type": "object",
+        "required": [
+          "messages"
+        ],
+        "properties": {
+          "messages": {
+            "type": "array",
+            "items": {},
+            "description": "Every message of the conversation, in order: a JSON array, stored as sent."
           }
         }
       },

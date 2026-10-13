@@ -1,4 +1,5 @@
 mod connection;
+mod conversation;
 mod credential;
 mod dashboard;
 mod grant;
@@ -13,6 +14,7 @@ mod validation;
 mod vended;
 
 pub use connection::*;
+pub use conversation::Conversation;
 pub use credential::*;
 pub use dashboard::Dashboard;
 pub use grant::{Grant, Principal, PrincipalKind, Relation};

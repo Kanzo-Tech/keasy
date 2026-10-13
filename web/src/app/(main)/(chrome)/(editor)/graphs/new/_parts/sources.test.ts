@@ -24,21 +24,24 @@ describe("childrenOf", () => {
     "ldbc/dynamic/deeper/post_0_0.csv",
     "ldbc/dynamic/notes.txt",
     "ldbc/empty/notes.txt",
-  ];
+  ].map((path, i) => ({ path, size: 100 * i }));
 
   it("lists the folders holding something readable, then the readable files", () => {
     const top = childrenOf(connectionNode(snb), keys, formats);
     expect(top.map((n) => n.name)).toEqual(["dynamic/", "static/"]);
-    expect(top[0]).toMatchObject({ under: "dynamic/", childrenCount: 1 });
+    expect(top[0]).toMatchObject({ kind: "folder", under: "dynamic/" });
+    expect(top[0]).not.toHaveProperty("children");
   });
 
-  it("writes each file's whole line, its reader from the extension", () => {
+  it("writes each file's whole line, its reader from the extension, and its size", () => {
     const dynamic = childrenOf(connectionNode(snb), keys, formats)[0];
+    if (dynamic.kind === "file") throw new Error("dynamic/ is a folder");
     const inside = childrenOf(dynamic, keys, formats);
     expect(inside.map((n) => n.name)).toEqual(["deeper/", "person_0_0.csv"]);
     expect(inside[1]).toMatchObject({
       reader: "csv",
       line: 'person_0_0 := io.csv("@snb/dynamic/person_0_0.csv")',
+      size: 200,
     });
   });
 });

@@ -85,6 +85,7 @@ operates it, only an admin manages it. Views answer `owner: { id, name }`.
 | Sink / workspace storage | reader | through its graphs only | admin (Test) | admin | — (the workspace's) | admin |
 | Graph | reader | reader (vend a completed output) | editor (run, run again); stop: runner, owner, manager, admin | owner, manager, admin | owner, admin | editor |
 | Rules, dashboard | reader | — | — | the graph's manage | — | — |
+| The assistant's conversation | reader | — | — | owner, admin (save it; once a graph is built from it, nobody) | owner, admin | editor |
 | Ask | reader | — | — | — | — | — |
 
 A grant raises an editor and never a reader: who holds no editor role manages nothing, whatever was
@@ -129,11 +130,16 @@ can change it".
    only a securable's owner or a metastore admin changes its owner in Unity Catalog; the previous
    owner keeps nothing by having owned it.
 
-## Migration
+## The schema
 
-The schema is upgraded in place from the one before it (`server/src/database.rs`, `UPGRADE`):
-phase B adds the `grants` table and its indexes, and moves nothing else. A database from before
-phase A is refused, as every schema older than the previous one is.
+**There are no migrations** (2026-10-13). The server creates its schema in an empty database and
+refuses to start on one whose schema differs, untouched, saying to delete the data volume
+(`server/src/database.rs`, `apply_schema`); a schema change is the database dropped and created
+again — `make clean`, or `docker compose down -v`. The single-step upgrade that brought the
+`grants` table, and then the conversations, forward in place is gone with its test: no deployment
+holds data that must outlive a schema change, and an upgrade written for each change is code kept
+for a database nobody has. *What would reverse it:* a deployment whose data must survive a schema
+change — then each change carries its migration, tested against a database of the schema before.
 
 ## Grants
 

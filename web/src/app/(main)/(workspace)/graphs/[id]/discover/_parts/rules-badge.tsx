@@ -43,7 +43,7 @@ import { $api, http, type Schemas } from "@/lib/api/client";
 import { queryClient } from "@/lib/api/query-client";
 import { settled } from "@/lib/api/settled";
 import { toastError } from "@/lib/errors";
-import { useCorpus } from "@/lib/fossil/corpus";
+import { useParams } from "next/navigation";
 import { groupKey, type Rule, rulesOf, type Stale, tallyOf, useReadRules, useRules } from "./rules-validation";
 
 /**
@@ -56,7 +56,7 @@ import { groupKey, type Rule, rulesOf, type Stale, tallyOf, useReadRules, useRul
  * as the rules' one clause. `/docs/design/findings` in kanzo-ui is the model.
  */
 export function RulesBadge() {
-  const { graphId } = useCorpus();
+  const { id: graphId } = useParams<{ id: string }>();
   const init = { params: { path: { id: graphId } } };
   const read = $api.queryOptions("get", "/v1/graphs/{id}/rules", init);
   const saved = settled($api.useSuspenseQuery("get", "/v1/graphs/{id}/rules", init));

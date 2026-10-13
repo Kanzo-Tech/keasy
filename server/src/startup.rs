@@ -164,6 +164,7 @@ fn routes() -> (OpenApiRouter<AppState>, OpenApiRouter<AppState>) {
         .merge(routes::graphs::rules::router())
         .merge(routes::secrets::router())
         .merge(routes::connections::router())
+        .merge(routes::conversations::router())
         .merge(routes::access::router());
     (public, protected)
 }

@@ -65,11 +65,11 @@ interface Held {
 const sum = (tables: { rows: number }[]) => tables.reduce((n, t) => n + t.rows, 0);
 
 function Holds({ graph }: { graph: Schemas["Graph"] }) {
-  const { graphId } = useCorpus();
+  const { name: corpus } = useCorpus();
   const rows = useQueryRows<Row>(
     `SELECT t.table_name, t.kind, t.record_count::DOUBLE AS record_count, t.source, t.destination, c.column_name, c.data_type
-     FROM ${new TableRefNode([graphId, "fossil_tables"])} t
-     LEFT JOIN ${new TableRefNode([graphId, "fossil_columns"])} c ON c.table_name = t.table_name
+     FROM ${new TableRefNode([corpus, "fossil_tables"])} t
+     LEFT JOIN ${new TableRefNode([corpus, "fossil_columns"])} c ON c.table_name = t.table_name
      WHERE t.kind <> 'property'
      ORDER BY t.table_name, c.ordinal_position`,
   );

@@ -6,6 +6,7 @@
 
 import { create } from "zustand";
 
+/** How the program gets written: in the studio, or by the assistant's guided chat, which is a page of its own. */
 export type CreationMode = "studio" | "assistant";
 
 interface GraphEditorState {
@@ -25,7 +26,6 @@ interface GraphEditorState {
   setSinkConnectionId: (id: string | null) => void;
   setFolder: (folder: string | null) => void;
 
-  completeAssistant: (generatedScript: string) => void;
   restoreDraft: (
     script: string,
     name: string,
@@ -52,7 +52,6 @@ export const useGraphEditorStore = create<GraphEditorState>((set) => ({
   setSinkConnectionId: (sinkConnectionId) => set({ sinkConnectionId }),
   setFolder: (folder) => set({ folder }),
 
-  completeAssistant: (script) => set({ script, creationMode: "studio" }),
   restoreDraft: (script, name, sinkConnectionId, folder) =>
     set({ script, name, sinkConnectionId, folder, creationMode: "studio" }),
   reset: () => set(EMPTY),

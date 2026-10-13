@@ -21,7 +21,10 @@ const dev = process.env.NODE_ENV === "development";
  * `<base>` rewrite, no form posting somewhere else, and no framing at all.
  *
  * No script, worker or `.wasm` comes from another origin: DuckDB, its httpfs
- * extension and fossil's compiler are this app's own assets.
+ * extension and fossil's compiler are this app's own assets, and so is the
+ * model — its weights and its compiled library are served under `/models` on
+ * this origin (`KEASY_MODEL_URL`, `lib/ai.ts`), read by the model's worker,
+ * which is this origin's too (`worker-src 'self'`, `connect-src 'self'`).
  *
  * The permissive parts are the product, not laziness:
  *
@@ -30,8 +33,8 @@ const dev = process.env.NODE_ENV === "development";
  *  - `connect-src https:` — the browser reads and writes the workspace's own
  *    cloud account with a credential keasy vends for one prefix. The hosts are
  *    the customer's, and this policy is fixed when the image is built, so they
- *    cannot be enumerated here; narrowing it means a policy rendered per request
- *    from the workspace's credentials, which is the nonce work above.
+ *    cannot be enumerated here; narrowing it means a policy rendered per
+ *    request from the workspace's credentials, which is the nonce work above.
  */
 function contentSecurityPolicy(): string {
   const directives: Record<string, string[]> = {
@@ -72,9 +75,17 @@ function contentSecurityPolicy(): string {
  */
 const demo = !!process.env.NEXT_PUBLIC_KEASY_DEMO;
 
+/**
+ * Development's `/models`: the model's shards, from compose's `models` service, on this origin as a
+ * deployment serves them (`KEASY_MODEL_URL=/models`). A deployment's edge routes `/models/` to that
+ * service itself (compose.prod.yaml), so `next build` has no upstream and the image carries no rewrite.
+ */
+const models = process.env.KEASY_MODELS_UPSTREAM;
+
 const nextConfig: NextConfig = {
   output: "standalone",
   ...(demo && { devIndicators: false }),
+  ...(models && { rewrites: async () => [{ source: "/models/:path*", destination: `${models}/models/:path*` }] }),
   // Dev serves every organization at its own subdomain (acme.localhost:3000), as prod does.
   allowedDevOrigins: ["*.localhost"],
   // The workspace contract package ships TypeScript source.

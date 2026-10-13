@@ -1,0 +1,231 @@
+import { expect, type Page } from "@playwright/test";
+
+import { AskPanel } from "../support/app";
+import { chooseRadio } from "../support/app/controls";
+import { promptsOf, type Rule, useModelDouble } from "../support/model";
+import { demo } from "./record";
+
+/** The Nobel example's connection, as the dev stack names it, and its six files. */
+const CONNECTION = "Nobel laureates";
+const FILES = ["laureates", "awards", "categories", "institutions", "affiliations", "countries"];
+
+const ABOUT = "Nobel prizes: who won them, in what, and where they worked";
+
+/** The decision with no safe default, and the answer the demo gives it. */
+const LINK = "Each row of affiliations links an award to an institution. When two awards share an institution, is that one thing or two?";
+const ONE = "One: an award has institutions";
+/** The decision a safe default settled — a country by its id — and the one the demo changes it to. */
+const COUNTRY = "Which column tells one country from another?";
+
+const BY_CATEGORY = "How many prizes were awarded in each category?";
+const BY_INSTITUTION = "Which institutions are behind the most prizes?";
+
+/**
+ * What the model proposes over the Nobel files: a type per thing, each on the file and key the profile
+ * offers, the awards linked to their laureate and category, and to their institutions across
+ * `affiliations` — which raises the one decision with no safe default. Countries stand alone, so which
+ * of their two keys identifies one is a default, said as an assumption.
+ */
+const DRAFT = {
+  types: [
+    { name: "Laureate", source: "laureates", key: "id", fields: [{ name: "name", column: "name" }, { name: "gender", column: "gender" }] },
+    { name: "Award", source: "awards", key: "id", fields: [{ name: "year", column: "year" }, { name: "share", column: "share" }] },
+    { name: "Category", source: "categories", key: "id", fields: [{ name: "name", column: "name" }] },
+    { name: "Institution", source: "institutions", key: "id", fields: [{ name: "name", column: "name" }, { name: "city", column: "city" }] },
+    { name: "Country", source: "countries", key: "id", fields: [{ name: "name", column: "name" }] },
+  ],
+  edges: [
+    { name: "laureate", from: "Award", to: "Laureate", via: "awards.laureate → laureates.id" },
+    { name: "category", from: "Award", to: "Category", via: "awards.category → categories.id" },
+    { name: "institution", from: "Award", to: "Institution", via: "affiliations.institution → institutions.id" },
+  ],
+};
+
+/** The questions the model suggests: three chips, two of which the demo takes. */
+const REQUIREMENTS = {
+  elements: [
+    { text: BY_CATEGORY, of: "Award", fields: ["Award.category", "Category.name"] },
+    { text: BY_INSTITUTION, of: "Award", fields: ["Award.institution", "Institution.name"] },
+    { text: "How many laureates are women?", of: "Laureate", fields: ["Laureate.gender"] },
+  ],
+};
+
+/**
+ * The mappings the model writes, each `@subject` the one keasy computes under the page's origin; a
+ * country identified by `countryKey`. Held against fossil's checker over the real Nobel profile when
+ * this demo was written: one attempt, no diagnostic.
+ */
+function mappings(origin: string, countryKey: "id" | "name"): string {
+  const id = (type: string, column: string) => `"${origin}/id/${type}/{${column}}"`;
+  return `Laureates : Laureate from laureates
+    @subject = ${id("laureate", "laureates.id")}
+    name = laureates.name
+    gender = laureates.gender
+
+Awards : Award from awards
+    @subject = ${id("award", "awards.id")}
+    year = awards.year
+    share = awards.share
+    laureate = Laureate(awards.laureate)
+    category = Category(awards.category)
+
+Categories : Category from categories
+    @subject = ${id("category", "categories.id")}
+    name = categories.name
+
+Institutions : Institution from institutions
+    @subject = ${id("institution", "institutions.id")}
+    name = institutions.name
+    city = institutions.city
+
+Countries : Country from countries
+    @subject = ${id("country", `countries.${countryKey}`)}
+    name = countries.name
+
+Affiliations : Award from awards.join(affiliations, on = awards.id == affiliations.award)
+    @subject = ${id("award", "awards.id")}
+    year = awards.year
+    share = awards.share
+    laureate = Laureate(awards.laureate)
+    category = Category(awards.category)
+    institution = Institution(affiliations.institution)
+`;
+}
+
+/**
+ * Every call of the flow, by the words its prompt carries: the `model` Task's and the `requirements`
+ * Task's instructions (`web/…/assistant/tasks/`), the `mapping` Task's — the country's subject telling
+ * the program written after the decision changed from the first — and Ask's, per question. The second
+ * question's prompt carries the first, so it is looked for first.
+ */
+function script(origin: string): Rule[] {
+  const json = (value: unknown) => ({ text: JSON.stringify(value) });
+  return [
+    { when: "You design what a person's data is about", reply: json(DRAFT) },
+    { when: "You suggest questions a person could ask", reply: json(REQUIREMENTS) },
+    { when: "{countries.name}", reply: { text: mappings(origin, "name") } },
+    { when: "You write the mappings of a Fossil program", reply: { text: mappings(origin, "id") } },
+    {
+      when: `Question: ${BY_INSTITUTION}`,
+      reply: json({ of: "Award", show: { kind: "chart", type: "bar", x: "Institution.name", y: { op: "count" } } }),
+    },
+    {
+      when: `Question: ${BY_CATEGORY}`,
+      reply: json({ of: "Award", show: { kind: "chart", type: "bar", x: "Category.name", y: { op: "count" } } }),
+    },
+  ];
+}
+
+/** The preview's answers, once each kept question has its card and none is being replaced. */
+async function answered(page: Page): Promise<number> {
+  const answers = page.locator("[data-preview-answers]");
+  if ((await page.locator("[data-stale]").count()) > 0) return -1;
+  return answers.locator('[data-slot="answer-card"]').count();
+}
+
+/**
+ * The guided assistant over the Nobel example, from the files to Ask: the files picked in the tree,
+ * what it is about said while they are read, what is in them, the one decision with no safe answer
+ * answered and an assumption shown, two of the questions on offer taken, the preview answering them
+ * in the chat, a decision changed and the preview run again, then the whole graph built and asked in
+ * Discover.
+ *
+ * The model is a double (`support/model.ts`), as the e2e suite's is: the assistant's Tasks are three
+ * calls and a mapping written to fossil's grammar, and a recording that depended on a small model
+ * proposing the same types on every take would be a different film each time. Everything else is the
+ * stack's: the profile is fossil's over the files in the store, the program is checked by fossil,
+ * the preview and the build are runs on the page's engine, and every answer is read from the corpus.
+ */
+demo("nobel-assistant", "The guided assistant: the Nobel files to a preview in the chat, a graph built, then Ask", {
+  async arrange({ page }) {
+    // The subjects are under the page's origin: read it, then put the double on the next load.
+    await page.goto("/graphs");
+    const origin = new URL(page.url()).origin;
+    await useModelDouble(page, { rules: script(origin) });
+    await page.goto("/graphs/new/assistant");
+    await expect(page.getByRole("tree", { name: "Files" }).getByText(`@${CONNECTION}`, { exact: true })).toBeVisible();
+    return { page };
+  },
+
+  steps: ({ page }, { env }) => [
+    {
+      subtitle: "Pick the files to explore",
+      async action() {
+        // The connection is listed when it is opened; its files have a box only then.
+        await page.getByRole("tree", { name: "Files" }).getByText(`@${CONNECTION}`, { exact: true }).click();
+        for (const file of FILES) await page.getByRole("checkbox", { name: `Pick ${file}.json` }).click();
+        await page.getByRole("button", { name: "Read these files" }).click();
+      },
+      check: () => expect(page.getByRole("textbox", { name: "What is this data about?" })).toBeVisible(),
+    },
+    {
+      subtitle: "Say what it is about while they are read",
+      async action() {
+        const about = page.getByRole("textbox", { name: "What is this data about?" });
+        await about.pressSequentially(ABOUT, { delay: 25 });
+        await about.press("Enter");
+      },
+      check: () => expect(page.getByText("Here’s what’s in your data")).toBeVisible({ timeout: 60_000 }),
+    },
+    {
+      subtitle: "What is in your data, counted",
+      action: () => page.locator("[data-things]").scrollIntoViewIfNeeded(),
+      check: () => expect(page.locator("[data-things] > li")).toHaveCount(FILES.length),
+    },
+    {
+      subtitle: "What has no safe answer is yours to decide",
+      action: () => chooseRadio(env, env.root, LINK, ONE),
+      check: () => expect(page.getByRole("radiogroup", { name: LINK }).getByRole("radio", { name: ONE })).toBeChecked(),
+    },
+    {
+      subtitle: "What has a safe default is taken, and said",
+      action: () => page.locator('[data-assumption="key/countries"]').scrollIntoViewIfNeeded(),
+      check: () => expect(page.locator('[data-assumption="key/countries"]')).toContainText("I assumed: id"),
+    },
+    {
+      subtitle: "Take the questions it suggests",
+      async action() {
+        await page.getByRole("button", { name: BY_CATEGORY }).click();
+        await page.getByRole("button", { name: BY_INSTITUTION }).click();
+      },
+      check: () => expect(page.locator("[data-question]")).toHaveCount(2),
+    },
+    {
+      subtitle: "That's all: show me a preview",
+      action: () => page.getByRole("button", { name: "That's all, show me a preview" }).click(),
+      check: () => expect(page.getByText("Here is your data over its first 200 rows")).toBeVisible({ timeout: 60_000 }),
+    },
+    {
+      subtitle: "Each question answered, over the first 200 rows",
+      action: () => page.locator("[data-preview-answers]").scrollIntoViewIfNeeded(),
+      check: () => expect.poll(() => answered(page), { timeout: 60_000 }).toBe(2),
+      poster: true,
+    },
+    {
+      subtitle: "Change a decision: the preview runs again",
+      async action() {
+        await page.getByRole("radiogroup", { name: COUNTRY }).scrollIntoViewIfNeeded();
+        await chooseRadio(env, env.root, COUNTRY, "name");
+      },
+      async check() {
+        // The program written again, for the country's other key, and the answers read over it.
+        await expect.poll(async () => (await promptsOf(page)).some((p) => p.includes("{countries.name}")), { timeout: 60_000 }).toBe(true);
+        await page.locator("[data-preview-answers]").scrollIntoViewIfNeeded();
+        await expect.poll(() => answered(page), { timeout: 60_000 }).toBe(2);
+      },
+    },
+    {
+      subtitle: "Build the whole graph",
+      action: () => page.getByRole("button", { name: "Build the whole graph" }).click(),
+      check: () => expect(page.getByText("Your graph is ready to explore.")).toBeVisible({ timeout: 120_000 }),
+    },
+    {
+      subtitle: "Ask your data, in Discover",
+      action: () => page.getByRole("link", { name: "Ask your data" }).click(),
+      async check() {
+        await expect(page).toHaveURL(/\/graphs\/[^/]+\/discover/);
+        await env.harness(AskPanel);
+      },
+    },
+  ],
+});

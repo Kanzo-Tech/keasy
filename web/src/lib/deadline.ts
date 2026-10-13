@@ -7,19 +7,7 @@
 /** Any API request from the browser, and a stream's next chunk: the G1 table's figures. */
 export const DEADLINE_MS = 30_000;
 
-import { MODEL_CALLS } from "./routes";
-
 const NO_BODY = new Set([101, 204, 205, 304]);
-
-/**
- * A model call, which `@kanzo-tech/llm`'s `createGateway` bounds itself — its answer's start and
- * each chunk after — and names `ai/silent`. A second bound here would race it and call the same
- * silence `server/silent`, so the path is passed through whole.
- */
-function isModelCall(input: RequestInfo | URL): boolean {
-  const url = input instanceof Request ? input.url : input.toString();
-  return new URL(url, "http://origin.invalid").pathname.startsWith(`${MODEL_CALLS}/`);
-}
 
 /**
  * `fetch`, with the response's headers due within `ms` and each chunk of its body within `ms` of the
@@ -30,7 +18,6 @@ function isModelCall(input: RequestInfo | URL): boolean {
  */
 export function deadlineFetch(silent: (ms: number) => Error, ms: number = DEADLINE_MS): typeof fetch {
   return async (input, init) => {
-    if (isModelCall(input)) return globalThis.fetch(input, init);
     const outer = init?.signal ?? (input instanceof Request ? input.signal : undefined);
     const controller = new AbortController();
     const forward = () => controller.abort(outer?.reason);

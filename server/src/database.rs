@@ -2,11 +2,9 @@
 //! its schema — one statement list.
 //!
 //! A fresh database gets the schema. An existing one must already hold exactly
-//! what the schema creates, or the server refuses to start. The one exception
-//! is the schema just before this one, which [`UPGRADE`] brings forward in
-//! place, its rows kept; anything older is refused, and changes by deleting
-//! the data volume. There is no chain of migrations: each change replaces the
-//! previous upgrade with its own.
+//! what the schema creates, or the server refuses to start and says to delete
+//! the data volume. There are no migrations: a schema change is a database
+//! dropped and created again (`docs/design/permissions.md`, *The schema*).
 
 use std::path::Path;
 use std::str::FromStr;
@@ -311,6 +309,23 @@ CREATE TABLE connections (
 -- Exactly one write sink per workspace.
 CREATE UNIQUE INDEX connections_one_sink ON connections(direction) WHERE direction = 'sink';
 
+-- The assistant's conversation a graph was built from: its messages as the
+-- web stores them — structure only, never a row of anyone's data — opaque to
+-- keasy, read and replaced whole.
+CREATE TABLE conversations (
+    id              TEXT PRIMARY KEY,
+    messages        TEXT NOT NULL CHECK (json_type(messages) = 'array'),
+    -- Who owns it: a `sub`, or 'workspace' once its owner has left.
+    owner           TEXT NOT NULL,
+    owner_name      TEXT NOT NULL,
+    created_by      TEXT NOT NULL,
+    created_by_name TEXT NOT NULL,
+    created_at      TEXT NOT NULL,
+    updated_by      TEXT,
+    updated_by_name TEXT,
+    updated_at      TEXT
+);
+
 CREATE TABLE graphs (
     id              TEXT PRIMARY KEY,
     name            TEXT,
@@ -337,7 +352,9 @@ CREATE TABLE graphs (
     folder          TEXT CHECK (status = 'draft' OR folder IS NOT NULL),
     script          TEXT,
     -- fossil's run report, opaque. What the corpus holds, the corpus says.
-    report          TEXT CHECK (report IS NULL OR json_valid(report))
+    report          TEXT CHECK (report IS NULL OR json_valid(report)),
+    -- The conversation it was built from; a graph outlives it.
+    conversation    TEXT REFERENCES conversations (id) ON DELETE SET NULL
 );
 -- A folder holds one graph's output: drafts may share one, nothing else does.
 CREATE UNIQUE INDEX graphs_one_folder ON graphs(sink_connection, folder) WHERE status <> 'draft';
@@ -400,39 +417,6 @@ CREATE INDEX grants_of_graph ON grants (graph) WHERE graph IS NOT NULL;
 CREATE INDEX grants_to ON grants (principal_kind, principal);
 ";
 
-/// The statements this schema adds to the one before it, by how each begins.
-const ADDED: [&str; 6] = [
-    "CREATE TABLE grants (",
-    "CREATE UNIQUE INDEX grants_one_tuple",
-    "CREATE INDEX grants_of_secret",
-    "CREATE INDEX grants_of_connection",
-    "CREATE INDEX grants_of_graph",
-    "CREATE INDEX grants_to",
-];
-
-/// The statement of [`SCHEMA`] that begins `start`, through its `;`.
-fn statement(start: &str) -> &'static str {
-    let from = SCHEMA.find(start).expect("the schema holds the statement");
-    let to = from + SCHEMA[from..].find(";\n").expect("a statement ends") + 1;
-    &SCHEMA[from..to]
-}
-
-/// The schema before this one, as a fresh database of it would hold it: this
-/// one without the grants.
-fn previous_schema() -> String {
-    ADDED.iter().fold(SCHEMA.to_string(), |schema, start| {
-        schema.replace(statement(start), "")
-    })
-}
-
-/// From the previous schema to this one: the grants, an empty table and its
-/// indexes. Nothing else moves, so every row is kept as it is — owned, as
-/// phase A left it, by who created it or by the workspace.
-fn upgrade() -> String {
-    let added: Vec<&str> = ADDED.iter().map(|start| statement(start)).collect();
-    format!("BEGIN;\n{}\nCOMMIT;", added.join("\n"))
-}
-
 /// Every table and index a fresh database of `schema` holds.
 fn objects_of(schema: &str) -> Result<Vec<(String, String)>, String> {
     rusqlite::Connection::open_in_memory()
@@ -443,8 +427,9 @@ fn objects_of(schema: &str) -> Result<Vec<(String, String)>, String> {
         .map_err(|e| format!("build expected schema: {e}"))
 }
 
-/// Create the schema in an empty database, bring one of the previous schema
-/// forward, or check that a non-empty one holds exactly it.
+/// Create the schema in an empty database, or check that a non-empty one holds
+/// exactly it. There are no migrations: a database of another schema is refused
+/// untouched, and created again empty.
 pub fn apply_schema(conn: &rusqlite::Connection) -> Result<(), String> {
     let existing = objects(conn).map_err(|e| format!("read schema: {e}"))?;
     if existing.is_empty() {
@@ -452,33 +437,11 @@ pub fn apply_schema(conn: &rusqlite::Connection) -> Result<(), String> {
             .execute_batch(&format!("BEGIN; {SCHEMA} COMMIT;"))
             .map_err(|e| format!("create schema: {e}"));
     }
-
-    let expected = objects_of(SCHEMA)?;
-    if existing == expected {
-        return Ok(());
-    }
-    if existing == objects_of(&previous_schema())? {
-        if let Err(e) = conn.execute_batch(&upgrade()) {
-            // A failed statement leaves the transaction open; nothing of it is kept.
-            let _ = conn.execute_batch("ROLLBACK;");
-            return Err(format!("upgrade the schema: {e}"));
-        }
-        let violations: i64 = conn
-            .query_row("SELECT count(*) FROM pragma_foreign_key_check", [], |r| {
-                r.get(0)
-            })
-            .map_err(|e| format!("check the upgrade: {e}"))?;
-        if violations > 0 {
-            return Err(format!("the upgrade left {violations} broken references"));
-        }
-        tracing::info!("schema upgraded: objects can be shared");
-    }
-    let existing = objects(conn).map_err(|e| format!("read schema: {e}"))?;
-    if existing != expected {
+    if existing != objects_of(SCHEMA)? {
         return Err(
             "the database was created by a different schema than this build's. \
              Schema changes are not migrated: delete the data volume (dev: \
-             `docker compose down -v`) and start again"
+             `make clean`, or `docker compose down -v`) and start again"
                 .into(),
         );
     }
@@ -508,61 +471,29 @@ mod tests {
         let tables: i64 = conn
             .query_row(
                 "SELECT count(*) FROM sqlite_master WHERE type='table' AND name IN \
-                 ('credentials','connections','graphs','dashboards','rules')",
+                 ('credentials','connections','graphs','dashboards','rules','conversations')",
                 [],
                 |r| r.get(0),
             )
             .unwrap();
-        assert_eq!(tables, 5);
+        assert_eq!(tables, 6);
     }
 
-    /// A database of the previous schema is brought forward in place: every
-    /// row is kept as it was, and the objects can be shared — a grant goes
-    /// with its object's rename and dies with it.
+    /// Messages are a JSON array, or nothing is stored.
     #[test]
-    fn a_database_of_the_previous_schema_is_upgraded_with_its_rows() {
+    fn a_conversation_holds_an_array_of_messages() {
         let conn = rusqlite::Connection::open_in_memory().unwrap();
-        conn.execute_batch("PRAGMA foreign_keys=ON;").unwrap();
-        conn.execute_batch(&previous_schema()).unwrap();
-        conn.execute_batch(
-            r#"
-            INSERT INTO credentials (name, spec, owner, owner_name, created_by, created_by_name, created_at)
-                VALUES ('seed', x'00', 'workspace', 'Workspace', 'bootstrap', 'Bootstrap', 't'),
-                       ('mine', x'00', 'u-1', 'Ana', 'u-1', 'Ana', 't');
-            INSERT INTO connections (name, credential, target, owner, owner_name, created_by, created_by_name, created_at)
-                VALUES ('sink', 'seed', '{"direction":"sink"}', 'workspace', 'Workspace', 'bootstrap', 'Bootstrap', 't');
-            INSERT INTO graphs (id, status, created_at, owner, owner_name, created_by, created_by_name, sink_connection, folder)
-                VALUES ('g', 'completed', 't', 'u-2', 'Bruno', 'u-2', 'Bruno', 'sink', 'people');
-            "#,
-        )
-        .unwrap();
-
         apply_schema(&conn).unwrap();
-        apply_schema(&conn).unwrap();
-
-        let count = |sql: &str| -> i64 { conn.query_row(sql, [], |r| r.get(0)).unwrap() };
-        assert_eq!(count("SELECT count(*) FROM credentials"), 2);
-        assert_eq!(count("SELECT count(*) FROM graphs WHERE owner = 'u-2'"), 1);
-        conn.execute_batch(
-            "INSERT INTO grants (secret, principal_kind, principal, principal_name, relation,
-                                 created_by, created_by_name, created_at)
-                 VALUES ('mine', 'group', 'g-1', 'Research', 'user', 'u-1', 'Ana', 't');
-             INSERT INTO grants (graph, principal_kind, principal, principal_name, relation,
-                                 created_by, created_by_name, created_at)
-                 VALUES ('g', 'user', 'u-1', 'Ana', 'manager', 'u-2', 'Bruno', 't');
-             UPDATE credentials SET name = 'ours' WHERE name = 'mine';
-             DELETE FROM graphs WHERE id = 'g';",
-        )
-        .unwrap();
-        assert_eq!(
-            count("SELECT count(*) FROM grants WHERE secret = 'ours'"),
-            1
-        );
-        assert_eq!(
-            count("SELECT count(*) FROM grants"),
-            1,
-            "gone with its graph"
-        );
+        let insert = |messages: &str| {
+            conn.execute(
+                "INSERT INTO conversations (id, messages, owner, owner_name, created_by, created_by_name, created_at)
+                     VALUES (?1, ?2, 'u-1', 'Ana', 'u-1', 'Ana', 't')",
+                [messages, messages],
+            )
+        };
+        assert!(insert("[]").is_ok());
+        assert!(insert("{}").is_err());
+        assert!(insert("not json").is_err());
     }
 
     /// One tuple, once; one object a row; and a user only of a secret.

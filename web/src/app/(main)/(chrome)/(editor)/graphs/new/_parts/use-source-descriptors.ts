@@ -1,19 +1,19 @@
 "use client";
 
 /**
- * What introspection answered for the sources the graph editor's program reads, to hand to fossil.
- * Fossil answers which sources those are; they are described only when that answer changes, never
- * on a keystroke that leaves it alone.
+ * The sources the graph editor's program reads, described and handed to its checker. Fossil answers
+ * which sources those are; they are described only when that answer changes, never on a keystroke
+ * that leaves it alone.
  *
- * `@fossil-lang/introspect` owns the DESCRIBE each reader needs and the DuckDB→fossil type table.
- * keasy lends it the data plane: its `host` vends a read credential per source connection, and the
- * page's engine reads through it, by range, from the store. The server never reads the file.
+ * `program.describe` is fossil's profile at its `types` depth — one DESCRIBE a source — over the
+ * program's own inputs, registered with its checker as it answers. keasy lends it the data plane:
+ * its `host` vends a read credential per source connection, and the page's engine reads through
+ * it, by range, from the store. The server never reads the file.
  */
 
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { introspect } from "@fossil-lang/introspect";
-import { inputs } from "@fossil-lang/wasm";
+import { type FossilProgram, inputs } from "@fossil-lang/wasm";
 import { engine } from "@kanzo-tech/ui/analytics";
 
 import { host } from "@/lib/fossil/host";
@@ -21,7 +21,7 @@ import { host } from "@/lib/fossil/host";
 export const sourceDescriptorsKey = (sources: readonly string[]) => ["source-descriptors", sources] as const;
 
 /** What could be described, and each source that could not, with its problem — shown, never dropped. */
-type Described = Awaited<ReturnType<typeof introspect>>;
+type Described = Awaited<ReturnType<FossilProgram["describe"]>>;
 
 /** A pause in typing long enough to ask fossil again which sources the program reads. */
 const TYPING_PAUSE_MS = 400;
@@ -44,11 +44,12 @@ function useDebouncedValue<T>(value: T, delayMs: number): T {
 }
 
 /**
- * Introspection's whole answer, or `null` until there is one. keasy shows none of it: fossil's check
- * reports each undescribed source at its call. Not suspending (fossil docs/design/failure, G2.4): it
- * follows every pause in typing, and the editor stays useful without it.
+ * The description's whole answer, or `null` until there is one — given to `opened`'s checker as it
+ * answers. keasy shows none of it: fossil's check reports each undescribed source at its call. Not
+ * suspending (fossil docs/design/failure, G2.4): it follows every pause in typing, and the editor
+ * stays useful without it.
  */
-export function useSourceDescriptors(script: string): Described | null {
+export function useSourceDescriptors(script: string, opened: FossilProgram | null): Described | null {
   const program = useDebouncedValue(script, TYPING_PAUSE_MS);
 
   const { data: sources } = useQuery({
@@ -61,8 +62,8 @@ export function useSourceDescriptors(script: string): Described | null {
     queryKey: sourceDescriptorsKey(
       (sources ?? []).map((s) => `${s.format}:${s.location}:${s.option ?? ""}`).sort(),
     ),
-    queryFn: async ({ signal }) => introspect(sources ?? [], { host, engine: await engine({ signal }), signal }),
-    enabled: !!sources && sources.length > 0,
+    queryFn: async ({ signal }) => opened!.describe({ engine: await engine({ signal }), options: { depth: "types" }, signal }),
+    enabled: !!opened && !!sources && sources.length > 0,
     retry: false,
     staleTime: DESCRIPTION_FRESH_MS,
   });

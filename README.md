@@ -12,9 +12,9 @@ make dev
 
 `make dev` brings everything up and returns when the web answers: open
 [http://acme.localhost:3000](http://acme.localhost:3000) and log in at Keycloak. The first one takes
-a while — it compiles the server's dependencies and the web's first pages, and pulls the local
-models — and later ones reuse the cached volumes. The platform services, identity and the AI
-gateway, are kanzo-ui's, included by URL at `KANZO_UI_REF`; nothing is checked out.
+a while — it compiles the server's dependencies and the web's first pages — and later ones reuse the
+cached volumes. The platform's service, identity, is kanzo-ui's, included by URL at `KANZO_UI_REF`;
+nothing is checked out.
 
 Every dev value is a literal in `compose.yaml` and `compose.override.yaml`, and a local `.env`
 overrides any of them ([`.env.example`](.env.example)). Anything past `make dev` is plain
@@ -23,29 +23,19 @@ overrides any of them ([`.env.example`](.env.example)). Anything past `make dev`
 
 | What | Where |
 |------|-------|
-| App (web BFF, `/api/v1` and `/api/ai`) | [http://acme.localhost:3000](http://acme.localhost:3000) — one web, each organization at its subdomain |
+| App (web BFF, `/api/v1`) | [http://acme.localhost:3000](http://acme.localhost:3000) — one web, each organization at its subdomain |
 | Keycloak | [http://localhost:8080](http://localhost:8080) (admin `admin` / `admin`) |
 | API, for curl | `http://localhost:8081` |
-| AI gateway | `http://localhost:4000` — a token the realm issued for `ai-gateway` and one organization is its only credential; every request is logged to `ai-postgres` |
 
 ### AI in development
 
-By default both aliases run on local models served by Docker Model Runner (Docker Desktop 4.40+,
-`docker desktop enable model-runner`), on the host's GPU: `chat` on an 8B model, `complete` on a 3B.
-`make dev` pulls them the first time (~6.5 GB) and runs them with an 8192-token context, which fits
-a 16 GB laptop; until they are pulled everything but AI works. To use a provider instead — no
-download, any laptop — name it in `.env`:
-
-```sh
-AI_CHAT=anthropic/claude-sonnet-5-5
-AI_COMPLETE=anthropic/claude-haiku-4-5
-ANTHROPIC_API_KEY=sk-ant-…
-```
-
-`provider/model`, with the provider's usual key: `anthropic`, `openai`, `gemini`, `mistral`,
-`openrouter`, or `local` for Docker Model Runner. The same two variables choose the models in a
-deployment ([Deployment](#deployment)). When an alias fails, Ask says why — the gateway's status and
-reason (`ai/unavailable`) — rather than a timeout.
+The model runs in the browser, on WebGPU — Chrome or Edge, Safari 26, Firefox on Windows — through
+WebLLM (`web/src/lib/ai.ts` names and pins it). The browser downloads it in the background when a
+graph, the wizard or the assistant opens, about 2.3 GB once, and keeps it; nothing about a question
+leaves the browser, and no server holds a key. Its shards come from keasy's own origin, never a third
+party's: `make models` downloads them once into `infra/models`, which the stack serves at `/models`
+(`KEASY_MODEL_URL`, [`.env.example`](.env.example)). Without them, or in a browser without WebGPU,
+Ask and the assistant say so (`ai/unavailable`); everything else works.
 
 ## Dev accounts
 
@@ -175,9 +165,7 @@ graph TD
     Web -->|"session records"| Valkey[("Valkey")]
     Server -->|"JWKS"| Keycloak
     Server --> SQLite[("SQLite")]
-    Web -->|"/api/ai + bearer token"| Gateway["AI gateway (agentgateway)"]
-    Gateway -->|"JWKS"| Keycloak
-    Gateway --> Models["Docker Model Runner (dev) / providers (prod)"]
+    Browser -->|"the model's shards, once: /models"| Models["models (nginx)"]
     Keycloak --> PostgreSQL[("PostgreSQL")]
 ```
 
@@ -204,14 +192,10 @@ is shared: everyone in the workspace reads every graph, every editor runs it, an
 owner or an admin changes it (roles `reader ⊂ editor ⊂ admin`, from the Keycloak
 organization the instance serves; the matrix is `docs/design/permissions.md`).
 
-Models are not a credential. Every call goes to the platform's **AI gateway**
-(kanzo-ui's `services/ai`, agentgateway) under an alias (`chat`, `complete`), never a
-provider. The web forwards `/api/ai` to it (`KEASY_AI_URL`) as it forwards `/api/v1`, with
-the session's token exchanged for the `ai-gateway` audience and the organization the request
-addresses: that token is the gateway's only credential and names the organization it charges.
-No server holds a model key. Which model answers each alias, the providers' keys and the budget are
-the gateway's environment: `AI_CHAT` and `AI_COMPLETE`, in `.env` in development and in
-`infra/prod/prod.env` in a deployment.
+The model runs in the browser too: `localModel` from `@kanzo-tech/llm/local`, WebLLM on
+WebGPU in a worker of its own, its shards downloaded from this origin's `/models`
+(`KEASY_MODEL_URL`, the `models` service). No call leaves the page, so there is nothing to forward,
+no model key and no budget to keep.
 
 A **credential** (S3 or Azure) is who keasy is when it reaches a store; a
 **connection** puts one to use (a storage prefix — a source or the one sink). Both
@@ -228,23 +212,24 @@ organization's file (`infra/prod/README.md`).
 
 Stored credentials are sealed with `KEASY_SECRET_KEY`: 32 random bytes in base64
 (`openssl rand -base64 32`). The server refuses to start without one, and refuses
-a database whose schema is not the one it ships — there are no migrations; wipe
-the volume (`make clean`) instead. The latest such change is the `rules` table (a
-graph's SHACL rules): a stack started before it needs `docker compose down -v`.
+a database whose schema is not the one it ships — there are no migrations: a schema
+change is the database dropped and created again, so wipe the volume (`make clean`, or
+`docker compose down -v`) and start the stack again. The latest such change is the
+`conversations` table (the assistant's conversations, and each graph's own).
 
 ## Deployment
 
 The same compose files, on one server: `compose.yaml` with `compose.prod.yaml` — the platform as it
 runs in production, Traefik with Let's Encrypt in front — and one file per organization in
 `infra/prod/orgs/`. What a deployment says is versioned in `infra/prod/`: `prod.env` (the release,
-the domain, the models) and `secrets.sops.env`, encrypted with SOPS and age to the keys of whoever
+the domain, where the model is served) and `secrets.sops.env`, encrypted with SOPS and age to the keys of whoever
 deploys. On the server:
 
 ```sh
 git pull && make deploy
 ```
 
-Changing a model, adding or removing an organization, moving to a new release: edit a line in
+Serving the model, adding or removing an organization, moving to a new release: edit a line in
 `infra/prod/`, commit, `make deploy`. [`infra/prod/README.md`](infra/prod/README.md) is the guide.
 Images are published to GHCR by `.github/workflows/images.yml` on `v*` tags, after the server and
 web CI pass.
@@ -256,7 +241,7 @@ web CI pass.
 | `make dev` | Start dev and wait until the web answers; again only after dep or Dockerfile changes (code hot-reloads) |
 | `make seed` | Fetch the dev graphs, for the next `make dev` to upload |
 | `make clean` | Remove containers, volumes (Keycloak, the realm's state, data) and images |
-| `make e2e` | The failure scenarios and the smoke over the dev seeds (`e2e/`, Playwright) against the stack without the local models, as CI; main checkout only, as Keycloak admits :3000 alone |
+| `make e2e` | The failure scenarios and the smoke over the dev seeds (`e2e/`, Playwright) against the stack, as CI; main checkout only, as Keycloak admits :3000 alone |
 | `make demo` | List the product demos; `DEMO=<name>` or `DEMO=all` records them (see [Demos](#demos)) |
 | `make api` | Regenerate the API contract ([API contract](#api-contract)) |
 | `make deploy`, `make secrets`, `make key` | A deployment ([`infra/prod/README.md`](infra/prod/README.md)) |
@@ -284,12 +269,9 @@ Playwright's frames into the MP4. The demos project runs Chromium on the GPU (Me
 `playwright.config.ts`), which the Graph view needs: in software it paints at a frame or two a second.
 
 `make demo` touches no container for a graph demo: Next's dev indicator and React Query's devtools
-are hidden in the recording's browser. A demo that asks the model (`nobel-ask`) swaps the AI gateway onto
-`e2e/demos/models.yml` for the recording and puts the dev models back after. Its model is replayed by
-default, from `e2e/demos/recordings/nobel-ask.json`: the model's words are the recording's, and the tool
-it calls still runs on the page, so the figures on screen are the corpus's. `LIVE=1` asks the model
-instead, and `make demo DEMO=nobel-ask LIVE=1 RECORD=1` captures a new recording, written only once every
-check of the take has passed (`e2e/demos/record/model.ts`).
+are hidden in the recording's browser. A demo that asks the model (`nobel-ask`) asks everyone's, in
+the recording's browser on its GPU (WebGPU): it waits for the model to load before the take, and the
+figures on screen are the corpus's, read under the page's filter.
 
 **Adding a demo** is a file `e2e/demos/<name>.demo.ts` calling `demo(name, description, { arrange,
 steps })` from `e2e/demos/record/`, transcribed from its table in `e2e/demos/STORYBOARD.md`; `make demo`

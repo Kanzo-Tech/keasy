@@ -1,0 +1,3 @@
+# `make models` (infra/models.sh) downloads the model the page runs here. Never committed.
+*
+!.gitignore

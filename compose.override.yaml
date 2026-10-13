@@ -3,15 +3,14 @@
 # literal; a local .env overrides any variable (.env.example).
 #
 # The platform comes from kanzo-ui at KANZO_UI_REF, in its development shape: Keycloak on :8080 with
-# two organizations (acme, globex) and seeded people, the AI gateway on :4000 with both aliases on
-# local models (`make dev` pulls them unless .env names a provider for both).
+# two organizations (acme, globex) and seeded people.
 #
 # `*.localhost` is loopback on the host and a network alias here, so one URL works from the browser
 # and from a container: the S3 endpoint a vended credential names is addressed that way.
 
 include:
   - path:
-      - https://github.com/Kanzo-Tech/ui.git#${KANZO_UI_REF:-v0.42.0}:services/compose.dev.yaml
+      - https://github.com/Kanzo-Tech/ui.git#${KANZO_UI_REF:-v0.45.0}:services/compose.dev.yaml
       # keasy's additions to the platform in development: its roles on the seeded groups, and moving a
       # realm applied before this layout onto it.
       - infra/dev/platform.yaml
@@ -36,6 +35,8 @@ services:
       # Set by `make demo` alone: the dev server without Next's dev indicator or React Query's
       # devtools, which a recording would otherwise show (web/next.config.ts).
       NEXT_PUBLIC_KEASY_DEMO: ${NEXT_PUBLIC_KEASY_DEMO:-}
+      # /models on this origin is the `models` service's (web/next.config.ts): development has no edge.
+      KEASY_MODELS_UPSTREAM: http://models:8080
     # The first answer is Next compiling the sign-in route — minutes on a small machine after a clean
     # start, which would otherwise look like a stack that never came up. `make dev` waits for it.
     healthcheck:
@@ -45,6 +46,8 @@ services:
     depends_on:
       acme-server:
         condition: service_healthy
+      models:
+        condition: service_started
 
   # acme's server, built from source and hot-reloaded: `server/src` is mounted and cargo-watch
   # rebuilds on a change. Crates compile into the persistent `server-target` volume, so only the
@@ -179,8 +182,8 @@ services:
         condition: service_healthy
 
   # ── The `faults` profile: what the end-to-end suite breaks things with (e2e/) ──
-  # Neither starts with `make dev`, nor with `make e2e`: the suite starts and
-  # stops each around the one scenario that needs it.
+  # It starts with neither `make dev` nor `make e2e`: the suite starts and stops
+  # it around the one scenario that needs it.
 
   # A store that accepts every connection and never answers. Shares the S3
   # store's alias, so with `s3` stopped every vend and read the server makes to
@@ -196,20 +199,6 @@ services:
       default:
         aliases:
           - s3.localhost
-
-  # The AI gateway, silent: accepts the web's forward and never answers. Shares
-  # the gateway's name, so with `ai-gateway` stopped the BFF's `/api/ai` forward
-  # meets silence instead (scenario 13). Never up beside `ai-gateway`.
-  ai-gateway-silent:
-    profiles: [faults]
-    image: python:3.12-alpine
-    command: ["python", "-u", "/faults/silent.py", "4000"]
-    volumes:
-      - ./e2e/faults:/faults:ro
-    networks:
-      default:
-        aliases:
-          - ai-gateway
 
 # Development secrets, as files: the same names a deployment takes from its environment.
 secrets:

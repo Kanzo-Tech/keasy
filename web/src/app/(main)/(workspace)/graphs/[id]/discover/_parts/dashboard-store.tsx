@@ -7,7 +7,7 @@ import type { AnswerAdded } from "@kanzo-tech/ai/data";
 import { $api, http, type Schemas } from "@/lib/api/client";
 import { queryClient } from "@/lib/api/query-client";
 import { toastError } from "@/lib/errors";
-import { useCorpus } from "@/lib/fossil/corpus";
+import { useParams } from "next/navigation";
 import { useDashboardWrites } from "./dashboard-writes";
 
 /**
@@ -55,7 +55,7 @@ export function DashboardStoreProvider({ onOpen, children }: {
   onOpen: (added: AnswerAdded) => void;
   children: ReactNode;
 }) {
-  const { graphId } = useCorpus();
+  const { id: graphId } = useParams<{ id: string }>();
   const init = { params: { path: { id: graphId } } };
   const read = $api.queryOptions("get", "/v1/graphs/{id}/dashboard", init);
   const saved = $api.useQuery("get", "/v1/graphs/{id}/dashboard", init);

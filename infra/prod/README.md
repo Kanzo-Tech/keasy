@@ -6,7 +6,7 @@ says is in this folder, and every change is a commit:
 
 | File | What it holds |
 |---|---|
-| [`prod.env`](prod.env) | the release, the domain, which model answers each AI alias — nothing secret |
+| [`prod.env`](prod.env) | the release, the domain, where the model is served — nothing secret |
 | [`orgs/`](orgs) | one file per organization: its name and domain, its server, its host |
 | `secrets.sops.env` | passwords, keys and each organization's sealing key, encrypted |
 | [`.sops.yaml`](.sops.yaml) | whose age keys can decrypt `secrets.sops.env` |
@@ -14,19 +14,26 @@ says is in this folder, and every change is a commit:
 Every task below is the same: **edit a file here, commit, and on the server `git pull && make
 deploy`.** `make deploy` changes only what the files changed, and returns when everything is up.
 
-## Change a model
+## Serve the model
 
-In `prod.env`, `provider/model` for the alias:
+The model runs in each person's browser, on WebGPU; the server holds no key and runs no model, but it
+serves the model's shards, from keasy's own origin and never a third party's. On the server, once:
 
 ```sh
-AI_CHAT=anthropic/claude-sonnet-5-5
-AI_COMPLETE=openai/gpt-5-mini
+make models
 ```
 
-`anthropic`, `openai`, `gemini`, `mistral`, `openrouter`. A provider used for the first time needs
-its key: `make secret NAME=OPENAI_API_KEY`, and paste it when asked. Only the AI gateway restarts; nothing
-else notices. If a model name is wrong, Ask says so — `The model is unavailable (404): …` — and the
-gateway's log names the request.
+downloads the weights and the compiled library `web/src/lib/ai.ts` pins (about 2.3 GB, each file
+checked) into `KEASY_MODELS` — `infra/models` in the checkout unless `prod.env` says otherwise.
+`make deploy` then serves that directory read-only from the `models` service (nginx), and Traefik
+routes `/models/` on every organization's host to it ahead of the web (`compose.prod.yaml`), so
+`KEASY_MODEL_URL` stays `/models`. Each path names one content for good — the weights by their
+Hugging Face revision, the library by its WebLLM release — so they are served with
+`Cache-Control: public, max-age=31536000, immutable`, and a browser downloads them once. A new pin
+is a new path: `make models` again before `make deploy`, and the old directories can be deleted once
+the release that named them is gone. Without them the browser's download fails and Ask and the
+assistant say so; `KEASY_MODEL_URL=` (empty) turns the model off. A browser without WebGPU says so
+too; the rest of keasy works the same.
 
 ## Add an organization
 
@@ -64,8 +71,10 @@ that deletes its data for good.
 `KEASY_VERSION` in `prod.env`. The web is replaced with no gap when the `docker rollout` plugin is
 installed on the server ([docker-rollout](https://github.com/wowu/docker-rollout)); each
 organization's server stops and starts — seconds — because it owns an SQLite file, which takes one
-writer. The platform services (Keycloak, the gateway) move with `KANZO_UI_REF` in
-`compose.prod.yaml`.
+writer. The platform services (Keycloak) move with `KANZO_UI_REF` in
+`compose.prod.yaml`. A release whose database schema differs is not migrated: its server refuses to
+start on the old volume, which is deleted (`docker volume rm keasy_<alias>-data`) for the server to
+create it again, empty ([`docs/design/permissions.md`](../../docs/design/permissions.md#the-schema)).
 
 ## Who can deploy
 
@@ -86,15 +95,13 @@ and age from their images when they are not installed.
    `<alias>.<KEASY_DOMAIN>` for each organization (or `*.<KEASY_DOMAIN>`) pointing at it.
 2. Clone the repository there. `make key` on the server, and its public key into `.sops.yaml`
    beside the team's.
-3. `prod.env`: the domain, the Let's Encrypt email, the release, the models.
-4. `make secrets`, then `make secret NAME=ANTHROPIC_API_KEY` (and each provider you use). Commit
-   `secrets.sops.env` and `.sops.yaml`.
+3. `prod.env`: the domain, the Let's Encrypt email, the release, where the model is served.
+4. `make secrets`. Commit `secrets.sops.env` and `.sops.yaml`.
 5. `make deploy`. Keycloak's console is `https://auth.<KEASY_DOMAIN>/admin`, as `admin` with
    `KC_ADMIN_PASSWORD` from the secrets
    (`infra/prod/sops -d --input-type dotenv --output-type dotenv /dev/stdin < infra/prod/secrets.sops.env`).
 
 ## What to back up
 
-The Docker volumes: each organization's `keasy_<alias>-data`, Keycloak's `keasy_kanzo-auth-db`, and
-the request log in `keasy_kanzo-ai-db`. The secrets are in git, encrypted, so a lost server does not
+The Docker volumes: each organization's `keasy_<alias>-data` and Keycloak's `keasy_kanzo-auth-db`. The secrets are in git, encrypted, so a lost server does not
 lose them — and with them, each organization's sealing key, without which its data cannot be read.

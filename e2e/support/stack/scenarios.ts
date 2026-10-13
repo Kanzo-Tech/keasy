@@ -15,11 +15,12 @@ export const SCENARIOS: Record<number, string> = {
   9: "callback state mismatch",
   10: "session expired mid-way",
   // 11–15 were written against model connections; the AI gateway replaced them (keasy main,
-  // a47894d), so each now forces the same failure where it lives today.
-  11: "no model connection — now: the AI gateway is down",
-  12: "provider without credit — now: a refusal the gateway relays",
-  13: "provider silent mid-stream — now: the AI gateway accepts and never answers",
-  14: "provider error event mid-stream",
+  // a47894d), and the model in the page replaced the gateway, so each now forces the same failure
+  // where it lives today: in the browser.
+  11: "no model connection — now: a browser without WebGPU, where the model cannot run",
+  12: "provider without credit — now: the model's shards cannot be downloaded",
+  13: "provider silent mid-stream — now: a model that stops writing",
+  14: "provider error event mid-stream — now: a model that fails mid-answer",
   15: "model answers non-JSON — now: a structured answer that does not parse",
   16: "invalid SQL from the model — now: an answer outside the spec",
   17: "a rule that fails",

@@ -388,10 +388,13 @@ export function AskTurn({
   );
 }
 
-/** The way on from the questions, under them: the preview answers what was asked. */
+/**
+ * The way on from the questions, under them: the preview answers what was asked. At the start, as
+ * every turn's action is — the end is where the log's scroll button floats.
+ */
 export function AskDone({ questions, onDone }: { questions: number; onDone: () => void }) {
   return (
-    <div className="flex justify-end">
+    <div className="flex">
       <Button onClick={onDone} size="sm" variant={questions === 0 ? "outline" : "default"}>
         {questions === 0 ? "Skip, show me a preview" : "That's all, show me a preview"}
         <ArrowRight />

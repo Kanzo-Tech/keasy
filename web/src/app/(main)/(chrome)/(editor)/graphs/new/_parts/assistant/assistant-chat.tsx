@@ -249,7 +249,9 @@ export function AssistantChat(props: AssistantChatProps) {
             {waiting === "ask" && <AskDone onDone={() => reply({ asked: true })} questions={questions.length} />}
           </MessageList>
         </ConversationContent>
-        <ConversationScrollButton />
+        {/* At the log's end edge, not its middle: the turns' actions — *Build the whole graph*, *That's
+            all* — sit at its start, and a button floating over the log never covers them. */}
+        <ConversationScrollButton className="inset-x-auto end-4" />
       </Conversation>
 
       <Composer

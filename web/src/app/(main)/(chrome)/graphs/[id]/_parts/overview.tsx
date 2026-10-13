@@ -30,8 +30,6 @@ import {
 import type { Schemas } from "@/lib/api/client";
 import { CorpusProvider, useCorpus } from "@/lib/fossil/corpus";
 import { formatDate, formatGraphDuration } from "@/lib/ui/format";
-import { SchemaDiagram } from "./schema-diagram";
-import type { EdgeTable, VertexType } from "./schema-layout";
 import { PART_TABLE_HEIGHT } from "@/lib/ui/table-heights";
 
 /**
@@ -60,6 +58,18 @@ interface Held {
   name: string;
   rows: number;
   columns: { name: string; type: string }[];
+}
+
+/** A vertex type of the corpus: one `fossil_tables` row of kind `vertex`. */
+interface VertexType {
+  name: string;
+  rows: number;
+}
+
+/** An edge table of the corpus: its `source` and `destination` are the vertex tables it joins. */
+interface EdgeTable extends VertexType {
+  source: string;
+  destination: string;
 }
 
 const sum = (tables: { rows: number }[]) => tables.reduce((n, t) => n + t.rows, 0);
@@ -117,10 +127,6 @@ function Holds({ graph }: { graph: Schemas["Graph"] }) {
           <StatDescription>{formatDate(graph.completed_at)}</StatDescription>
         </StatRoot>
       </div>
-
-      <Part title="Schema">
-        <SchemaDiagram edges={edges} types={types} />
-      </Part>
 
       <Part title="Vertices">
         <Table maxHeight={PART_TABLE_HEIGHT} stickyHeader>

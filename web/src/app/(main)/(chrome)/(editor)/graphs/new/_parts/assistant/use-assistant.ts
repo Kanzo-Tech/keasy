@@ -11,21 +11,25 @@
  * `model` once the files are read and *what is it about?* is answered — the relations and the
  * decisions; `requirements` once its decisions are taken — the question chips (`useTask`), and
  * whether each question kept is answerable; `mapping` once the person has asked all they wanted —
- * the program **Advanced** opens. What stays `null` is the preview build (`emit`, then the
- * executor). A Task that fails is in `failures`, with its retry.
+ * the program **Advanced** opens, and the preview and the build run. A Task that fails is in
+ * `failures`, with its retry.
+ *
+ * A conversation kept is started again from its `seed`: the files picked, the person's choices and
+ * the program last written — everything else is read and asked again, from the files.
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQueries, useQuery } from "@tanstack/react-query";
 import { useTask } from "@kanzo-tech/ai";
 import { type Proposal, runTask } from "@kanzo-tech/ai/task";
-import type { Format } from "@fossil-lang/types";
+import type { Format, Profiled as Described } from "@fossil-lang/types";
 import { inputs, profile } from "@fossil-lang/wasm";
 import { engine } from "@kanzo-tech/ui/analytics";
+import type { FileReference } from "@/lib/assistant-conversation";
 import type { StorageConnection } from "@/lib/connections";
 import { ClientError } from "@/lib/errors";
 import { host } from "@/lib/fossil/host";
-import type { SourceFile } from "../sources";
+import { childrenOf, connectionNode, type SourceFile, type SourceNode } from "../sources";
 import { useSources } from "../use-sources";
 import { useModel } from "@/lib/ai";
 import { type AssistantData, type DecisionItem, optionOf, type Question, type QuestionOffer, type TaskFailure, type Thing } from "./model";
@@ -37,6 +41,29 @@ import { spoken, thingName } from "./tasks/words";
 
 /** The rows the profile keeps of each file: enough for one row of each relation to be found across files. */
 const SHOWN = 50;
+
+/** A file's id in the tree, `<connection>:<path>` (`childrenOf`'s), and the location it names. */
+const fileId = ({ connection, path }: FileReference) => `${connection}:${path}`;
+const locationOf = (id: string): FileReference => {
+  const at = id.indexOf(":");
+  return { connection: id.slice(0, at), path: id.slice(at + 1) };
+};
+
+/** The connections the assistant reads: the sink is written to, not read from. */
+const readable = (c: StorageConnection) => c.kind === "data" && c.direction !== "sink";
+
+/**
+ * A kept file as the tree writes it (`childrenOf`, down the folders it is in), without listing them:
+ * `null` when its connection is gone or no reader takes it.
+ */
+function keptFile(file: FileReference, connections: readonly StorageConnection[], formats: readonly Format[]): SourceFile | null {
+  const connection = connections.find((c) => c.name === file.connection && readable(c));
+  if (!connection) return null;
+  const listing = [{ path: file.path, size: 0 }];
+  const down = (node: SourceNode): SourceFile[] =>
+    node.kind === "file" ? [node] : childrenOf(node, listing, formats).flatMap(down);
+  return down(connectionNode(connection))[0] ?? null;
+}
 
 /** The picked file a source's reference names, by its id; the reference itself when none does. */
 const fileOf = (picked: readonly SourceFile[], key: string) => picked.find((f) => f.line.includes(`"${key}"`))?.id ?? key;
@@ -78,6 +105,15 @@ function standing(items: readonly DecisionItem[], id: string): string | null {
   return item ? optionOf(item) : null;
 }
 
+/** Where a kept conversation stood: what the hook starts from instead of nothing. */
+export interface Seed {
+  files: readonly FileReference[];
+  /** The person's choices, by decision. */
+  chosen: Readonly<Record<string, string>>;
+  /** The program last written, run until the mapping writes it again. */
+  program: string | null;
+}
+
 export interface Assistant extends AssistantData {
   /** The person's questions, each with whether these files can answer it. */
   questions: Question[];
@@ -89,6 +125,17 @@ export interface Assistant extends AssistantData {
   choose: (decision: string, option: string) => void;
   /** The picked files as the program's binding lines: what Advanced opens the editor with. */
   program: string;
+  /** The picked files as locations: what the conversation keeps of them. */
+  files: FileReference[];
+  /**
+   * The program the mapping wrote — the last one while it writes the next — or `null` until there
+   * is one: what the preview runs and the build builds.
+   */
+  mapped: string | null;
+  /** The mapping is writing the program again: a decision changed. */
+  writing: boolean;
+  /** What fossil's profile answered of the picked files, as a run takes it. */
+  described: Described | null;
 }
 
 export function useAssistant({
@@ -97,6 +144,7 @@ export function useAssistant({
   about,
   asked,
   questions,
+  seed,
 }: {
   connections: readonly StorageConnection[];
   formats: readonly Format[];
@@ -106,42 +154,57 @@ export function useAssistant({
   asked: boolean;
   /** The questions the person kept, whose `answerable` this answers. */
   questions: readonly Question[];
+  /** A kept conversation to start from. */
+  seed?: Seed;
 }): Assistant {
   // The sink is written to, not read from.
-  const sources = useSources(
-    connections.filter((c) => c.kind === "data" && c.direction !== "sink"),
-    formats,
-  );
+  const sources = useSources(connections.filter(readable), formats);
   const [expanded, setExpanded] = useState<string[]>([]);
-  const [selected, setSelected] = useState<Set<string>>(() => new Set());
-  const [chosen, setChosen] = useState<Record<string, string>>({});
+  const [selected, setSelected] = useState<Set<string>>(() => new Set(seed?.files.map(fileId)));
+  const [chosen, setChosen] = useState<Record<string, string>>(() => ({ ...seed?.chosen }));
+  // The kept files, read without opening the folders they are in; and the kept program.
+  const [kept] = useState(() => seed?.files ?? []);
+  const keptFiles = useMemo(
+    () => new Map(kept.map((f) => [fileId(f), keptFile(f, connections, formats)] as const)),
+    [kept, connections, formats],
+  );
+  const [keptProgram] = useState(() => seed?.program ?? null);
 
   const picked = [...selected].flatMap((id) => {
     const node = sources.collection.findNode(id);
-    return node?.kind === "file" ? [node] : [];
+    if (node?.kind === "file") return [node];
+    return keptFiles.get(id) ?? [];
   });
+  // A kept file no connection reads any more is said, never dropped.
+  const unreachable = [...selected].filter((id) => keptFiles.get(id) === null && sources.collection.findNode(id) === undefined);
   const lines = picked.map((f) => f.line).sort();
   // The files are read together, once: the inclusions between two of them are part of the answer.
   const read = useQuery({
     queryKey: ["assistant", "profile", lines],
     queryFn: async ({ signal }) => {
       const sources = await inputs(lines.join("\n"), { host, signal });
-      const { profile: answer, undescribed } = await profile(sources, {
+      const described = await profile(sources, {
         host,
         engine: await engine({ signal }),
         options: { shown: SHOWN },
         signal,
       });
-      return { profiled: profiledOf(answer, sources), undescribed };
+      return { profiled: profiledOf(described.profile, sources), undescribed: described.undescribed, described };
     },
     enabled: picked.length > 0,
     retry: false,
     staleTime: Infinity,
   });
   const profiled = read.data?.profiled ?? null;
-  const problems: { id: string; problem: unknown }[] = read.error
-    ? [{ id: "profile", problem: read.error }]
-    : (read.data?.undescribed ?? []).map(({ source, problem }) => ({ id: fileOf(picked, source.key), problem }));
+  const problems: { id: string; problem: unknown }[] = [
+    ...unreachable.map((id) => ({
+      id,
+      problem: new ClientError("web/unknown", "A file this conversation read cannot be read", `${id} is not on a connection this workspace reads.`),
+    })),
+    ...(read.error
+      ? [{ id: "profile", problem: read.error }]
+      : (read.data?.undescribed ?? []).map(({ source, problem }) => ({ id: fileOf(picked, source.key), problem }))),
+  ];
 
   const model = useModel();
 
@@ -214,6 +277,8 @@ export function useAssistant({
     enabled: accepted !== null && asked,
     retry: false,
     staleTime: Infinity,
+    // A decision changed is a program written again: the last one stays the preview's meanwhile.
+    placeholderData: keepPreviousData,
   });
 
   const failures: TaskFailure[] = [
@@ -230,8 +295,6 @@ export function useAssistant({
     understanding: { things: profiled ? thingsOf(profiled, picked) : [], relations },
     offers,
     decisions,
-    // The preview waits on `emit` and the executor in a worker: not built yet.
-    build: null,
     failures,
     questions: questions.map((q) => ({ ...q, answerable: answerable(q) })),
     expanded,
@@ -240,5 +303,9 @@ export function useAssistant({
     choose: (decision, option) => setChosen((prev) => ({ ...prev, [decision]: option })),
     // The mapping's program once it holds; until then the picked files' bindings.
     program: mapped.data ?? picked.map((f) => f.line).join("\n"),
+    files: [...selected].map(locationOf),
+    mapped: accepted === null ? null : (mapped.data ?? keptProgram),
+    writing: mapped.isFetching,
+    described: read.data?.described ?? null,
   };
 }

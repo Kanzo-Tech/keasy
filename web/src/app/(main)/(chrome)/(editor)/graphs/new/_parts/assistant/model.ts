@@ -11,7 +11,6 @@
  */
 
 import type { Decision } from "@kanzo-tech/ai/task";
-import type { BuildProgress } from "@/lib/fossil/build";
 import type { Sources } from "../use-sources";
 
 // ── The data ────────────────────────────────────────────────────────────────
@@ -80,7 +79,7 @@ export interface Understanding {
 
 // ── The graph ───────────────────────────────────────────────────────────────
 
-/** Where the graph is: a preview first, over a few rows, then the whole of it (`lib/fossil/build.ts`). */
+/** Where the whole graph is, once the person asks for it (`lib/fossil/build.ts`). */
 export type { BuildProgress } from "@/lib/fossil/build";
 
 /** Everything the conversation reads, as `use-assistant.ts` answers it. */
@@ -98,8 +97,6 @@ export interface AssistantData {
   offers: readonly QuestionOffer[] | null;
   /** `null` until the `model` and `mapping` Tasks raise them. */
   decisions: readonly DecisionItem[] | null;
-  /** `null` until there is a program to build. */
-  build: BuildProgress | null;
   /** Each Task that failed, with what stopped it and the way to ask again: said, never swallowed. */
   failures: readonly TaskFailure[];
 }

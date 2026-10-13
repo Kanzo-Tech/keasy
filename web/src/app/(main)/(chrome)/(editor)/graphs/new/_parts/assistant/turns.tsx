@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowRight, Check, CircleCheck, CircleHelp, CircleX, Lightbulb, MessageCircleQuestion, Sparkles } from "lucide-react";
+import { ArrowRight, Check, CircleCheck, CircleHelp, CircleX, Hammer, Lightbulb, MessageCircleQuestion, Sparkles } from "lucide-react";
 import { Link } from "@kanzo-tech/navigation/next";
 import { Message, MessageContent } from "@kanzo-tech/ai";
 import {
@@ -44,9 +44,9 @@ import { SourcePicker, type SourcePickerProps } from "./source-picker";
 const count = new Intl.NumberFormat("en");
 
 /** The assistant's turn: its words first, then what it carries. */
-export function Said({ children, label }: { children: React.ReactNode; label?: string }) {
+export function Said({ children, label, decision }: { children: React.ReactNode; label?: string; decision?: string }) {
   return (
-    <Message aria-label={label} role="assistant">
+    <Message aria-label={label} data-decision={decision} role="assistant">
       <MessageContent className="gap-3">{children}</MessageContent>
     </Message>
   );
@@ -284,7 +284,7 @@ export function DecideTurn({
   onChoose: (option: string) => void;
 }) {
   return (
-    <Said label={item.decision.question}>
+    <Said decision={item.decision.id} label={item.decision.question}>
       {index === 0 && (
         <p className="text-muted-foreground">
           {of === 1 ? "One thing has no safe answer, so it is yours to decide." : `${inWords(of, "thing")} have no safe answer, so they are yours to decide.`}
@@ -304,10 +304,19 @@ export function DecideTurn({
  * with the question it answers under it, and **Change**, which opens its options in place. It blocks
  * nothing.
  */
-export function AssumedTurn({ item, onChoose }: { item: DecisionItem; onChoose: (option: string) => void }) {
-  const [changing, setChanging] = useState(false);
+export function AssumedTurn({
+  item,
+  onChoose,
+  reopened = false,
+}: {
+  item: DecisionItem;
+  onChoose: (option: string) => void;
+  /** Opened at its options: **Change** pressed in Discover's *What I decided*. */
+  reopened?: boolean;
+}) {
+  const [changing, setChanging] = useState(reopened);
   return (
-    <Said>
+    <Said decision={item.decision.id}>
       <Alert data-assumption={item.decision.id}>
         <Lightbulb aria-hidden />
         <AlertTitle>
@@ -386,12 +395,12 @@ export function AskTurn({
   );
 }
 
-/** The way on from the questions, under them: the graph is built over what was asked. */
+/** The way on from the questions, under them: the preview answers what was asked. */
 export function AskDone({ questions, onDone }: { questions: number; onDone: () => void }) {
   return (
     <div className="flex justify-end">
       <Button onClick={onDone} size="sm" variant={questions === 0 ? "outline" : "default"}>
-        {questions === 0 ? "Skip, build the graph" : "That's all, build the graph"}
+        {questions === 0 ? "Skip, show me a preview" : "That's all, show me a preview"}
         <ArrowRight />
       </Button>
     </div>
@@ -401,52 +410,60 @@ export function AskDone({ questions, onDone }: { questions: number; onDone: () =
 // ── The graph ───────────────────────────────────────────────────────────────
 
 /**
- * The hand-off: the preview's state and the full build's progress, **Ask your data** as the one
- * primary action, and the person's questions as prompts to take there.
+ * *Build the whole graph*, on request, once the preview has been seen: every row of every file, as a
+ * graph of its own (`useBuild`). Then its progress, and once it is done the hand-off — **Ask your
+ * data** as the one primary action, and the person's questions as prompts to take to Discover.
  */
-export function BuildTurn({ build, questions }: { build: BuildProgress | null; questions: readonly Question[] }) {
+export function BuildTurn({
+  build,
+  ready,
+  onBuild,
+  questions,
+}: {
+  build: BuildProgress | null;
+  /** There is a program to build: the mapping has written it. */
+  ready: boolean;
+  onBuild: () => void;
+  questions: readonly Question[];
+}) {
   if (build === null) {
     return (
       <Said>
-        <p className="text-muted-foreground">I&rsquo;ll build the graph as soon as its recipe is written.</p>
+        <p className="text-muted-foreground">
+          When the answers look right, I&rsquo;ll build the whole graph: every row of every file, kept to come back to.
+        </p>
+        <Button className="self-start" disabled={!ready} onClick={onBuild} size="lg">
+          <Hammer />
+          Build the whole graph
+        </Button>
       </Said>
     );
   }
   switch (build.state) {
-    case "preparing":
+    case "building": {
+      const percent = build.percent === null ? null : Math.round(build.percent);
       return (
         <Said>
-          <Working label={build.previewRows === null ? "Building your graph" : "Preparing a preview"}>
-            {build.previewRows === null ? "Building your graph…" : `Preparing a preview over ${count.format(build.previewRows)} rows…`}
+          <Working label="Building your graph" value={percent ?? undefined}>
+            {build.graphId === null ? "Making your graph…" : `Building your graph${percent === null ? "…" : `… ${percent}%`}`}
           </Working>
         </Said>
       );
+    }
     case "failed":
       return (
         <Said>
-          <ProblemView error={build.problem} />
+          <p>I could not build your graph.</p>
+          <ProblemView error={build.problem} onRetry={onBuild} />
         </Said>
       );
-    case "preview":
-    case "done": {
-      const percent = build.state === "preview" && build.percent !== null ? Math.round(build.percent) : null;
+    case "done":
       return (
         <Said>
           <p className="flex items-center gap-2 font-medium text-base">
             <Sparkles aria-hidden className="size-4 text-primary" />
             Your graph is ready to explore.
           </p>
-          {build.state === "preview" && (
-            <Alert variant="info">
-              <AlertTitle>Preview over {count.format(build.previewRows)} rows</AlertTitle>
-              <AlertDescription className="flex flex-col gap-2">
-                <span>
-                  The full graph is building{percent !== null && ` (${percent}%)`}. Answers may change once it is done.
-                </span>
-                {percent !== null && <Progress aria-label="Building the full graph" value={percent} />}
-              </AlertDescription>
-            </Alert>
-          )}
           <Button asChild className="self-start" size="lg">
             <Link href={askHref(build.graphId)}>
               <MessageCircleQuestion />
@@ -473,7 +490,6 @@ export function BuildTurn({ build, questions }: { build: BuildProgress | null; q
           )}
         </Said>
       );
-    }
   }
 }
 

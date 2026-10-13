@@ -196,11 +196,11 @@ lands in the bar"* is the check of the last step rather than a step of its own.
 
 **Arrange (off camera)**
 
-1. `env`; seed; save the dashboard on `LaureateAward>category>Category` (one tile, *Count by
+1. `useModelDouble` with the two specs below; `env`; seed; save the dashboard on `LaureateAward>category>Category` (one tile, *Count by
    Category.name*); `discover.open(id)`.
 2. `discover.onMap()` — the Graph view on the map for step 8 — then `view("Dashboard")`,
    `relation("LaureateAward", [">category>Category"])`, `dashboard.settled()`, `panel("Ask")`.
-3. `ask.warmUp()`: the page's model loaded, on the recording browser's GPU.
+3. `ask.warmUp()`: the double's model, ready.
 
 **Steps**
 
@@ -226,12 +226,13 @@ lands in the bar"* is the check of the last step rather than a step of its own.
 
 **Notes**
 
-- The check that UC reads **16** (not 43) is what proves "over what's in view"; a model that drops
-  the filter fails it. *Prizes* in the question points it at the awards: asked "which universities
-  won the most?", a small model counted the `University` type alone, which the Physics filter cannot
-  reach, and the answer read no rows. Capture again if it does.
-- Step 6 needs an answer **with a where** (the institution's country, Germany): a model that answers
-  over every country leaves *Filter the page to these rows* disabled, and step 7 fails. Capture again.
+- **The model is a double** (`support/model.ts`), as `nobel-assistant`'s is: a small model filled
+  another spec on each take (a sum of `share`, the `University` type alone), and a recording is the
+  same film every time. It answers *Which universities…* with `{ of: "LaureateAward", show: bar of
+  University.name by count, top: 8 }`, and *…in Germany?* with the same and `where: Country.name in
+  [Germany]`. The relation each needs is found by the page and the rows are DuckDB's, so the check
+  that UC reads **16** (not 43) still proves "over what's in view". What the model in the page answers
+  is the evaluation set's to measure (`eval/`).
 - *Filter the page to these rows* keeps what the answer draws: the prizes in the categories its bars
   show. An answer drawn by university keeps those universities' prizes, at most the 22; read the
   figure off the take that captures it and pin steps 7 and 8 to it.
@@ -387,7 +388,7 @@ from awards aw where aw.lat is not null;
 - **Stat line:** *From six files to a graph you can ask — in a conversation*
 - **Example / seed:** `nobel`'s six files in the store, as `make seed` uploads them — no graph seeded:
   the demo builds its own
-- **The model is a double** (`support/model.ts`), unlike `nobel-ask`'s: the assistant is three Tasks
+- **The model is a double** (`support/model.ts`), as `nobel-ask`'s is: the assistant is three Tasks
   and a mapping held to fossil's grammar, and a small model proposing other types on another take
   would be another film. The double answers each call by the words of its prompt — the `model` Task's
   types, the `requirements` Task's chips, the `mapping` Task's program (its subjects under the page's

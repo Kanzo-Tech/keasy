@@ -1,6 +1,7 @@
 # The assistant, and time to smile
 
-Status: a direction, not built. The pattern this rests on — a *Task*: a small model in the browser
+Status: a direction. Built: the model in the page, in place of the gateway (2026-10-13); not built:
+the screens. The pattern this rests on — a *Task*: a small model in the browser
 fills a small artefact under a JSON Schema, a deterministic oracle checks it, a bounded loop repairs
 it or asks the person — and its API, its model and its decisions are kanzo-ui's, on
 [Tasks](https://kanzo-tech.github.io/ui/docs/design/tasks). fossil's half — `fossil-profile` in place
@@ -14,8 +15,9 @@ in keasy's own configuration and runtime.
 The new-graph wizard (`graphs/new/_parts/assistant-wizard.tsx`, 528 lines) asks one call,
 `writeProgram`, for a whole program, with `FOSSIL_PROMPT`. The model does not see the `.shex`; it
 guesses keys and edges; the studio's checker reports after the fact, and nothing repairs. "Done"
-means "it compiles". And every call goes through the BFF's `/api/ai` forward to the gateway, so the
-question leaves the browser and the AI is down whenever the gateway is.
+means "it compiles". And every call went through the BFF's `/api/ai` forward to the gateway, so the
+question left the browser and the AI was down whenever the gateway was — until 2026-10-13, when the
+model moved into the page (below).
 
 ## Time to smile
 
@@ -60,19 +62,24 @@ Only what has no safe answer blocks.
 four examples, or people changing most assumptions after the fact — then the decisions go back into
 the flow, in front of the preview.
 
-## What leaves keasy's configuration
+## What left keasy's configuration
 
-| Today | After |
+**Done 2026-10-13**, on kanzo-ui 0.44's `localModel`: one model, `MODEL` in `web/src/lib/ai.ts`, in a
+worker of its own, for Ask, its offers and the wizard alike.
+
+| Before | Now |
 | --- | --- |
 | `ai-gateway`, `ai-postgres` and, locally, `ai-models` with Docker Model Runner | none |
-| `KEASY_AI_URL`, `KEASY_AI_CHAT_CONTEXT`, `KEASY_AI_COMPLETE_CONTEXT`, `AI_CHAT`, `AI_COMPLETE`, `AI_DB_PASSWORD` | `KEASY_MODEL_URL`: where the model's shards are served |
+| `KEASY_AI_URL`, `KEASY_AI_CHAT_CONTEXT`, `KEASY_AI_COMPLETE_CONTEXT`, `AI_CHAT`, `AI_COMPLETE`, `AI_DB_PASSWORD` | `KEASY_MODEL_URL`: where the model's shards are served, read per request; unset, WebLLM's prebuilt on Hugging Face |
 | the BFF's `/api/ai` forward, with its token exchange for the `ai-gateway` audience | nothing to forward |
 | context windows that must match the deployed model | the window travels with the model |
 | `make demo` switches the gateway to Qwen3 and back | the demo uses everyone's model |
 
-The model is downloaded the first time it is needed — the assistant or Ask's panel — in the
-background with progress, preloaded when a graph or the wizard opens, kept in Cache Storage or OPFS
-behind `navigator.storage.persist()`, and versioned: the old one serves until the new one is whole.
+The model is downloaded the first time it is needed, in the background: as Ask's panel opens, with
+its progress there, and as the wizard opens. WebLLM keeps it in Cache Storage, behind
+`navigator.storage.persist()`. Not yet: the preload when a graph opens, and versioning — the old one
+serving until the new one is whole. Without WebGPU, Ask and the wizard say so (`ai/unavailable`); the
+e2e scenarios that held the model at the network (12–16) wait on a model double in the page.
 
 ## The executor leaves the page's main thread
 
@@ -113,7 +120,8 @@ assistant. Four cases end in words and not in rows: two ties (a prize's country,
 friends), which must be asked back with the relations as numbered options, and two questions the data
 cannot answer (prize money, an age), which must draw no card. The figures that need a date in a
 cell are left out until the harness reads one. `EVAL_MODEL=<label> pnpm --filter @keasy/e2e eval` asks today's
-Ask once, as a reference number; `writeProgram` is not measured, it is replaced whole. The reference pass (2026-10-12, Qwen3-4B through Model Runner, today's Ask) answered **2 of 10**
+Ask once, as a reference number — on the page's model, so in a browser with WebGPU, and with
+`KEASY_MODEL_URL` on a local copy, as each case's browser starts with empty storage; `writeProgram` is not measured, it is replaced whole. The reference pass (2026-10-12, Qwen3-4B through Model Runner, today's Ask) answered **2 of 10**
 right — prizes by category and airports by country. Two failed on the page's filter: the model picked
 a relation that reaches it, and the answer read no rows, because today's Ask kept a page's clause only
 when the answer's relation had its column (fixed in kanzo-ui, where the answer now crosses a chip as
@@ -122,6 +130,7 @@ the dashboard's tiles do). Five failed on the call itself: the model reasoned it
 breakdown as one figure. One asked what the spec cannot say (*more than one prize*, a filter on a
 count). Those are what the Task addresses: a small spec decoded against its schema, and oracles that
 send back a spec that drops what the question asked for. Phase 1 (Ask as a Task) touches
-`discover/_parts/ask-panel.tsx`; phase 3 replaces the wizard with the three screens and retires the
-gateway, the BFF's `/api/ai` forward and their configuration. The phases are on
+`discover/_parts/ask-panel.tsx`; phase 3 replaces the wizard with the three screens. The gateway, the
+BFF's `/api/ai` forward and their configuration are already gone (2026-10-13): the wizard asks the
+page's model until it is replaced. The phases are on
 [Tasks](https://kanzo-tech.github.io/ui/docs/design/tasks#phases).

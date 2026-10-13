@@ -209,7 +209,7 @@ lands in the bar"* is the check of the last step rather than a step of its own.
 | 1 | Filter the page: Physics only | *Count by Category.name* `pick({ y: "Physics" })` | `discover.kept()` → `"230"` |
 | 2 | Ask about what's in view, in plain words | `answers.ask("Which universities won the most prizes?")` | a new answer card began |
 | 3 | The answer is a chart, over the Physics prizes in view | `answers.answer()` | the tile is by *University*; its rows hold UC **16**, not **43** (every category's) · **poster** |
-| 4 | Add it to the dashboard | `answers.addToDashboard()` | a tile `/University/` on the dashboard |
+| 4 | Add it to the dashboard | `answers.addToDashboard()` | the card offers *Open on the dashboard* (the tile is on the answer's relation's dashboard, not the one in view) |
 | 5 | Open it on the dashboard | `answers.openOnDashboard()` | that tile is in view |
 | 6 | Ask again: which ones were won in Germany? | `answers.ask("Which ones were won in Germany?")`; `answers.answer()` | its rows are not empty |
 | 7 | This one filters: keep what it found | `answers.filterTo()` | `discover.kept()` > 0 |

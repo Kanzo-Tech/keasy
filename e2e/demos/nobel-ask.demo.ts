@@ -102,7 +102,9 @@ demo("nobel-ask", "Ask over the Nobel prizes: an answer added to the dashboard a
       subtitle: "Add it to the dashboard",
       // Resolves on the card's *Open on the dashboard*, read from the dashboards the page handed back.
       action: () => answers.addToDashboard(),
-      check: async () => void (await dashboard.tile(/University/)),
+      // The action is the check. The tile lands on the dashboard of the answer's relation — prizes by
+      // university — not the one in view, by category: the next step opens it there.
+      check: async () => {},
     },
     {
       subtitle: "Open it on the dashboard",

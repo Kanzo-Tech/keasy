@@ -381,6 +381,55 @@ from awards aw where aw.lat is not null;
 
 ---
 
+## 7. The assistant — `nobel-assistant`
+
+- **Hero tab:** `assistant` · label **Assistant**
+- **Stat line:** *From six files to a graph you can ask — in a conversation*
+- **Example / seed:** `nobel`'s six files in the store, as `make seed` uploads them — no graph seeded:
+  the demo builds its own
+- **The model is a double** (`support/model.ts`), unlike `nobel-ask`'s: the assistant is three Tasks
+  and a mapping held to fossil's grammar, and a small model proposing other types on another take
+  would be another film. The double answers each call by the words of its prompt — the `model` Task's
+  types, the `requirements` Task's chips, the `mapping` Task's program (its subjects under the page's
+  origin, read in `arrange`), and Ask's specs per question. Everything else is the stack's: fossil's
+  profile of the files, fossil's checker, the preview and the build on the page's engine, the answers
+  read from the corpus. The script was held against fossil's checker over the real Nobel profile when
+  it was written: one attempt, no diagnostic.
+
+**Arrange (off camera)**
+
+1. `page.goto("/graphs")`, its origin read; `useModelDouble(page, { rules: script(origin) })`.
+2. `page.goto("/graphs/new/assistant")`; the *Files* tree lists `@Nobel laureates`.
+
+**Steps**
+
+| # | Subtitle | Action | Check |
+| --- | --- | --- | --- |
+| 1 | Pick the files to explore | open `@Nobel laureates`; *Pick* each of the six `.json`; *Read these files* | the composer asks *What is this data about?* |
+| 2 | Say what it is about while they are read | type the sentence, Enter | *Here's what's in your data* |
+| 3 | What is in your data, counted | scroll to the things | six things, one per file |
+| 4 | What has no safe answer is yours to decide | `chooseRadio(…, LINK, "One: an award has institutions")` | that option is checked |
+| 5 | What has a safe default is taken, and said | scroll to the assumption | *I assumed: id* (a country by its id) |
+| 6 | Take the questions it suggests | the chips *How many prizes were awarded in each category?* and *Which institutions are behind the most prizes?* | two questions kept |
+| 7 | That's all: show me a preview | *That's all, show me a preview* | *Here is your data over its first 200 rows* |
+| 8 | Each question answered, over the first 200 rows | scroll to the answers | two answer cards, none being replaced · **poster** |
+| 9 | Change a decision: the preview runs again | `chooseRadio(…, COUNTRY, "name")` | the mapping was asked again for `{countries.name}`; two answer cards again, none stale |
+| 10 | Build the whole graph | *Build the whole graph* | *Your graph is ready to explore.* |
+| 11 | Ask your data, in Discover | *Ask your data* | Discover, the Ask panel docked |
+
+**Numbers** (`nobel/data`, as fossil's profile reads them)
+
+| Figure | Value |
+| --- | --- |
+| Rows per file | laureates 1,018 · awards 1,026 · categories 6 · institutions 379 · affiliations 847 · countries 86 |
+| Candidate keys | laureates `id`, `name` · awards `id` · categories `id`, `name` · institutions `id` · affiliations none · countries `id`, `name` |
+| Inclusions | `awards.laureate → laureates.id`, `awards.category → categories.id`, `affiliations.award → awards.id`, `affiliations.institution → institutions.id`, `laureates.country → countries.id`, `institutions.country → countries.id` (and `awards.share → laureates.id`, which the draft does not use) |
+
+No subtitle names a figure of the preview: over the first 200 rows of each file, its counts are a
+sample's.
+
+---
+
 ## The keasy page objects the demos need
 
 Beyond the library harnesses (`GraphCanvasHarness`, `ChartHarness`, `TimelineHarness`,

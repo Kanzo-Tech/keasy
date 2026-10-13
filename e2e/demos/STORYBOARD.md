@@ -47,7 +47,7 @@ demo's **Numbers**. The OpenFlights and SNB queries run in `infra/dev/examples/<
 | # | Subtitle | Action | Check |
 | --- | --- | --- | --- |
 | 1 | Pick what to explore | `await discover.relation("Person")` | `dashboard.tile("Count by Person.gender")` resolves; `discover.figure("Rows")` → `"1,528"` and `discover.counts()` matches nothing: no filter yet |
-| 2 | Every column gets a chart — click a bar to filter | `(await (await dashboard.tile("Count by Person.gender")).chart()).pick({ y: "female" })` | `discover.figure("Rows")` → `"778"`; `discover.counts()` → `/^778 of /`; `bar.chips()` contains `Person.gender …female` |
+| 2 | Every column gets a chart — click a bar to filter | `(await (await dashboard.tile("Count by Person.gender")).chart()).pick({ y: "female" })` | `discover.kept()` → `"778"`; `bar.chips()` contains `Person.gender …female` |
 | 3 | Drag across time to narrow it further | `(await (await dashboard.tile("Count by Person.birthday")).chart()).brush({ x: [new Date("1985-01-01"), new Date("1990-01-01")] })` | `discover.figure("Rows")` → `"391"` · **poster** |
 | 4 | Every filter lands in the bar | hover the `Person.gender` chip (page: `bar` has no hover; `page.getByRole("button", { name: /Person\.gender/ }).hover()` stays in the spec as the one raw call, or `discover.hoverChip("Person.gender")`) | `bar.chips()` has two entries: gender and birthday |
 

@@ -532,4 +532,22 @@ describe("the assistant, wired", () => {
     expect(host.querySelector("[data-built]")?.textContent).toContain("A graph was built from this conversation");
     doubles.built = false;
   });
+
+  it("opened at a decision, says it was built just above it, where the page lands", () => {
+    doubles.stored = keptConversation();
+    doubles.built = true;
+    doubles.useAssistant.mockImplementation(useFakeAssistant);
+    doubles.useBuild.mockReturnValue({ progress: null, build: doubles.build });
+    const scrolled = vi.fn();
+    const original = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = function (this: Element) {
+      scrolled(this);
+    } as never;
+    const host = mountFlow({ conversation: "c1", decision: "award-key" });
+    Element.prototype.scrollIntoView = original;
+    doubles.built = false;
+    const note = host.querySelector("[data-built]")!;
+    expect(note.nextElementSibling?.getAttribute("data-decision")).toBe("award-key");
+    expect(scrolled).toHaveBeenCalledWith(note);
+  });
 });

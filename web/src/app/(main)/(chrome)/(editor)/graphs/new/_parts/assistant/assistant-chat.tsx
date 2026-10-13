@@ -112,14 +112,26 @@ export function AssistantChat(props: AssistantChatProps) {
     onSave?.(JSON.parse(transcript) as AssistantMessage[]);
   }, [replied, settling, transcript, onSave]);
 
-  // Discover's **Change**: the decision's turn brought into view once the conversation says it.
+  // Discover's **Change**: the decision's turn brought into view once the conversation says it — and,
+  // over a built conversation, the note saying so drawn just above it, where the page lands.
+  const reopens = (t: Turn) => (t.kind === "decide" || t.kind === "assumed") && t.item.decision.id === reopen;
+  const reached = reopen !== null && turns.some(reopens);
   const reopened = useRef(false);
-  const reached = reopen !== null && turns.some((t) => "item" in t && t.item.decision.id === reopen);
   useEffect(() => {
     if (!reached || reopened.current) return;
     reopened.current = true;
-    document.querySelector(`[data-decision="${CSS.escape(reopen!)}"]`)?.scrollIntoView?.({ block: "center" });
-  }, [reached, reopen]);
+    const at = props.built ? document.querySelector("[data-built]") : document.querySelector(`[data-decision="${CSS.escape(reopen!)}"]`);
+    at?.scrollIntoView?.({ block: props.built ? "start" : "center" });
+  }, [reached, reopen, props.built]);
+  const built = props.built && (
+    <Alert data-built="" key="built" variant="info">
+      <History aria-hidden />
+      <AlertTitle>A graph was built from this conversation</AlertTitle>
+      <AlertDescription>
+        It stays as it was built. What you change here is kept as a new conversation, and building again makes a new graph.
+      </AlertDescription>
+    </Alert>
+  );
 
   const ask = (id: string, text: string) => {
     const t = text.trim();
@@ -229,17 +241,8 @@ export function AssistantChat(props: AssistantChatProps) {
         <ConversationContent className="py-8">
           <MessageList className="gap-5">
             {props.status}
-            {props.built && (
-              <Alert data-built="" variant="info">
-                <History aria-hidden />
-                <AlertTitle>A graph was built from this conversation</AlertTitle>
-                <AlertDescription>
-                  It stays as it was built. What you change here is kept as a new conversation, and building again makes a new
-                  graph.
-                </AlertDescription>
-              </Alert>
-            )}
-            {turns.map(draw)}
+            {!reached && built}
+            {turns.flatMap((turn, index) => (reached && reopens(turn) ? [built, draw(turn, index)] : [draw(turn, index)]))}
             {props.failures.map((f) => (
               <TaskFailed failure={f} key={f.task} />
             ))}

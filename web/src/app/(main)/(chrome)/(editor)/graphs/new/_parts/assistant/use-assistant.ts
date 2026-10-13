@@ -45,10 +45,13 @@ interface FileEntry {
 /** The rows the profile keeps of each file: enough for one row of each relation to be found across files. */
 const SHOWN = 50;
 
+/** The picked file a source's reference names, by its id; the reference itself when none does. */
+const fileOf = (picked: readonly FileEntry[], key: string) => picked.find((f) => f.line.includes(`"${key}"`))?.id ?? key;
+
 /** One thing per file read, with its count and what it holds: what the profile says before any model. */
 export function thingsOf(profiled: Profiled, picked: readonly FileEntry[]): Thing[] {
   return profiled.sources.map((s) => ({
-    id: picked.find((f) => f.line.includes(`"${s.key}"`))?.id ?? s.key,
+    id: fileOf(picked, s.key),
     name: thingName(s.file),
     count: s.rows,
     holds: s.columns.map((c) => c.name),
@@ -187,10 +190,7 @@ export function useAssistant({
   const profiled = read.data?.profiled ?? null;
   const problems: { id: string; problem: unknown }[] = read.error
     ? [{ id: "profile", problem: read.error }]
-    : (read.data?.undescribed ?? []).map(({ source, problem }) => ({
-        id: picked.find((f) => f.line.includes(`"${source.key}"`))?.id ?? source.key,
-        problem,
-      }));
+    : (read.data?.undescribed ?? []).map(({ source, problem }) => ({ id: fileOf(picked, source.key), problem }));
 
   const model = useModel();
 

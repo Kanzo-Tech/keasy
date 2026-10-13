@@ -1,7 +1,8 @@
 # The assistant, and time to smile
 
-Status: a direction. Built: the model in the page, in place of the gateway (2026-10-13); not built:
-the screens. The pattern this rests on — a *Task*: a small model in the browser
+Status: a direction. Built: the model in the page, in place of the gateway, served from keasy's own
+origin and preloaded with intent (2026-10-13); the screens, over typed data; not built: the Tasks
+behind them. The pattern this rests on — a *Task*: a small model in the browser
 fills a small artefact under a JSON Schema, a deterministic oracle checks it, a bounded loop repairs
 it or asks the person — and its API, its model and its decisions are kanzo-ui's, on
 [Tasks](https://kanzo-tech.github.io/ui/docs/design/tasks). fossil's half — `fossil-profile` in place
@@ -70,16 +71,41 @@ worker of its own, for Ask, its offers and the wizard alike.
 | Before | Now |
 | --- | --- |
 | `ai-gateway`, `ai-postgres` and, locally, `ai-models` with Docker Model Runner | none |
-| `KEASY_AI_URL`, `KEASY_AI_CHAT_CONTEXT`, `KEASY_AI_COMPLETE_CONTEXT`, `AI_CHAT`, `AI_COMPLETE`, `AI_DB_PASSWORD` | `KEASY_MODEL_URL`: where the model's shards are served, read per request; unset, WebLLM's prebuilt on Hugging Face |
+| `KEASY_AI_URL`, `KEASY_AI_CHAT_CONTEXT`, `KEASY_AI_COMPLETE_CONTEXT`, `AI_CHAT`, `AI_COMPLETE`, `AI_DB_PASSWORD` | `KEASY_MODEL_URL`: the path on keasy's origin its shards are served at (`/models`), read per request; empty, no model |
 | the BFF's `/api/ai` forward, with its token exchange for the `ai-gateway` audience | nothing to forward |
 | context windows that must match the deployed model | the window travels with the model |
 | `make demo` switches the gateway to Qwen3 and back | the demo uses everyone's model |
 
-The model is downloaded the first time it is needed, in the background: as Ask's panel opens, with
-its progress there, and as the wizard opens. WebLLM keeps it in Cache Storage, behind
-`navigator.storage.persist()`. Not yet: the preload when a graph opens, and versioning — the old one
-serving until the new one is whole. Without WebGPU, Ask and the wizard say so (`ai/unavailable`); the
-e2e scenarios that held the model at the network (12–16) wait on a model double in the page.
+**The shards are keasy's, served from its own origin, never a third party's** (2026-10-13). WebLLM's
+default is its prebuilt list — the weights from Hugging Face, the library from GitHub — and keasy does
+not fall back to it: with `KEASY_MODEL_URL` empty, or naming another origin, there is no model, and Ask
+and the assistant say so (`ai/unavailable` with `reason: "unserved"`, the one code `@kanzo-tech/llm`'s
+`AiError` has). `make models` (`infra/models.sh`) downloads them once — the weights at a pinned Hugging
+Face revision, the library at a pinned commit of `binary-mlc-llm-libs`, every file checked — into
+`infra/models`, which the `models` service (nginx, `compose.yaml`) serves at `/models`: through Next's
+rewrite in development, which has no edge, and through Traefik in a deployment (`infra/prod/README.md`).
+Each path names one content for good — `<model>/resolve/<revision>/` and `lib/<webllm>/<library>` —
+so a shard is cached as immutable, and `ai.test.ts` holds the pins to the script's and the library to
+the installed WebLLM. The CSP needed nothing: the shards and the worker are `'self'`.
+*What would reverse it:* a deployment that cannot serve 2.3 GB from its own origin, where a CDN of its
+own is the answer — still not WebLLM's prebuilt, whose files change under one URL.
+
+**The download starts with intent** — when a graph opens, or the wizard or the assistant — not when
+Ask's panel does: `usePreloadModel` calls `loadLocalModel` once per page, in the background, and the
+page works without the model meanwhile. Ask and the assistant show *Preparing the model* with its
+progress until it is ready (`ModelStatus`); a question asked meanwhile waits for it. WebLLM keeps it in
+Cache Storage, behind `navigator.storage.persist()`. Not yet: versioning — the old one serving until
+the new one is whole. *What would reverse it:* people who open graphs and never ask, on metered
+connections — then the download waits for the first screen that asks.
+
+**The e2e suite runs on a model double in the page**, because CI's Chromium has no WebGPU:
+`e2e/support/model.ts` puts a scripted `LanguageModel` on `window.__keasyModelDouble` before the page
+loads, and `lib/ai.ts` asks it in place of WebLLM — in a development build only, behind
+`process.env.NODE_ENV`, which `next build` inlines, so the production bundle has neither the branch nor
+the name (`model-double.test.ts`, run on the built bundle in CI). Scenario 11 still forces a browser
+without WebGPU, with no double; 12–16 and the dashboard's are real again over the double. What it
+cannot show is WebLLM itself: that the pinned shards load and answer is a browser with WebGPU's to
+check (`make models`, then the eval).
 
 ## The executor leaves the page's main thread
 
@@ -121,7 +147,7 @@ friends), which must be asked back with the relations as numbered options, and t
 cannot answer (prize money, an age), which must draw no card. The figures that need a date in a
 cell are left out until the harness reads one. `EVAL_MODEL=<label> pnpm --filter @keasy/e2e eval` asks today's
 Ask once, as a reference number — on the page's model, so in a browser with WebGPU, and with
-`KEASY_MODEL_URL` on a local copy, as each case's browser starts with empty storage; `writeProgram` is not measured, it is replaced whole. The reference pass (2026-10-12, Qwen3-4B through Model Runner, today's Ask) answered **2 of 10**
+the shards on a local copy (`make models`), as each case's browser starts with empty storage; `writeProgram` is not measured, it is replaced whole. The reference pass (2026-10-12, Qwen3-4B through Model Runner, today's Ask) answered **2 of 10**
 right — prizes by category and airports by country. Two failed on the page's filter: the model picked
 a relation that reaches it, and the answer read no rows, because today's Ask kept a page's clause only
 when the answer's relation had its column (fixed in kanzo-ui, where the answer now crosses a chip as

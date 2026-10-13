@@ -151,7 +151,7 @@ export function AssistantChat(props: AssistantChatProps) {
       case "reading":
         return <ReadingTurn key={key} problems={props.problems} reading={turn.reading} total={props.selected.size} />;
       case "about":
-        return <AboutTurn key={key} />;
+        return <AboutTurn key={key} live={waiting === "about"} />;
       case "about-reply":
         return <Reply key={key}>{turn.text || <span className="text-muted-foreground">Skip that, just read them</span>}</Reply>;
       case "understood":

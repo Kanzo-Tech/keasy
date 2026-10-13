@@ -241,6 +241,31 @@ describe("the assistant, as a conversation", () => {
     expect(asked.textContent).toContain("Not checked yet");
   });
 
+  it("says in each turn what is on screen: how to answer only while it can be answered", async () => {
+    const { host } = mount({ selected: new Set(["nobel:laureates.csv"]), decisions: [], offers: [] });
+    await act(async () => button(host, "Read this file")!.click());
+    expect(host.textContent).toContain("A sentence is enough");
+    await act(async () => button(host, "Skip")!.click());
+    expect(host.textContent).not.toContain("A sentence is enough");
+    expect(host.textContent).toContain("Write your questions below");
+    await act(async () => button(host, "Skip, show me a preview")!.click());
+    // The composer is gone: nothing says to write below it any more.
+    expect(host.querySelector("textarea")).toBeNull();
+    expect(host.textContent).not.toContain("below");
+    expect(host.textContent).toContain("When you are ready, I’ll build the whole graph");
+  });
+
+  it("says what the questions under it are once they are asked", async () => {
+    const { host } = mount({ selected: new Set(["nobel:laureates.csv"]), decisions: [] });
+    await through(host);
+    expect(host.textContent).toContain("Take one of these, or write your own below");
+    await act(async () => button(host, "Who has won more than one Nobel?")!.click());
+    await act(async () => button(host, "That's all, show me a preview")!.click());
+    expect(host.textContent).not.toContain("below");
+    expect(host.textContent).toContain("Your question, and whether these files can answer it:");
+    expect(host.textContent).toContain("When the answers look right, I’ll build the whole graph");
+  });
+
   it("answers each question kept over the preview, in the chat, once the person has asked all", async () => {
     ask.sendMessage.mockClear();
     const { host } = mount({

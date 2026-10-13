@@ -165,14 +165,19 @@ export function ReadingTurn({
   );
 }
 
-/** "While I read them: what is it about?" — optional, answered or skipped in the composer. */
-export function AboutTurn() {
+/**
+ * "While I read them: what is it about?" — optional, answered or skipped in the composer. Once it is,
+ * the composer is gone, and so is the line about how to answer.
+ */
+export function AboutTurn({ live }: { live: boolean }) {
   return (
     <Said>
       <p>
         While I read them: <span className="font-medium">what is this data about?</span>
       </p>
-      <p className="text-muted-foreground">A sentence is enough, and it is optional. It helps me read the files the way you mean them.</p>
+      {live && (
+        <p className="text-muted-foreground">A sentence is enough, and it is optional. It helps me read the files the way you mean them.</p>
+      )}
     </Said>
   );
 }
@@ -339,7 +344,10 @@ export function Answerable({ answerable }: { answerable: boolean | null }) {
   );
 }
 
-/** "What would you like to know?" — the questions on offer as chips, and the way on when it is enough. */
+/**
+ * "What would you like to know?" — the questions on offer as chips, and the composer for one's own,
+ * while the questions are asked; after, only what the questions under it are.
+ */
 export function AskTurn({
   offers,
   questions,
@@ -356,10 +364,19 @@ export function AskTurn({
   return (
     <Said>
       <p className="font-medium text-base">What would you like to know?</p>
-      <p className="text-muted-foreground">
-        {open.length > 0 ? "Take one of these, or write your own below" : "Write your questions below"}. I&rsquo;ll
-        check whether these files can answer each one.
-      </p>
+      {live ? (
+        <p className="text-muted-foreground">
+          {open.length > 0 ? "Take one of these, or write your own below" : "Write your questions below"}. I&rsquo;ll
+          check whether these files can answer each one.
+        </p>
+      ) : (
+        questions.length > 0 && (
+          <p className="text-muted-foreground">
+            {questions.length === 1 ? "Your question, and whether" : "Your questions, and whether"} these files can answer{" "}
+            {questions.length === 1 ? "it" : "each one"}:
+          </p>
+        )
+      )}
       {live && open.length > 0 && (
         <Suggestions>
           {open.map((o) => (
@@ -406,7 +423,8 @@ export function BuildTurn({
     return (
       <Said>
         <p className="text-muted-foreground">
-          When the answers look right, I&rsquo;ll build the whole graph: every row of every file, kept to come back to.
+          {questions.length > 0 ? "When the answers look right" : "When you are ready"}, I&rsquo;ll build the whole graph:
+          every row of every file, kept to come back to.
         </p>
         <Button className="self-start" disabled={!ready} onClick={onBuild} size="lg">
           <Hammer />

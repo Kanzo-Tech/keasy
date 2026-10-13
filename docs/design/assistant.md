@@ -3,8 +3,8 @@
 Status: a direction. Built: the model in the page, in place of the gateway, served from keasy's own
 origin and preloaded with intent (2026-10-13); the guided chat (2026-10-13); and its three Tasks,
 `model`, `mapping` and `requirements`, over fossil's profile (2026-10-13, below); the conversation
-kept, and the preview run in memory and shown in the chat (2026-10-13) — the chat's wiring to both
-still to come. The pattern this rests on — a *Task*: a small model in the browser
+kept, and the preview run in memory and shown in the chat, the chat wired to both and to the build
+(2026-10-13). The pattern this rests on — a *Task*: a small model in the browser
 fills a small artefact under a JSON Schema, a deterministic oracle checks it, a bounded loop repairs
 it or asks the person — and its API, its model and its decisions are kanzo-ui's, on
 [Tasks](https://kanzo-tech.github.io/ui/docs/design/tasks). fossil's half — `fossil-profile` in place
@@ -54,7 +54,8 @@ carrying what it is about:
 4. Each decision with no safe default, as a turn of its own: the question and its options. Each one that
    had a safe default is said, *I assumed …*, with **Change**, and blocks nothing.
 5. *What would you like to know?* — questions already answerable from these files as chips, and the
-   composer for one's own; each question kept says whether these files can answer it.
+   composer for one's own; each question kept says whether these files can answer it. *That's all,
+   show me a preview* ends it.
 6. *Here is your data over 200 rows* — the preview, in the chat: each question kept is answered there
    over it with Ask's cards, and a decision changed runs it again. Then **Build the whole graph**, and
    *your graph is building*, with **Ask your data** and the person's questions as prompts to take to
@@ -180,7 +181,7 @@ retry; nothing downstream runs on a refused artefact.
 
 ## The preview is in the chat
 
-**Built 2026-10-13, but the chat's wiring.** Once there is a program, it runs over the first 200 rows
+**Built 2026-10-13.** Once there is a program, it runs over the first 200 rows
 of each source **into memory** — fossil's `run(program, { host, into: "memory", limit: 200 })`, in
 this tab's run worker, which answers the corpus's files as bytes and writes nothing — and the files are
 attached to the assistant page's engine from those bytes: each registered with DuckDB-WASM as a buffer
@@ -192,6 +193,16 @@ preview of its own and the one it replaces is given back once nothing reads it. 
 over it, `useCorpusAsk()` (`lib/fossil/ask.ts`) is Ask as Discover's panel runs it, and the person's
 questions are answered in the chat with `AnswerCard`s over the sample. One door to fossil's executor,
 `lib/fossil/executor.ts`, maps `{ job }` and `"memory"` onto `run`'s `into`.
+
+**How the chat reads it** (`assistant-flow.tsx`, `preview-turn.tsx`). The preview runs the `mapping`
+Task's program and nothing before it: the chat shows *writing how your files become a graph* until
+there is one. A decision changed is a model accepted again, so the mapping writes the program again;
+meanwhile the last program stays the preview's (`keepPreviousData` on the mapping) and its answers
+stay on screen under *running the preview again*, until the new corpus lands and its answers replace
+them. Each kept question is sent to `useCorpusAsk()`'s chat in turn — one at a time, as a chat
+answers, and only once the model is ready — and drawn as Ask's panel draws it, an `AnswerCard` with
+its `AskChips`. There is no composer under them: a tie Ask asks back is answered in Discover, over the
+whole graph. A failed run is said with its problem and a retry (`rerun`).
 
 **The whole graph is built once, when the person asks** — *Build the whole graph*: `useBuild(program,
 profiled, { conversation })` (`graphs/new/_parts/use-build.ts`) makes it as the studio does, a draft
@@ -205,7 +216,14 @@ sees answers over their own rows next to the question that shaped them, changes 
 the answer change, before anything is written — 200 rows in memory cost seconds, so running it again
 is cheap where building the graph again is not. And Discover only ever shows a whole graph, the
 graph's own output under its id: no second corpus beside it to switch from, nothing that is not what
-the graph holds. The earlier shape — the preview built with the graph and opened in Discover under
+the graph holds.
+
+**Build the whole graph** saves the conversation first and builds under the id that save answers —
+which is a new conversation's when the one opened was built from already — so a graph always names
+the conversation as it stood when it was asked for. Its turn reads `building` (with its percent once
+the run reports one), `failed` with its problem and a retry, and `done` with **Ask your data** and a
+link per question, `askHref(graphId, question)`. A decision changed after a build is a program with no
+build: the action is offered again, and makes a new graph. The earlier shape — the preview built with the graph and opened in Discover under
 `<id>~preview` until the whole landed — waited on a decision taken blind and put a sample where a
 graph was expected.
 
@@ -226,16 +244,36 @@ assumed), so Discover's *What I decided* reads them from the graph's conversatio
 opens `/graphs/new/assistant?conversation=<id>&decision=<id>`. `useAssistantConversation(id?)`
 (`lib/assistant-conversation.ts`) is the web's side: `{ id, messages, save, decisions }`.
 
+**One message per turn** (`conversation.ts`'s `messagesOf`): each carries a `data-turn` with its kind,
+and its id is the kind and what it is about (`decide:<decision>`, `asked:<question>`), so a save
+replaces a turn rather than adds one. The person's turns are `user` messages: `data-files` on the
+pick, `data-about` on its reply, `data-decision` on a decision answered (`option: null` while it is
+asked; the last word on each wins), `data-question` per question kept, and `data-program` on the
+preview's turn. `restore` reads the same parts back, and the chat starts where they stood: the files
+read again without listing their folders (a file whose connection is gone is said, as a problem of
+the reading turn), the person's choices taken again, an assumption left to its default, the questions
+kept, and the program last written previewed until the mapping writes it again. The `model` Task is
+asked again, from the profile, so a decision is raised again by its id; **Change** in Discover
+(`?decision=`) opens its turn at its options. *What would reverse it:* a model that raises other
+decisions on the same files when asked again — then the accepted `model` artefact is kept too, as
+structure, and reopening skips the Task.
+
 **Saved whole after each reply, not appended.** The array is small — structure only, below — and
 whole is what the AI SDK hands back on finish; an earlier answer taken again replaces every turn after
 it, which an append cannot say; and a save sent twice, or retried after a timeout, is one save. *What
 would reverse it:* conversations long enough that a reply's save is felt — then messages get rows of
 their own, as the chatbot template's do, and a save sends what changed.
 
+Saving starts at the person's first reply on the page — a conversation opened and only read is not
+saved again — and waits while the files are read or the `model` Task answers, when the turns after
+them are not said yet and a save would drop them. The id saved under goes on the URL
+(`?conversation=`), so a reload resumes it.
+
 **A conversation a graph was built from is that graph's record**, as a submitted graph's script is
 (`graph/not-draft`): a save over it is refused (`conversation/built`), and the hook carries on in a new
 conversation started from its messages — so Change rebuilds as a new graph with a conversation of its
-own, and the first graph still lists what it was built with.
+own, and the first graph still lists what it was built with. The chat says so above its first turn
+when it opens one.
 
 **What is stored, and what is not.** The premise is that the person's data never leaves the browser,
 and a saved conversation is no exception. Stored: the turns' kinds and ids, the options offered in

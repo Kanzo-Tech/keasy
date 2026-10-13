@@ -31,7 +31,7 @@ import {
 import { Blocked } from "@/components/blocked";
 import { Provenance } from "@/components/provenance";
 import { ValidationBadge } from "@/components/validation-badge";
-import { $api, invalidate } from "@/lib/api/client";
+import { $api, invalidate, type Schemas } from "@/lib/api/client";
 import { formatsQuery } from "@/lib/fossil/checker";
 import { toastError } from "@/lib/errors";
 import { blocked } from "@/lib/permissions";
@@ -141,7 +141,7 @@ function ConnectionView({ name }: { name: string }) {
   );
 }
 
-type ConnectionFile = { path: string; size: number };
+type ConnectionFile = Schemas["FileEntry"];
 
 /** What a storage connection's prefix holds that a format reads. Fails on its own, beside the connection. */
 function Files({ name, url, kind }: { name: string; url: string; kind: "data" | "schema" }) {

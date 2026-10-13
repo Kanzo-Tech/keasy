@@ -116,10 +116,11 @@ the rest in the background, the way fossil's profile already splits.
   inclusion — its `via` lands on the `to` type's source at its key, and leaves from the `from`
   type's source or from a source no type stands on whose other inclusion lands on the `from` type
   (`model/unbacked-edge`); an edge names types the artefact has (`model/unknown-type`); no two types
-  share a name (`model/duplicate-type`). Each is fixable: sent back at its JSON Pointer.
-- **Decisions**, raised from the profile and the accepted artefact, never by the model: a source
-  with more than one candidate key asks which identifies the thing, and assumes the first (`key/<source>`,
-  a safe default: any candidate identifies); an edge through a source no type stands on — a
+  share a name, nor two fields of one type, and none is a word of Fossil's (`model/duplicate-name`). Each is fixable: sent back at its JSON Pointer.
+- **Decisions**, raised from the profile and the accepted artefact, never by the model: a type
+  whose file has more than one candidate key, and that no edge lands on (an edge fixes the key it
+  lands on), asks which identifies the thing, and assumes the profile's first (`key/<source>`, a safe
+  default: any candidate identifies); an edge through a source no type stands on — a
   many-to-many inclusion pair, *affiliations* between laureates and institutions — asks whether each
   row is a link, or a thing counted on its own (`count/<edge>`: *when two laureates share an
   institution, one or two?*), and blocks, because each answer counts differently and neither is

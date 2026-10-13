@@ -11,7 +11,9 @@ it or asks the person — and its API, its model and its decisions are kanzo-ui'
 of introspect, and a mapping spec from which Fossil is emitted — is on
 [Profile, and the mapping a model proposes](https://kanzo-tech.github.io/fossil-lang/docs/design/profile).
 This page is keasy's part: the assistant's conversation, the metric they are built for, and what changes
-in keasy's own configuration and runtime.
+in keasy's own configuration and runtime. What of it moves into kanzo-ui and fossil once they release it — the run
+worker, the in-memory corpus, the model double, the conversation's keeping, the Tasks' guesses and the
+evaluation set — is said in each section below, and the order is on [cleanup](cleanup.md).
 
 ## The problem
 
@@ -181,6 +183,30 @@ the rest in the background, the way fossil's profile already splits.
 - *What would reverse it:* questions marked answerable here that Ask, over the built graph, cannot
   answer — then marking waits for the preview and runs Ask on it.
 
+**What leaves for the libraries** (direction, 2026-10-13; [cleanup](cleanup.md)). Three of the
+Tasks' pieces re-derive what a library will know exactly, and go once it releases:
+
+- **`requirements`** (`tasks/requirements.ts`, 139 lines with its hand-made `joinGraphOf`) — its
+  oracle is a second resolver over a join graph keasy builds by hand, hard-coding `id`, `src` and
+  `dst`. Under kanzo-ui's paths design (`JoinResolver` the one door to the joins, Ask writing
+  Malloy-style dotted paths), a question is answerable exactly when `JoinResolver.relation(root,
+  shown)` validates its paths, and the fields offered are `JoinResolver.paths(root)`. The chips are
+  then Ask's own offers over the accepted model's `JoinGraph`, and keasy's Task is deleted.
+- **`words`** (`tasks/words.ts`, 67) — `spoken`, `plural`, `singular`, `withArticle`, an English
+  heuristic. Words come from the data: an `rdfs:label` or `sh:name` annotation in the page's
+  language (fossil's annotations design), else the identifier split as a last resort, with
+  `Intl.ListFormat` and `Intl.PluralRules`; titles avoid plurals (*Award count by university*). What
+  keasy still needs, `pascal` and `camel` for the names the `model` Task proposes, stays.
+- **`profile`'s and `model`'s facts** (~60 of `profile.ts`, ~150 of `model.ts`) — candidate keys,
+  identifier-ness and a column's datatype guessed from names and a sample, which fossil's corpus
+  will carry (term type, datatype, label, endpoint keys, the profile stored in the corpus) and
+  `@kanzo-tech/graph`'s `JoinGraph` will carry to Ask.
+
+About 415 lines and their tests. *What would reverse it:* a library that cannot answer for an
+unbuilt model — `JoinResolver` needing a corpus where the assistant has only an accepted artefact.
+Then keasy keeps a `JoinGraph` built from the artefact, through the library's one constructor, never
+a second resolver.
+
 **Failure is said, not swallowed.** A Task that throws, or whose oracles still refuse after its
 attempts, ends the chat's flow with its problem (`llm/failed` when it has no code of its own) and a
 retry; nothing downstream runs on a refused artefact.
@@ -192,7 +218,12 @@ of each source **into memory** — fossil's `run(program, { host, into: "memory"
 this tab's run worker, which answers the corpus's files as bytes and writes nothing — and the files are
 attached to the assistant page's engine from those bytes: each registered with DuckDB-WASM as a buffer
 under a prefix of its own, and fossil's `attach` pointed at that prefix as a corpus at a URL, which
-needs nothing of fossil it lacks (`lib/fossil/memory-corpus.ts`). `usePreview(program, profiled)`
+needs nothing of fossil it lacks (`lib/fossil/memory-corpus.ts`). **Direction (2026-10-13):** fossil
+reads what fossil wrote — `@fossil-lang/corpus`'s `attach({ files })` takes the `CorpusFile[]` that
+`into: "memory"` answers, registers and drops the buffers itself, and `memory-corpus.ts` and its test
+go (~125 lines; `corpus-attach` and `corpus-lifetime`'s tests shrink with it). *What would reverse
+it:* fossil declining a third `attach` form — then keasy keeps its 44 lines, and says why on fossil's
+page, not here. `usePreview(program, profiled)`
 (`lib/fossil/preview.ts`) is the hook: `idle`, `running` — the last corpus kept on screen —, `ready`
 or `failed`, each corpus named by its program and cached as a graph's is, so a decision changed is a
 preview of its own and the one it replaces is given back once nothing reads it. Inside `CorpusScope`
@@ -295,6 +326,21 @@ carrying example rows through it and finds none. *What would reverse it:* a need
 transcript, rows and all — an audit, a support case — and then it is stored in the person's own
 storage, under their own credential, never in keasy's database.
 
+**Direction (2026-10-13): the keeping moves to `@kanzo-tech/ai`, and keasy keeps the store and the
+filter.** Nothing above is keasy's but where the array lives and what may be in it: a guided chat
+whose messages are `UIMessage[]` by id, validated on the way back in, saved whole after each reply,
+one save at a time, refused and carried on in a new id once its record is sealed — any guided chat
+of the library needs the same. So `@kanzo-tech/ai` keeps it, on the AI SDK's own model (`UIMessage[]`
+per chat id, `validateUIMessages` on load) with a `keep` filter it calls on every save and every
+load; keasy hands it `load(id)` and `save(id, messages)` against `GET /v1/conversations/{id}` and
+`PUT /v1/conversations/{id}/messages`, and `keep` — today's `toStored`, the allow-list, unchanged,
+with its test. `useAssistantConversation`'s queue, the save-after-reply timing and the
+`conversation/built` carry-on go (~200 lines with their test; `conversation.ts`'s turns, which say
+what keasy's chat is, stay). *What would reverse it:* a second guided chat in the library that needs
+a different saving rule — appended, not whole — and then the library's piece is the narrower one and
+keasy keeps its own rule; or the library's `keep` running anywhere but on keasy's side of the save,
+which would put the privacy premise in someone else's hands.
+
 ## What left keasy's configuration
 
 **Done 2026-10-13**, on kanzo-ui 0.44's `localModel`: one model, `MODEL` in `web/src/lib/ai.ts`, in a
@@ -341,6 +387,16 @@ without WebGPU, with no double; 12–16 and the dashboard's are real again over 
 cannot show is WebLLM itself: that the pinned shards load and answer is a browser with WebGPU's to
 check (`make models`, then the eval).
 
+**Direction (2026-10-13): one double, and it is `@kanzo-tech/llm`'s.** keasy holds three —
+`e2e/support/model.ts`, `lib/ai.ts`'s `modelDouble()` with its `UNSERVED` and the built-bundle guard
+`model-double.test.ts`, and `nobel.fixture.ts`'s `scripted()` over `MockLanguageModelV4` — and the
+library two more. Once `@kanzo-tech/llm` ships one scripted double that `localModel` consults through
+`__KANZO_TESTING__`, keasy's injection branch, its window name, its guard test and its unit-test
+double go, and `UNSERVED` becomes `localModel`'s own `ai/unavailable { reason: "unserved" }` (~180
+lines). The model's load already moved (`localModelLoad`, above): keasy holds no store of it. *What
+would reverse it:* a double that cannot be kept out of a production bundle by the library — then
+keasy keeps its guard on the built bundle, and only that.
+
 ## The executor leaves the page's main thread
 
 **Confirmed 2026-10-12:** `startRun` (`graphs/[id]/_parts/use-browser-graph-runner.ts`) imports
@@ -348,6 +404,14 @@ check (`make models`, then the eval).
 the page. Nothing in `web/src` creates a `Worker`. Today that blocks only a page whose person is
 waiting for a run; with a preview run while they talk to the assistant, it would block the chat. The
 executor moves to a worker of its own — done: `lib/fossil/run.worker.ts` runs both.
+
+**Direction (2026-10-13): the worker is fossil's.** Nothing in `lib/fossil/run-worker.ts` (168 lines,
+its test 139, `run.worker.ts` 6) is keasy's: the message protocol, the `Host` proxied over a port,
+abort, failures rebuilt across `structuredClone` and buffers transferred are what every browser host
+of `@fossil-lang/executor` needs, because `run` holds the thread it is called on. So fossil's `run`
+runs in a worker of its own, and keasy calls it from the page; `executor.ts`'s door stays (~310 lines
+go). *What would reverse it:* a host that needs `run` on its own thread — a Node host, a test — and
+then fossil keeps both and keasy still calls the worker one.
 
 ## Cross-origin isolation
 
@@ -373,7 +437,18 @@ headers adds one, and asserts `crossOriginIsolated`.
 
 ## Order
 
-keasy's part of phase 1 is the evaluation set, under `e2e/eval`: Ask's cases (`cases.ts`, one or two per
+**The evaluation set moves to kanzo-ui** (decided 2026-10-13): it scores `@kanzo-tech/ai/data`'s
+`ask` Task, which is kanzo-ui's, and belongs beside it with the Nobel fixtures already in
+`ai/src/testing/nobel.ts` — Ask's cases and their runner (`cases.ts`'s `ASK`, `ask.eval.ts`,
+`record.ts`: ~560 of the directory's 614 lines), the `eval` project and script, and `hasExample`, its
+one caller. Its 2 s polling loop and raw `data-slot` selectors are not carried over: there it waits
+with `expect.poll` and `AnswerHarness`. The four assistant examples (`cases.ts`'s `ASSISTANT`, which
+nothing reads yet) are keasy's — they measure *time to smile*, the assistant's flow — and stay as the
+seed of that measure. *What would
+reverse it:* a measure that only keasy's page can take — the assistant's whole flow, file to first
+answer, which is *time to smile* — and then that one lives here and Ask's cases do not.
+
+Until it moves, keasy's part of phase 1 is the evaluation set, under `e2e/eval`: Ask's cases (`cases.ts`, one or two per
 shape of question — 25 on Nobel and 11 on LDBC SNB, each with its expected rows, computed with DuckDB
 over the example's files) and the four examples for the assistant, kept as data for the new
 assistant. Four cases end in words and not in rows: two ties (a prize's country, a person's

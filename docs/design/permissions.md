@@ -1,9 +1,10 @@
 # Permissions
 
-Status: phase A implemented (owners, actions, the matrix, the web drawing it). Phase B's server is
-implemented — grants to people and groups, secrets used by grant, transfer, departure — and its
-Share dialog and the directory it picks from are not built yet ([What phase B leaves
-open](#what-phase-b-leaves-open)).
+Status: phase A implemented (owners, actions, the matrix, the web drawing it). Phase B — grants to
+people and groups, secrets used by grant, transfer, departure — had its server built and no screen,
+and **is removed until a Share dialog exists** (decided 2026-10-13, [Sharing waits for its
+dialog](#sharing-waits-for-its-dialog)). This page states the model without it; the code still
+carries phase B until the cleanup lands ([cleanup](cleanup.md)).
 
 ## The problem
 
@@ -40,9 +41,9 @@ reading, so it was closed on harmless actions and open on powerful ones:
   own. This is keasy's *discipline*: a handler asks `caller.may(Action, &object)`, never a role name.
 - Considered and not taken: GitHub's five repository roles (an "operator" role is not needed, see
   decision 4), Snowflake's role-owned objects (the `workspace` principal plays that part),
-  Zanzibar/OpenFGA as a service (too much for four resource types in one SQLite file; phase B stores
-  grants as a local table of tuples instead), Keycloak Authorization Services (per-object policy
-  belongs to keasy's data, not the IdP).
+  Zanzibar/OpenFGA as a service (too much for four resource types in one SQLite file; phase B, when it
+  returns, stores grants as a local table of tuples instead), Keycloak Authorization Services
+  (per-object policy belongs to keasy's data, not the IdP).
 
 ## Vocabulary
 
@@ -51,8 +52,7 @@ reading, so it was closed on harmless actions and open on powerful ones:
 | **read** | See the object and its status. |
 | **use** | Build on it: a source in a graph, its files listed or read; a secret in a connection; a completed graph's output read. |
 | **operate** | Change its status, not its configuration: test a connection or a secret; run or re-run a graph. |
-| **manage** | Change its configuration: edit, rename, delete; a graph's rules and dashboard; share it. |
-| **transfer** | Give it to someone else to own: manage's one part a manager does not hold. |
+| **manage** | Change its configuration: edit, rename, delete; a graph's rules and dashboard. |
 
 Stopping a run is its own case: its runner, or whoever manages the graph.
 
@@ -61,7 +61,7 @@ Stopping a run is its own case: its runner, or whoever manages the graph.
 | Role | On every object of the workspace |
 |---|---|
 | reader | read graphs, outputs, dashboards, rules and connection metadata; use completed outputs; Ask |
-| editor | reader, plus create; **use** and **operate** everything but another person's secret; **manage** what they own or were made a manager of |
+| editor | reader, plus create; **use** and **operate** everything but another person's secret; **manage** what they own |
 | admin | editor, plus **manage** everything, the workspace's own objects and the sink included |
 
 The roles stay Keycloak client roles, composites declared once (`compose.yaml`, `x-application`),
@@ -78,32 +78,33 @@ operates it, only an admin manages it. Views answer `owner: { id, name }`.
 
 ## The matrix
 
-| Object | read | use | operate | manage | transfer | create |
-|---|---|---|---|---|---|---|
-| Secret (metadata; the value is never returned) | editor | owner, manager, a `user` grant, admin; every editor on the workspace's | editor (Test) | owner, manager, admin | owner, admin | editor |
-| Source connection (data, vocabulary) | reader | editor (in a graph, list files, vend a read) | editor (Test) | owner, manager, admin | owner, admin | editor |
-| Sink / workspace storage | reader | through its graphs only | admin (Test) | admin | — (the workspace's) | admin |
-| Graph | reader | reader (vend a completed output) | editor (run, run again); stop: runner, owner, manager, admin | owner, manager, admin | owner, admin | editor |
-| Rules, dashboard | reader | — | — | the graph's manage | — | — |
-| The assistant's conversation | reader | — | — | owner, admin (save it; once a graph is built from it, nobody) | owner, admin | editor |
-| Ask | reader | — | — | — | — | — |
-
-A grant raises an editor and never a reader: who holds no editor role manages nothing, whatever was
-granted to them or to a group they are in.
+| Object | read | use | operate | manage | create |
+|---|---|---|---|---|---|
+| Secret (metadata; the value is never returned) | editor | owner, admin; every editor on the workspace's | editor (Test) | owner, admin | editor |
+| Source connection (data, vocabulary) | reader | editor (in a graph, list files, vend a read) | editor (Test) | owner, admin | editor |
+| Sink / workspace storage | reader | through its graphs only | admin (Test) | admin | admin |
+| Graph | reader | reader (vend a completed output) | editor (run, run again); stop: runner, owner, admin | owner, admin | editor |
+| Rules, dashboard | reader | — | — | the graph's manage | — |
+| The assistant's conversation | reader | — | — | owner, admin (save it; once a graph is built from it, nobody) | editor |
+| Ask | reader | — | — | — | — |
 
 The server holds it in one function, `Caller::may` (`server/src/authentication/permission.rs`);
-handlers call `caller.ensure(Action::…, &object)`. A route still states the least role it admits
-(`Reader`, `Editor`, `Admin` extractors, and the OpenAPI `security` that `authorization.rs` checks):
-that is the *create* column and the floor; the object decides the rest.
+handlers call `caller.ensure(Action::…, &object)`, and only that: the second spelling a graph has
+today, `graphs::permitted(db, caller, id, Action)`, which loads and ensures in one call, goes, and
+graph routes load with the module's own lookup and ask `caller.ensure` as secrets and connections do
+(~15 lines; six graph routes call it, two more in the share and transfer handlers that go). *What would reverse
+it:* a fourth kind of object whose every route loads-then-ensures — then one generic
+`permitted<T: Securable>` serves all of them, not a graph-only one. A route still states the least
+role it admits (`Reader`, `Editor`, `Admin` extractors, and the OpenAPI `security` that
+`authorization.rs` checks): that is the *create* column and the floor; the object decides the rest.
 
 Testing records who asked on the report (`validation.by`) and never as the object's `updated_by`.
 
 ## The wire and the web
 
-Views carry `can: { use, operate, manage, transfer }` — worked out per caller, drawn by the web,
-never re-derived — and `grants`, the object's grants, which everyone who reads the object sees (as
-Google Drive shows everyone with access who else has it). `can_modify` is gone; graphs keep
-`can_stop`.
+Views carry `can: { use, operate, manage }` — worked out per caller, drawn by the web, never
+re-derived. `can_modify` is gone; graphs keep `can_stop`. `can.transfer` and `grants` leave the views
+with phase B.
 
 The web hides what the caller's *role* can never do (a reader is offered no menu, as on graphs) and
 shows what the *object* denies them disabled, with the reason (`web/src/lib/permissions.ts`,
@@ -115,20 +116,18 @@ can change it".
 
 1. **An editor may run, and run again, another person's graph**: it is operate. Running overwrites
    the output, which is the point of running again.
-2. **Using a secret requires an explicit grant** — Unity Catalog's rule, the safest reference.
-   Implicit for its owner, its managers and admins; the workspace's own (seeded) secrets are granted
-   to every editor. It is asked where a connection is created or repointed, and only there: a
-   connection already made on a secret keeps working when the grant is revoked, as an external
-   location keeps its storage credential.
+2. **Using another person's secret is not possible without its owner or an admin.** Unity
+   Catalog's rule is that using a credential takes an explicit grant; with no way to grant, the grant
+   is nobody's, so an editor uses their own secrets and the workspace's (seeded) ones, and an admin
+   uses any. It is asked where a connection is created or repointed, and only there: a connection
+   already made on a secret keeps working, as an external location keeps its storage credential.
 3. **Readers do not see a source's files**: listing them is use, an editor's, as reading them is.
 4. **No fourth role**: reader ⊂ editor ⊂ admin.
-5. **Grantees are people and Keycloak organisation groups**, by id, from a token claim.
-6. **Folders carry no permissions yet.**
-7. **When someone leaves, what they own passes to the workspace**, and the grants made to them go.
-   What they created still says they did.
-8. **A manager shares and does not transfer.** Only the owner or an admin gives an object away, as
-   only a securable's owner or a metastore admin changes its owner in Unity Catalog; the previous
-   owner keeps nothing by having owned it.
+5. **Folders carry no permissions yet.**
+6. **When someone leaves, nothing is stranded**: an admin manages everything, so what a departed
+   person owned is an admin's to change or delete. What they created still says they did. Moving the
+   owner to the workspace on departure returns with the directory, which is the only thing that can
+   say someone left.
 
 ## The schema
 
@@ -141,48 +140,44 @@ holds data that must outlive a schema change, and an upgrade written for each ch
 for a database nobody has. *What would reverse it:* a deployment whose data must survive a schema
 change — then each change carries its migration, tested against a database of the schema before.
 
-## Grants
+## Sharing waits for its dialog
 
-`grants` holds one tuple a row — Zanzibar's object, relation, principal — in keasy's SQLite file,
-not a service. The object is in exactly one of three columns, `secret`, `connection` or `graph`, so
-each has its foreign key: a rename carries the grant along, a delete takes it away. `relation` is
-`manager`, or `user` on a secret. A principal is a person's `sub` or a group's Keycloak id, kept with
-the name it had when granted, for people to read and never to authorize on.
+**Decided 2026-10-13: grants, sharing and transfer are removed until a Share dialog exists.** Phase B's
+server was built ahead of its screen: `PUT /v1/{secrets,connections,graphs}/{id}/grants` and
+`PUT …/owner` had no web caller, the only client was one e2e test (`roles.spec.ts`), and the dialog
+waited on a directory nobody has decided how to read (below). An API nobody can reach from the product
+is surface to keep secure, documented and tested for no one; and the three copies of share and of
+transfer in `routes/access.rs` were already asking to be collapsed for a feature without a user.
 
-Every object is read with its grants (one correlated subquery, `database::grants_of`), so
-`Caller::may` stays a pure function of the caller and the object, and the matrix stays one match.
+What goes, all of it (~900 lines):
 
-Groups come from the token. keasy's declaration asks for them (`groups: {}` in `compose.yaml`'s
-`x-application`), the platform's Organization Group Ids mapper (kanzo-ui v0.38.0) writes the ids of
-the person's groups there — ancestors included — as `organization.<alias>.groups`, and
-`token.rs` reads them into `Caller`. A path, which Keycloak's own mapper writes, is never read.
+| Where | What |
+|---|---|
+| server | `routes/access.rs` (the six `PUT …/grants` and `…/owner` handlers), `grants.rs` (replace, transfer, `depart`), `domain/grant.rs`; the `grants` table and `database::grants_of`; `Relation`, `Action::Transfer`, `Securable::grants` and the `granted` and `manages` arms of `Caller::may`; the `groups` claim read in `token.rs` and its `groups:overage` log in `middleware.rs` |
+| matrix | the *transfer* column; *manager* and the `user` grant from every row |
+| API | the six routes; the schemas `Grant`, `GrantRequest`, `GrantsRequest`, `OwnerRequest`, `TransferRequest`, `Principal`, `PrincipalKind`; `can.transfer` and `grants` on every view (`api/openapi.json` and `api/src/schema.d.ts` regenerated) |
+| web | `transfer`'s reason in `lib/permissions.ts`; `can.transfer` in fixtures (`graphs.test.ts`) |
+| compose | `groups: {}` in `x-application`, which asked the platform's Organization Group Ids mapper for ids only grants read |
+| tests | the grant, transfer, group and departure cases of `server/tests/api/permissions.rs`; the shared-secret case of `e2e/tests/roles.spec.ts` |
 
-| Call | Who | What |
-|---|---|---|
-| `PUT /v1/{secrets,connections,graphs}/{id}/grants` | manage | Replaces the object's grants whole, as Drive's dialog applies its changes on *Save*: what stays keeps who granted it and when. None on the sink, no `user` of what is not a secret, none to its owner, at most 100 — past that, a group. |
-| `PUT /v1/{secrets,connections,graphs}/{id}/owner` | transfer | Gives it to a person, by `sub` and name, or to the workspace (`{ "id": "workspace" }`). |
+What stays: `owner` apart from `created_by`, the `workspace` principal, the four actions and
+`Caller::may` as one match. The schema changes with no migration ([The schema](#the-schema)).
 
-Departure is `grants::depart(sub)`: every secret, connection and graph `sub` owns passes to the
-workspace in one transaction, and the grants to them are deleted.
+*What would reverse it:* a Share dialog being built — a screen where a person picks someone in the
+workspace and says *manager* or *may use this secret*. Then phase B comes back as it was designed: the
+`grants` table as Zanzibar tuples in keasy's SQLite file (object, relation, principal; the object in
+one of three columns with its foreign key), grants to people and to Keycloak organization groups by id
+from the token, `PUT …/grants` replacing an object's grants whole as Drive's dialog applies on *Save*,
+`PUT …/owner` for owner or admin only (a manager shares and does not transfer, as in Unity Catalog),
+and one handler per verb generic over a `Securable` trait (`load`, `seen_by`) rather than three
+copies. It comes back with its dialog, in the same change.
 
-## What phase B leaves open
+### What the dialog waits on
 
-Three things wait on one decision — **where keasy reads the organization's directory** (its members
-and groups, by name), which Keycloak's admin API answers only to a credential holding
-`realm-management`'s `view-users` and `view-organizations`, and `view-users` sees the whole realm,
-every organization's people included:
-
-- **The Share dialog's picker.** The token carries group ids and no names, so naming *Research* in
-  the dialog needs the directory. Until then `PUT …/grants` takes the name the caller gives.
-- **Overage.** Past 100 groups the token carries `groups_overage` and no ids; Entra ID's answer is
-  to read the membership from the directory. Until then a grant to a group holds for no one in
-  overage — the side to fail on — and the server logs `groups:overage`.
-- **Departure's trigger.** A person who left never calls again, so only the directory can say they
-  left: a sweep comparing owners and grantees with the organization's members, calling `depart`.
-
-## Phase B
-
-- Done: the `grants` table; `may` reading it, for people and groups; using a secret by grant;
-  transfer; departure as a function; `can.use` and `can.transfer`; `can_modify` removed; the
-  connection form offers a secret the caller may not use disabled, naming whom to ask.
-- Not yet: the directory, and with it the Share dialog, overage and departure's sweep.
+**Where keasy reads the organization's directory** — its members and groups by name — which
+Keycloak's admin API answers only to a credential holding `realm-management`'s `view-users` and
+`view-organizations`, and `view-users` sees the whole realm, every organization's people included.
+The directory is what names *Research* in the dialog's picker (the token carries group ids and no
+names), what reads membership past 100 groups (the token's `groups_overage`, Entra ID's rule), and
+what says someone left (a sweep comparing owners with members, moving what they owned to the
+workspace). The dialog and the directory are one decision.

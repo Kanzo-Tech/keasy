@@ -1,7 +1,7 @@
 "use client";
 
-import { createContext, createElement, type ReactNode, useContext, useEffect, useSyncExternalStore } from "react";
-import type { LanguageModel } from "@kanzo-tech/llm";
+import { createContext, createElement, type ReactNode, useCallback, useContext, useEffect, useSyncExternalStore } from "react";
+import { AiError, type LanguageModel } from "@kanzo-tech/llm";
 import { loadLocalModel, localModel, type LocalModelSettings } from "@kanzo-tech/llm/local";
 
 /**
@@ -12,11 +12,22 @@ import { loadLocalModel, localModel, type LocalModelSettings } from "@kanzo-tech
 export const MODEL = "Qwen3-4B-q4f16_1-MLC";
 
 /**
+ * Where its two halves are under `KEASY_MODEL_URL`, each path naming one content for good: the weights
+ * by their revision of `mlc-ai/<MODEL>` on Hugging Face, the compiled library by the WebLLM release it
+ * was built for, which must be the one installed. A shard is therefore served as immutable, and a new
+ * pin is a new URL rather than a stale cache. `resolve/<revision>/` is Hugging Face's layout and
+ * WebLLM's: it appends `resolve/main/` to a weights URL that names no revision. `make models`
+ * (`infra/models.sh`) downloads exactly these, and `ai.test.ts` holds the three to each other.
+ */
+export const WEIGHTS = `${MODEL}/resolve/a5c9fab855e3ccbdfed2e7e69683d75f30332161/`;
+export const LIBRARY = "lib/v0_2_86/Qwen3-4B-q4f16_1_cs1k-webgpu.wasm";
+
+/**
  * Where the model's shards are served (`KEASY_MODEL_URL`), read by the server at request time so one
- * image serves any deployment, and handed down from the layout. Under it, as `@kanzo-tech/llm/local`
- * lays them out: `<url>/<MODEL>/`, the MLC weights directory, and `<url>/<MODEL>.wasm`, the compiled
- * library. A path is this origin's. Unset, WebLLM's own prebuilt list is read: the weights from
- * Hugging Face, the library from GitHub.
+ * image serves any deployment, and handed down from the layout: a path on keasy's own origin, `/models`
+ * in development and behind a deployment's edge alike. Unset, or on another origin, there is no model
+ * — never a third party's copy — and Ask and the assistant say so (`ai/unavailable`, `reason:
+ * "unserved"`).
  */
 const ModelUrl = createContext<string | undefined>(undefined);
 
@@ -43,43 +54,80 @@ function subscribe(listener: () => void) {
   return () => void listeners.delete(listener);
 }
 
+const unserved = () =>
+  new AiError("ai/unavailable", "This deployment serves no model on its origin (KEASY_MODEL_URL)", { reason: "unserved" });
+
+/** `KEASY_MODEL_URL` as a URL on this origin, or nothing when it names none or another origin. */
+function servedFrom(url: string | undefined): URL | undefined {
+  if (!url) return undefined;
+  const base = new URL(url.endsWith("/") ? url : `${url}/`, window.location.href);
+  return base.origin === window.location.origin ? base : undefined;
+}
+
+/**
+ * The model of a page with none to ask: on the server, where nothing calls it, and in a deployment that
+ * serves none, where every call fails as `ai/unavailable` before anything is asked.
+ */
+const UNSERVED: LanguageModel = {
+  specificationVersion: "v4",
+  provider: "keasy",
+  modelId: MODEL,
+  supportedUrls: {},
+  doGenerate: () => Promise.reject(unserved()),
+  doStream: () => Promise.reject(unserved()),
+};
+
 // One engine per page, in a worker of its own: the first caller's settings are the engine's for good.
 let settings: LocalModelSettings | undefined;
-function settingsFor(url: string | undefined): LocalModelSettings {
+function settingsFor(base: URL): LocalModelSettings {
   if (settings) return settings;
-  // WebLLM reads the weights' directory as an absolute URL, and from its worker: a path is resolved here.
-  const base = url ? new URL(url.endsWith("/") ? url : `${url}/`, window.location.href) : undefined;
+  // WebLLM reads both as absolute URLs, and from its worker: the path is resolved here, on this origin.
   settings = {
     worker: new Worker(new URL("./model.worker.ts", import.meta.url), { type: "module" }),
     onProgress: ({ progress, text }) => publish({ state: "loading", progress, text }),
-    from: base && { weights: new URL(`${MODEL}/`, base).href, library: new URL(`${MODEL}.wasm`, base).href },
+    from: { weights: new URL(WEIGHTS, base).href, library: new URL(LIBRARY, base).href },
   };
   return settings;
 }
 
-/**
- * The model, for a screen that asks it. On the server — a client component's first render — it is the
- * bare model, which nothing calls there: the worker exists only in a browser.
- */
+/** Starts the download and load, unless it is under way or done: a failed one is tried again. */
+function start(url: string | undefined) {
+  if (load.state === "loading" || load.state === "ready") return;
+  const base = servedFrom(url);
+  if (!base) return publish({ state: "failed", error: unserved() });
+  publish({ state: "loading", progress: 0, text: "" });
+  loadLocalModel(MODEL, settingsFor(base)).then(
+    () => publish({ state: "ready" }),
+    (error: unknown) => publish({ state: "failed", error }),
+  );
+}
+
+/** The model, for a screen that asks it. A call made while it loads waits for the load. */
 export function useModel(): LanguageModel {
   const url = useContext(ModelUrl);
-  return typeof window === "undefined" ? localModel(MODEL) : localModel(MODEL, settingsFor(url));
+  if (typeof window === "undefined") return UNSERVED;
+  const base = servedFrom(url);
+  return base ? localModel(MODEL, settingsFor(base)) : UNSERVED;
+}
+
+/** Starts the download and load now — or again, after a failure: a retry's action. */
+export function useLoadModel(): () => void {
+  const url = useContext(ModelUrl);
+  return useCallback(() => start(url), [url]);
 }
 
 /**
- * Starts the download and load when the screen that will ask opens — not on its first question — and
- * reads how it stands. Loaded once per page; a load that failed is tried again by the next screen,
- * not remembered. Without WebGPU it fails at once, as `ai/unavailable`, before anything is downloaded.
+ * Starts the download and load in the background when a person opens something they will ask the
+ * model about — a graph, the wizard, the assistant — so the first question does not wait on the
+ * weights; the page works without it meanwhile. Loaded once per page, whichever screen asked first.
+ * Without WebGPU it fails at once, as `ai/unavailable`, before anything is downloaded.
  */
+export function usePreloadModel(): void {
+  const loadModel = useLoadModel();
+  useEffect(loadModel, [loadModel]);
+}
+
+/** How the model's load stands: what Ask and the assistant show until it is ready. */
 export function useModelLoad(): ModelLoad {
-  const url = useContext(ModelUrl);
-  useEffect(() => {
-    if (load.state !== "idle" && load.state !== "failed") return;
-    publish({ state: "loading", progress: 0, text: "" });
-    loadLocalModel(MODEL, settingsFor(url)).then(
-      () => publish({ state: "ready" }),
-      (error: unknown) => publish({ state: "failed", error }),
-    );
-  }, [url]);
   return useSyncExternalStore(subscribe, () => load, () => IDLE);
 }

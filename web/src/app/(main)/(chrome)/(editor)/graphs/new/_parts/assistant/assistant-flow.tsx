@@ -9,6 +9,8 @@ import type { Format } from "@fossil-lang/types";
 import { $api } from "@/lib/api/client";
 import { settled } from "@/lib/api/settled";
 import { Boundary, Loading } from "@/components/boundary";
+import { ModelStatus } from "@/components/model-status";
+import { usePreloadModel } from "@/lib/ai";
 import { type StorageConnection, storageConnections } from "@/lib/connections";
 import * as checker from "@/lib/fossil/checker";
 import { useGraphEditorStore } from "../graph-editor-store";
@@ -55,6 +57,8 @@ export function AssistantFlow({
   formats: readonly Format[];
 }) {
   const router = useRouter();
+  // The model the Tasks behind these screens ask starts downloading as the assistant opens.
+  usePreloadModel();
   const assistant = useAssistant({ connections, formats });
   const [screen, setScreen] = useState(0);
   const [about, setAbout] = useState("");
@@ -87,6 +91,7 @@ export function AssistantFlow({
       </ol>
 
       <SectionBody scale="page">
+        <ModelStatus className="mb-4" />
         <Show when={screen === 0}>
           <DataScreen
             about={about}

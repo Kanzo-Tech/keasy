@@ -41,7 +41,8 @@ import { introspect } from "@fossil-lang/introspect";
 import type { Format } from "@fossil-lang/types";
 import { formatFor, inputs } from "@fossil-lang/wasm";
 import { $api } from "@/lib/api/client";
-import { useModel, useModelLoad } from "@/lib/ai";
+import { useModel, usePreloadModel } from "@/lib/ai";
+import { ModelStatus } from "@/components/model-status";
 import { type CompetencyQuestion, describeFiles, suggestQuestions, writeProgram } from "./assistant-prompts";
 import { host } from "@/lib/fossil/host";
 import { sourceDescriptorsKey } from "./use-source-descriptors";
@@ -182,7 +183,7 @@ export function AssistantWizard({
   const [screen, setScreen] = useState(0);
   // One model for every step and the Domain field, its download started as the wizard opens.
   const model = useModel();
-  useModelLoad();
+  usePreloadModel();
   // Per connection, once the editor has touched it; untouched means every readable file.
   const [fileSelection, setFileSelection] = useState<Record<string, Selection>>({});
   const [domain, setDomain] = useState("");
@@ -371,6 +372,8 @@ export function AssistantWizard({
       </ol>
 
       <SectionBody scale="page">
+        {/* The model's download, begun as the wizard opened: the files can be picked meanwhile. */}
+        <ModelStatus className="mb-4" />
         <Show when={screen === 0}>
           <div className="flex flex-col gap-4">
             <Show

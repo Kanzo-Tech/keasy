@@ -58,6 +58,7 @@ import { GraphSettings } from "./_parts/graph-settings";
 import { RulesBadge } from "./_parts/rules-badge";
 import { useDiscoverState, type PanelId, type ViewId } from "./_parts/discover-url";
 import { Boundary } from "@/components/boundary";
+import { usePreloadModel } from "@/lib/ai";
 import { ProblemView } from "@/components/problem-view";
 import { toastError } from "@/lib/errors";
 
@@ -100,6 +101,8 @@ const VIEWS = [
 
 export default function DiscoverPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  // The model Ask runs on starts downloading as the graph opens, not as its panel does.
+  usePreloadModel();
   // Opening the corpus is the one door: a missing graph (404), one that has not completed (409) and an
   // unreadable output all fail it, and the boundary shows that failure in place of the workspace.
   return (

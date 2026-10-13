@@ -71,6 +71,11 @@ describe("a library's coded failure", () => {
     expect(coded(unavailable)).toMatchObject({ code: "ai/unavailable", data: { reason: "webgpu" } });
   });
 
+  it("says which way the model cannot run: the browser, or a deployment that serves none", () => {
+    expect(copyOf("ai/unavailable", { reason: "webgpu" })?.title).toBe("This browser cannot run the model.");
+    expect(copyOf("ai/unavailable", { reason: "unserved" })?.title).toBe("This workspace has no model.");
+  });
+
   it("is read in fossil's grammar, digits and all", () => {
     const code = (c: string) => coded(Object.assign(new Error("x"), { code: c })).code;
     expect(code("source/not-utf8")).toBe("source/not-utf8");

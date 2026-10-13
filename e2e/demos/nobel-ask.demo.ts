@@ -111,7 +111,8 @@ demo("nobel-ask", "Ask over the Nobel prizes: an answer added to the dashboard a
       // The page's onOpen: the Dashboard view on the answer's relation, the tile brought into view.
       action: () => answers.openOnDashboard(),
       async check() {
-        const tile = await dashboard.tile(/University/);
+        // By its title: the automatic tiles' table has a University.name column too.
+        const tile = await dashboard.tile("Count by University.name");
         await expect
           .poll(async () => {
             const { y, height } = await tile.host.rect();

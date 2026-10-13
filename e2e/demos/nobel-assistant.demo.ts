@@ -116,6 +116,9 @@ function script(origin: string): Rule[] {
   ];
 }
 
+/** How fast the double answers: a beat before the first word, then a short one a word. */
+const PACE = { wait: 1_200, perWord: 25 };
+
 /** The preview's answers, once each kept question has its card and none is being replaced. */
 async function answered(page: Page): Promise<number> {
   const answers = page.locator("[data-preview-answers]");
@@ -137,11 +140,14 @@ async function answered(page: Page): Promise<number> {
  * the preview and the build are runs on the page's engine, and every answer is read from the corpus.
  */
 demo("nobel-assistant", "The guided assistant: the Nobel files to a preview in the chat, a graph built, then Ask", {
+  // The composer is at the bottom of the chat.
+  subtitles: "top",
   async arrange({ page }) {
     // The subjects are under the page's origin: read it, then put the double on the next load.
     await page.goto("/graphs");
     const origin = new URL(page.url()).origin;
-    await useModelDouble(page, { rules: script(origin) });
+    // At a model's pace, so each turn arrives on camera rather than all at once.
+    await useModelDouble(page, { rules: script(origin), pace: PACE });
     await page.goto("/graphs/new/assistant");
     await expect(page.getByRole("tree", { name: "Files" }).getByText(`@${CONNECTION}`, { exact: true })).toBeVisible();
     return { page };

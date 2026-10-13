@@ -52,7 +52,8 @@ carrying what it is about:
    together as sentences with one real row: *each award has a laureate, a category and a year; e.g.
    Marie Curie · Physics · 1903*. Never shape, IRI, predicate or cardinality.
 4. Each decision with no safe default, as a turn of its own: the question and its options. Each one that
-   had a safe default is said, *I assumed …*, with **Change**, and blocks nothing.
+   had a safe default is said, *I assumed …*, with its options under it, the one taken selected, and
+   blocks nothing.
 5. *What would you like to know?* — questions already answerable from these files as chips, and the
    composer for one's own; each question kept says whether these files can answer it. *That's all,
    show me a preview* ends it.
@@ -61,10 +62,15 @@ carrying what it is about:
    *your graph is building*, with **Ask your data** and the person's questions as prompts to take to
    Discover.
 
-**The person's replies are choices, chips or questions — never free-form instructions.** What they pick
-is drawn as their message (*These 6 files*, *Two, one per person*), so the transcript reads as what
-was decided. Free text goes in only where it is a question, or the optional *what is it about?*; the
-composer is off otherwise, and says what the turn above it is waiting for.
+**The person's replies are choices, chips or questions — never free-form instructions.** What they send
+or write is drawn as their message (*These 6 files*, a question); a choice made on a turn's options is
+not said again as a reply — it stays selected in its turn, which is where it is changed, by picking
+another. A thing said twice reads as two things, and a way to change it under the reply (a *Change*
+link) was a second door to the same options that nobody read as one. Free text goes in only where it
+is a question, or the optional *what is it about?*; the composer is off otherwise, and says what the
+turn above it is waiting for — and a turn says how to answer it only while it can be answered.
+*What would reverse it:* a transcript read away from its options — exported, or shown where they
+cannot be drawn — where the choice has to be said in words; then a decision answered is a reply again.
 
 Why a conversation rather than screens: it is **one presentation with Ask**, which is where the person
 goes next, so the hand-off is the same surface continuing; **the transcript keeps what was decided**,
@@ -198,8 +204,8 @@ questions are answered in the chat with `AnswerCard`s over the sample. One door 
 Task's program and nothing before it: the chat shows *writing how your files become a graph* until
 there is one. A decision changed is a model accepted again, so the mapping writes the program again;
 meanwhile the last program stays the preview's (`keepPreviousData` on the mapping) and its answers
-stay on screen under *running the preview again*, until the new corpus lands and its answers replace
-them. Each kept question is sent to `useCorpusAsk()`'s chat in turn — one at a time, as a chat
+stay on screen, dimmed and inert under *Updating…* beside the heading, until the new corpus lands and
+its answers replace them. Each kept question is sent to `useCorpusAsk()`'s chat in turn — one at a time, as a chat
 answers, and only once the model is ready — and drawn as Ask's panel draws it, an `AnswerCard` with
 its `AskChips`. There is no composer under them: a tie Ask asks back is answered in Discover, over the
 whole graph. A failed run is said with its problem and a retry (`rerun`).
@@ -254,7 +260,8 @@ read again without listing their folders (a file whose connection is gone is sai
 the reading turn), the person's choices taken again, an assumption left to its default, the questions
 kept, and the program last written previewed until the mapping writes it again. The `model` Task is
 asked again, from the profile, so a decision is raised again by its id; **Change** in Discover
-(`?decision=`) opens its turn at its options. *What would reverse it:* a model that raises other
+(`?decision=`) opens its turn at its options — over a built conversation with the note that a graph
+was built from it just above, since that is where the page lands. *What would reverse it:* a model that raises other
 decisions on the same files when asked again — then the accepted `model` artefact is kept too, as
 structure, and reopening skips the Task.
 

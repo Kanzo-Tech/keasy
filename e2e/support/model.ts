@@ -115,6 +115,7 @@ function install({ rules, load }: Script) {
   };
 
   const page = window as unknown as { __keasyModelDouble?: unknown; __keasyModelCalls?: string[] };
-  page.__keasyModelDouble = { model, load: load ? () => Promise.reject(new Error(load.fail)) : undefined };
+  // Where its load stands, as `@kanzo-tech/llm`'s `ModelLoad`: ready at once, or failed with WebLLM's words.
+  page.__keasyModelDouble = { model, load: load ? { state: "failed", error: new Error(load.fail) } : { state: "ready" } };
   page.__keasyModelCalls = calls;
 }

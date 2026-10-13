@@ -6,7 +6,7 @@ import { api, SOURCE } from "../support/stack/api";
 import { AskPanel, DiscoverPage } from "../support/app";
 import { test } from "../support/fixtures";
 import { promptsOf, useModelDouble } from "../support/model";
-import { expectProblem } from "../support/stack/problem";
+import { expectModelProblem, expectProblem } from "../support/stack/problem";
 
 /**
  * The model runs in the page, on WebGPU (`web/src/lib/ai.ts`). Scenario 11 forces a browser without
@@ -81,8 +81,8 @@ test("12 the shards of the model cannot be downloaded: Ask says so, not an empty
   const fail = "Cannot fetch http://acme.localhost:3000/models/Qwen3-4B-q4f16_1-MLC/resolve/a5c9fab/params_shard_0.bin";
   await useModelDouble(page, { load: { fail }, rules: [{ when: question("How many people are there?"), reply: { fail } }] });
   const panel = await askPanel(page, env, corpusGraph);
-  // The load began as the graph opened, and its failure is in the panel before anything is asked.
-  await expectProblem(page, "llm/failed", { within: 15_000 });
+  // The load began as the graph opened, and its failure is the panel's badge before anything is asked.
+  await expectModelProblem(page, "llm/failed", { within: 15_000 });
   await panel.send("How many people are there?");
   await expect(page.locator('[data-slot="chat-error"] [data-code="llm/failed"]')).toBeVisible({ timeout: 15_000 });
 });
@@ -156,7 +156,7 @@ test("the assistant on a browser without WebGPU says so as ai/unavailable, not a
   await page.goto("/graphs/new");
   await page.getByText("Assistant", { exact: true }).click();
   await expect(page).toHaveURL(/\/graphs\/new\/assistant$/);
-  await expectProblem(page, "ai/unavailable", { within: 20_000 });
+  await expectModelProblem(page, "ai/unavailable", { within: 20_000 });
 });
 
 test("an answer added to the dashboard is saved as a tile of its relation", async ({ page, env, corpusGraph }) => {

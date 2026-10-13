@@ -1,8 +1,8 @@
 "use client";
 
 import { createContext, createElement, type ReactNode, useCallback, useContext, useEffect, useSyncExternalStore } from "react";
-import { AiError, type LanguageModel } from "@kanzo-tech/llm";
-import { loadLocalModel, localModel, type LocalModelSettings } from "@kanzo-tech/llm/local";
+import { AiError, type LanguageModel, type ModelLoad } from "@kanzo-tech/llm";
+import { type LocalModelSettings, loadLocalModel, localModel, localModelLoad, watchLocalModel } from "@kanzo-tech/llm/local";
 
 /**
  * The one model keasy asks, and the only place it is named: a WebLLM build that runs in the page, on
@@ -35,27 +35,11 @@ export function ModelProvider({ url, children }: { url: string | undefined; chil
   return createElement(ModelUrl.Provider, { value: url }, children);
 }
 
-/** How the model's download and load stand in this page: once loaded, every call starts at once. */
-export type ModelLoad =
-  | { state: "idle" }
-  | { state: "loading"; progress: number; text: string }
-  | { state: "ready" }
-  | { state: "failed"; error: unknown };
-
-const IDLE: ModelLoad = { state: "idle" };
-let load: ModelLoad = IDLE;
-const listeners = new Set<() => void>();
-function publish(next: ModelLoad) {
-  load = next;
-  for (const listener of listeners) listener();
-}
-function subscribe(listener: () => void) {
-  listeners.add(listener);
-  return () => void listeners.delete(listener);
-}
-
 const unserved = () =>
   new AiError("ai/unavailable", "This deployment serves no model on its origin (KEASY_MODEL_URL)", { reason: "unserved" });
+
+/** The load of a deployment that serves no model: failed before anything is asked, and for good. */
+const UNSERVED_LOAD: ModelLoad = { state: "failed", error: unserved() };
 
 /** `KEASY_MODEL_URL` as a URL on this origin, or nothing when it names none or another origin. */
 function servedFrom(url: string | undefined): URL | undefined {
@@ -78,14 +62,14 @@ const UNSERVED: LanguageModel = {
 };
 
 /**
- * The end-to-end suite's model double (`e2e/support/model.ts`): a model, and how its load goes, put on
- * the page before it loads, which every screen then asks in place of WebLLM — CI's browsers have no
+ * The end-to-end suite's model double (`e2e/support/model.ts`): a model, and where its load stands, put
+ * on the page before it loads, which every screen then asks in place of WebLLM — CI's browsers have no
  * WebGPU. Development builds only: `process.env.NODE_ENV` is inlined when the bundle is built, so a
  * production bundle keeps neither this branch nor the name it reads (`model-double.test.ts`).
  */
 interface ModelDouble {
   model: LanguageModel;
-  load?: () => Promise<void>;
+  load: ModelLoad;
 }
 function modelDouble(): ModelDouble | undefined {
   if (process.env.NODE_ENV === "production") return undefined;
@@ -99,23 +83,22 @@ function settingsFor(base: URL): LocalModelSettings {
   // WebLLM reads both as absolute URLs, and from its worker: the path is resolved here, on this origin.
   settings = {
     worker: new Worker(new URL("./model.worker.ts", import.meta.url), { type: "module" }),
-    onProgress: ({ progress, text }) => publish({ state: "loading", progress, text }),
     from: { weights: new URL(WEIGHTS, base).href, library: new URL(LIBRARY, base).href },
   };
   return settings;
 }
 
-/** Starts the download and load, unless it is under way or done: a failed one is tried again. */
+/**
+ * Starts the download and load, unless it is under way or done: a failed one is tried again. Its
+ * failure is `localModelLoad`'s to say. A double's load and a deployment with no model have nothing
+ * to start.
+ */
 function start(url: string | undefined) {
-  if (load.state === "loading" || load.state === "ready") return;
-  const double = modelDouble();
   const base = servedFrom(url);
-  if (!double && !base) return publish({ state: "failed", error: unserved() });
-  publish({ state: "loading", progress: 0, text: "" });
-  (double ? (double.load?.() ?? Promise.resolve()) : loadLocalModel(MODEL, settingsFor(base!))).then(
-    () => publish({ state: "ready" }),
-    (error: unknown) => publish({ state: "failed", error }),
-  );
+  if (modelDouble() || !base) return;
+  const { state } = localModelLoad(MODEL);
+  if (state === "loading" || state === "ready") return;
+  loadLocalModel(MODEL, settingsFor(base)).catch(() => {}); // Not lost: localModelLoad says it failed, and why.
 }
 
 /** The model, for a screen that asks it. A call made while it loads waits for the load. */
@@ -143,7 +126,16 @@ export function usePreloadModel(): void {
   useEffect(loadModel, [loadModel]);
 }
 
-/** How the model's load stands: what Ask and the assistant show until it is ready. */
+/**
+ * How the model's download and load stand in this page — `@kanzo-tech/llm/local`'s, the double's, or
+ * failed for good where no model is served: what Ask and the assistant show until it is ready.
+ */
 export function useModelLoad(): ModelLoad {
-  return useSyncExternalStore(subscribe, () => load, () => IDLE);
+  const url = useContext(ModelUrl);
+  const current = () => modelDouble()?.load ?? (servedFrom(url) ? localModelLoad(MODEL) : UNSERVED_LOAD);
+  return useSyncExternalStore(
+    useCallback((listener: () => void) => watchLocalModel(MODEL, listener), []),
+    current,
+    () => localModelLoad(MODEL),
+  );
 }

@@ -42,7 +42,7 @@ export interface AssistantChatProps
   onQuestionsChange: (questions: Question[]) => void;
   onAdvanced: () => void;
   onBack: () => void;
-  /** Above the first turn: whether the model the Tasks ask is ready on this device. */
+  /** In the header: whether the model the Tasks ask is ready on this device. */
   status?: ReactNode;
   /** Each change of what the person has replied: what the hook's Tasks wait on. */
   onReplies?: (replies: Replies) => void;
@@ -230,6 +230,7 @@ export function AssistantChat(props: AssistantChatProps) {
           Graphs
         </Button>
         <h1 className="flex-1 truncate text-center font-medium text-sm">New graph</h1>
+        {props.status}
         <Button onClick={onAdvanced} size="sm" title="Write the shapes and the program yourself" variant="ghost">
           <Code />
           Advanced
@@ -240,7 +241,6 @@ export function AssistantChat(props: AssistantChatProps) {
       <Conversation>
         <ConversationContent className="py-8">
           <MessageList className="gap-5">
-            {props.status}
             {!reached && built}
             {turns.flatMap((turn, index) => (reached && reopens(turn) ? [built, draw(turn, index)] : [draw(turn, index)]))}
             {props.failures.map((f) => (

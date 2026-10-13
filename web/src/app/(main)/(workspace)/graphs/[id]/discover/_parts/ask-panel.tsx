@@ -107,7 +107,7 @@ function SubsetPill() {
 
 function AskChat() {
   const { chat, graph, types, over } = useCorpusAsk();
-  // The download started when the graph opened (`usePreloadModel`); the panel says how it stands.
+  // The download started when the graph opened (`usePreloadModel`); the badge says how it stands.
   const load = useModelLoad();
   // The question the assistant handed over (`?q=`), asked once the model is ready.
   const { sendMessage } = chat;
@@ -124,9 +124,15 @@ function AskChat() {
         chat={{ ...chat, error: chat.error === undefined ? undefined : coded(chat.error, "llm/failed") }}
         copy={problemCopy}
         className="p-2"
-        context={<SubsetPill />}
+        context={
+          <>
+            <ModelStatus />
+            <SubsetPill />
+          </>
+        }
         empty={<AskEmpty />}
-        notice={load.state === "ready" ? starters.failure : <ModelStatus />}
+        // The offers ask the model: until it is ready, the badge says why there are none.
+        notice={load.state === "ready" ? starters.failure : undefined}
         proposing={starters.proposing}
         proposals={starters.proposals}
         tools={{

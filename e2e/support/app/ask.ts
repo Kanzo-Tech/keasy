@@ -29,7 +29,7 @@ export class AskPanel extends ComponentHarness {
   /**
    * Waits for the model to load in the page — the graph starts it as it opens, and the first time on a
    * machine that is the download — before a take or a case that asks it, so the clock measures the
-   * model and not the load. A browser that cannot run it fails at once, with the panel's code.
+   * model and not the load. A browser that cannot run it fails at once, with the code behind the badge.
    */
   async warmUp(): Promise<void> {
     const panel = await this.one({ css: "[data-model]" }, "the panel says nothing of the model");
@@ -38,7 +38,12 @@ export class AskPanel extends ComponentHarness {
       return now === "ready" || now === "failed" ? now : undefined;
     }, "the model never loaded");
     if (state === "ready") return;
-    const problem = (await this.host.find({ css: "[data-problem][data-code]" }))[0];
+    // Why is behind the model's badge, in a popover outside the panel.
+    await (await this.one({ css: '[data-slot="model-badge"]' }, "the panel has no model badge")).click();
+    const problem = await this.env.until(
+      async () => (await this.env.root.find({ css: '[data-slot="model-badge-content"] [data-code]' }))[0],
+      "the model's badge opened no problem",
+    );
     throw new Error(`the model cannot run in this browser: ${(await problem?.attribute("data-code")) ?? "no code"}`);
   }
 }

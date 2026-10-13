@@ -88,6 +88,10 @@ describe("the failure guards", () => {
       "web/src/app/(main)/(chrome)/(editor)/graphs/new/_parts/use-folder-availability.ts",
       // A crumb's label: the route's own name stands until the graph's arrives, and the graph's page shows its failure.
       "web/src/app/(main)/_parts/trail.tsx",
+      // The assistant's conversation: a failed read is the hook's `problem`, for the chat to say beside the turns it can draw.
+      "web/src/lib/assistant-conversation.ts",
+      // A footnote: the graph's decisions, read from its conversation; a failed read leaves the Info panel as it was.
+      "web/src/app/(main)/(workspace)/graphs/[id]/discover/_parts/graph-assumptions.tsx",
       // The assistant's preview: it fails as a state of the chat's, beside the decisions that changed it, and keeps the corpus it had.
       "web/src/lib/fossil/preview.ts",
       // Suggested questions: a failure leaves no pills, and the chat works the same (`@kanzo-tech/ai/data`).

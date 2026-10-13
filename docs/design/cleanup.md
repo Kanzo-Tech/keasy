@@ -23,12 +23,12 @@ release, and keasy deletes in the same change that bumps the version.
 | 5 | **Facts in place of guesses**: formatting, error titles, names, formats ([below](#facts-in-place-of-guesses)) | ~170 | nothing |
 | 6 | **e2e** ([below](#e2e)) | ~65 | nothing |
 | 7 | ⇧ **The Ask evaluation set to kanzo-ui** ([assistant](assistant.md#order)) | ~560 moved | kanzo-ui taking the set |
-| 8 | ⇧ **kanzo-ui**: `Structure`, one model double, the conversation's keeping, library hooks on keasy's `QueryClient` ([below](#what-the-libraries-take)) | ~480 | a kanzo-ui release |
+| 8 | ⇧ **kanzo-ui**: `Structure`, one model double, the conversation's keeping, library hooks on keasy's `QueryClient`, the organization's admin console URL from `@kanzo-tech/auth` ([below](#what-the-libraries-take)) | ~490 | a kanzo-ui release |
 | 9 | ⇧ **fossil**: `run` in its own worker, `attach({ files })` | ~435 | a fossil alpha |
 | 10 | ⇧ **kanzo-ui and fossil together**: the `requirements`, `words` and `profile` Tasks' guesses ([assistant](assistant.md#the-three-tasks)) | ~415 | kanzo-ui's paths design (wave 3) and fossil's annotations and corpus facts (wave 4) |
-| 11 | ⇧ **Azure SAS to the Azure SDK** ([below](#azure-sas-is-signed-by-the-azure-sdk)) | ~90 now, ~200 in all | the SDK's SAS builder for the rest |
+| 11 | **Azure: one credential, through the Azure SDK** ([below](#azure-has-one-credential-a-user-delegation-sas-through-the-azure-sdk)) | ~250 now, ~60 more later | nothing for the account key, token and key; the SDK's SAS builder for the signer |
 
-About **4,200 lines** in all, ~560 of them moved rather than deleted, of keasy's ~41.6k, and 5 web dependencies and 3–5 Rust crates. Steps
+About **4,300 lines** in all, ~560 of them moved rather than deleted, of keasy's ~41.6k, and 5 web dependencies and 3–5 Rust crates. Steps
 1–6 are keasy's alone and can start today; 2–6 change no behaviour a person sees, except the words
 of a few errors and breadcrumbs, which become the right ones.
 
@@ -45,6 +45,7 @@ improved.
 | Three model doubles | `e2e/support/model.ts`, `lib/ai.ts` + `model-double.test.ts`, `nobel.fixture.ts` | one in `@kanzo-tech/llm`, through `__KANZO_TESTING__` | ~180 | [assistant](assistant.md#what-left-keasys-configuration) |
 | The conversation's keeping: whole saves after each reply, one at a time, the sealed record carried on in a new id | `lib/assistant-conversation.ts`, its hook test | `@kanzo-tech/ai`, on the AI SDK's `UIMessage[]` per id and `validateUIMessages`; keasy gives `load`/`save` against `/v1/conversations` and the privacy `keep` | ~200 | [assistant](assistant.md#the-conversation-is-kept) |
 | `requirements`, `words`, and the guessed half of `profile` and `model` | `graphs/new/_parts/assistant/tasks/` | `JoinResolver` and Ask's paths; labels from annotations with `Intl`; the corpus's facts on `JoinGraph` | ~415 | [assistant](assistant.md#the-three-tasks) |
+| The organization's admin console as a URL template in `KEASY_ORG_ADMIN_URL` | `settings/(admin)/members/page.tsx` | `@kanzo-tech/auth`, which knows the Keycloak realm and organization and provides their admin console URL | ~12 | [below](#dead-code-and-configuration) |
 | The model's load as a store of keasy's | — | already `@kanzo-tech/llm/local`'s `localModelLoad`, drawn as `ModelBadge` | 0 (gone) | [assistant](assistant.md#what-left-keasys-configuration) |
 | Library reads wrapped in keasy's own `useQuery` | `use-assistant.ts`, `use-source-descriptors.ts`, `overview.tsx`'s `useQueryRows` | the library's own hook, using TanStack Query inside on keasy's `QueryClient` from `QueryClientProvider` (a peer dependency) | ~40 | here |
 
@@ -81,32 +82,40 @@ reverse it:* people who need the shape at a glance and do not get it from the ta
 large to read as two lists — and then it is drawn with `@kanzo-tech/graph`'s canvas over the same
 `Structure`, never a second graph stack.
 
-## Azure SAS is signed by the Azure SDK
+## Azure has one credential: a user-delegation SAS through the Azure SDK
 
-**Decided 2026-10-13: Azure credentials are vended through the Azure SDK for Rust, not signed by
-hand.** `storage_client/vend.rs` (~250 lines of it) gets an Entra token, asks for a user-delegation
-key, and writes the string-to-sign and its HMAC itself, for a directory SAS (`sr=d`, `sdd`) or an
-account-key service SAS. It is credential code, written once and read by nobody since, and the only
-reason for `hmac`, `sha2`, `quick-xml` and `chrono`. By reference:
+**Decided 2026-10-13: keasy vends Azure storage one way.** A service principal gets an Entra token,
+the token gets a user-delegation key, and the key signs a directory-scoped user-delegation SAS
+(`sr=d`, `sdd`). This is how Apache Polaris and Unity Catalog vend Azure credentials, and it is what
+Microsoft recommends over account keys. The SAS is tied to an Entra identity, can be revoked with
+the key, and never carries the account key.
 
-- **The token**: `azure_identity`'s `ClientSecretCredential`, scope `https://storage.azure.com/.default`
-  — in place of `entra_token`.
-- **The key**: `azure_storage_blob` (1.1)'s `BlobServiceClient::get_user_delegation_key` — in place of
-  `user_delegation_key` and its XML, so `quick-xml` goes.
-- **The signature**: the maintained `azure_storage_blob` 1.1 has **no SAS builder**. The retired
-  `azure_storage` 0.21 has one — `shared_access_signature::service_sas::BlobSharedAccessSignature`,
-  with `BlobSignedResource::Directory`, `signed_directory_depth` and a `SasKey::UserDelegationKey` —
-  but it is the SDK keasy would be leaving, pins `azure_core` 0.21 beside 1.x, and brings the `time`
-  crate as a third clock. So the string-to-sign (`user_delegation_sas`, `service_sas`, ~60 lines with
-  `hmac` and `sha2`) stays keasy's until `azure_storage_blob` ships SAS generation, and then goes.
+**`AzureAccountKey` is removed entirely**: the `azure_account_key` secret kind
+(`domain/credential.rs`, its view, `storage_location.rs`'s arms), its sealing (`credentials/sealing.rs`),
+its store (`storage_client/mod.rs`), its validation, the account-key service SAS (`service_sas` in
+`vend.rs`), its schema in `api/openapi.json`, its entry in `web/src/lib/connections.ts`'s `CLOUDS` and
+the credential form, and its tests. Azure has one secret kind, `AzureServicePrincipal`.
 
-Its timestamps move from `chrono` to `jiff` either way, so the server has one time crate. The tests
-at the end of `vend.rs` stay — the SAS names the directory it opens and never `skoid` on a service
-SAS; a silent Entra or blob endpoint is named `silent` within keasy's deadline — and the SDK's client
-options (retries, timeouts) are set so they keep passing. ~90 lines now, ~200 once the signer moves.
-*What would reverse it:* an SDK that cannot be held to keasy's deadline, or whose dependency tree
-costs the server image more than the lines it saves — then the hand-written path stays, its HMAC
-tested against Microsoft's published examples.
+`storage_client/vend.rs` (~250 lines of Azure) today gets the Entra token and the key by hand and
+writes the string-to-sign and its HMAC. By reference, it moves to the Azure SDK for Rust:
+
+- **The token**: `azure_identity`'s `ClientSecretCredential`, scope
+  `https://storage.azure.com/.default`, replacing `entra_token`.
+- **The key**: `azure_storage_blob` (1.1)'s `BlobServiceClient::get_user_delegation_key`, replacing
+  `user_delegation_key` and its XML parsing, so `quick-xml` goes.
+- **The signature**: the maintained `azure_storage_blob` 1.1 has no SAS builder. The retired
+  `azure_storage` 0.21 has one (`BlobSharedAccessSignature`), and it is **rejected**: it is the SDK
+  keasy would be leaving, it pins `azure_core` 0.21 beside 1.x, and it brings in the `time` crate as a
+  third clock. keasy keeps a minimal user-delegation SAS signer (`user_delegation_sas`, ~60 lines with
+  `hmac` and `sha2`) until `azure_storage_blob` can build the SAS, and then deletes it.
+
+The timestamps move from `chrono` to `jiff`, so the server has one time crate. The tests at the end
+of `vend.rs` stay: the SAS names the directory it opens, and a silent Entra or blob endpoint is named
+`silent` within keasy's deadline. The SDK's client options (retries, timeouts) are set so those tests
+keep passing; the service-SAS test goes with the account key. About 250 lines go now (the account-key
+kind across the server, API, web and tests, plus the token and key by hand), and about 60 more once
+the signer moves. *What would reverse it:* a customer whose storage account cannot use Entra. Then
+an account key comes back as a second kind, signed by the SDK, never by hand.
 
 ## Dead code and configuration
 
@@ -115,8 +124,8 @@ Removed outright; a dev stack that needs it says `make clean` once in the releas
 | What | Where | Lines |
 |---|---|---|
 | `NEXT_PUBLIC_KEASY_DEMO`, which nothing sets since the recorder hides the dev furniture itself | `compose.override.yaml`, `next.config.ts`, `providers.tsx`, the `Makefile` comment | ~18 |
-| `KEASY_ORG_ADMIN_URL`, set in no environment, so the Members page always says *Ask your platform administrator* | `settings/(admin)/members/page.tsx` | ~12 |
-| `KEASY_OIDC_AUDIENCE` and `KEASY_BIND_ADDR`, read with defaults and set by no deployment | `server/src/configuration.rs` | ~10 |
+| `KEASY_ORG_ADMIN_URL`, set in no environment, so the Members page always says *Ask your platform administrator*. `@kanzo-tech/auth` provides the organization's admin console URL (it knows the Keycloak realm and organization), and the Members page links that (⇧ kanzo-ui, step 8) | `settings/(admin)/members/page.tsx` | ~12 |
+| `KEASY_OIDC_AUDIENCE` and `KEASY_BIND_ADDR`, read with defaults and set by no deployment: removed, and their values (`keasy-api`, `0.0.0.0:8080`) fixed in code | `server/src/configuration.rs` | ~10 |
 | `realm-migrate`, the shim for dev stacks provisioned before keasy declared itself in `compose.yaml` | `infra/dev/platform.yaml`, `realm-migrate.test.sh`, `infra-ci.yml` | ~90 |
 | README: the *stack seeded before the examples moved* paragraph, `infra/dev/roles.yaml` (gone; the roles are `configs.keasy-roles`); `make seed`'s help without CORDIS; `.env.example`'s `KANZO_UI_REF=v0.44.0` | `README.md`, `Makefile`, `.env.example` | ~10 |
 | `STORYBOARD.md`'s page objects (all built), another repo's to-do, and a settled question | `e2e/demos/STORYBOARD.md` | ~55 |
@@ -127,9 +136,10 @@ Removed outright; a dev stack that needs it says `make clean` once in the releas
 | **Dependencies**: web `openapi-fetch` (only `@keasy/api` uses it), `streamdown` (`@kanzo-tech/ai`'s dependency, not a peer), `@fossil-lang/storage` (the executor's); server `tokio-stream` (no use), `chrono` beside `jiff` (with the Azure step) | `web/package.json`, `server/Cargo.toml` | 5 |
 
 *What would reverse it:* for each variable, a deployment that sets it — then it is set in
-`compose*.yaml` and `prod.env` and documented in the README, not left as a default nobody turns. For
-`KEASY_ORG_ADMIN_URL`, a way to name the organization's console without a template: if `@kanzo-tech/auth`
-carries the console URL, the Members page links it. For the dependencies, an import of them.
+`compose*.yaml` and `prod.env` and documented in the README, not left as a default nobody turns. That
+includes the audience and the bind address, which come back when a deployment needs them. For the
+console URL, an organization whose console is not the Keycloak one `@kanzo-tech/auth` knows. For the
+dependencies, an import of them.
 
 ## Guards become lint rules
 

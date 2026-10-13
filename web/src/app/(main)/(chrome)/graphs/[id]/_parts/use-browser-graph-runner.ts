@@ -174,7 +174,7 @@ export function startRun(graph: Schemas["Graph"], { profiled }: { profiled?: Pro
       // its own, so the page paints and its Stop is pressable while it does (`run-worker.ts`). The
       // report crosses untouched — `GraphStatusReport.report` is opaque JSON on the server — and is
       // asked again for as long as the lease is ours.
-      const report = await runInWorker(program, { host, job: graphId, profiled, signal: run.signal });
+      const { report } = await runInWorker(program, { host, into: { job: graphId }, profiled, signal: run.signal });
       ran = true;
       await held.report(() => reportStatus(graphId, { status: "completed", report }));
       return { status: "completed" };

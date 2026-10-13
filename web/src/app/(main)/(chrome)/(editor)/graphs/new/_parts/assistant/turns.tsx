@@ -224,9 +224,11 @@ export function UnderstoodTurn({ things, relations }: { things: readonly Thing[]
       <p>
         Here&rsquo;s what&rsquo;s in your data: <span className="font-medium">{inWords(things.length, "kind of thing", "kinds of things")}</span>.
       </p>
-      <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3" data-things="">
+      {/* Rows that fill: three to a row in the column, the last row's cards widened to close it, and one
+          to a row on a phone — never a card alone beside a hole. */}
+      <ul className="flex flex-wrap gap-2" data-things="">
         {things.map((thing) => (
-          <li className="flex" key={thing.id}>
+          <li className="flex flex-1 basis-56" key={thing.id}>
             <ThingCard thing={thing} />
           </li>
         ))}

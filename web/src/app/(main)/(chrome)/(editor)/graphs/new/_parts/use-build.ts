@@ -2,12 +2,12 @@
 
 import { useEffect, useMemo } from "react";
 import type { Profiled } from "@fossil-lang/types";
-import type { Decision } from "@kanzo-tech/ai/task";
 import { http, invalidate, type Schemas } from "@/lib/api/client";
 import { queryClient } from "@/lib/api/query-client";
 import { taken, withDecisions } from "@/lib/assumptions";
 import { startBuild, useProgramBuild, type BuildProgress, type BuildSteps } from "@/lib/fossil/build";
 import { startRun } from "@/app/(main)/(chrome)/graphs/[id]/_parts/use-browser-graph-runner";
+import type { DecisionItem } from "./assistant/model";
 import { folderSlug, FOLDER_MAX } from "./folder";
 
 /** Where the graph lands and what it is called, when the caller knows; otherwise chosen here. */
@@ -71,13 +71,6 @@ export function keasySteps(output: BuildOutput = {}): BuildSteps<Schemas["Graph"
   };
 }
 
-/** A decision as the assistant holds it: the default it assumed, and the person's pick over it. */
-interface HeldDecision {
-  decision: Decision;
-  assumed: string | null;
-  chosen: string | null;
-}
-
 /**
  * The graph `program` builds, as the assistant's last turn reads it: `null` until there is a program,
  * then the build's progress. The build starts once per program — `decisions` written at its head,
@@ -86,7 +79,7 @@ interface HeldDecision {
 export function useBuild(
   program: string | null,
   profiled: Profiled | null,
-  { decisions = [], ...output }: BuildOutput & { decisions?: readonly HeldDecision[] } = {},
+  { decisions = [], ...output }: BuildOutput & { decisions?: readonly DecisionItem[] } = {},
 ): BuildProgress | null {
   const script = useMemo(() => (program === null ? null : withDecisions(program, taken(decisions))), [program, decisions]);
   const { sink, name } = output;

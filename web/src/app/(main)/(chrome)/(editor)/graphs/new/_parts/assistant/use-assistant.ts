@@ -18,12 +18,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { useTask } from "@kanzo-tech/ai";
-import { runTask } from "@kanzo-tech/ai/task";
+import { type Proposal, runTask } from "@kanzo-tech/ai/task";
 import type { Format } from "@fossil-lang/types";
 import { inputs, profile } from "@fossil-lang/wasm";
 import { engine } from "@kanzo-tech/ui/analytics";
 import { $api } from "@/lib/api/client";
 import type { StorageConnection } from "@/lib/connections";
+import { ClientError } from "@/lib/errors";
 import { host } from "@/lib/fossil/host";
 import { childrenOf, connectionNode, type SourceNode } from "../sources";
 import { useModel } from "@/lib/ai";
@@ -71,12 +72,10 @@ export function decisionItems(draft: Draft, profiled: Profiled, chosen: Readonly
   }));
 }
 
-/** A refused artefact as a failure: what its oracles still said after the last attempt. */
-class Refused extends Error {
-  override readonly name = "Refused";
-  constructor(task: string, diagnostics: readonly { message: string }[]) {
-    super(`The ${task} proposed did not hold: ${diagnostics.map((d) => d.message).join(" ")}`);
-  }
+/** A proposal's value, once its oracles held it; what they still said after the last attempt is the failure. */
+function held<A>({ task, value, verdict }: Proposal<A>): A {
+  if (!("diagnostics" in verdict)) return value;
+  throw new ClientError("llm/failed", `The ${task} proposed did not hold.`, verdict.diagnostics.map((d) => d.message).join(" "));
 }
 
 const NO_MODEL: Accepted = { types: [], edges: [] };
@@ -199,9 +198,7 @@ export function useAssistant({
   const drafted = useQuery({
     queryKey: ["assistant", "model", lines, about],
     queryFn: async ({ signal }) => {
-      const proposal = await runTask(modelTask(profiled!), { profiled: profiled!, about: about ?? "" }, { model, signal });
-      if ("diagnostics" in proposal.verdict) throw new Refused("model", proposal.verdict.diagnostics);
-      return proposal.value;
+      return held(await runTask(modelTask(profiled!), { profiled: profiled!, about: about ?? "" }, { model, signal }));
     },
     enabled: profiled !== null && profiled.sources.length > 0 && about !== undefined,
     retry: false,
@@ -258,9 +255,7 @@ export function useAssistant({
       const check = fossilCheck({ host, engine: await engine({ signal }) });
       try {
         const input = await mappingInput(accepted!, profiled!, { base: window.location.origin, check, signal });
-        const proposal = await runTask(mapping, input, { model, signal });
-        if ("diagnostics" in proposal.verdict) throw new Refused("mapping", proposal.verdict.diagnostics);
-        return programOf(input, proposal.value);
+        return programOf(input, held(await runTask(mapping, input, { model, signal })));
       } finally {
         check.close();
       }

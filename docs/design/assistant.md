@@ -1,8 +1,9 @@
 # The assistant, and time to smile
 
 Status: a direction. Built: the model in the page, in place of the gateway, served from keasy's own
-origin and preloaded with intent (2026-10-13), and the guided chat over introspect, with the Tasks'
-turns still to fill. The pattern this rests on — a *Task*: a small model in the browser
+origin and preloaded with intent (2026-10-13); the guided chat (2026-10-13); and its three Tasks,
+`model`, `mapping` and `requirements`, over fossil's profile (2026-10-13, below) — the preview build
+still to come. The pattern this rests on — a *Task*: a small model in the browser
 fills a small artefact under a JSON Schema, a deterministic oracle checks it, a bounded loop repairs
 it or asks the person — and its API, its model and its decisions are kanzo-ui's, on
 [Tasks](https://kanzo-tech.github.io/ui/docs/design/tasks). fossil's half — `fossil-profile` in place
@@ -85,6 +86,90 @@ answer — *when two people share a Nobel, is it one award or two?* — waits fo
 the fact, in a wizard than in the guided chat — then the turns become screens again, over the same
 Tasks. And people changing most assumptions after the fact puts those decisions back in front of the
 preview.
+
+## The three Tasks
+
+What the chat shows is computed where it is a fact, and asked of the model only where it is an
+interpretation. Every Task is pure — no React, no engine of its own — and lives under
+`graphs/new/_parts/assistant/tasks/`, each tested with a scripted model over a small Nobel profile;
+`use-assistant.ts` is the one place that runs them, with `runTask`, `propose` and `useTask` from
+`@kanzo-tech/ai/task` and the page's model (`useModel`, `lib/ai.ts`).
+
+**The profile is the context, and it is a `compute`.** The picked files are read once with
+`profile()` from `@fossil-lang/wasm` — columns and types, counts, candidate keys, inclusions and a
+few sample rows — in place of introspect's `DESCRIBE`. *Here's what's in your data* is drawn from
+it before any model is asked: one thing per file, its count when the profile read every row
+(`sampled` false; a sampled count is not said), and what it holds. *What would reverse it:* a file
+whose profile takes too long for the reading turn; then the turn reads `depth: "types"` first and
+the rest in the background, the way fossil's profile already splits.
+
+### `model` — propose, then decide
+
+- **Context**: the profile, as closed lists — the sources by their binding, each one's columns, its
+  candidate keys, and every inclusion by an id (`awards.laureate_id → laureates.id`) — and the
+  person's *what is it about?* sentence.
+- **Contract**: `{ types: [{ name, source, key, fields: [{ name, column }] }], edges: [{ name, from,
+  to, via }] }`, whose `source`, `key`, `column` and `via` are enums of the profile's names. Names are
+  the model's, in the person's words, held to an identifier's pattern; nothing else is.
+- **Oracles**: every field's column is a column of its type's source (`model/foreign-column`); a
+  type's key is a candidate key of its source (`model/not-a-key`); every edge is backed by an
+  inclusion — its `via` lands on the `to` type's source at its key, and leaves from the `from`
+  type's source or from a source no type stands on whose other inclusion lands on the `from` type
+  (`model/unbacked-edge`); an edge names types the artefact has (`model/unknown-type`); no two types
+  share a name (`model/duplicate-type`). Each is fixable: sent back at its JSON Pointer.
+- **Decisions**, raised from the profile and the accepted artefact, never by the model: a source
+  with more than one candidate key asks which identifies the thing, and assumes the first (`key/<source>`,
+  a safe default: any candidate identifies); an edge through a source no type stands on — a
+  many-to-many inclusion pair, *affiliations* between laureates and institutions — asks whether each
+  row is a link, or a thing counted on its own (`count/<edge>`: *when two laureates share an
+  institution, one or two?*), and blocks, because each answer counts differently and neither is
+  safe.
+- **What it fills**: `understanding.relations` — one sentence per type, *each award has a laureate,
+  a category and a year*, with a real example from the sample rows, the edge's end looked up across
+  sources through its inclusion — and `decisions`. IRIs are keasy's: a type is
+  `<origin>/vocab/<Type>`, a field `<origin>/vocab/<field>`, a subject
+  `<origin>/id/<type>/{<source>.<key>}`, computed from the workspace's origin and the names, never
+  written by the model.
+- *What would reverse it:* a small model that names and links types worse with the profile's
+  closed lists than a person does by hand, over the examples — then the types are drawn from the
+  sources one to one, and only the names are asked.
+
+### `mapping` — Fossil under a grammar, checked by fossil
+
+- **Context**: a fossil `Vocabulary` — the accepted types as `declared` types, each with its IRIs and
+  its fields' types from the profile's primitives (`Option<…>` where the column has nulls; an edge a
+  `Ref<…>`, a `Seq<Ref<…>>` through a link source), and the sources with their columns — and
+  `grammarFor`'s answer: the prelude and the EBNF of what follows it.
+- **Contract**: the grammar, through `providerOptions.kanzo.grammar` (`localModel` holds every token
+  to it). The prompt names each mapping's `@subject` and columns, so the model writes what is left.
+- **Oracles**: fossil itself — the prelude and the mappings opened with `openProgram`, the sources
+  typed with `describe` at `depth: "types"`, and every error of `diagnostics()` sent back with its
+  line (`mapping/<fossil code>`); every accepted type has a mapping (`mapping/unmapped`); each
+  mapping's `@subject` is the one keasy computed (`mapping/subject`). Three attempts, then the
+  diagnostics are the answer.
+- **What it fills**: the program — prelude and mappings — which **Advanced** opens. The chat never
+  shows Fossil.
+- *What would reverse it:* fossil's own: a small model under the grammar failing the competency
+  questions where an emitter from the accepted `model` passes them — then the mapping is emitted.
+
+### `requirements` — questions the data can answer
+
+- **Context**: the accepted model's types, fields and edges, as `Type.field` names.
+- **Contract**: `{ text, of, fields }`, `of` a type and `fields` a list of `Type.field`, both enums.
+- **Oracle**: Ask's resolver — `resolveRelation` from `@kanzo-tech/mosaic` over the join graph the
+  accepted model will be — reaches every field's type from `of` (`requirements/unreachable`); a tie
+  is answerable, because Ask asks it back.
+- **Offered** with `propose` through `useTask`, five at a time, as chips; a chip is answerable by
+  construction. **A question the person types** is marked by Ask's own Task, `ask` from
+  `@kanzo-tech/ai/data`, run over the same join graph with the profile's columns as its fields:
+  answerable when its spec holds or only asks which way. Until a model is accepted, `answerable`
+  stays `null`.
+- *What would reverse it:* questions marked answerable here that Ask, over the built graph, cannot
+  answer — then marking waits for the preview and runs Ask on it.
+
+**Failure is said, not swallowed.** A Task that throws, or whose oracles still refuse after its
+attempts, ends the chat's flow with its problem (`llm/failed` when it has no code of its own) and a
+retry; nothing downstream runs on a refused artefact.
 
 ## What left keasy's configuration
 

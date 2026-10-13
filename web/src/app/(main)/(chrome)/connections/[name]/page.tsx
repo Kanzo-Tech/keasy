@@ -19,6 +19,7 @@ import {
   SectionTitleGroup,
   Skeleton,
   toast,
+  FormatNumber,
 } from "@kanzo-tech/ui";
 import {
   actionsColumn,
@@ -149,7 +150,7 @@ function Files({ name, url, kind }: { name: string; url: string; kind: "data" | 
   const formats = settled(useSuspenseQuery(formatsQuery));
   const readable = listed.filter((f) => formatFor(f.path, kind, formats));
   const cut = truncated && (
-    <p className="text-muted-foreground text-xs">Only the first {listed.length.toLocaleString()} files are listed.</p>
+    <p className="text-muted-foreground text-xs">Only the first <FormatNumber value={listed.length} /> files are listed.</p>
   );
 
   function copyReference(path: string) {

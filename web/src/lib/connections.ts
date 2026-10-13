@@ -24,10 +24,7 @@ export const CLOUDS = [
     label: "Azure",
     holds: "Blob Storage, ADLS",
     scheme: "az://",
-    methods: [
-      { kind: "azure_account_key", label: "Account key" },
-      { kind: "azure_service_principal", label: "Service principal" },
-    ],
+    methods: [{ kind: "azure_service_principal", label: "Service principal" }],
   },
 ] as const satisfies readonly { value: string; label: string; holds: string; scheme: string; methods: readonly { kind: Kind; label: string }[] }[];
 

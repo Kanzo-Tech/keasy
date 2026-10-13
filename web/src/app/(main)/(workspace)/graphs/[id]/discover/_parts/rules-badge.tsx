@@ -44,6 +44,7 @@ import { settled } from "@/lib/api/settled";
 import { toastError } from "@/lib/errors";
 import { useParams } from "next/navigation";
 import { groupKey, type Rule, rulesOf, type Stale, tallyOf, useReadRules, useRules } from "./rules-validation";
+import { counted, figure } from "@/lib/ui/format";
 
 /**
  * The graph's rules as a badge in the filter bar — the recipe editor's findings badge, read in Graph
@@ -111,14 +112,14 @@ function NoRules({ can_manage }: { can_manage: boolean }) {
   );
 }
 
-/** The plural a severity reads in, in the badge's tally. */
-const NOUN = { violation: ["violation", "violations"], warning: ["warning", "warnings"], info: ["note", "notes"] } as const;
+/** The noun a severity reads in, in the badge's tally. */
+const NOUN = { violation: "violation", warning: "warning", info: "note" } as const;
 
 /** *2 violations · 3 warnings*: the badge's words, and so its name. */
 function tallyWords(tally: FindingTally): string {
   return (["violation", "warning", "info"] as const)
     .filter((severity) => tally[severity] > 0)
-    .map((severity) => `${tally[severity].toLocaleString()} ${NOUN[severity][tally[severity] === 1 ? 0 : 1]}`)
+    .map((severity) => counted(tally[severity], NOUN[severity]))
     .join(" · ");
 }
 
@@ -159,7 +160,7 @@ function Checked({ saved, can_manage, refused }: { saved: Schemas["Rules"] | und
     picked === label ? withdraw() : void publish().catch(failed);
   /** A Show: toggles the clause `label`, and reads pressed while it holds. */
   const show = (n: number, label: string, publish: () => Promise<void>) => ({
-    label: `Show ${n.toLocaleString()}`,
+    label: `Show ${figure(n)}`,
     pressed: picked === label,
     run: () => toggle(label, publish),
   });
@@ -308,13 +309,13 @@ function RulesHeader({ saved, count, can_manage, refused, check, conforms }: Rul
   const scope = check?.checking
     ? "Checking what the page holds…"
     : checked
-      ? `${checked.inScope === checked.total ? "All" : `${checked.inScope.toLocaleString()} of`} ${checked.total.toLocaleString()} nodes checked · ${(checked.inScope - checked.broken).toLocaleString()} conform`
+      ? `${checked.inScope === checked.total ? "All" : `${figure(checked.inScope)} of`} ${figure(checked.total)} nodes checked · ${figure(checked.inScope - checked.broken)} conform`
       : "Not checked";
   return (
     <>
       <FindingsSource>
         {saved.name}
-        {count !== undefined && ` · ${count} ${count === 1 ? "rule" : "rules"}`}
+        {count !== undefined && ` · ${counted(count, "rule")}`}
       </FindingsSource>
       <FindingsActions>
         {check &&

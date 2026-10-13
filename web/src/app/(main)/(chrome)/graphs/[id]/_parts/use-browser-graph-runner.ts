@@ -221,11 +221,7 @@ export function startRun(graph: Schemas["Graph"], { profiled }: { profiled?: Pro
 export async function markInterrupted(id: string): Promise<void> {
   await reportStatus(id, {
     status: "failed",
-    problem: {
-      code: "graph/interrupted",
-      title: "The run was interrupted",
-      detail: "The tab running it reloaded or closed before it finished.",
-      data: {},
-    },
+    // The server titles its own code.
+    problem: { code: "graph/interrupted", detail: "The tab running it reloaded or closed before it finished.", data: {} },
   });
 }

@@ -95,7 +95,8 @@ pub struct GraphStatusReport {
     #[schema(value_type = Option<Value>)]
     pub report: Option<serde_json::Value>,
     /// Why the run failed (on `failed`): the run's problem, stored verbatim
-    /// and opaque.
+    /// and opaque — but for the title of a code the server owns, which it
+    /// fills in when the problem carries none.
     #[serde(default)]
     #[schema(value_type = Option<Value>)]
     pub problem: Option<serde_json::Value>,
@@ -310,7 +311,7 @@ pub async fn report_status(
             &caller.user_id,
             payload.status.clone(),
             payload.report.clone(),
-            payload.problem.clone(),
+            payload.problem.clone().map(crate::error::titled),
         )?)
     })
     .await?;

@@ -8,6 +8,10 @@ describe("generateBreadcrumbs", () => {
     expect(crumbs[2].label).toEqual({ kind: "graph", id: "0b5d6c1e-1111-4222-8333-444455556666" });
   });
 
+  it("names a connection by its name, as it is written", () => {
+    expect(generateBreadcrumbs("/connections/LDBC%20SNB").at(-1)).toMatchObject({ name: "LDBC SNB", path: "/connections/LDBC%20SNB" });
+  });
+
   it("lets a static route win over a dynamic one", () => {
     const crumbs = generateBreadcrumbs("/graphs/new");
     expect(crumbs.at(-1)).toMatchObject({ name: "New graph", path: "/graphs/new" });

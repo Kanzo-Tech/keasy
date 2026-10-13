@@ -11,6 +11,7 @@ import {
   TreeViewNode,
   TreeViewTree,
   useTreeView,
+  FormatByte,
 } from "@kanzo-tech/ui";
 import { Database, FileSpreadsheet, FileText, Folder } from "lucide-react";
 import { ProblemView } from "@/components/problem-view";
@@ -24,9 +25,6 @@ const FILE_ICONS = {
   ".parquet": FileSpreadsheet,
   ".xlsx": FileSpreadsheet,
 };
-
-const bytes = new Intl.NumberFormat("en", { notation: "compact", style: "unit", unit: "byte", unitDisplay: "narrow" });
-const size = (n: number) => bytes.format(n).replace(/(\d)([KMGT]?B)$/, "$1 $2");
 
 export interface SourcePickerProps {
   sources: Sources;
@@ -78,7 +76,7 @@ function Branch({ node, indexPath }: { node: SourceNode; indexPath: number[] }) 
         <TreeViewContent>
           <Pick node={node} />
           <TreeViewItem icon={FileText}>{node.name}</TreeViewItem>
-          <span className="ms-auto shrink-0 text-muted-foreground text-xs tabular-nums">{size(node.size)}</span>
+          <span className="ms-auto shrink-0 text-muted-foreground text-xs tabular-nums"><FormatByte value={node.size} /></span>
         </TreeViewContent>
       </TreeViewNode>
     );

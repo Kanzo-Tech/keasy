@@ -19,6 +19,7 @@ import {
 } from "@kanzo-tech/ui";
 import type { Diagnostic } from "@fossil-lang/types";
 import { copyOf, pageOf } from "@/lib/errors";
+import { counted } from "@/lib/ui/format";
 
 /** LSP severity: 1 error, 2 warning, 3 information, 4 hint — as kanzo-ui's severities, a hint a note. */
 const SEVERITY = { 1: "violation", 2: "warning", 3: "info", 4: "info" } as const satisfies Record<number, FindingSeverity>;
@@ -32,18 +33,17 @@ const GROUPS = [
   { severity: "info", title: "Notes" },
 ] as const;
 
-const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
 /** Errors and warnings side by side; notes are named only when they are all there is. */
 function tally(t: FindingTally | undefined): string {
   if (!t) return "Valid";
-  const parts = [t.violation && plural(t.violation, "error"), t.warning && plural(t.warning, "warning")].filter(Boolean);
-  return parts.length ? parts.join(" · ") : t.info ? plural(t.info, "note") : "Valid";
+  const parts = [t.violation && counted(t.violation, "error"), t.warning && counted(t.warning, "warning")].filter(Boolean);
+  return parts.length ? parts.join(" · ") : t.info ? counted(t.info, "note") : "Valid";
 }
 
 /** What the popover says it covered: *2 errors · 1 warning*, and the notes when there are any. */
 function scope(t: FindingTally): string {
-  return [plural(t.violation, "error"), plural(t.warning, "warning"), t.info ? plural(t.info, "note") : ""].filter(Boolean).join(" · ");
+  return [counted(t.violation, "error"), counted(t.warning, "warning"), t.info ? counted(t.info, "note") : ""].filter(Boolean).join(" · ");
 }
 
 /** A diagnostic as one result: keasy's title for its code when it has one, the compiler's otherwise. */

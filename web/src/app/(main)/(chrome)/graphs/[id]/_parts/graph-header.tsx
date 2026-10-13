@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import {  useState } from "react";
 import { Compass, Copy, Ellipsis, Pencil, Play, RotateCcw, Square, Trash2 } from "lucide-react";
 import {
   AlertDialog,
@@ -24,12 +24,13 @@ import {
   SectionTitleGroup,
   Spinner,
   Status,
+  FormatRelativeTime,
 } from "@kanzo-tech/ui";
 import { useSession } from "@kanzo-tech/auth";
 import { useRouter } from "@kanzo-tech/navigation/next";
 import { useMutation } from "@tanstack/react-query";
 import { $api, http, invalidate, type Schemas } from "@/lib/api/client";
-import { copyOf } from "@/lib/errors";
+import { titleOf } from "@/lib/errors";
 import { formatDate } from "@/lib/ui/format";
 import { Blocked, BlockedMenuItem } from "@/components/blocked";
 import { Provenance } from "@/components/provenance";
@@ -54,17 +55,6 @@ export function runnerName(runner: Schemas["Actor"], me: string | undefined): st
   return runner.id === me ? "you" : runner.name;
 }
 
-/** Seconds since `iso`, ticking while `live`. */
-function useSecondsSince(iso: string | undefined, live: boolean): number | undefined {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    if (!live) return;
-    const timer = setInterval(() => setNow(Date.now()), 1_000);
-    return () => clearInterval(timer);
-  }, [live]);
-  return iso ? Math.max(0, Math.round((now - new Date(iso).getTime()) / 1_000)) : undefined;
-}
-
 /** A value the header shows, and copies whole. */
 function Copyable({ value, shown = value, label }: { value: string; shown?: string; label: string }) {
   return (
@@ -87,7 +77,6 @@ export function GraphHeader({ id }: { id: string }) {
   const live = useLiveRun(id);
   const [deleting, setDeleting] = useState(false);
   const primary = primaryAction(graph, { editor, me, runsHere: !!live });
-  const seen = useSecondsSince(graph.heartbeat_at ?? undefined, graph.status === "running");
 
   const CHANGES = ["/v1/graphs", "/v1/graphs/{id}"] as const;
   const settle = () => invalidate(...CHANGES);
@@ -155,7 +144,8 @@ export function GraphHeader({ id }: { id: string }) {
 
   const { label, variant } = STATUS[graph.status];
   // A failure keasy has its own words for says them; any other says "Failed".
-  const worded = graph.status === "failed" ? copyOf(runProblem(graph)?.code ?? "")?.title : undefined;
+  const problem = runProblem(graph);
+  const worded = graph.status === "failed" && problem ? titleOf(problem) : undefined;
 
   return (
     <>
@@ -188,7 +178,12 @@ export function GraphHeader({ id }: { id: string }) {
               <Status variant={graph.cancel_requested ? "warning" : "info"} />
               {graph.cancel_requested ? "Stopping" : "Running"}
               {graph.runner && ` · ${runnerName(graph.runner, me)}`}
-              {seen !== undefined && ` · seen ${seen} s ago`}
+              {graph.heartbeat_at && (
+                <>
+                  {" · seen "}
+                  <FormatRelativeTime value={new Date(graph.heartbeat_at)} />
+                </>
+              )}
             </SectionDescription>
           )}
         </SectionTitleGroup>

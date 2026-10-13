@@ -130,6 +130,21 @@ pub enum ErrorCode {
     RulesRefused,
 }
 
+/// A problem a runner reports, its title filled in when its code is the
+/// server's and it carries none: keasy's words for its own failures live in
+/// [`ErrorCode::title`], and the web sends the code alone.
+pub fn titled(mut problem: serde_json::Value) -> serde_json::Value {
+    if let Some(fields) = problem.as_object_mut()
+        && !fields.contains_key("title")
+        && let Some(code) = fields
+            .get("code")
+            .and_then(|code| ErrorCode::deserialize(code).ok())
+    {
+        fields.insert("title".into(), code.title().into());
+    }
+    problem
+}
+
 impl ErrorCode {
     /// What the code means, fixed per code: the same words for every refusal
     /// that carries it. What this refusal is about goes in `detail`.
@@ -482,6 +497,21 @@ pub fn document_refusals(openapi: &mut OpenApi) {
 mod tests {
     use super::*;
     use strum::IntoEnumIterator;
+
+    /// The web reports `graph/interrupted` by its code: the title is the
+    /// server's. A problem that carries a title, or whose code is not the
+    /// server's, is kept as it came.
+    #[test]
+    fn a_reported_problem_of_the_servers_code_takes_its_title() {
+        let filled = titled(serde_json::json!({ "code": "graph/interrupted", "detail": "d" }));
+        assert_eq!(filled["title"], "The run was interrupted");
+        for kept in [
+            serde_json::json!({ "code": "graph/interrupted", "title": "Mine" }),
+            serde_json::json!({ "code": "run/over-budget", "detail": "d" }),
+        ] {
+            assert_eq!(titled(kept.clone()), kept);
+        }
+    }
 
     /// `area/kind-x` is `AreaKindX`: the variant a handler names is the code
     /// the wire carries, spelled in Rust.

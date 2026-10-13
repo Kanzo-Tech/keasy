@@ -43,6 +43,7 @@ import { StudioOutput, type OutputValues } from "./studio-output";
 import { UnsavedChangesGuard } from "@/lib/ui/unsaved-changes-guard";
 import { useGraphEditorStore } from "./graph-editor-store";
 import { lower, WORDS } from "@/lib/vocabulary";
+import { counted } from "@/lib/ui/format";
 
 /** Quiet before the draft writes itself. Long enough that a pause in typing is
  *  a pause, short enough that leaving the tab does not lose a paragraph. */
@@ -432,7 +433,7 @@ function GraphStudio({ draft }: { draft?: Schemas["Graph"] }) {
 
       <div className="flex h-8 shrink-0 flex-row items-center gap-2 border-t px-3 text-muted-foreground text-xs">
         <span className="truncate">
-          {inputCount} reference{inputCount === 1 ? "" : "s"}
+          {counted(inputCount, "reference")}
           {" · "}
           {draftMutation.isPending ? "saving…" : saved ? "draft saved" : "unsaved changes"}
         </span>

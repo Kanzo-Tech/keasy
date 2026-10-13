@@ -2,8 +2,7 @@ import type { InferredDescriptor } from "@fossil-lang/types";
 import { FOSSIL_PROMPT } from "@fossil-lang/prompt";
 
 import type { Proposal } from "@kanzo-tech/ai";
-import { jsonSchema, Output, stream } from "@kanzo-tech/llm";
-import { gateway } from "@/lib/ai";
+import { jsonSchema, type LanguageModel, Output, stream } from "@kanzo-tech/llm";
 
 /** A suggested question, as the wizard's table keeps it. */
 export type CompetencyQuestion = Proposal & { id: string };
@@ -53,9 +52,9 @@ const QUESTION = jsonSchema<Proposal>({
 });
 
 /** Competency questions for the data, each arriving as soon as it is whole. */
-export function suggestQuestions(domain: string, schemas: readonly InferredDescriptor[], signal: AbortSignal) {
+export function suggestQuestions(model: LanguageModel, domain: string, schemas: readonly InferredDescriptor[], signal: AbortSignal) {
   return stream({
-    model: gateway("chat"),
+    model,
     system: SUGGEST_PROMPT,
     prompt: `Domain: ${domain}\n\n${describeFiles(schemas)}`,
     output: Output.array({ element: QUESTION }),
@@ -72,6 +71,7 @@ const PROGRAM = jsonSchema<{ program: string }>({
 
 /** The program, as it is written: each partial object carries the text so far, and a cut answer throws. */
 export function writeProgram(
+  model: LanguageModel,
   domain: string,
   questions: string[],
   schemas: readonly InferredDescriptor[],
@@ -79,7 +79,7 @@ export function writeProgram(
 ) {
   const listed = questions.map((q, i) => `${i + 1}. ${q}\n`).join("");
   return stream({
-    model: gateway("chat"),
+    model,
     system: PROGRAM_PROMPT,
     prompt: `Domain: ${domain}\n\nCompetency Questions:\n${listed}\nData Schemas:\n${describeFiles(schemas)}`,
     output: Output.object({ schema: PROGRAM }),

@@ -1,23 +1,18 @@
-import { createGateway } from "@kanzo-tech/llm";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { MockLanguageModelV4 } from "ai/test";
+import { describe, expect, it } from "vitest";
 import { coded } from "@/lib/errors";
 import { describeFiles, suggestQuestions, writeProgram } from "./assistant-prompts";
 
-const model = vi.hoisted(() => ({ written: "" }));
-
-/** A gateway that answers with what `model.written` holds, then sends nothing more. */
-vi.mock("@/lib/ai", () => ({
-  gateway: createGateway({
-    baseURL: "http://gateway.test/api/ai",
-    fetch: async () =>
-      new Response(
-        new ReadableStream<Uint8Array>({ start: (body) => body.enqueue(new TextEncoder().encode(model.written)) }),
-        { headers: { "content-type": "text/event-stream" } },
-      ),
-  }),
-}));
-
-const chunk = (content: string) => `data: ${JSON.stringify({ choices: [{ index: 0, delta: { content } }] })}\n\n`;
+/** A page that cannot run the model: every call fails as `localModel` fails one without WebGPU. */
+const unavailable = () =>
+  new MockLanguageModelV4({
+    doStream: async () => {
+      throw Object.assign(new Error("This browser cannot run the model: it has no WebGPU"), {
+        code: "ai/unavailable",
+        data: { reason: "webgpu" },
+      });
+    },
+  });
 
 async function failureOf(stream: AsyncIterable<unknown>): Promise<unknown> {
   try {
@@ -35,23 +30,16 @@ describe("the assistant prompts", () => {
   });
 });
 
-describe("an answer the model stops writing", () => {
+describe("a model that cannot answer", () => {
   const signal = new AbortController().signal;
-  afterEach(() => vi.useRealTimers());
 
-  it("fails the suggestions as ai/silent, not as none", async () => {
-    vi.useFakeTimers();
-    model.written = chunk('[{"question":');
-    const failure = failureOf(suggestQuestions("people", [], signal));
-    await vi.advanceTimersByTimeAsync(30_000);
-    expect(coded(await failure, "llm/failed")).toMatchObject({ code: "ai/silent" });
+  it("fails the suggestions with its code, not as none", async () => {
+    const failure = failureOf(suggestQuestions(unavailable(), "people", [], signal));
+    expect(coded(await failure, "llm/failed")).toMatchObject({ code: "ai/unavailable" });
   });
 
-  it("fails a program it cut short, rather than passing the part written", async () => {
-    vi.useFakeTimers();
-    model.written = chunk('{"program":"type { Person } := ');
-    const failure = failureOf(writeProgram("people", ["Who?"], [], signal));
-    await vi.advanceTimersByTimeAsync(30_000);
-    expect(coded(await failure, "llm/failed")).toMatchObject({ code: "ai/silent" });
+  it("fails the program with its code, rather than passing nothing written", async () => {
+    const failure = failureOf(writeProgram(unavailable(), "people", ["Who?"], [], signal));
+    expect(coded(await failure, "llm/failed")).toMatchObject({ code: "ai/unavailable" });
   });
 });

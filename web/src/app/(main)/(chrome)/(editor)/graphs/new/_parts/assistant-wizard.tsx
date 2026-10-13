@@ -41,7 +41,7 @@ import { introspect } from "@fossil-lang/introspect";
 import type { Format } from "@fossil-lang/types";
 import { formatFor, inputs } from "@fossil-lang/wasm";
 import { $api } from "@/lib/api/client";
-import { gateway } from "@/lib/ai";
+import { useModel, useModelLoad } from "@/lib/ai";
 import { type CompetencyQuestion, describeFiles, suggestQuestions, writeProgram } from "./assistant-prompts";
 import { host } from "@/lib/fossil/host";
 import { sourceDescriptorsKey } from "./use-source-descriptors";
@@ -55,9 +55,6 @@ type Selection = Record<string, boolean>;
 type ConnectionFile = { path: string; size: number };
 
 const SCREENS = ["Sources", "Requirements"] as const;
-
-/** The model the Domain field is assisted by. */
-const COMPLETE = gateway("complete");
 
 const CONNECTION_COLUMNS: ColumnDef<Connection>[] = [
   selectColumn<Connection>({ rowLabel: (row) => `Select ${row.original.name}` }),
@@ -92,7 +89,7 @@ const FILE_COLUMNS: ColumnDef<ConnectionFile>[] = [
 /** One model call at a time: started, stopped when superseded or left, and how it ended. */
 function useCall() {
   const [status, setStatus] = useState<"idle" | "running" | "done" | "error">("idle");
-  // What was thrown, whole: a gateway refusal, `ai/silent`, a structured answer that would not parse.
+  // What was thrown, whole: a page that cannot run the model (`ai/unavailable`), an answer that would not parse.
   const [error, setError] = useState<unknown>(null);
   const ctrl = useRef<AbortController>(undefined);
   useEffect(() => () => ctrl.current?.abort(), []);
@@ -183,6 +180,9 @@ export function AssistantWizard({
   formats: readonly Format[];
 }) {
   const [screen, setScreen] = useState(0);
+  // One model for every step and the Domain field, its download started as the wizard opens.
+  const model = useModel();
+  useModelLoad();
   // Per connection, once the editor has touched it; untouched means every readable file.
   const [fileSelection, setFileSelection] = useState<Record<string, Selection>>({});
   const [domain, setDomain] = useState("");
@@ -306,7 +306,7 @@ export function AssistantWizard({
     void suggest.run(async (signal) => {
       setReqs([]);
       let n = 0;
-      for await (const q of suggestQuestions(domain, schemas, signal)) {
+      for await (const q of suggestQuestions(model, domain, schemas, signal)) {
         const id = `cq${++n}`;
         setReqs((prev) => [...prev, { id, ...q }]);
         reqTable.setRowSelection((prev) => ({ ...prev, [id]: true }));
@@ -325,7 +325,7 @@ export function AssistantWizard({
   const generateProgram = () =>
     void generate.run(async (signal) => {
       let program = "";
-      for await (const partial of writeProgram(domain, questions, schemas, signal)) {
+      for await (const partial of writeProgram(model, domain, questions, schemas, signal)) {
         program = partial.program ?? program;
         setDraft(program);
       }
@@ -418,8 +418,8 @@ export function AssistantWizard({
               {/* The model that helps write the domain reads the files it will be about. */}
               <AssistProvider
                 context={() => describeFiles(schemas)}
-                model={COMPLETE}
-                // The field says it failed under itself; the code (`ai/silent`, a gateway refusal) is said here.
+                model={model}
+                // The field says it failed under itself; the code (`ai/unavailable`, say) is said here.
                 onFailure={(error) => toastError(error, "The suggestion failed")}
               >
                 <Field>

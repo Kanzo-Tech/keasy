@@ -67,8 +67,8 @@ describe("a failure's cause", () => {
 
 describe("a library's coded failure", () => {
   it("is keyed by its code, its data kept", () => {
-    const silent = Object.assign(new Error("The model sent nothing for 30 s"), { code: "ai/silent", data: { after: 30_000 } });
-    expect(coded(silent)).toMatchObject({ code: "ai/silent", data: { after: 30_000 } });
+    const unavailable = Object.assign(new Error("This browser cannot run the model"), { code: "ai/unavailable", data: { reason: "webgpu" } });
+    expect(coded(unavailable)).toMatchObject({ code: "ai/unavailable", data: { reason: "webgpu" } });
   });
 
   it("is read in fossil's grammar, digits and all", () => {

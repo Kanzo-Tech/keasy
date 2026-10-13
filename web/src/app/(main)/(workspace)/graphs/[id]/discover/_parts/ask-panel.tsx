@@ -4,7 +4,7 @@ import { Suspense, useMemo } from "react";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Sparkles } from "lucide-react";
 import { useClauses, useMosaic, type JoinGraph } from "@kanzo-tech/ui/analytics";
-import { Badge, EmptyDescription, EmptyHeader, EmptyIndicator, EmptyRoot } from "@kanzo-tech/ui";
+import { Badge, EmptyDescription, EmptyHeader, EmptyIndicator, EmptyRoot, Progress } from "@kanzo-tech/ui";
 import { Chat, ChatSkeleton } from "@kanzo-tech/ai";
 import {
   AnswerCard,
@@ -18,7 +18,7 @@ import {
   type AskOutput,
 } from "@kanzo-tech/ai/data";
 import { problemCopy, ProblemView } from "@/components/problem-view";
-import { gateway } from "@/lib/ai";
+import { type ModelLoad, useModel, useModelLoad } from "@/lib/ai";
 import { settled } from "@/lib/api/settled";
 import { coded } from "@/lib/errors";
 import { corpusKey, ONCE, useCorpus, useJoinGraph } from "@/lib/fossil/corpus";
@@ -81,11 +81,12 @@ function useRelations(graph: JoinGraph): AnswerRelation[] {
 function useStarters(graph: JoinGraph, types: readonly AnswerRelation[]) {
   const { graphId } = useCorpus();
   const { selection } = useMosaic();
+  const model = useModel();
   // Re-rendered on every clause, so the key below is the filter as it is now.
   useClauses(selection);
   const starters = useQuery({
     queryKey: [...corpusKey(graphId), "starters", String(selection.predicate(null) ?? "")],
-    queryFn: ({ signal }) => askOffers({ model: gateway("chat"), graph, types, selection, signal }),
+    queryFn: ({ signal }) => askOffers({ model, graph, types, selection, signal }),
     staleTime: Infinity,
     retry: false,
   });
@@ -125,18 +126,36 @@ function SubsetPill() {
   );
 }
 
+/**
+ * The model's download, while it lasts: the first time on this device it is the weights, after that
+ * the load from the browser's cache. A question asked meanwhile waits for it.
+ */
+function ModelLoading({ load }: { load: ModelLoad }) {
+  if (load.state !== "loading") return null;
+  return (
+    <div className="flex w-full flex-col gap-1 text-muted-foreground text-xs">
+      <span>Loading the model on this device…</span>
+      <Progress aria-label="Loading the model" value={Math.round(load.progress * 100)} />
+    </div>
+  );
+}
+
 function AskChat() {
   const { selection } = useMosaic();
   const { engine } = useCorpus();
   const graph = useJoinGraph();
   const types = useRelations(graph);
-  const chat = useAskChat({ model: gateway("chat"), engine, graph, types, selection });
+  // The download starts as the panel opens, not on the first question.
+  const load = useModelLoad();
+  const model = useModel();
+  const chat = useAskChat({ model, engine, graph, types, selection });
   const over = useMemo(() => ({ graph, types }), [graph, types]);
   const starters = useStarters(graph, types);
   const adding = useAdding();
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    // `data-model`: how the model's load stands, which a harness waits on before it asks.
+    <div className="flex h-full min-h-0 flex-col" data-model={load.state}>
       <Chat
         // What stopped the answer, by its code as `@kanzo-tech/llm` names it, and anything uncoded as
         // `llm/failed`, in keasy's words.
@@ -145,7 +164,7 @@ function AskChat() {
         className="p-2"
         context={<SubsetPill />}
         empty={<AskEmpty />}
-        notice={starters.failure}
+        notice={starters.failure || <ModelLoading load={load} />}
         proposing={starters.proposing}
         proposals={starters.proposals}
         tools={{

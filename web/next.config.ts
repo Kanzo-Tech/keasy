@@ -21,7 +21,9 @@ const dev = process.env.NODE_ENV === "development";
  * `<base>` rewrite, no form posting somewhere else, and no framing at all.
  *
  * No script, worker or `.wasm` comes from another origin: DuckDB, its httpfs
- * extension and fossil's compiler are this app's own assets.
+ * extension and fossil's compiler are this app's own assets. The one `.wasm`
+ * that may is the model's library, read as data from beside its weights
+ * (`KEASY_MODEL_URL`) and compiled in the model's worker.
  *
  * The permissive parts are the product, not laziness:
  *
@@ -29,9 +31,11 @@ const dev = process.env.NODE_ENV === "development";
  *    DuckDB both run in this browser; that is the architecture.
  *  - `connect-src https:` — the browser reads and writes the workspace's own
  *    cloud account with a credential keasy vends for one prefix. The hosts are
- *    the customer's, and this policy is fixed when the image is built, so they
- *    cannot be enumerated here; narrowing it means a policy rendered per request
- *    from the workspace's credentials, which is the nonce work above.
+ *    the customer's, and so is where the model's shards are served
+ *    (`KEASY_MODEL_URL`, read per request); this policy is fixed when the image
+ *    is built, so they cannot be enumerated here; narrowing it means a policy
+ *    rendered per request from the workspace's credentials, which is the nonce
+ *    work above.
  */
 function contentSecurityPolicy(): string {
   const directives: Record<string, string[]> = {

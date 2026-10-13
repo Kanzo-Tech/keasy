@@ -76,11 +76,11 @@ const registry: Partial<Record<ErrorCode | NoBodyCode | ClientCode | Code | Kanz
   "session/silent": { title: "Your session could not be read in time.", link: signIn },
   "idp/silent": { title: "The identity provider did not answer in time.", link: signIn },
   "idp/unreachable": { title: "The identity provider could not be reached.", link: signIn },
-  "ai/silent": { title: "The model stopped answering." },
-  "ai/rate-limited": { title: "This workspace has used its AI budget for now. Try again later." },
-  // The gateway answered with an error: no model behind the alias, a provider's refusal, a hung
-  // upstream. Its own words are the detail.
-  "ai/unavailable": { title: "The model could not answer." },
+  // The model runs in the page, and this one cannot run it: without WebGPU, today (`data.reason`).
+  "ai/unavailable": {
+    title: "This browser cannot run the model.",
+    detail: "Ask and the assistant run their model on this device, through WebGPU, which this browser does not offer. The rest of keasy works the same.",
+  },
   "llm/failed": { title: "The model call failed. Please try again." },
   "query/failed": {
     title: "Query execution failed. The AI may have generated invalid SQL. Try rephrasing your question.",
@@ -171,8 +171,8 @@ const isCoded = (err: unknown): err is Coded =>
 
 /**
  * Any thrown value with a code to branch on: one that carries a code is itself — a model call's
- * `AiError` (`ai/silent`, `ai/rate-limited`, `ai/unavailable`) included; anything else is `uncoded`, in its own words,
- * its cause kept — a refusal the AI gateway answered, or a forward that never reached it.
+ * `AiError` (`ai/unavailable`) included; anything else is `uncoded`, in its own words, its cause
+ * kept — a model that failed to load or to answer.
  */
 export function coded(err: unknown, uncoded: ClientCode | ErrorCode = "web/unknown"): Coded {
   if (isCoded(err)) return err;

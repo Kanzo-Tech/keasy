@@ -1,6 +1,7 @@
 # keasy on its libraries, and what it stops carrying
 
-Status: a direction (2026-10-13). Nothing here is built. It is keasy's side of the cross-cutting
+Status: steps 1–6 and the account-key half of 11 landed (2026-10-13), each with what did not
+land and why said in its section; 7–10 wait on a library release. It is keasy's side of the cross-cutting
 review of kanzo-ui, fossil and keasy, whose decisions are final, and of the keasy audit at
 `1a05285` (PR #154). Line figures are estimates from that code, net of what replaces them, and are
 measured again when each step lands.
@@ -16,17 +17,17 @@ release, and keasy deletes in the same change that bumps the version.
 | Step | What | Lines | Waits on |
 |---|---|---|---|
 | 0 | **No schema migrations**: a database of another schema is dropped and created again ([permissions](permissions.md#the-schema)) | — | done in #154 |
-| 1 | **Decisions that only delete**: grants, sharing and transfer ([permissions](permissions.md#sharing-waits-for-its-dialog)); the schema diagram ([below](#the-schema-diagram-goes)) | ~1,125, 2 web deps | #154 merged, so the `grants` table goes without a migration |
-| 2 | **Dead code, stale configuration, unused dependencies** ([below](#dead-code-and-configuration)) | ~240, 1–2 crates, 3 web deps | nothing |
-| 3 | **Guards to lint rules** ([below](#guards-become-lint-rules)) | ~130 | nothing |
-| 4 | **The web's own duplicates onto TanStack** ([below](#one-way-to-read-and-write-tanstack)) | ~360 | nothing |
-| 5 | **Facts in place of guesses**: formatting, error titles, names, formats ([below](#facts-in-place-of-guesses)) | ~170 | nothing |
-| 6 | **e2e** ([below](#e2e)) | ~65 | nothing |
+| 1 | **Decisions that only delete**: grants, sharing and transfer ([permissions](permissions.md#sharing-waits-for-its-dialog)); the schema diagram ([below](#the-schema-diagram-goes)) | ~1,125, 2 web deps | done |
+| 2 | **Dead code, stale configuration, unused dependencies** ([below](#dead-code-and-configuration)) | ~240, 1–2 crates, 3 web deps | done; the console URL waits on `@kanzo-tech/auth` (step 8) |
+| 3 | **Guards to lint rules** ([below](#guards-become-lint-rules)) | ~130 | done |
+| 4 | **The web's own duplicates onto TanStack** ([below](#one-way-to-read-and-write-tanstack)) | ~360 | done, but the two module stores |
+| 5 | **Facts in place of guesses**: formatting, error titles, names, formats ([below](#facts-in-place-of-guesses)) | ~170 | done, but field labels and file icons |
+| 6 | **e2e** ([below](#e2e)) | ~65 | the typed client and the s3-init loop done; `page.clock` and the smoke fixture not |
 | 7 | ⇧ **The Ask evaluation set to kanzo-ui** ([assistant](assistant.md#order)) | ~560 moved | kanzo-ui taking the set |
 | 8 | ⇧ **kanzo-ui**: `Structure`, one model double, the conversation's keeping, library hooks on keasy's `QueryClient`, the organization's admin console URL from `@kanzo-tech/auth` ([below](#what-the-libraries-take)) | ~490 | a kanzo-ui release |
 | 9 | ⇧ **fossil**: `run` in its own worker, `attach({ files })` | ~435 | a fossil alpha |
 | 10 | ⇧ **kanzo-ui and fossil together**: the `requirements`, `words` and `profile` Tasks' guesses ([assistant](assistant.md#the-three-tasks)) | ~415 | kanzo-ui's paths design (wave 3) and fossil's annotations and corpus facts (wave 4) |
-| 11 | **Azure: one credential, through the Azure SDK** ([below](#azure-has-one-credential-a-user-delegation-sas-through-the-azure-sdk)) | ~250 now, ~60 more later | nothing for the account key, token and key; the SDK's SAS builder for the signer |
+| 11 | **Azure: one credential, through the Azure SDK** ([below](#azure-has-one-credential-a-user-delegation-sas-through-the-azure-sdk)) | ~250 now, ~60 more later | the account key and `chrono` done; the token and key wait on a decision ([below](#azure-has-one-credential-a-user-delegation-sas-through-the-azure-sdk)) |
 
 About **4,300 lines** in all, ~560 of them moved rather than deleted, of keasy's ~41.6k, and 5 web dependencies and 3–5 Rust crates. Steps
 1–6 are keasy's alone and can start today; 2–6 change no behaviour a person sees, except the words
@@ -117,6 +118,13 @@ kind across the server, API, web and tests, plus the token and key by hand), and
 the signer moves. *What would reverse it:* a customer whose storage account cannot use Entra. Then
 an account key comes back as a second kind, signed by the SDK, never by hand.
 
+**Found landing it (2026-10-13): the maintained SDK brings the third clock too.** The account key and
+`chrono` are gone. The token and the key by the SDK are not moved: `azure_storage_blob` 1.1 depends on
+`time` 0.3 itself (and `azure_core` 1.1 on `hmac` 0.12 and `sha2` 0.10, beside keasy's 0.13 and 0.11),
+so it brings in what rejecting `azure_storage` 0.21 was partly about, and `azure_identity`'s
+`ClientSecretCredential` admits only an `https` authority host, so the *silent Entra* test needs a TLS
+listener. The move waits on deciding whether a second time crate is the price of the SDK.
+
 ## Dead code and configuration
 
 Removed outright; a dev stack that needs it says `make clean` once in the release note.
@@ -189,6 +197,9 @@ Each is TanStack Query's own pattern, already a dependency.
   `use-browser-graph-runner.ts`) become `useMutation({ mutationKey })` read with `useMutationState`.
   ~70. If the conversation's keeping moves to `@kanzo-tech/ai` first, its queue goes with it. *What
   would reverse it:* a write that must merge with the one before it rather than wait for it.
+  **Landed (2026-10-13)** but the two module stores: a build's state names its graph before it ends,
+  and a live run holds its Stop and its ending, neither of which a mutation's state carries; they
+  stay `useSyncExternalStore` until fossil's worker (step 9) takes the run.
 
 ## Facts in place of guesses
 
@@ -220,6 +231,10 @@ Each is TanStack Query's own pattern, already a dependency.
   identifier rule beside `formats`. ~15. *What would reverse it:* nothing keasy can see — the formats
   and the grammar are fossil's to say.
 
+**Landed (2026-10-13)** but two. Credential field labels are still the property names: utoipa 5 has
+no `title` on a field, only on a type, so the contract cannot say them yet. The source picker still
+picks an icon by extension; the file's `reader` names a format, not whether it is a table.
+
 ## e2e
 
 - **A typed API client.** `support/stack/api.ts`'s `api(page, method, path, body)` — `fetch` in
@@ -236,6 +251,11 @@ Each is TanStack Query's own pattern, already a dependency.
 
 *What would reverse it:* a call the typed client cannot express — a body that must be wrong on
 purpose — which stays a raw call, and only that one.
+
+**Landed (2026-10-13): the typed client and the s3-init loop.** Not landed: `page.clock` — asserting
+that nothing happened after a `fastForward` needs a point where the page's requests have settled,
+which the clock does not give, so the windows stay real; and one `seeded(example)` fixture — seeding
+inside a test puts SNB's 15 minutes under the test's timeout instead of the worker fixture's.
 
 ## Not decided here
 

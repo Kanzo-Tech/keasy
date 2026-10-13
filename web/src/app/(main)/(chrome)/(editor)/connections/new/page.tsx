@@ -104,8 +104,8 @@ function Form({ credentials, holds }: { credentials: Credential[]; holds: Holds 
   const collection = useMemo(
     () =>
       createListCollection({
-        // A credential someone else owns is used once they share it (docs/design/permissions.md):
-        // offered, disabled, with whom to ask.
+        // A credential someone else owns is theirs and an admin's (docs/design/permissions.md):
+        // offered, disabled, saying whose.
         items: credentials.map((c) => ({
           label: c.name,
           value: c.name,
@@ -228,7 +228,7 @@ function Form({ credentials, holds }: { credentials: Credential[]; holds: Holds 
                             <Icon className="size-3.5 opacity-60" />
                             {item.label}
                             {item.disabled && (
-                              <span className="text-muted-foreground ms-auto text-xs">Ask {item.owner} to share it</span>
+                              <span className="text-muted-foreground ms-auto text-xs">Only {item.owner} or an admin can use it</span>
                             )}
                           </SelectItem>
                         );

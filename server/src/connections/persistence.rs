@@ -3,8 +3,7 @@
 use rusqlite::{Connection, OptionalExtension, params};
 
 use crate::database::{
-    DbError, DbResult, constraint, grants_column, grants_of, json_column, json_column_opt,
-    owner_columns, provenance_columns,
+    DbError, DbResult, constraint, json_column, json_column_opt, owner_columns, provenance_columns,
 };
 use crate::domain::{Actor, ConnectionView, ValidationReport};
 
@@ -12,21 +11,12 @@ const COLUMNS: &str = "name, credential, target, owner, owner_name, created_by, 
                        created_by_name, created_at, updated_by, updated_by_name, updated_at, \
                        validation";
 
-/// [`COLUMNS`], and each row's grants.
-fn select() -> String {
-    format!(
-        "SELECT {COLUMNS}, {} FROM connections",
-        grants_of("connections", "connection", "name")
-    )
-}
-
 fn row(r: &rusqlite::Row<'_>) -> rusqlite::Result<ConnectionView> {
     Ok(ConnectionView {
         name: r.get("name")?,
         secret: r.get("credential")?,
         target: json_column(r, "target")?,
         owner: owner_columns(r)?,
-        grants: grants_column(r)?,
         provenance: provenance_columns(r)?,
         validation: json_column_opt(r, "validation")?,
         can: Default::default(),
@@ -83,21 +73,29 @@ pub fn insert(conn: &Connection, connection: &ConnectionView, by: &Actor) -> DbR
 
 pub fn get(conn: &Connection, name: &str) -> DbResult<Option<ConnectionView>> {
     Ok(conn
-        .query_row(&format!("{} WHERE name = ?1", select()), [name], row)
+        .query_row(
+            &format!("SELECT {COLUMNS} FROM connections WHERE name = ?1"),
+            [name],
+            row,
+        )
         .optional()?)
 }
 
 /// The workspace's one sink, if it has one.
 pub fn sink(conn: &Connection) -> DbResult<Option<ConnectionView>> {
     Ok(conn
-        .query_row(&format!("{} WHERE direction = 'sink'", select()), [], row)
+        .query_row(
+            &format!("SELECT {COLUMNS} FROM connections WHERE direction = 'sink'"),
+            [],
+            row,
+        )
         .optional()?)
 }
 
 /// Every connection.
 pub fn list(conn: &Connection) -> DbResult<Vec<ConnectionView>> {
     let connections = conn
-        .prepare(&format!("{} ORDER BY name", select()))?
+        .prepare(&format!("SELECT {COLUMNS} FROM connections ORDER BY name"))?
         .query_map([], row)?
         .collect::<rusqlite::Result<_>>()?;
     Ok(connections)
@@ -106,7 +104,9 @@ pub fn list(conn: &Connection) -> DbResult<Vec<ConnectionView>> {
 /// The connections that sign with `credential`.
 pub fn using(conn: &Connection, credential: &str) -> DbResult<Vec<ConnectionView>> {
     let connections = conn
-        .prepare(&format!("{} WHERE credential = ?1 ORDER BY name", select()))?
+        .prepare(&format!(
+            "SELECT {COLUMNS} FROM connections WHERE credential = ?1 ORDER BY name"
+        ))?
         .query_map([credential], row)?
         .collect::<rusqlite::Result<_>>()?;
     Ok(connections)
@@ -218,7 +218,6 @@ pub(crate) mod tests {
             secret: credential.into(),
             target,
             owner: user(),
-            grants: vec![],
             provenance: Provenance::created(user()),
             validation: None,
             can: Default::default(),

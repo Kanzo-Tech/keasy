@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-use super::{Actor, Grant, Provenance};
+use super::{Actor, Provenance};
 use crate::authentication::permission::{Kind, Securable};
 
 /// The assistant's conversation, as the web stored it: its messages, opaque to
@@ -31,9 +31,5 @@ impl Securable for Conversation {
 
     fn owner(&self) -> &Actor {
         &self.owner
-    }
-
-    fn grants(&self) -> &[Grant] {
-        &[]
     }
 }

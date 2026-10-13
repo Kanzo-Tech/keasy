@@ -55,7 +55,7 @@ async fn an_editor_tests_what_the_workspace_owns_and_the_report_names_them() {
         assert_eq!(before["owner"]["id"], "workspace", "{resource}");
         assert_eq!(
             before["can"],
-            json!({ "use": true, "operate": true, "manage": false, "transfer": false }),
+            json!({ "use": true, "operate": true, "manage": false }),
             "{resource}"
         );
 
@@ -143,7 +143,7 @@ async fn a_reader_is_refused_a_sources_files() {
     assert_eq!(status, StatusCode::OK, "a reader still sees the connection");
     assert_eq!(
         connection["can"],
-        json!({ "use": false, "operate": false, "manage": false, "transfer": false })
+        json!({ "use": false, "operate": false, "manage": false })
     );
 }
 
@@ -171,7 +171,7 @@ async fn an_editor_reruns_anothers_graph_and_its_owner_may_stop_it() {
     );
     assert_eq!(
         graph["can"],
-        json!({ "use": true, "operate": true, "manage": false, "transfer": false })
+        json!({ "use": true, "operate": true, "manage": false })
     );
 
     let stop_path = format!("/v1/graphs/{id}/stop");
@@ -209,7 +209,7 @@ async fn an_editor_reruns_anothers_graph_and_its_owner_may_stop_it() {
 }
 
 /// What the workspace owns, every editor uses: a connection on a seeded
-/// secret needs no grant, and who makes it owns it.
+/// secret needs no one to share it, and who makes it owns it.
 #[tokio::test]
 async fn an_editor_builds_on_a_secret_the_workspace_owns() {
     let app = seeded().await;
@@ -227,7 +227,7 @@ async fn an_editor_builds_on_a_secret_the_workspace_owns() {
     assert_eq!(body["validation"]["by"]["id"], "u-2");
     assert_eq!(
         body["can"],
-        json!({ "use": true, "operate": true, "manage": true, "transfer": true })
+        json!({ "use": true, "operate": true, "manage": true })
     );
 }
 
@@ -263,16 +263,14 @@ async fn connect(app: &TestApp, token: &str, name: &str) -> (StatusCode, serde_j
     .await
 }
 
-/// Unity Catalog's rule for a storage credential: another person's secret is
-/// used by a grant — to the editor, or to a group they are in — and the
-/// refusal says whom to ask. A grant revoked is a connection refused again;
-/// the connections already made on it stay.
+/// Another person's secret is used by its owner or an admin, never by
+/// another editor, and the refusal says whom to ask.
 #[tokio::test]
-async fn using_anothers_secret_takes_a_grant_to_them_or_their_group() {
+async fn anothers_secret_is_its_owners_and_an_admins() {
     let app = keyed().await;
     let owner = app.token_for("u-1", EDITOR);
     let bruno = app.token_for("u-2", EDITOR);
-    let caro = app.token_grouped("u-3", EDITOR, &["g-data"]);
+    let admin = app.token_for("u-9", ADMIN);
 
     let (_, key) = app
         .send(Method::GET, "/v1/secrets/key", &bruno, json!(null))
@@ -288,258 +286,11 @@ async fn using_anothers_secret_takes_a_grant_to_them_or_their_group() {
         body["detail"].as_str().unwrap().contains("ask its owner"),
         "{body}"
     );
-
-    let (status, shared) = app
-        .send(
-            Method::PUT,
-            "/v1/secrets/key/grants",
-            &owner,
-            json!({ "grants": [
-                { "principal": { "kind": "user", "id": "u-2", "name": "Bruno" }, "relation": "user" },
-                { "principal": { "kind": "group", "id": "g-data", "name": "Data" }, "relation": "user" },
-            ]}),
-        )
-        .await;
-    assert_eq!(status, StatusCode::OK, "{shared}");
-    assert_eq!(
-        shared["grants"][1]["principal"],
-        json!({ "kind": "group", "id": "g-data", "name": "Data" }),
-        "by name: Bruno, then Data"
-    );
-    assert_eq!(shared["grants"][1]["granted_by"]["id"], "u-1");
-    for (who, token, name) in [("Bruno", &bruno, "bruno"), ("Data's Caro", &caro, "caro")] {
+    for (who, token, name) in [
+        ("its owner", &owner, "ours"),
+        ("an admin", &admin, "theirs"),
+    ] {
         let (status, body) = connect(&app, token, name).await;
         assert_eq!(status, StatusCode::CREATED, "{who}: {body}");
     }
-    let (_, key) = app
-        .send(Method::GET, "/v1/secrets/key", &bruno, json!(null))
-        .await;
-    assert_eq!(
-        key["can"],
-        json!({ "use": true, "operate": true, "manage": false, "transfer": false }),
-        "a user uses it and changes nothing"
-    );
-
-    let (status, _) = app
-        .send(
-            Method::PUT,
-            "/v1/secrets/key/grants",
-            &owner,
-            json!({ "grants": [] }),
-        )
-        .await;
-    assert_eq!(status, StatusCode::OK);
-    let (status, _) = connect(&app, &bruno, "again").await;
-    assert_eq!(status, StatusCode::FORBIDDEN, "revoked");
-    let (status, kept) = app
-        .send(Method::GET, "/v1/connections/bruno", &bruno, json!(null))
-        .await;
-    assert_eq!(
-        (status, kept["secret"].as_str()),
-        (StatusCode::OK, Some("key"))
-    );
-}
-
-/// A manager — named, or through a group — changes and shares what they
-/// manage, and does not give it away; a reader granted manager is still a
-/// reader. Shared means listed: everyone who reads it sees with whom.
-#[tokio::test]
-async fn a_manager_changes_and_shares_and_does_not_transfer() {
-    let app = keyed().await;
-    let owner = app.token_for("u-1", EDITOR);
-    let (status, _) = connect(&app, &owner, "data").await;
-    assert_eq!(status, StatusCode::CREATED);
-    let manager = app.token_grouped("u-2", EDITOR, &["g-research"]);
-    let reader = app.token_for("u-4", READER);
-
-    let (status, shared) = app
-        .send(
-            Method::PUT,
-            "/v1/connections/data/grants",
-            &owner,
-            json!({ "grants": [
-                { "principal": { "kind": "group", "id": "g-research", "name": "Research" }, "relation": "manager" },
-                { "principal": { "kind": "user", "id": "u-4", "name": "Dani" }, "relation": "manager" },
-            ]}),
-        )
-        .await;
-    assert_eq!(status, StatusCode::OK, "{shared}");
-
-    let (_, seen) = app
-        .send(Method::GET, "/v1/connections/data", &manager, json!(null))
-        .await;
-    assert_eq!(
-        seen["can"],
-        json!({ "use": true, "operate": true, "manage": true, "transfer": false })
-    );
-    let (_, listed) = app
-        .send(Method::GET, "/v1/connections", &reader, json!(null))
-        .await;
-    assert_eq!(listed[0]["grants"].as_array().unwrap().len(), 2, "{listed}");
-    assert_eq!(
-        listed[0]["can"]["manage"], false,
-        "a grant raises no reader"
-    );
-
-    let (status, reshared) = app
-        .send(
-            Method::PUT,
-            "/v1/connections/data/grants",
-            &manager,
-            json!({ "grants": [
-                { "principal": { "kind": "group", "id": "g-research", "name": "Research" }, "relation": "manager" },
-                { "principal": { "kind": "user", "id": "u-5", "name": "Eli" }, "relation": "manager" },
-            ]}),
-        )
-        .await;
-    assert_eq!(status, StatusCode::OK, "a manager shares: {reshared}");
-    assert_eq!(
-        reshared["grants"][0]["principal"]["id"], "u-5",
-        "by name: Eli, then Research"
-    );
-    let (status, renamed) = app
-        .send(
-            Method::PATCH,
-            "/v1/connections/data",
-            &manager,
-            json!({ "name": "ours" }),
-        )
-        .await;
-    assert_eq!(status, StatusCode::OK, "a manager changes it: {renamed}");
-    assert_eq!(
-        renamed["grants"].as_array().unwrap().len(),
-        2,
-        "the grants go with the rename"
-    );
-
-    let (status, body) = app
-        .send(
-            Method::PUT,
-            "/v1/connections/ours/owner",
-            &manager,
-            json!({ "owner": { "id": "u-2", "name": "Bruno" } }),
-        )
-        .await;
-    assert_eq!(
-        (status, body["code"].as_str()),
-        (StatusCode::FORBIDDEN, Some("rbac/forbidden")),
-        "{body}"
-    );
-}
-
-/// The owner gives a graph away and keeps nothing by having owned it; an
-/// admin gives anything to the workspace. The sink is the workspace's: never
-/// shared, never given.
-#[tokio::test]
-async fn the_owner_or_an_admin_transfers_and_the_sink_stays_the_workspaces() {
-    let app = seeded().await;
-    let owner = app.token_for("u-1", EDITOR);
-    let bruno = app.token_for("u-2", EDITOR);
-    let admin = app.token_for("u-9", ADMIN);
-    app.connection("sink", "seed", Direction::Sink, "bootstrap")
-        .await;
-    let (_, graph) = app
-        .send(
-            Method::POST,
-            "/v1/graphs",
-            &owner,
-            json!({ "script": "x", "sink_connection": "sink" }),
-        )
-        .await;
-    let path = format!("/v1/graphs/{}", graph["id"].as_str().unwrap());
-
-    let (status, given) = app
-        .send(
-            Method::PUT,
-            &format!("{path}/owner"),
-            &owner,
-            json!({ "owner": { "id": "u-2", "name": " Bruno " } }),
-        )
-        .await;
-    assert_eq!(status, StatusCode::OK, "{given}");
-    assert_eq!(given["owner"], json!({ "id": "u-2", "name": "Bruno" }));
-    assert_eq!(
-        given["created_by"]["id"], "u-1",
-        "who created it never changes"
-    );
-    assert_eq!(given["can"]["manage"], false, "the old owner keeps nothing");
-    let (_, theirs) = app.send(Method::GET, &path, &bruno, json!(null)).await;
-    assert_eq!(theirs["can"]["transfer"], true);
-
-    let (status, workspace) = app
-        .send(
-            Method::PUT,
-            &format!("{path}/owner"),
-            &admin,
-            json!({ "owner": { "id": "workspace" } }),
-        )
-        .await;
-    assert_eq!(status, StatusCode::OK, "{workspace}");
-    assert_eq!(
-        workspace["owner"],
-        json!({ "id": "workspace", "name": "Workspace" })
-    );
-
-    for (verb, route, body, code) in [
-        (
-            "share",
-            "/v1/connections/sink/grants",
-            json!({ "grants": [{ "principal": { "kind": "user", "id": "u-2", "name": "Bruno" }, "relation": "manager" }] }),
-            StatusCode::BAD_REQUEST,
-        ),
-        (
-            "transfer",
-            "/v1/connections/sink/owner",
-            json!({ "owner": { "id": "u-9", "name": "Admin" } }),
-            StatusCode::FORBIDDEN,
-        ),
-    ] {
-        let (status, body) = app.send(Method::PUT, route, &admin, body).await;
-        assert_eq!(status, code, "{verb} the sink: {body}");
-    }
-}
-
-/// What a grant cannot be is refused whole, naming the field: a `user` of
-/// what is not a secret, a grant to the owner, a principal with no id.
-#[tokio::test]
-async fn a_grant_the_object_cannot_hold_is_refused() {
-    let app = keyed().await;
-    let owner = app.token_for("u-1", EDITOR);
-    let (status, _) = connect(&app, &owner, "data").await;
-    assert_eq!(status, StatusCode::CREATED);
-    for (path, grant) in [
-        (
-            "/v1/connections/data/grants",
-            json!({ "principal": { "kind": "user", "id": "u-2", "name": "Bruno" }, "relation": "user" }),
-        ),
-        (
-            "/v1/secrets/key/grants",
-            json!({ "principal": { "kind": "user", "id": "u-1", "name": "Ana" }, "relation": "manager" }),
-        ),
-        (
-            "/v1/secrets/key/grants",
-            json!({ "principal": { "kind": "group", "id": " ", "name": "Data" }, "relation": "user" }),
-        ),
-        (
-            "/v1/secrets/key/grants",
-            json!({ "principal": { "kind": "user", "id": "u-2", "name": "" }, "relation": "user" }),
-        ),
-    ] {
-        let (status, body) = app
-            .send(Method::PUT, path, &owner, json!({ "grants": [grant] }))
-            .await;
-        assert_eq!(
-            (status, body["data"]["field"].as_str()),
-            (StatusCode::BAD_REQUEST, Some("grants")),
-            "{grant}: {body}"
-        );
-    }
-    let (_, secret) = app
-        .send(Method::GET, "/v1/secrets/key", &owner, json!(null))
-        .await;
-    assert_eq!(
-        secret["grants"],
-        json!([]),
-        "nothing of a refused request is kept"
-    );
 }

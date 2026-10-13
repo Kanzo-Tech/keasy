@@ -3,8 +3,7 @@ import type { Schemas } from "@/lib/api/client";
 /**
  * What the server says the caller may do to one object (docs/design/permissions.md): use it — build
  * a connection on a secret —, operate it — test a connection or a secret, run a graph —, manage it
- * — change, rename, delete, share — and transfer it. The web draws what this says and never
- * re-derives it from roles or grants.
+ * — change, rename, delete. The web draws what this says and never re-derives it from roles.
  */
 export type Can = Schemas["Can"];
 
@@ -23,8 +22,7 @@ export function blocked(object: Permitted, action: keyof Can, noun: string): str
   if (object.can[action]) return undefined;
   if (object.target?.direction === "sink") return "Only an admin can test or change the sink";
   if (action === "operate") return `Only an editor can test this ${noun}`;
-  if (action === "use") return `Only who ${object.owner.name} shares this ${noun} with can use it`;
+  if (action === "use") return `Only ${object.owner.name} or an admin can use this ${noun}`;
   if (object.owner.id === "workspace") return `The workspace owns this ${noun}: only an admin can change it`;
-  if (action === "transfer") return `Only its owner (${object.owner.name}) or an admin can give this ${noun} away`;
-  return `Only its owner (${object.owner.name}), its managers or an admin can change this ${noun}`;
+  return `Only its owner (${object.owner.name}) or an admin can change this ${noun}`;
 }

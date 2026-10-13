@@ -146,7 +146,6 @@ pub async fn create_connection(
         secret: request.secret.clone(),
         target: request.target.clone(),
         owner: caller.actor(),
-        grants: vec![],
         provenance: Provenance::created(caller.actor()),
         validation: None,
         can: Default::default(),

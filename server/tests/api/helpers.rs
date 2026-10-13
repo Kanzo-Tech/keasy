@@ -146,19 +146,6 @@ impl TestApp {
         mint(&self.realm, json!(claims))
     }
 
-    /// `sub`, holding `roles` here and in the groups `groups` (their ids, as
-    /// the platform's Organization Group Ids mapper writes them).
-    pub fn token_grouped(&self, sub: &str, roles: &[&str], groups: &[&str]) -> String {
-        let mut claims = good(&self.realm);
-        claims["sub"] = json!(sub);
-        claims["organization"] = json!({ ORG: {
-            "id": format!("{ORG}-id"),
-            "groups": groups,
-            "resource_access": { CLIENT: { "roles": roles } }
-        } });
-        mint(&self.realm, claims)
-    }
-
     /// `sub`, holding `roles` in organization `org` only.
     pub fn token_in(&self, sub: &str, org: &str, roles: &[&str]) -> String {
         let mut claims = good(&self.realm);
@@ -332,7 +319,6 @@ impl TestApp {
             secret: credential.into(),
             target,
             owner: actor(by).as_owner(),
-            grants: vec![],
             provenance: Provenance::created(actor(by)),
             validation: None,
             can: Default::default(),

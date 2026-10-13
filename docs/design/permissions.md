@@ -3,8 +3,8 @@
 Status: phase A implemented (owners, actions, the matrix, the web drawing it). Phase B — grants to
 people and groups, secrets used by grant, transfer, departure — had its server built and no screen,
 and **is removed until a Share dialog exists** (decided 2026-10-13, [Sharing waits for its
-dialog](#sharing-waits-for-its-dialog)). This page states the model without it; the code still
-carries phase B until the cleanup lands ([cleanup](cleanup.md)).
+dialog](#sharing-waits-for-its-dialog)). This page states the model without it, and so does the
+code.
 
 ## The problem
 
@@ -89,10 +89,9 @@ operates it, only an admin manages it. Views answer `owner: { id, name }`.
 | Ask | reader | — | — | — | — |
 
 The server holds it in one function, `Caller::may` (`server/src/authentication/permission.rs`);
-handlers call `caller.ensure(Action::…, &object)`, and only that: the second spelling a graph has
-today, `graphs::permitted(db, caller, id, Action)`, which loads and ensures in one call, goes, and
-graph routes load with the module's own lookup and ask `caller.ensure` as secrets and connections do
-(~15 lines; six graph routes call it, two more in the share and transfer handlers that go). *What would reverse
+handlers call `caller.ensure(Action::…, &object)`, and only that: graph routes load with the
+module's own lookup (`graphs::any`) and ask `caller.ensure` as secrets and connections do — the
+graph-only `graphs::permitted`, which loaded and ensured in one call, is gone. *What would reverse
 it:* a fourth kind of object whose every route loads-then-ensures — then one generic
 `permitted<T: Securable>` serves all of them, not a graph-only one. A route still states the least
 role it admits (`Reader`, `Editor`, `Admin` extractors, and the OpenAPI `security` that

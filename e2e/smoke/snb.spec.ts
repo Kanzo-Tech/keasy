@@ -67,7 +67,8 @@ test("the social network's dashboard over a hop draws every tile kind, and holds
   // delivers the brush's clause, a while after the brush.
   await expect.poll(async () => (await bar.chips()).some((chip) => chip.startsWith("Comment.length "))).toBe(true);
   await bar.remove("Comment.length");
-  await expect.poll(() => unfiltered(discover, "Replies")).toBe(figured(PATHS));
+  // Unfiltered, every tile reads the whole join again: as long as the first read, so as long a wait.
+  await expect.poll(() => unfiltered(discover, "Replies"), { timeout: 60_000 }).toBe(figured(PATHS));
 
   // The filter chip: the 28,807 replies written in Firefox. The control's value list is the
   // library's and has no harness method yet, so it is driven by its roles.

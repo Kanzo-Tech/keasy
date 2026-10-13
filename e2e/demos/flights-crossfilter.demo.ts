@@ -33,7 +33,7 @@ demo("flights-crossfilter", "Crossfiltering over OpenFlights: a click, a brush, 
     },
     {
       subtitle: "Drag across longitude — just the West",
-      action: async () => (await (await dashboard.tile(/Count by Airport\.lon$/)).chart()).brush({ x: [-128, -98.98] }),
+      action: async () => (await (await dashboard.tile(/Count by Airport\.long$/)).chart()).brush({ x: [-128, -98.98] }),
       // US airports west of 98.98°W. Both edges sit in gaps of the data — the west one in the 7° between
       // southeast Alaska and the Pacific coast, the east one 0.49° from the nearest airport — so a drag a pixel off
       // still reads the same figure.
@@ -52,7 +52,7 @@ demo("flights-crossfilter", "Crossfiltering over OpenFlights: a click, a brush, 
         await expect.poll(() => discover.kept()).toBe("135");
         const chips = await bar.chips();
         expect(chips.some((chip) => /\bAirport\.country\b/.test(chip))).toBe(true);
-        expect(chips.some((chip) => /\bAirport\.lon\b/.test(chip))).toBe(true);
+        expect(chips.some((chip) => /\bAirport\.long\b/.test(chip))).toBe(true);
       },
     },
   ],

@@ -6,7 +6,7 @@ import { seedGraph } from "../support/seeds";
 import { demo } from "./record";
 
 /**
- * The Iberian peninsula in lon/lat, the Map placement's own axes. It follows the Portuguese border
+ * The Iberian peninsula in long/lat, the Map placement's own axes. It follows the Portuguese border
  * and the Pyrenees and takes in the Balearics, so it catches 31 airports, every one of them Spanish:
  * 28 on the peninsula, Palma, Ibiza and Menorca. Of the 40 in Spain it leaves out the 8 Canaries and
  * Melilla, and no airport of Portugal, France, Andorra, Gibraltar or Morocco is inside (point in
@@ -21,7 +21,7 @@ const PENINSULA: Point[] = [
 
 /**
  * Hidden patterns: OpenFlights as the force layout leaves it, a cloud, then put on a map on camera
- * (x = lon, y = lat), so the cloud snaps into the world; then every airport in Spain searched
+ * (x = long, y = lat), so the cloud snaps into the world; then every airport in Spain searched
  * into the subset and framed — the Canaries and Melilla with the peninsula — then the peninsula
  * lassoed, and the camera framed on what was kept. The layout is not waited on: spread, the cloud
  * looked as it did before, so the wait was a stretch of take where nothing changed. Off camera the
@@ -55,7 +55,7 @@ demo("flights-map", "OpenFlights put on a map: the force layout's scatter, then 
       subtitle: "Put it on a map: longitude across, latitude up",
       async action() {
         await discover.panel("Settings");
-        await settings.placement("Map", { x: "lon", y: "lat" });
+        await settings.placement("Map", { x: "long", y: "lat" });
         await graph.pause();
       },
       // `placement` resolves once Map is checked and both axes read their columns.

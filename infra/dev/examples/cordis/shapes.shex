@@ -41,7 +41,7 @@
 #   organisation, and CORDIS records SME status per participation.
 # An organisation's position is the W3C WGS 84 Basic Geo vocabulary's, as the
 # OpenFlights example's is — decimal degrees, for Discover's Map placement.
-# geo:long's short name is `long`; mapping.fossil renames it `lon`.
+# geo:long's short name, `long`, is the property mapping.fossil writes.
 #
 # eurio:roleLabel holds CORDIS's role as CORDIS writes it for Horizon Europe:
 # coordinator, participant, associatedPartner or thirdParty. EURIO v2.4 lists

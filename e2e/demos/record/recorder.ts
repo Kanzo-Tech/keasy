@@ -15,7 +15,7 @@ import { TAIL, hold, readingTime } from "./pace";
  * A demo is declared, as e2e/demos/STORYBOARD.md writes it: `arrange` sets the page up off camera,
  * and each step is a **subtitle**, an **action** and a **check**. The subtitle leads its step: it is up
  * before the action starts and stays until the next one replaces it. The action is a harness's or a
- * page object's, in data (a brush over 1985–1989, a lasso in lon/lat), and it resolves on the state it
+ * page object's, in data (a brush over 1985–1989, a lasso in long/lat), and it resolves on the state it
  * caused. The check asserts what must be true after it, so a take whose page did something else fails
  * rather than recording it. `hold` is the only time a demo spends on the clock, and it is the
  * viewer's: the subtitle is read while it leads its action (`LEAD`), and the rest of its reading time

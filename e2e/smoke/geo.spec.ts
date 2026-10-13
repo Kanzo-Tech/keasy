@@ -24,9 +24,9 @@ const DASHBOARD = {
     { id: "altitude", kind: "stat", title: "Mean altitude", measure: { op: "avg", field: "Airport.altitude" } },
     { id: "bar", kind: "chart", span: 1, type: "bar", title: "By country", x: "Airport.country", y: { op: "count" } },
     { id: "line", kind: "chart", span: 1, type: "line", title: "Altitude along latitude", x: "Airport.lat", y: { op: "avg", field: "Airport.altitude" } },
-    { id: "area", kind: "chart", span: 1, type: "area", title: "Along longitude", x: "Airport.lon", y: { op: "count" } },
+    { id: "area", kind: "chart", span: 1, type: "area", title: "Along longitude", x: "Airport.long", y: { op: "count" } },
     { id: "histogram", kind: "chart", span: 1, type: "histogram", title: "By altitude", x: "Airport.altitude", y: { op: "count" } },
-    { id: "dot", kind: "chart", span: 1, type: "dot", title: "Positions", x: "Airport.lon", y: { op: "value", field: "Airport.lat" } },
+    { id: "dot", kind: "chart", span: 1, type: "dot", title: "Positions", x: "Airport.long", y: { op: "value", field: "Airport.lat" } },
     // The fit is what Mosaic pre-aggregates under another tile's brush: kanzo-ui 0.32.0 failed it
     // there with `Binder Error … "t0"`, then `preagg_… does not exist` on every brush after.
     { id: "fit", kind: "chart", span: 1, type: "regression", title: "Altitude against latitude", x: "Airport.lat", y: { op: "value", field: "Airport.altitude" } },

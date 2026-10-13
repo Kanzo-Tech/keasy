@@ -15,7 +15,7 @@ export type Labels = (typeof LABELS)[number];
 export class SettingsPanel extends ComponentHarness {
   static readonly by: By = { role: "complementary", name: "Settings panel" };
 
-  /** Places the points by two numeric columns — `{ x: "lon", y: "lat" }` draws a map, north up. */
+  /** Places the points by two numeric columns — `{ x: "long", y: "lat" }` draws a map, north up. */
   async placement(placement: "Map", axes: { x: string; y: string }): Promise<void>;
   async placement(placement: "Force" | "Clustered"): Promise<void>;
   async placement(placement: "Force" | "Map" | "Clustered", axes?: { x: string; y: string }): Promise<void> {

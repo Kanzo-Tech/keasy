@@ -83,6 +83,8 @@ describe("the failure guards", () => {
     const EXCEPTIONS = new Set([
       // One listing per selected connection; the loaded ones are shown beside the one that failed.
       "web/src/app/(main)/(chrome)/(editor)/graphs/new/_parts/assistant-wizard.tsx",
+      // One listing per opened folder and one description per picked file; each failure is shown in its place, beside the rest.
+      "web/src/app/(main)/(chrome)/(editor)/graphs/new/_parts/assistant/use-assistant.ts",
       // Follows every pause in typing; the editor shows the failure beside the program.
       "web/src/app/(main)/(chrome)/(editor)/graphs/new/_parts/use-source-descriptors.ts",
       // Follows every pause in typing; a failed question leaves the folder to Create's own answer.

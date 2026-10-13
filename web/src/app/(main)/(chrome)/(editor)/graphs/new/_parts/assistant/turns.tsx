@@ -34,6 +34,7 @@ import {
   type QuestionOffer,
   type ReadingProgress,
   type Relation,
+  type TaskFailure,
   type Thing,
 } from "./model";
 import { SourcePicker, type SourcePickerProps } from "./source-picker";
@@ -514,4 +515,20 @@ export function BuildTurn({ build, questions }: { build: BuildProgress | null; q
       );
     }
   }
+}
+
+const FAILED: Record<TaskFailure["task"], string> = {
+  model: "I could not make sense of these files.",
+  requirements: "I could not suggest questions for these files.",
+  mapping: "I could not write how these files become your graph.",
+};
+
+/** A Task that failed, said where the conversation stopped, with the way to ask again. */
+export function TaskFailed({ failure }: { failure: TaskFailure }) {
+  return (
+    <Said>
+      <p data-task={failure.task}>{FAILED[failure.task]}</p>
+      <ProblemView error={failure.problem} onRetry={failure.retry} uncoded="llm/failed" />
+    </Said>
+  );
 }

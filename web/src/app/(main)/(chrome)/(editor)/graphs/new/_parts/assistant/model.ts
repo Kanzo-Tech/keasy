@@ -1,10 +1,10 @@
 /**
  * What the assistant's conversation reads — and nothing it computes. Each turn is drawn from these
- * shapes alone (`conversation.ts` orders them); `use-assistant.ts` is the one place that fills them, from what keasy can read
- * today (the connection listings, introspect) and, once they are built, from the `requirements`,
- * `model` and `mapping` Tasks (docs/design/assistant.md). A field a Task will fill is `null` until
- * then: `null` is "not known yet", never "none", so a turn leaves that part out rather than say
- * there is nothing.
+ * shapes alone (`conversation.ts` orders them); `use-assistant.ts` is the one place that fills them,
+ * from the connection listings, fossil's profile of the picked files, and the `model`, `mapping` and
+ * `requirements` Tasks (`tasks/`, docs/design/assistant.md). A field a Task fills is `null` until it
+ * has: `null` is "not known yet", never "none", so a turn leaves that part out rather than say there
+ * is nothing.
  *
  * None of these carry a shape, an IRI, a predicate or a cardinality: the person reads things, counts,
  * sentences and rows.
@@ -116,6 +116,15 @@ export interface AssistantData {
   decisions: readonly DecisionItem[] | null;
   /** `null` until there is a program to build. */
   build: BuildProgress | null;
+  /** Each Task that failed, with what stopped it and the way to ask again: said, never swallowed. */
+  failures: readonly TaskFailure[];
+}
+
+/** A Task that threw, or whose oracles still refused after its attempts. */
+export interface TaskFailure {
+  task: "model" | "mapping" | "requirements";
+  problem: unknown;
+  retry: () => void;
 }
 
 // ── Picking from the tree ───────────────────────────────────────────────────

@@ -5,26 +5,24 @@
  * The turns compute nothing; everything they show is answered here.
  *
  * What it answers today, from real data: the tree, from the connections' listings (`sources.ts`'s
- * `childrenOf`, the studio's); the reading progress and one thing per file with its columns, from
- * introspect, one file at a time so the count moves as each is read. What it leaves `null`, typed,
- * for the Tasks of docs/design/assistant.md: counts and example rows (Profile, which replaces
- * introspect), relations and decisions (`model`, `mapping`), question offers and whether a question
- * is answerable (`requirements`), and the preview build (`emit`, then the executor). Nothing here
- * calls a model.
+ * `childrenOf`, the studio's); and one thing per file with its count and columns, from fossil's
+ * profile of the picked files, read once over all of them (`tasks/profile.ts`). What it leaves
+ * `null`, typed, for the Tasks of docs/design/assistant.md: relations and decisions (`model`,
+ * `mapping`), question offers and whether a question is answerable (`requirements`), and the
+ * preview build (`emit`, then the executor). Nothing here calls a model.
  */
 
 import { useMemo, useState } from "react";
-import { useQueries } from "@tanstack/react-query";
-import { introspect } from "@fossil-lang/introspect";
-import type { Format, InferredDescriptor } from "@fossil-lang/types";
-import { inputs } from "@fossil-lang/wasm";
+import { useQueries, useQuery } from "@tanstack/react-query";
+import type { Format } from "@fossil-lang/types";
+import { inputs, profile } from "@fossil-lang/wasm";
 import { engine } from "@kanzo-tech/ui/analytics";
 import { $api } from "@/lib/api/client";
 import type { StorageConnection } from "@/lib/connections";
 import { host } from "@/lib/fossil/host";
 import { childrenOf, connectionNode, type SourceNode } from "../sources";
-import { sourceDescriptorsKey } from "../use-source-descriptors";
 import type { AssistantData, DecisionItem, SourceTreeNode, Thing } from "./model";
+import { type Profiled, profiledOf, thingName } from "./tasks/profile";
 
 /** A picked file as the program reads it: its whole binding line. */
 interface FileEntry {
@@ -33,19 +31,16 @@ interface FileEntry {
   line: string;
 }
 
-/** "nobel_laureates.csv" → "Nobel laureates": a file's name as a thing's, until `model` names it. */
-export function thingName(file: string): string {
-  const words = file.replace(/\.[^.]*$/, "").replace(/[_\-.]+/g, " ").trim();
-  return words ? words[0].toUpperCase() + words.slice(1) : file;
-}
+/** The rows the profile keeps of each file: enough for one row of each relation to be found across files. */
+const SHOWN = 50;
 
-/** One thing per file read, holding its columns: what introspect can say. */
-export function thingsOf(described: readonly { file: FileEntry; descriptor: InferredDescriptor }[]): Thing[] {
-  return described.map(({ file, descriptor }) => ({
-    id: file.id,
-    name: thingName(file.name),
-    count: null,
-    holds: descriptor.columns.map((c) => c.name),
+/** One thing per file read, with its count and what it holds: what the profile says before any model. */
+export function thingsOf(profiled: Profiled, picked: readonly FileEntry[]): Thing[] {
+  return profiled.sources.map((s) => ({
+    id: picked.find((f) => f.line.includes(`"${s.key}"`))?.id ?? s.key,
+    name: thingName(s.file),
+    count: s.rows,
+    holds: s.columns.map((c) => c.name),
   }));
 }
 
@@ -130,33 +125,40 @@ export function useAssistant({
   };
 
   const picked = [...selected].flatMap((id) => files.get(id) ?? []);
-  const described = useQueries({
-    queries: picked.map((file) => ({
-      queryKey: sourceDescriptorsKey([file.line]),
-      queryFn: async ({ signal }: { signal: AbortSignal }) =>
-        introspect(await inputs(file.line, { host, signal }), { host, engine: await engine({ signal }), signal }),
-      retry: false,
-    })),
+  const lines = picked.map((f) => f.line).sort();
+  // The files are read together, once: the inclusions between two of them are part of the answer.
+  const read = useQuery({
+    queryKey: ["assistant", "profile", lines],
+    queryFn: async ({ signal }) => {
+      const sources = await inputs(lines.join("\n"), { host, signal });
+      const { profile: answer, undescribed } = await profile(sources, {
+        host,
+        engine: await engine({ signal }),
+        options: { shown: SHOWN },
+        signal,
+      });
+      return { profiled: profiledOf(answer, sources), undescribed };
+    },
+    enabled: picked.length > 0,
+    retry: false,
+    staleTime: Infinity,
   });
-
-  const done = described.filter((q) => !q.isPending).length;
-  const read = picked.flatMap((file, i) =>
-    (described[i]?.data?.descriptors ?? []).map((descriptor) => ({ file, descriptor })),
-  );
-  const problems = picked.flatMap((file, i): { id: string; problem: unknown }[] => {
-    const q = described[i];
-    if (q?.error) return [{ id: file.id, problem: q.error }];
-    return (q?.data?.undescribed ?? []).map(({ problem }) => ({ id: file.id, problem }));
-  });
+  const profiled = read.data?.profiled ?? null;
+  const problems: { id: string; problem: unknown }[] = read.error
+    ? [{ id: "profile", problem: read.error }]
+    : (read.data?.undescribed ?? []).map(({ source, problem }) => ({
+        id: picked.find((f) => f.line.includes(`"${source.key}"`))?.id ?? source.key,
+        problem,
+      }));
 
   return {
     sources: tree,
     selected,
-    reading: picked.length > 0 && done < picked.length ? { done, total: picked.length } : null,
+    reading: picked.length > 0 && read.isPending ? { done: 0, total: picked.length } : null,
     problems,
     // Seams, each `null` a Task's to fill: `relations` and the decisions are `model`'s and
     // `mapping`'s, `offers` is `requirements`', and `build` waits on a program to build.
-    understanding: { things: thingsOf(read), relations: null },
+    understanding: { things: profiled ? thingsOf(profiled, picked) : [], relations: null },
     offers: null,
     decisions: withChoices(null, chosen),
     build: null,

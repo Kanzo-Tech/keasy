@@ -95,12 +95,10 @@ export function StudioEditor({
 
   // Each `@conn/path` binding is described in the browser with a credential vended for its
   // connection; fossil types the program with it and warns at each source it could not describe.
-  const introspection = useSourceDescriptors(program);
+  const described = useSourceDescriptors(program, opened);
   useEffect(() => {
-    if (!opened || !introspection) return;
-    opened.registerIntrospection(introspection);
-    if (view) forceLinting(view);
-  }, [opened, introspection, view]);
+    if (described && view) forceLinting(view);
+  }, [described, view]);
 
   const editor = useMemo<EditorApi>(
     () => ({

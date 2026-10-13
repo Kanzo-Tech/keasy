@@ -143,14 +143,18 @@ demo("nobel-ask", "Ask over the Nobel prizes: an answer added to the dashboard a
     {
       subtitle: "The same prizes on the map, framed on Germany",
       async action() {
-        const kept = await discover.kept();
         await discover.view("Graph");
         await graph.ready();
         await graph.frame();
-        // The readout counts the Graph view's nodes now: the same prizes, every one of them on the map.
-        await expect.poll(() => discover.kept()).toBe(kept);
       },
-      check: async () => expect(Number((await discover.kept()).replace(/,/g, ""))).toBeLessThanOrEqual(22),
+      // The readout counts the Graph view's nodes now — the prizes and their universities — not the
+      // dashboard's rows, so the two figures differ. Some are kept, and no more than the 22 Physics
+      // prizes at a German institution and their 21 institutions (STORYBOARD.md).
+      check: async () => {
+        const kept = Number((await discover.kept()).replace(/,/g, ""));
+        expect(kept).toBeGreaterThan(0);
+        expect(kept).toBeLessThanOrEqual(22 + 21);
+      },
     },
   ],
 });

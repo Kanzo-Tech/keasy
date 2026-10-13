@@ -27,7 +27,7 @@ export class AskPanel extends ComponentHarness {
   }
 
   /**
-   * Waits for the model to load in the page — the panel starts it as it opens, and the first time on a
+   * Waits for the model to load in the page — the graph starts it as it opens, and the first time on a
    * machine that is the download — before a take or a case that asks it, so the clock measures the
    * model and not the load. A browser that cannot run it fails at once, with the panel's code.
    */

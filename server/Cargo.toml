@@ -48,7 +48,13 @@ utoipa-axum = "0.2"
 aws-sdk-sts = { version = "1.97.0", default-features = false, features = ["rustls", "rt-tokio", "behavior-version-latest"] }
 hmac = "0.13.0"
 sha2 = "0.11.0"
-quick-xml = { version = "0.42.0", features = ["serialize"] }
+# Azure's one way in: a service principal's Entra token, and the user-delegation
+# key it gets (docs/design/cleanup.md). The SAS is signed here: the SDK has no
+# builder for one.
+azure_core = { version = "1.1", default-features = false }
+async-trait = "0.1"
+azure_identity = { version = "1.0", default-features = false }
+azure_storage_blob = { version = "1.1", default-features = false }
 # The branding file: the theme generator's YAML, read as-is.
 serde_norway = "0.9"
 

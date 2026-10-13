@@ -27,7 +27,7 @@ release, and keasy deletes in the same change that bumps the version.
 | 8 | ⇧ **kanzo-ui**: `Structure`, one model double, the conversation's keeping, library hooks on keasy's `QueryClient`, the organization's admin console URL from `@kanzo-tech/auth` ([below](#what-the-libraries-take)) | ~490 | a kanzo-ui release |
 | 9 | ⇧ **fossil**: `run` in its own worker, `attach({ files })` | ~435 | a fossil alpha |
 | 10 | ⇧ **kanzo-ui and fossil together**: the `requirements`, `words` and `profile` Tasks' guesses ([assistant](assistant.md#the-three-tasks)) | ~415 | kanzo-ui's paths design (wave 3) and fossil's annotations and corpus facts (wave 4) |
-| 11 | **Azure: one credential, through the Azure SDK** ([below](#azure-has-one-credential-a-user-delegation-sas-through-the-azure-sdk)) | ~250 now, ~60 more later | the account key and `chrono` done; the token and key wait on a decision ([below](#azure-has-one-credential-a-user-delegation-sas-through-the-azure-sdk)) |
+| 11 | **Azure: one credential, through the Azure SDK** ([below](#azure-has-one-credential-a-user-delegation-sas-through-the-azure-sdk)) | ~250 now, ~60 more later | done but the signer, which waits on the SDK's SAS builder |
 
 About **4,300 lines** in all, ~560 of them moved rather than deleted, of keasy's ~41.6k, and 5 web dependencies and 3–5 Rust crates. Steps
 1–6 are keasy's alone and can start today; 2–6 change no behaviour a person sees, except the words
@@ -118,12 +118,20 @@ kind across the server, API, web and tests, plus the token and key by hand), and
 the signer moves. *What would reverse it:* a customer whose storage account cannot use Entra. Then
 an account key comes back as a second kind, signed by the SDK, never by hand.
 
-**Found landing it (2026-10-13): the maintained SDK brings the third clock too.** The account key and
-`chrono` are gone. The token and the key by the SDK are not moved: `azure_storage_blob` 1.1 depends on
-`time` 0.3 itself (and `azure_core` 1.1 on `hmac` 0.12 and `sha2` 0.10, beside keasy's 0.13 and 0.11),
-so it brings in what rejecting `azure_storage` 0.21 was partly about, and `azure_identity`'s
-`ClientSecretCredential` admits only an `https` authority host, so the *silent Entra* test needs a TLS
-listener. The move waits on deciding whether a second time crate is the price of the SDK.
+**Landed (2026-10-13), and decided: the token and the key are the Azure SDK's.** The account key and
+`chrono` are gone; `ClientSecretCredential` gets the token, `BlobServiceClient::get_user_delegation_key`
+the key, and `entra_token`, `user_delegation_key`, its XML and `quick-xml` went with them. The SDK sends
+through keasy's own `reqwest` client (`Bounded`, an `HttpClient`), with no retries, so the silent
+tests name Entra and Azure Blob within keasy's deadline as before; they reach a silent `https`
+listener, because the SDK reaches Entra over `https` only, and Azure Blob with a credential that has
+its token already. The signer stays: no 1.x crate builds a SAS.
+
+The SDK brings what rejecting `azure_storage` 0.21 was partly about: `time` 0.3 beside `jiff`, and
+`azure_core` 1.1's `hmac` 0.12 and `sha2` 0.10 beside keasy's 0.13 and 0.11 (the lockfile keeps
+`spareval` on `sha2` 0.10, whose `md-5` it shares). The owner took that price for less of keasy's own
+code between it and Entra (2026-10-13). *What would reverse it:* an SDK version, or a dependency it
+brings, that breaks the build or an advisory check; or the `https`-only authority host blocking a real
+deployment's Entra — then the token and the key are fetched by hand again, as they were.
 
 ## Dead code and configuration
 

@@ -77,6 +77,7 @@ const base: AssistantChatProps = {
   offers: [{ id: "q1", text: "Who has won more than one Nobel?" }],
   decisions: null,
   build: null,
+  failures: [],
   expanded: ["nobel"],
   onExpandedChange: () => {},
   onSelectedChange: () => {},
@@ -198,5 +199,27 @@ describe("the assistant, as a conversation", () => {
       "/graphs/g1/discover?panel=ask",
       `/graphs/g1/discover?panel=ask&q=${encodeURIComponent("Who has won more than one Nobel?")}`,
     ]);
+  });
+
+  it("a Task that failed is said where the conversation stopped, with a retry", async () => {
+    const retry = vi.fn();
+    const { host } = mount({
+      selected: new Set(["nobel:laureates.csv"]),
+      decisions: [],
+      offers: null,
+      failures: [{ task: "requirements", problem: new Error("The GPU device was lost"), retry }],
+    });
+    await through(host);
+    expect(host.querySelector('[data-task="requirements"]')?.textContent).toBe("I could not suggest questions for these files.");
+    expect(host.querySelector('[data-problem][data-code="llm/failed"]')).not.toBeNull();
+    await act(async () => button(host, "Try again")!.click());
+    expect(retry).toHaveBeenCalled();
+  });
+
+  it("says each change of the person's replies, for the Tasks that wait on them", async () => {
+    const onReplies = vi.fn();
+    const { host } = mount({ selected: new Set(["nobel:laureates.csv"]), onReplies });
+    await through(host);
+    expect(onReplies).toHaveBeenLastCalledWith({ picked: true, about: "", asked: false });
   });
 });

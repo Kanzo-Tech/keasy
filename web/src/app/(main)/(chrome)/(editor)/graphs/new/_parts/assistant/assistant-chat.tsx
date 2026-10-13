@@ -21,6 +21,7 @@ import {
   PickedReply,
   PickTurn,
   ReadingTurn,
+  TaskFailed,
   UnderstoodTurn,
 } from "./turns";
 
@@ -35,6 +36,8 @@ export interface AssistantChatProps
   onBack: () => void;
   /** Above the first turn: whether the model the Tasks ask is ready on this device. */
   status?: ReactNode;
+  /** Each change of what the person has replied: what the hook's Tasks wait on. */
+  onReplies?: (replies: Replies) => void;
 }
 
 let written = 0;
@@ -46,8 +49,9 @@ let written = 0;
  * sent, what it is about, that they asked all they wanted — is kept here. The composer takes free text only where the turn above asks for it.
  */
 export function AssistantChat(props: AssistantChatProps) {
-  const { onAdvanced, onBack, onChoose, questions, onQuestionsChange } = props;
+  const { onAdvanced, onBack, onChoose, questions, onQuestionsChange, onReplies } = props;
   const [replies, setReplies] = useState<Replies>(NO_REPLIES);
+  useEffect(() => onReplies?.(replies), [replies, onReplies]);
   const reply = (next: Partial<Replies>) => setReplies((prev) => ({ ...prev, ...next }));
   const { turns, waiting } = converse(props, replies);
 
@@ -153,6 +157,9 @@ export function AssistantChat(props: AssistantChatProps) {
         <MessageList className="mx-auto max-w-3xl gap-5 px-4 py-8">
           {props.status}
           {turns.map(draw)}
+          {props.failures.map((f) => (
+            <TaskFailed failure={f} key={f.task} />
+          ))}
           {waiting === "ask" && <AskDone onDone={() => reply({ asked: true })} questions={questions.length} />}
         </MessageList>
       </div>

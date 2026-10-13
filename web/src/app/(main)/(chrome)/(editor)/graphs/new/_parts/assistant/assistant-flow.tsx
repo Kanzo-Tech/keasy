@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useRouter } from "@kanzo-tech/navigation/next";
 import { Spinner } from "@kanzo-tech/ui";
@@ -14,6 +14,7 @@ import { type StorageConnection, storageConnections } from "@/lib/connections";
 import * as checker from "@/lib/fossil/checker";
 import { useGraphEditorStore } from "../graph-editor-store";
 import { AssistantChat } from "./assistant-chat";
+import { NO_REPLIES, type Replies } from "./conversation";
 import type { Question } from "./model";
 import { useAssistant } from "./use-assistant";
 
@@ -53,9 +54,12 @@ export function AssistantFlow({
   const router = useRouter();
   // The model the Tasks behind these screens ask starts downloading as the assistant opens.
   usePreloadModel();
-  const assistant = useAssistant({ connections, formats });
-  // Whether each can be answered is the `requirements` Task's to say; until it is built, nobody has.
+  // What the person has replied, which the Tasks wait on; the chat keeps it and says each change.
+  const [replies, setReplies] = useState<Replies>(NO_REPLIES);
+  const onReplies = useCallback((next: Replies) => setReplies(next), []);
+  // The questions kept; whether each can be answered is the hook's to say.
   const [questions, setQuestions] = useState<Question[]>([]);
+  const assistant = useAssistant({ connections, formats, about: replies.about, asked: replies.asked, questions });
   const advanced = () => {
     const store = useGraphEditorStore.getState();
     store.setScript(assistant.program);
@@ -70,8 +74,9 @@ export function AssistantFlow({
       onChoose={assistant.choose}
       onExpandedChange={assistant.setExpanded}
       onQuestionsChange={setQuestions}
+      onReplies={onReplies}
       onSelectedChange={assistant.setSelected}
-      questions={questions}
+      questions={assistant.questions}
       status={<ModelStatus />}
     />
   );

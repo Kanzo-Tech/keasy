@@ -149,7 +149,10 @@ the rest in the background, the way fossil's profile already splits.
   mapping's `@subject` is the one keasy computed (`mapping/subject`). Three attempts, then the
   diagnostics are the answer.
 - **What it fills**: the program — prelude and mappings — which **Advanced** opens. The chat never
-  shows Fossil.
+  shows Fossil. It runs once the person has asked all they wanted: the page has one model, and the
+  question chips are what the person is waiting on until then. *What would reverse it:* a preview
+  that must start sooner for the first answer to land under a minute — then it runs as soon as the
+  decisions are taken, behind the chips.
 - *What would reverse it:* fossil's own: a small model under the grammar failing the competency
   questions where an emitter from the accepted `model` passes them — then the mapping is emitted.
 

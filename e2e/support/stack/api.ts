@@ -46,7 +46,8 @@ export async function raw(page: Page, method: string, path: string, body?: strin
   const answer = await page.request.fetch(`${BASE_URL}/api${path}`, {
     method,
     headers: body === undefined ? {} : { "content-type": "application/json" },
-    data: body,
+    // Bytes, so Playwright sends them as written rather than as a JSON string.
+    data: body === undefined ? undefined : Buffer.from(body),
     failOnStatusCode: false,
   });
   return { status: answer.status(), code: ((await answer.json().catch(() => null)) as { code?: string } | null)?.code };

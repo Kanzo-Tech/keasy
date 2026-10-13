@@ -324,14 +324,16 @@ own is the answer — still not WebLLM's prebuilt, whose files change under one 
 
 **The download starts with intent** — when a graph opens, or the assistant — not when
 Ask's panel does: `usePreloadModel` calls `loadLocalModel` once per page, in the background, and the
-page works without the model meanwhile. Ask and the assistant show *Preparing the model* with its
-progress until it is ready (`ModelStatus`); a question asked meanwhile waits for it. WebLLM keeps it in
+page works without the model meanwhile. How it stands is `@kanzo-tech/llm/local`'s `localModelLoad`,
+drawn as kanzo-ui 0.45's `ModelBadge` (`ModelStatus`) in Ask's composer and the assistant's header —
+*Preparing the model · 42%*, *Model ready*, or *Model failed* with the problem behind it; a question
+asked meanwhile waits for it. WebLLM keeps it in
 Cache Storage, behind `navigator.storage.persist()`. Not yet: versioning — the old one serving until
 the new one is whole. *What would reverse it:* people who open graphs and never ask, on metered
 connections — then the download waits for the first screen that asks.
 
 **The e2e suite runs on a model double in the page**, because CI's Chromium has no WebGPU:
-`e2e/support/model.ts` puts a scripted `LanguageModel` on `window.__keasyModelDouble` before the page
+`e2e/support/model.ts` puts a scripted `LanguageModel`, and its load as a `ModelLoad`, on `window.__keasyModelDouble` before the page
 loads, and `lib/ai.ts` asks it in place of WebLLM — in a development build only, behind
 `process.env.NODE_ENV`, which `next build` inlines, so the production bundle has neither the branch nor
 the name (`model-double.test.ts`, run on the built bundle in CI). Scenario 11 still forces a browser

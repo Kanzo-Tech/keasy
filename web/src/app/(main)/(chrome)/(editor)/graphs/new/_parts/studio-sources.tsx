@@ -67,7 +67,7 @@ export function StudioSources({
     <div className="flex flex-col gap-3 p-3">
       {problem !== undefined && <ProblemView error={problem} />}
       <p className="text-muted-foreground text-xs">Drag a file into the program, or Insert it at the caret.</p>
-      <TreeView aria-label="Sources" {...sources}>
+      <TreeView translations={{ treeLabel: "Sources" }} {...sources}>
         <TreeViewTree>
           {sources.collection.rootNode.children?.map((node, index) => (
             <Source indexPath={[index]} key={node.id} node={node} onInsert={onInsert} />

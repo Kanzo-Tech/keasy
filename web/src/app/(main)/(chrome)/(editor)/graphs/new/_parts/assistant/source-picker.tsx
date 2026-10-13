@@ -47,7 +47,7 @@ export interface SourcePickerProps {
 export function SourcePicker({ sources, selected, onSelectedChange, expanded, onExpandedChange }: SourcePickerProps) {
   return (
     <TreeView
-      aria-label="Files"
+      translations={{ treeLabel: "Files" }}
       {...sources}
       checkedValue={[...selected]}
       expandedValue={[...expanded]}

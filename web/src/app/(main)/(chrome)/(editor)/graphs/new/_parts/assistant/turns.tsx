@@ -50,22 +50,22 @@ export function Said({ children, label }: { children: React.ReactNode; label?: s
   );
 }
 
-/** The person's reply: what they picked, chose or asked, as their message. */
-export function Reply({ children, action }: { children: React.ReactNode; action?: React.ReactNode }) {
+/**
+ * The person's reply: what they picked, chose or asked, as their message — with the way to undo it
+ * under it (*Change the files*, *Remove*) while that is still theirs to change.
+ */
+export function Reply({ children, change }: { children: React.ReactNode; change?: { label: string; onClick: () => void } }) {
   return (
     <Message data-reply="" role="user">
       <MessageContent>{children}</MessageContent>
-      {action && <div className="flex basis-full justify-end">{action}</div>}
+      {change && (
+        <div className="flex basis-full justify-end">
+          <Button className="-mt-3 text-muted-foreground text-xs" onClick={change.onClick} size="sm" variant="ghost">
+            {change.label}
+          </Button>
+        </div>
+      )}
     </Message>
-  );
-}
-
-/** A small link-like button under a reply: *Change*. */
-function Change({ onClick, label = "Change" }: { onClick: () => void; label?: string }) {
-  return (
-    <Button className="-mt-3 text-muted-foreground text-xs" onClick={onClick} size="sm" variant="ghost">
-      {label}
-    </Button>
   );
 }
 
@@ -122,36 +122,20 @@ export function PickTurn({ live, onPicked, reason, ...picker }: PickTurnProps) {
   );
 }
 
-/** "These 6 files", with the way back to the tree. */
-export function PickedReply({ files, onChange }: { files: number; onChange: () => void }) {
+/** Work under way, as a status: its words beside a spinner, and its bar — indeterminate without a value. */
+function Working({ label, children, value }: { label: string; children: React.ReactNode; value?: number }) {
   return (
-    <Reply action={<Change label="Change the files" onClick={onChange} />}>
-      {files === 1 ? "This file" : `These ${files} files`}
-    </Reply>
-  );
-}
-
-/** "Reading your files… 4 of 6", live, with its bar; "Read 6 files" once it is done. */
-export function ReadingLine({ reading, total }: { reading: ReadingProgress | null; total: number }) {
-  if (reading === null) {
-    return (
-      <p className="flex items-center gap-2 text-muted-foreground" role="status">
-        <CircleCheck aria-hidden className="size-4 text-success-foreground" />
-        Read {total === 1 ? "the file" : `all ${total} files`}.
-      </p>
-    );
-  }
-  return (
-    <div aria-live="polite" className="flex flex-col gap-2" role="status">
+    <div className="flex flex-col gap-2" role="status">
       <span className="flex items-center gap-2 text-muted-foreground">
         <Spinner aria-hidden />
-        Reading your files… {reading.done} of {reading.total}
+        {children}
       </span>
-      <Progress aria-label="Reading your files" className="max-w-xs" value={(reading.done / reading.total) * 100} />
+      <Progress aria-label={label} className="max-w-xs" indeterminate={value === undefined} value={value} />
     </div>
   );
 }
 
+/** "Reading your files… 4 of 6", live, with its bar; "Read 6 files" once it is done. */
 export function ReadingTurn({
   reading,
   total,
@@ -163,7 +147,16 @@ export function ReadingTurn({
 }) {
   return (
     <Said>
-      <ReadingLine reading={reading} total={total} />
+      {reading === null ? (
+        <p className="flex items-center gap-2 text-muted-foreground" role="status">
+          <CircleCheck aria-hidden className="size-4 text-success-foreground" />
+          Read {total === 1 ? "the file" : `all ${total} files`}.
+        </p>
+      ) : (
+        <Working label="Reading your files" value={(reading.done / reading.total) * 100}>
+          Reading your files… {reading.done} of {reading.total}
+        </Working>
+      )}
       {problems.map(({ id, problem }) => (
         <ProblemView error={problem} key={id} />
       ))}
@@ -181,10 +174,6 @@ export function AboutTurn() {
       <p className="text-muted-foreground">A sentence is enough, and it is optional. It helps me read the files the way you mean them.</p>
     </Said>
   );
-}
-
-export function AboutReply({ text }: { text: string }) {
-  return <Reply>{text || <span className="text-muted-foreground">Skip that, just read them</span>}</Reply>;
 }
 
 // ── What is in it ───────────────────────────────────────────────────────────
@@ -308,10 +297,6 @@ export function DecideTurn({
   );
 }
 
-export function DecidedReply({ item }: { item: DecisionItem }) {
-  return <Reply>{takenLabel(item)}</Reply>;
-}
-
 /**
  * A default taken without asking, said as what was taken — *I assumed: A fraction of the prize* —
  * with the question it answers under it, and **Change**, which opens its options in place. It blocks
@@ -399,15 +384,6 @@ export function AskTurn({
   );
 }
 
-export function AskedReply({ question, onRemove }: { question: Question; onRemove?: () => void }) {
-  return (
-    <Reply action={onRemove && <Change label="Remove" onClick={onRemove} />}>
-      <span data-question={question.id}>{question.text}</span>
-      <Answerable answerable={question.answerable} />
-    </Reply>
-  );
-}
-
 /** The way on from the questions, under them: the graph is built over what was asked. */
 export function AskDone({ questions, onDone }: { questions: number; onDone: () => void }) {
   return (
@@ -418,10 +394,6 @@ export function AskDone({ questions, onDone }: { questions: number; onDone: () =
       </Button>
     </div>
   );
-}
-
-export function AskedAllReply({ questions }: { questions: number }) {
-  return <Reply>{questions === 0 ? "No questions for now. Build it." : "That's all. Build it."}</Reply>;
 }
 
 // ── The graph ───────────────────────────────────────────────────────────────
@@ -446,19 +418,9 @@ export function BuildTurn({ build, questions }: { build: BuildProgress | null; q
     case "preparing":
       return (
         <Said>
-          <div className="flex flex-col gap-2" role="status">
-            <span className="flex items-center gap-2 text-muted-foreground">
-              <Spinner aria-hidden />
-              {build.previewRows === null
-                ? "Building your graph…"
-                : `Preparing a preview over ${count.format(build.previewRows)} rows…`}
-            </span>
-            <Progress
-              aria-label={build.previewRows === null ? "Building your graph" : "Preparing a preview"}
-              className="max-w-xs"
-              indeterminate
-            />
-          </div>
+          <Working label={build.previewRows === null ? "Building your graph" : "Preparing a preview"}>
+            {build.previewRows === null ? "Building your graph…" : `Preparing a preview over ${count.format(build.previewRows)} rows…`}
+          </Working>
         </Said>
       );
     case "failed":

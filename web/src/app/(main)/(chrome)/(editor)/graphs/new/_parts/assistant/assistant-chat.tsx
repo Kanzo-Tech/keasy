@@ -13,23 +13,20 @@ import {
   PromptInputToolbar,
 } from "@kanzo-tech/ai";
 import { Button, InputGroupButton } from "@kanzo-tech/ui";
-import { converse, NO_REPLIES, type Replies, type Turn, waitingFor, type Waiting } from "./conversation";
+import { converse, NO_REPLIES, type Replies, takenLabel, type Turn, waitingFor, type Waiting } from "./conversation";
 import type { AssistantData, Question } from "./model";
 import type { SourcePickerProps } from "./source-picker";
 import {
-  AboutReply,
   AboutTurn,
+  Answerable,
   AskDone,
-  AskedAllReply,
-  AskedReply,
   AskTurn,
   AssumedTurn,
   BuildTurn,
-  DecidedReply,
   DecideTurn,
-  PickedReply,
   PickTurn,
   ReadingTurn,
+  Reply,
   TaskFailed,
   UnderstoodTurn,
 } from "./turns";
@@ -88,13 +85,17 @@ export function AssistantChat(props: AssistantChatProps) {
           />
         );
       case "picked":
-        return <PickedReply files={turn.files} key={key} onChange={() => reply({ picked: false })} />;
+        return (
+          <Reply change={{ label: "Change the files", onClick: () => reply({ picked: false }) }} key={key}>
+            {turn.files === 1 ? "This file" : `These ${turn.files} files`}
+          </Reply>
+        );
       case "reading":
         return <ReadingTurn key={key} problems={props.problems} reading={turn.reading} total={props.selected.size} />;
       case "about":
         return <AboutTurn key={key} />;
       case "about-reply":
-        return <AboutReply key={key} text={turn.text} />;
+        return <Reply key={key}>{turn.text || <span className="text-muted-foreground">Skip that, just read them</span>}</Reply>;
       case "understood":
         return <UnderstoodTurn key={key} relations={props.understanding.relations} things={props.understanding.things} />;
       case "decide":
@@ -108,7 +109,7 @@ export function AssistantChat(props: AssistantChatProps) {
           />
         );
       case "decided":
-        return <DecidedReply item={turn.item} key={key} />;
+        return <Reply key={key}>{takenLabel(turn.item)}</Reply>;
       case "assumed":
         return (
           <AssumedTurn
@@ -123,18 +124,20 @@ export function AssistantChat(props: AssistantChatProps) {
         );
       case "asked":
         return (
-          <AskedReply
-            key={turn.question.id}
-            onRemove={
+          <Reply
+            change={
               waiting === "ask"
-                ? () => onQuestionsChange(questions.filter((q) => q.id !== turn.question.id))
+                ? { label: "Remove", onClick: () => onQuestionsChange(questions.filter((q) => q.id !== turn.question.id)) }
                 : undefined
             }
-            question={turn.question}
-          />
+            key={turn.question.id}
+          >
+            <span data-question={turn.question.id}>{turn.question.text}</span>
+            <Answerable answerable={turn.question.answerable} />
+          </Reply>
         );
       case "asked-all":
-        return <AskedAllReply key={key} questions={turn.questions} />;
+        return <Reply key={key}>{turn.questions === 0 ? "No questions for now. Build it." : "That's all. Build it."}</Reply>;
       case "build":
         return <BuildTurn build={props.build} key={key} questions={questions} />;
     }

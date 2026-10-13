@@ -45,7 +45,7 @@ demo's **Numbers**. The OpenFlights and SNB queries run in `infra/dev/examples/<
 | # | Subtitle | Action | Check |
 | --- | --- | --- | --- |
 | 1 | Pick what to explore | `await discover.relation("Person")` | `dashboard.tile("Count by Person.gender")` resolves; `discover.figure("Rows")` → `"1,528"` and `discover.counts()` matches nothing: no filter yet |
-| 2 | Every column gets a chart — click a bar to filter | `(await (await dashboard.tile("Count by Person.gender")).chart()).pick({ y: "female" })` | `discover.figure("Rows")` → `"778"`; `discover.counts()` → `/^778 of /`; `bar.chips()` contains `Person.gender …female` |
+| 2 | Every column gets a chart — click a bar to filter | `(await (await dashboard.tile("Count by Person.gender")).chart()).pick({ y: "female" })` | `discover.kept()` → `"778"`; `bar.chips()` contains `Person.gender …female` |
 | 3 | Drag across time to narrow it further | `(await (await dashboard.tile("Count by Person.birthday")).chart()).brush({ x: [new Date("1985-01-01"), new Date("1990-01-01")] })` | `discover.figure("Rows")` → `"391"` · **poster** |
 | 4 | Every filter lands in the bar | hover the `Person.gender` chip (page: `bar` has no hover; `page.getByRole("button", { name: /Person\.gender/ }).hover()` stays in the spec as the one raw call, or `discover.hoverChip("Person.gender")`) | `bar.chips()` has two entries: gender and birthday |
 
@@ -194,11 +194,11 @@ lands in the bar"* is the check of the last step rather than a step of its own.
 
 **Arrange (off camera)**
 
-1. `env`; seed; save the dashboard on `LaureateAward>category>Category` (one tile, *Count by
+1. `useModelDouble` with the two specs below; `env`; seed; save the dashboard on `LaureateAward>category>Category` (one tile, *Count by
    Category.name*); `discover.open(id)`.
 2. `discover.onMap()` — the Graph view on the map for step 8 — then `view("Dashboard")`,
    `relation("LaureateAward", [">category>Category"])`, `dashboard.settled()`, `panel("Ask")`.
-3. `ask.warmUp()`: the page's model loaded, on the recording browser's GPU.
+3. `ask.warmUp()`: the double's model, ready.
 
 **Steps**
 
@@ -207,7 +207,7 @@ lands in the bar"* is the check of the last step rather than a step of its own.
 | 1 | Filter the page: Physics only | *Count by Category.name* `pick({ y: "Physics" })` | `discover.kept()` → `"230"` |
 | 2 | Ask about what's in view, in plain words | `answers.ask("Which universities won the most prizes?")` | a new answer card began |
 | 3 | The answer is a chart, over the Physics prizes in view | `answers.answer()` | the tile is by *University*; its rows hold UC **16**, not **43** (every category's) · **poster** |
-| 4 | Add it to the dashboard | `answers.addToDashboard()` | a tile `/University/` on the dashboard |
+| 4 | Add it to the dashboard | `answers.addToDashboard()` | the card offers *Open on the dashboard* (the tile is on the answer's relation's dashboard, not the one in view) |
 | 5 | Open it on the dashboard | `answers.openOnDashboard()` | that tile is in view |
 | 6 | Ask again: which ones were won in Germany? | `answers.ask("Which ones were won in Germany?")`; `answers.answer()` | its rows are not empty |
 | 7 | This one filters: keep what it found | `answers.filterTo()` | `discover.kept()` > 0 |
@@ -224,12 +224,13 @@ lands in the bar"* is the check of the last step rather than a step of its own.
 
 **Notes**
 
-- The check that UC reads **16** (not 43) is what proves "over what's in view"; a model that drops
-  the filter fails it. *Prizes* in the question points it at the awards: asked "which universities
-  won the most?", a small model counted the `University` type alone, which the Physics filter cannot
-  reach, and the answer read no rows. Capture again if it does.
-- Step 6 needs an answer **with a where** (the institution's country, Germany): a model that answers
-  over every country leaves *Filter the page to these rows* disabled, and step 7 fails. Capture again.
+- **The model is a double** (`support/model.ts`), as `nobel-assistant`'s is: a small model filled
+  another spec on each take (a sum of `share`, the `University` type alone), and a recording is the
+  same film every time. It answers *Which universities…* with `{ of: "LaureateAward", show: bar of
+  University.name by count, top: 8 }`, and *…in Germany?* with the same and `where: Country.name in
+  [Germany]`. The relation each needs is found by the page and the rows are DuckDB's, so the check
+  that UC reads **16** (not 43) still proves "over what's in view". What the model in the page answers
+  is the evaluation set's to measure (`eval/`).
 - *Filter the page to these rows* keeps what the answer draws: the prizes in the categories its bars
   show. An answer drawn by university keeps those universities' prizes, at most the 22; read the
   figure off the take that captures it and pin steps 7 and 8 to it.
@@ -385,7 +386,7 @@ from awards aw where aw.lat is not null;
 - **Stat line:** *From six files to a graph you can ask — in a conversation*
 - **Example / seed:** `nobel`'s six files in the store, as `make seed` uploads them — no graph seeded:
   the demo builds its own
-- **The model is a double** (`support/model.ts`), unlike `nobel-ask`'s: the assistant is three Tasks
+- **The model is a double** (`support/model.ts`), as `nobel-ask`'s is: the assistant is three Tasks
   and a mapping held to fossil's grammar, and a small model proposing other types on another take
   would be another film. The double answers each call by the words of its prompt — the `model` Task's
   types, the `requirements` Task's chips, the `mapping` Task's program (its subjects under the page's

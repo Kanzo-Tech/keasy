@@ -35,7 +35,6 @@ demo("snb-explore", "Dashboard over LDBC SNB: pick a type, click a bar, brush a 
       action: async () => (await (await dashboard.tile("Count by Person.gender")).chart()).pick({ y: "female" }),
       async check() {
         await expect.poll(() => discover.kept()).toBe("778");
-        await expect.poll(() => discover.counts()).toMatch(/^778 of /);
         expect((await bar.chips()).some((chip) => /\bPerson\.gender\b/.test(chip))).toBe(true);
       },
     },

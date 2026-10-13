@@ -23,7 +23,7 @@ release, and keasy deletes in the same change that bumps the version.
 | 5 | **Facts in place of guesses**: formatting, error titles, names, formats ([below](#facts-in-place-of-guesses)) | ~170 | nothing |
 | 6 | **e2e** ([below](#e2e)) | ~65 | nothing |
 | 7 | ⇧ **The Ask evaluation set to kanzo-ui** ([assistant](assistant.md#order)) | ~560 moved | kanzo-ui taking the set |
-| 8 | ⇧ **kanzo-ui**: `Structure`, one model double, the conversation's keeping, `queryOptions` per package ([below](#what-the-libraries-take)) | ~480 | a kanzo-ui release |
+| 8 | ⇧ **kanzo-ui**: `Structure`, one model double, the conversation's keeping, library hooks on keasy's `QueryClient` ([below](#what-the-libraries-take)) | ~480 | a kanzo-ui release |
 | 9 | ⇧ **fossil**: `run` in its own worker, `attach({ files })` | ~435 | a fossil alpha |
 | 10 | ⇧ **kanzo-ui and fossil together**: the `requirements`, `words` and `profile` Tasks' guesses ([assistant](assistant.md#the-three-tasks)) | ~415 | kanzo-ui's paths design (wave 3) and fossil's annotations and corpus facts (wave 4) |
 | 11 | ⇧ **Azure SAS to the Azure SDK** ([below](#azure-sas-is-signed-by-the-azure-sdk)) | ~90 now, ~200 in all | the SDK's SAS builder for the rest |
@@ -46,7 +46,7 @@ improved.
 | The conversation's keeping: whole saves after each reply, one at a time, the sealed record carried on in a new id | `lib/assistant-conversation.ts`, its hook test | `@kanzo-tech/ai`, on the AI SDK's `UIMessage[]` per id and `validateUIMessages`; keasy gives `load`/`save` against `/v1/conversations` and the privacy `keep` | ~200 | [assistant](assistant.md#the-conversation-is-kept) |
 | `requirements`, `words`, and the guessed half of `profile` and `model` | `graphs/new/_parts/assistant/tasks/` | `JoinResolver` and Ask's paths; labels from annotations with `Intl`; the corpus's facts on `JoinGraph` | ~415 | [assistant](assistant.md#the-three-tasks) |
 | The model's load as a store of keasy's | — | already `@kanzo-tech/llm/local`'s `localModelLoad`, drawn as `ModelBadge` | 0 (gone) | [assistant](assistant.md#what-left-keasys-configuration) |
-| Library reads wrapped in keasy's own `useQuery` | `use-assistant.ts`, `use-source-descriptors.ts`, `overview.tsx`'s `useQueryRows` | each package's `queryOptions(...)`, run on keasy's `QueryClient` | ~40 | here |
+| Library reads wrapped in keasy's own `useQuery` | `use-assistant.ts`, `use-source-descriptors.ts`, `overview.tsx`'s `useQueryRows` | the library's own hook, using TanStack Query inside on keasy's `QueryClient` from `QueryClientProvider` (a peer dependency) | ~40 | here |
 
 **`Structure` is read once.** `@kanzo-tech/graph` already reads a corpus into `Structure` — its key,
 its vertices with rows and columns, its edges with their ends and rows — and does not export it.
@@ -55,13 +55,19 @@ cached read of it, and keasy holds no SQL over fossil's catalogue views. *What w
 something the overview shows that `Structure` does not carry — then it goes into `Structure`, not
 back into a query here.
 
-**The libraries offer `queryOptions`; keasy runs them on its client** (the review's decision on
-TanStack Query). A library read keasy needs cached — a corpus's structure, a profile, a field's
-statistics — comes as `queryOptions(...)`, and keasy calls `useSuspenseQuery` on it with its own
-`QueryClient`, so a library holds no cache of its own and no second copy of Query. keasy's wrappers
-around those reads go, and with them the `useQuery` exceptions the failure guard names. *What would
-reverse it:* a library read whose lifetime is not a query's — a stream, a model's load — which stays
-a hook of the library's.
+**The library hooks share keasy's `QueryClient`** (the review's decision on TanStack Query). Each
+kanzo-ui hook that reads — a field's statistics, Ask's reads, the session — uses TanStack Query
+inside, on the `QueryClient` its host provides through `QueryClientProvider`, and
+`@tanstack/react-query` is a peer of the packages that read. There is no `queryOptions` surface to
+call. keasy already provides `QueryClientProvider` in `providers.tsx`, so it adds nothing: the
+library's reads land in keasy's cache, show in its devtools, and are cleared with it. keasy's own
+reads keep using that same client as below — the query key factory, the `MutationCache` meta and the
+mutation scope stay keasy's. What goes is keasy's `useQuery` wrapped around a library read that will
+cache itself (`use-assistant.ts`'s reads of profile and Tasks once they are library hooks,
+`use-source-descriptors.ts`), and with it the `useQuery` exceptions the failure guard names. *What
+would reverse it:* a library read whose lifetime is not a query's — a stream, a model's load — which
+stays a hook of the library's with no cache in Query; or a host without `QueryClientProvider`, which
+the libraries then say they need rather than make a client of their own.
 
 ## The schema diagram goes
 

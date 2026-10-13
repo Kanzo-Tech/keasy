@@ -75,10 +75,10 @@ const edgeTypes = { routed: RoutedLine };
  */
 export function SchemaDiagram({ types, edges }: { types: VertexType[]; edges: EdgeTable[] }) {
   const { appearance } = useKanzoTheme();
-  const { graphId } = useCorpus();
+  const { name: corpus } = useCorpus();
   const laid = settled(
     useSuspenseQuery({
-      queryKey: [...corpusKey(graphId), "schema-layout"],
+      queryKey: [...corpusKey(corpus), "schema-layout"],
       queryFn: () => layoutSchema(types, edges),
       ...ONCE,
     }),

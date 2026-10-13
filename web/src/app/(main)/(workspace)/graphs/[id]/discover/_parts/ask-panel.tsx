@@ -63,11 +63,11 @@ function AskEmpty() {
  * an answer needs is computed from its spec), its fields and their common values.
  */
 function useRelations(graph: JoinGraph): AnswerRelation[] {
-  const { graphId } = useCorpus();
+  const { name: corpus } = useCorpus();
   const { coordinator } = useMosaic();
   return settled(
     useSuspenseQuery({
-      queryKey: [...corpusKey(graphId), "answer-relations"],
+      queryKey: [...corpusKey(corpus), "answer-relations"],
       queryFn: ({ signal }) => readAnswerRelations(coordinator, graph, answerRelationsOf(graph, { hops: 0 }), { signal }),
       ...ONCE,
     }),
@@ -80,7 +80,7 @@ function useRelations(graph: JoinGraph): AnswerRelation[] {
  * failure is drawn in their place, with a retry, and the chat works the same.
  */
 function useStarters(graph: JoinGraph, types: readonly AnswerRelation[]) {
-  const { graphId } = useCorpus();
+  const { name: corpus } = useCorpus();
   const { selection } = useMosaic();
   const model = useModel();
   // Asked once the model is ready: offers are not worth waiting on its download for.
@@ -88,7 +88,7 @@ function useStarters(graph: JoinGraph, types: readonly AnswerRelation[]) {
   // Re-rendered on every clause, so the key below is the filter as it is now.
   useClauses(selection);
   const starters = useQuery({
-    queryKey: [...corpusKey(graphId), "starters", String(selection.predicate(null) ?? "")],
+    queryKey: [...corpusKey(corpus), "starters", String(selection.predicate(null) ?? "")],
     queryFn: ({ signal }) => askOffers({ model, graph, types, selection, signal }),
     staleTime: Infinity,
     retry: false,

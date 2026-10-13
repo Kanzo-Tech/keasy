@@ -212,9 +212,10 @@ organization's file (`infra/prod/README.md`).
 
 Stored credentials are sealed with `KEASY_SECRET_KEY`: 32 random bytes in base64
 (`openssl rand -base64 32`). The server refuses to start without one, and refuses
-a database whose schema is not the one it ships — there are no migrations; wipe
-the volume (`make clean`) instead. The latest such change is the `rules` table (a
-graph's SHACL rules): a stack started before it needs `docker compose down -v`.
+a database whose schema is not the one it ships — there are no migrations: a schema
+change is the database dropped and created again, so wipe the volume (`make clean`, or
+`docker compose down -v`) and start the stack again. The latest such change is the
+`conversations` table (the assistant's conversations, and each graph's own).
 
 ## Deployment
 

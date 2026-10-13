@@ -72,7 +72,9 @@ that deletes its data for good.
 installed on the server ([docker-rollout](https://github.com/wowu/docker-rollout)); each
 organization's server stops and starts — seconds — because it owns an SQLite file, which takes one
 writer. The platform services (Keycloak) move with `KANZO_UI_REF` in
-`compose.prod.yaml`.
+`compose.prod.yaml`. A release whose database schema differs is not migrated: its server refuses to
+start on the old volume, which is deleted (`docker volume rm keasy_<alias>-data`) for the server to
+create it again, empty ([`docs/design/permissions.md`](../../docs/design/permissions.md#the-schema)).
 
 ## Who can deploy
 

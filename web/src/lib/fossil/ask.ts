@@ -2,7 +2,8 @@
 
 import { useMemo } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { useMosaic, type JoinGraph } from "@kanzo-tech/ui/analytics";
+import type { JoinGraph } from "@kanzo-tech/mosaic";
+import { useMosaic } from "@kanzo-tech/ui/analytics";
 import { answerRelationsOf, readAnswerRelations, useAskChat, type AnswerRelation } from "@kanzo-tech/ai/data";
 import { useModel } from "@/lib/ai";
 import { settled } from "@/lib/api/settled";

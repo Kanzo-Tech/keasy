@@ -20,6 +20,7 @@ import {
   useGraphPrefs,
   useGraphState,
 } from "@kanzo-tech/graph";
+import type { Relation } from "@kanzo-tech/mosaic";
 import {
   ChartTimeline,
   FilterBar,
@@ -27,7 +28,6 @@ import {
   TileEditorAside,
   useMosaic,
   useTileEditorOpen,
-  type Relation,
 } from "@kanzo-tech/ui/analytics";
 import {
   Button,

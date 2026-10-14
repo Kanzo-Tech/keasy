@@ -4,7 +4,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { and, column, count, createTable, type ExprNode, isIn, literal, Query, sql, TableRefNode } from "@uwdata/mosaic-sql";
-import { engine, numbers, useClauses, useMosaic } from "@kanzo-tech/ui/analytics";
+import { engine, numbers } from "@kanzo-tech/mosaic";
+import { useClauses, useMosaic } from "@kanzo-tech/ui/analytics";
 import { usePick } from "@kanzo-tech/graph";
 import type { RdfFindingGroup, RdfFindingGroups, RdfPlace, Shapes, ShapeModelJson, TermValue } from "@kanzo-tech/rudof-wasm";
 import { type FindingSeverity, type FindingTally, tallyFindings } from "@kanzo-tech/ui";

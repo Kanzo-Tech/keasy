@@ -1,7 +1,7 @@
 "use client";
 
 import { ModelBadge } from "@kanzo-tech/ai";
-import { problemCopy } from "@/components/problem-view";
+import { describeProblem } from "@/components/problem-view";
 import { useLoadModel, useModelLoad } from "@/lib/ai";
 import { coded } from "@/lib/errors";
 
@@ -18,7 +18,7 @@ export function ModelStatus({ className }: { className?: string }) {
   return (
     <ModelBadge
       className={className}
-      copy={problemCopy}
+      describe={describeProblem}
       load={load.state === "failed" ? { state: "failed", error: coded(load.error, "llm/failed") } : load}
       onRetry={retry}
     />

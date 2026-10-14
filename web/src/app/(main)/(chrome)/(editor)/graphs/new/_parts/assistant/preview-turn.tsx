@@ -5,7 +5,7 @@ import { MessageCircleQuestion, Sparkles } from "lucide-react";
 import { AnswerCard, askEdit, AskChips, type AskOutput } from "@kanzo-tech/ai/data";
 import { Spinner } from "@kanzo-tech/ui";
 import { Boundary } from "@/components/boundary";
-import { problemCopy, ProblemView } from "@/components/problem-view";
+import { describeProblem, ProblemView } from "@/components/problem-view";
 import { useModelLoad } from "@/lib/ai";
 import { useCorpusAsk } from "@/lib/fossil/ask";
 import { type Corpus, CorpusScope } from "@/lib/fossil/corpus";
@@ -134,7 +134,7 @@ function Asked({ questions }: { questions: readonly Question[] }) {
               const spec = part.state === "output-available" ? (part.output as AskOutput).spec : undefined;
               return (
                 <div className="flex flex-col gap-2" key={key}>
-                  <AnswerCard copy={problemCopy} graph={graph} part={part} stopped={stopped} />
+                  <AnswerCard describe={describeProblem} graph={graph} part={part} stopped={stopped} />
                   {spec && <AskChips onChange={(edited) => void sendMessage(askEdit(edited))} over={over} spec={spec} />}
                 </div>
               );

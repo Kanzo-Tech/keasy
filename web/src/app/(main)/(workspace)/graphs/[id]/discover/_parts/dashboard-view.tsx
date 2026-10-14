@@ -3,13 +3,8 @@
 import { useEffect, useMemo, useRef } from "react";
 import type { AnswerAdded } from "@kanzo-tech/ai/data";
 import { ScrollArea, Skeleton } from "@kanzo-tech/ui";
-import {
-  Dashboard,
-  type Relation,
-  RelationPicker,
-  relationIdentities,
-  relationKey,
-} from "@kanzo-tech/ui/analytics";
+import { type Relation, relationIdentities, relationKey } from "@kanzo-tech/mosaic";
+import { Dashboard, RelationPicker } from "@kanzo-tech/ui/analytics";
 import { SavedBy } from "@/components/provenance";
 import { Boundary, Failed } from "@/components/boundary";
 import { useJoinGraph } from "@/lib/fossil/corpus";

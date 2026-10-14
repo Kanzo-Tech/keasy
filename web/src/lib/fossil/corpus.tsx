@@ -5,16 +5,8 @@ import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { TableRefNode, column, eq, literal } from "@uwdata/mosaic-sql";
 import { attach, type Attachment } from "@fossil-lang/corpus";
 import { readJoinGraph } from "@kanzo-tech/graph";
-import {
-  MosaicProvider,
-  Query,
-  engine,
-  useMosaic,
-  useQueryRows,
-  type Engine,
-  type JoinGraph,
-  type TableExpr,
-} from "@kanzo-tech/ui/analytics";
+import { Query, engine, type Engine, type JoinGraph, type TableExpr } from "@kanzo-tech/mosaic";
+import { MosaicProvider, useMosaic, useQueryRows } from "@kanzo-tech/ui/analytics";
 import { settled } from "@/lib/api/settled";
 import { toastError } from "@/lib/errors";
 import { corpusKey, RELEASE_FAILED } from "@/lib/fossil/corpus-cache";

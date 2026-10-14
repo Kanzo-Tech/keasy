@@ -1,6 +1,6 @@
 import { attach, type Attachment } from "@fossil-lang/corpus";
 import type { CorpusFile } from "@fossil-lang/executor";
-import type { Engine } from "@kanzo-tech/ui/analytics";
+import type { Engine } from "@kanzo-tech/mosaic";
 
 /** Every in-memory attach registers its files under a prefix of its own. */
 let attaches = 0;

@@ -75,12 +75,14 @@ export function Providers({
       themes={look.themes}
     >
       <BrandingProvider value={branding}>
-        <AuthProvider auth={auth}>
-          <QueryClientProvider client={queryClient}>
+        {/* The page's one query client, above everything that reads through it: the session, and the
+            fields and answers kanzo-ui's Dashboard and Ask read once per page. */}
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider auth={auth}>
             <LocaleProvider locale={LOCALE}>{children}</LocaleProvider>
-            <ReactQueryDevtools initialIsOpen={false} />
-          </QueryClientProvider>
-        </AuthProvider>
+          </AuthProvider>
+          <ReactQueryDevtools initialIsOpen={false} />
+        </QueryClientProvider>
       </BrandingProvider>
     </KanzoThemeProvider>
   );

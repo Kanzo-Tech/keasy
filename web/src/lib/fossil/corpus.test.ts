@@ -5,7 +5,8 @@ import { ApiError } from "@/lib/api/client";
 
 const notFound = new ApiError({ code: "graph/not-found", title: "Not found", detail: "No such graph", data: {} }, 404);
 
-vi.mock("@kanzo-tech/ui/analytics", () => ({ engine: async () => ({ coordinator: {} }), MosaicProvider: () => null }));
+vi.mock("@kanzo-tech/mosaic", () => ({ engine: async () => ({ coordinator: {} }) }));
+vi.mock("@kanzo-tech/ui/analytics", () => ({ MosaicProvider: () => null }));
 vi.mock("@/lib/api/query-client", async () => {
   const { QueryClient } = await import("@tanstack/react-query");
   return { queryClient: new QueryClient() };

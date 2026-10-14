@@ -1,7 +1,7 @@
 import { FossilError, isFossilError } from "@fossil-lang/types";
 import { describe, expect, it } from "vitest";
 import { ApiError } from "@/lib/api/client";
-import { coded, copyOf, fieldProblem, pageOf, wireOf } from "./errors";
+import { coded, descriptionOf, fieldProblem, pageOf, wireOf } from "./errors";
 
 const overBudget = () =>
   FossilError.from({
@@ -23,20 +23,20 @@ describe("a failure, kept as JSON", () => {
   });
 
   it("says a run too large for the browser in keasy's words", () => {
-    expect(copyOf("run/over-budget")).toMatchObject({ title: "Too large for the browser" });
-    expect(copyOf("run/over-budget", { budget: 2 * 2 ** 30 })?.detail).toContain("(2 GiB)");
-    expect(copyOf("run/over-budget", { budget: 1.5 * 2 ** 30 })?.detail).toContain("(1.5 GiB)");
-    expect(copyOf("run/over-budget")?.detail).not.toContain("GiB");
+    expect(descriptionOf("run/over-budget")).toMatchObject({ title: "Too large for the browser" });
+    expect(descriptionOf("run/over-budget", { budget: 2 * 2 ** 30 })?.detail).toContain("(2 GiB)");
+    expect(descriptionOf("run/over-budget", { budget: 1.5 * 2 ** 30 })?.detail).toContain("(1.5 GiB)");
+    expect(descriptionOf("run/over-budget")?.detail).not.toContain("GiB");
   });
 
   it("names the missing file of a source from the location it carries", () => {
-    expect(copyOf("source/not-found")).toMatchObject({ title: "The source names no file" });
-    expect(copyOf("source/not-found", { location: "s3://lake/in/users.csv" })?.detail).toContain("s3://lake/in/users.csv");
-    expect(copyOf("source/not-found")?.detail).not.toContain("undefined");
+    expect(descriptionOf("source/not-found")).toMatchObject({ title: "The source names no file" });
+    expect(descriptionOf("source/not-found", { location: "s3://lake/in/users.csv" })?.detail).toContain("s3://lake/in/users.csv");
+    expect(descriptionOf("source/not-found")?.detail).not.toContain("undefined");
   });
 
   it("leaves a fossil code with no entry in fossil's own words", () => {
-    expect(copyOf("corpus/unreadable")).toBeUndefined();
+    expect(descriptionOf("corpus/unreadable")).toBeUndefined();
   });
 
   it("is the server's body for a refusal, and has no page", () => {
@@ -72,8 +72,8 @@ describe("a library's coded failure", () => {
   });
 
   it("says which way the model cannot run: the browser, or a deployment that serves none", () => {
-    expect(copyOf("ai/unavailable", { reason: "webgpu" })?.title).toBe("This browser cannot run the model.");
-    expect(copyOf("ai/unavailable", { reason: "unserved" })?.title).toBe("This workspace has no model.");
+    expect(descriptionOf("ai/unavailable", { reason: "webgpu" })?.title).toBe("This browser cannot run the model.");
+    expect(descriptionOf("ai/unavailable", { reason: "unserved" })?.title).toBe("This workspace has no model.");
   });
 
   it("is read in fossil's grammar, digits and all", () => {

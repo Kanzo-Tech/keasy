@@ -1,5 +1,5 @@
 // @vitest-environment node
-import type { Engine } from "@kanzo-tech/ui/analytics";
+import type { Engine } from "@kanzo-tech/mosaic";
 import { describe, expect, it } from "vitest";
 
 import { attachInMemory } from "./memory-corpus";

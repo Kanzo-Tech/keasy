@@ -74,8 +74,8 @@ endif
 export SOPS_AGE_KEY_FILE ?= $(HOME)/.config/sops/age/keys.txt
 SOPS := infra/prod/sops
 PROD := -f compose.yaml -f compose.prod.yaml $(addprefix -f ,$(wildcard infra/prod/orgs/*.yaml)) --env-file infra/prod/prod.env
-# A decryption that fails stops the deploy, and so does a missing password: the platform's compose
-# files fall back to development's passwords, which a deployment must never start with.
+# A decryption that fails stops the deploy, and so does a missing password, before Compose is
+# reached (the platform's compose files have no default for either and refuse too).
 SECRETS := secrets=$$($(SOPS) -d --input-type dotenv --output-type dotenv /dev/stdin < infra/prod/secrets.sops.env) || exit 1; \
 	while IFS= read -r line; do [ -n "$$line" ] && export "$$line"; done <<<"$$secrets"; \
 	: "$${KC_ADMIN_PASSWORD:?}" "$${KC_DB_PASSWORD:?}";

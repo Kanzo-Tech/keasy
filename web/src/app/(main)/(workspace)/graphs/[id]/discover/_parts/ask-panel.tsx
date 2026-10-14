@@ -4,11 +4,12 @@ import { Suspense, useCallback } from "react";
 // eslint-disable-next-line no-restricted-imports -- suggested questions: a failure leaves no pills, and the chat works the same
 import { useQuery } from "@tanstack/react-query";
 import { Sparkles } from "lucide-react";
-import { useClauses, useMosaic, type JoinGraph } from "@kanzo-tech/ui/analytics";
+import type { JoinGraph } from "@kanzo-tech/mosaic";
+import { useClauses, useMosaic } from "@kanzo-tech/ui/analytics";
 import { Badge, EmptyDescription, EmptyHeader, EmptyIndicator, EmptyRoot } from "@kanzo-tech/ui";
 import { Chat, ChatSkeleton } from "@kanzo-tech/ai";
 import { AnswerCard, askEdit, AskChips, askOffers, type AnswerRelation, type AskOutput } from "@kanzo-tech/ai/data";
-import { problemCopy, ProblemView } from "@/components/problem-view";
+import { describeProblem, ProblemView } from "@/components/problem-view";
 import { ModelStatus } from "@/components/model-status";
 import { useModel, useModelLoad } from "@/lib/ai";
 import { coded } from "@/lib/errors";
@@ -72,7 +73,7 @@ function useStarters(graph: JoinGraph, types: readonly AnswerRelation[]) {
   });
   return {
     proposing: starters.fetchStatus === "fetching",
-    proposals: starters.isError ? [] : (starters.data ?? []).map(({ text }) => ({ text })),
+    proposals: starters.isError ? [] : (starters.data ?? []),
     failure: starters.isError && (
       <ProblemView className="w-full" error={starters.error} onRetry={() => void starters.refetch()} uncoded="llm/failed" />
     ),
@@ -123,7 +124,7 @@ function AskChat() {
         // What stopped the answer, by its code as `@kanzo-tech/llm` names it, and anything uncoded as
         // `llm/failed`, in keasy's words.
         chat={{ ...chat, error: chat.error === undefined ? undefined : coded(chat.error, "llm/failed") }}
-        copy={problemCopy}
+        describe={describeProblem}
         className="p-2"
         context={
           <>
@@ -132,6 +133,8 @@ function AskChat() {
           </>
         }
         empty={<AskEmpty />}
+        // An offer is sent as Ask's spec, as it is: a starter is not re-asked of the model.
+        message={askEdit}
         // The offers ask the model: until it is ready, the badge says why there are none.
         notice={load.state === "ready" ? starters.failure : undefined}
         proposing={starters.proposing}
@@ -142,7 +145,7 @@ function AskChat() {
             const spec = part.state === "output-available" ? (part.output as AskOutput).spec : undefined;
             return (
               <div className="flex flex-col gap-2">
-                <AnswerCard copy={problemCopy} graph={graph} part={part} stopped={stopped} {...adding} />
+                <AnswerCard describe={describeProblem} graph={graph} part={part} stopped={stopped} {...adding} />
                 {spec && <AskChips onChange={(next) => void chat.sendMessage(askEdit(next))} over={over} spec={spec} />}
               </div>
             );

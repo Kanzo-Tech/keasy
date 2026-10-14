@@ -21,8 +21,8 @@ const attached = new Set<string>();
 const attaches = vi.fn((graphId: string) => void attached.add(graphId));
 const detach = vi.fn(async (graphId: string) => void attached.delete(graphId));
 
+vi.mock("@kanzo-tech/mosaic", () => ({ engine: async () => ({ coordinator: {} }) }));
 vi.mock("@kanzo-tech/ui/analytics", () => ({
-  engine: async () => ({ coordinator: {} }),
   MosaicProvider: ({ children }: { children: ReactNode }) => children,
 }));
 vi.mock("@kanzo-tech/graph", () => ({ readJoinGraph: async () => ({ types: [], edges: [] }) }));

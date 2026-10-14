@@ -25,7 +25,7 @@ import { useTask } from "@kanzo-tech/ai";
 import { type Proposal, runTask } from "@kanzo-tech/ai/task";
 import type { Format, Profiled as Described } from "@fossil-lang/types";
 import { inputs, profile } from "@fossil-lang/wasm";
-import { engine } from "@kanzo-tech/ui/analytics";
+import { engine } from "@kanzo-tech/mosaic";
 import type { FileReference } from "@/lib/assistant-conversation";
 import type { StorageConnection } from "@/lib/connections";
 import { ClientError } from "@/lib/errors";

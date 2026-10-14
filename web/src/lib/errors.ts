@@ -3,7 +3,7 @@ import type { AuthErrorCode } from "@kanzo-tech/auth";
 import type { GraphError } from "@kanzo-tech/graph";
 import type { AiError } from "@kanzo-tech/llm";
 import type { EngineError } from "@kanzo-tech/mosaic";
-import { type ProblemCopy, toast } from "@kanzo-tech/ui";
+import { type ProblemDescription, toast } from "@kanzo-tech/ui";
 
 import { ApiError, type ErrorCode, type NoBodyCode } from "@keasy/api";
 import { schemaOf } from "@/lib/api/spec";
@@ -136,11 +136,11 @@ const SERVER_CODES: ReadonlySet<string> = new Set(schemaOf("ErrorCode").enum);
  * code the server owns — `undefined` for any other, whose own words are its detail.
  */
 export function titleOf({ code, title, data }: { code: string; title?: string; data?: unknown }): string | undefined {
-  return copyOf(code, data)?.title ?? (SERVER_CODES.has(code) ? title : undefined);
+  return descriptionOf(code, data)?.title ?? (SERVER_CODES.has(code) ? title : undefined);
 }
 
-/** keasy's copy for `code`, where it overrides the code's own words; `data` is the problem's. */
-export function copyOf(code: string, data?: unknown): ProblemCopy | undefined {
+/** keasy's words for `code`, where it overrides the code's own words; `data` is the problem's. */
+export function descriptionOf(code: string, data?: unknown): ProblemDescription | undefined {
   const copy = registry[code as keyof typeof registry];
   if (!copy) return undefined;
   return {
@@ -236,7 +236,7 @@ export function fieldProblem(error: unknown): FieldProblem | null {
   if (!(error instanceof ApiError)) return null;
   const field = error.data?.field;
   if (!field) return null;
-  return { field, message: copyOf(error.code)?.title ?? error.message };
+  return { field, message: descriptionOf(error.code)?.title ?? error.message };
 }
 
 /** Toast a failed action: `title` names the action, the description is the code's copy or the failure's own words. */

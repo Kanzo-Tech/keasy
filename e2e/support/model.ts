@@ -9,7 +9,7 @@ import { type KanzoTestingHook, type ModelScript, type ModelTurn, playwright } f
  * their place, its load included, and every prompt is recorded. keasy's own code never knows.
  */
 
-/** The id the script is registered under, the model `infra/models.sh` lists: the page asks the first registered. */
+/** The id the script is registered under, the model `web/public/models/app-config.json` lists: the page asks the first registered. */
 const MODEL = "Qwen3-4B-q4f16_1-MLC";
 
 /**

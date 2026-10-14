@@ -31,11 +31,12 @@ overrides any of them ([`.env.example`](.env.example)). Anything past `make dev`
 
 The model runs in the browser, on WebGPU — Chrome or Edge, Safari 26, Firefox on Windows — through
 WebLLM. The browser downloads it in the background when a graph or the assistant opens, about
-2.3 GB once, and keeps it; nothing about a question leaves the browser, and no server holds a key. It
-comes from keasy's own origin, never a third party's: `make models` (`infra/models.sh` pins it)
-downloads it once into `infra/models` with `app-config.json`, the listing the page reads, and the
-stack serves that directory at `/models` ([`.env.example`](.env.example)). Without them, or in a
-browser without WebGPU, Ask and the assistant say so (`llm/unavailable`); everything else works.
+2.3 GB once, and keeps it; nothing about a question leaves the browser, and no server holds a key.
+It comes from where WebLLM's own arrangement has it: the public MLC weights from Hugging Face and
+the compiled library from GitHub, both at pinned revisions and the small files checked against
+their hashes, as `web/public/models/app-config.json` lists them. Nothing to download or run
+for it here, but the browser needs egress to those hosts. In a browser without WebGPU, Ask and
+the assistant say so (`llm/unavailable`); everything else works.
 
 ## Dev accounts
 
@@ -159,7 +160,6 @@ graph TD
     Web -->|"session records"| Valkey[("Valkey")]
     Server -->|"JWKS"| Keycloak
     Server --> SQLite[("SQLite")]
-    Browser -->|"the model's shards, once: /models"| Models["models (nginx)"]
     Keycloak --> PostgreSQL[("PostgreSQL")]
 ```
 
@@ -188,8 +188,8 @@ organization the instance serves; the matrix is `docs/design/permissions.md`).
 
 The model runs in the browser too: `localModel` from `@kanzo-tech/llm/local`, WebLLM on
 WebGPU in a worker of its own, the models this origin's `/models/app-config.json` lists
-(the `models` service). No call leaves the page, so there is nothing to forward,
-no model key and no budget to keep.
+(`web/public/models/`; the weights themselves come from Hugging Face, once). No call
+leaves the page, so there is nothing to forward, no model key and no budget to keep.
 
 A **credential** (S3 or Azure) is who keasy is when it reaches a store; a
 **connection** puts one to use (a storage prefix — a source or the one sink). Both

@@ -55,7 +55,7 @@ jobs:
 
       # The dev stack — the platform included from kanzo-ui at KANZO_UI_REF. The model runs in the
       # browser, and the runners have no WebGPU: the scenarios put a model double in the page
-      # (e2e/support/model.ts), or force a browser without WebGPU, so no `make models` here.
+      # (e2e/support/model.ts), or force a browser without WebGPU, so no model is fetched here.
       - name: Bring up the stack
         run: docker compose up -d --build --wait --wait-timeout 3600 web
 

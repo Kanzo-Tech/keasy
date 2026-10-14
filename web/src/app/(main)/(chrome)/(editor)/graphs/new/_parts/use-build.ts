@@ -67,7 +67,7 @@ export function keasySteps(output: BuildOutput = {}): BuildSteps<Schemas["Graph"
 
 /**
  * The whole graph `program` builds, on request: `progress` is `null` until `build()` is called — the
- * assistant's *Build the whole graph* — then the build's. One build per program, which outlives the
+ * assistant's *Build the graph* — then the build's. One build per program, which outlives the
  * page, so the person can go to Discover while it runs. Save the conversation first: once a graph is
  * built from it, it is that graph's record.
  */

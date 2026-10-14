@@ -11,7 +11,8 @@
  */
 
 import type { Decision } from "@kanzo-tech/ai/task";
-import type { Sources } from "../use-sources";
+import type { StorageConnection } from "@/lib/connections";
+import type { SourceBranch, SourceNode } from "../sources";
 
 // ── The data ────────────────────────────────────────────────────────────────
 
@@ -84,8 +85,10 @@ export type { BuildProgress } from "@/lib/fossil/build";
 
 /** Everything the conversation reads, as `use-assistant.ts` answers it. */
 export interface AssistantData {
-  /** Every connection the assistant may read, each a root, listed as it is opened. */
-  sources: Sources;
+  /** Every connection the assistant may read: a pill each, over the files it lists. */
+  connections: readonly StorageConnection[];
+  /** What a connection or a folder under it holds, listed once and kept. */
+  list: (node: SourceBranch) => Promise<SourceNode[]>;
   /** The ids of the picked files. */
   selected: ReadonlySet<string>;
   /** `null` when nothing is being read. */

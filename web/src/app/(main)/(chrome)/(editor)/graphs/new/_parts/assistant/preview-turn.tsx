@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import type { UIMessage } from "ai";
 import { MessageCircleQuestion, Sparkles } from "lucide-react";
 import { Spinner } from "@kanzo-tech/ui";
 import { askParts } from "@/components/ask-parts";
@@ -14,7 +15,7 @@ import type { Question } from "./model";
 import { Said } from "./turns";
 
 /** How many rows of each file the preview reads: `run`'s `limit` for `into: "memory"`. */
-const ROWS = 200;
+export const ROWS = 200;
 
 export type Preview = PreviewState & { rerun: () => void };
 
@@ -25,14 +26,9 @@ export type Preview = PreviewState & { rerun: () => void };
  * beside the heading, until the new ones land — and stay dimmed if the run fails.
  */
 export function PreviewTurn({ preview, questions }: { preview: Preview; questions: readonly Question[] }) {
-  if (preview.state === "idle") {
-    return (
-      <Said>
-        <Working>Writing how your files become a graph…</Working>
-      </Said>
-    );
-  }
-  const { corpus } = preview;
+  const corpus = preview.state === "idle" ? null : preview.corpus;
+  // Nothing to show until there is a corpus or a failure: the steps say what is under way.
+  if (!corpus && preview.state !== "failed") return null;
   const stale = corpus !== null && preview.state !== "ready";
   return (
     <Said label="Preview">
@@ -50,7 +46,6 @@ export function PreviewTurn({ preview, questions }: { preview: Preview; question
           )}
         </p>
       )}
-      {preview.state === "running" && !corpus && <Working>Running a preview over the first {ROWS} rows of each file…</Working>}
       {preview.state === "failed" && <ProblemView error={preview.problem} onRetry={preview.rerun} />}
       {corpus && (
         // The answers being replaced: still there to read, but plainly not the ones to act on.
@@ -62,6 +57,11 @@ export function PreviewTurn({ preview, questions }: { preview: Preview; question
         >
           <Answers corpus={corpus} questions={questions} />
         </div>
+      )}
+      {corpus && questions.length > 0 && (
+        <p className="text-muted-foreground text-sm">
+          These are the first {ROWS} rows of each file. The whole graph counts every row.
+        </p>
       )}
     </Said>
   );
@@ -79,7 +79,7 @@ function Working({ children }: { children: React.ReactNode }) {
 /** The questions answered over `corpus`, each one Ask's turn: a new corpus is a new chat, asked again. */
 function Answers({ corpus, questions }: { corpus: Corpus; questions: readonly Question[] }) {
   if (questions.length === 0) {
-    return <p className="text-muted-foreground">You kept no questions. Build the whole graph and ask it anything in Discover.</p>;
+    return <p className="text-muted-foreground">You kept no questions. Build the graph and ask it anything in Discover.</p>;
   }
   return (
     <Boundary fallback={<Working>Reading the preview…</Working>}>
@@ -109,35 +109,61 @@ function Asked({ questions }: { questions: readonly Question[] }) {
 
   const streaming = status === "streaming" || status === "submitted";
   const parts = askParts({ graph, send: (message) => void sendMessage(message) });
+  // A question and its answer are one cell of the grid: two answers side by side, each under the
+  // question that asked it.
   return (
-    <div className="flex flex-col gap-4" data-preview-answers="">
+    <div className="flex flex-col gap-3" data-preview-answers="">
       {!ready && <Working>Preparing the model to answer your questions…</Working>}
-      {messages.map((message, index) =>
-        message.role === "user" ? (
-          <p className="flex items-center gap-2 pt-2 font-medium" key={message.id}>
-            <MessageCircleQuestion aria-hidden className="size-4 text-muted-foreground" />
-            {message.parts.flatMap((p) => (p.type === "text" ? [p.text] : [])).join(" ")}
-          </p>
-        ) : (
-          <div className="flex flex-col gap-2" key={message.id}>
-            {message.parts.map((part, i) => {
-              const key = `${message.id}-${i}`;
-              if (part.type === "text")
-                return (
-                  <p className="whitespace-pre-wrap" key={key}>
-                    {part.text}
-                  </p>
-                );
-              if (!part.type.startsWith("data-")) return null;
-              // Its read will never land once the chat is not streaming this message.
-              const draw = parts[part.type.slice("data-".length)];
-              return <div key={key}>{draw?.(part as Parameters<NonNullable<typeof draw>>[0], { stopped: !(streaming && index === messages.length - 1) })}</div>;
-            })}
-          </div>
-        ),
-      )}
+      <div className="grid gap-3 sm:grid-cols-2">
+        {messages.map((message, index) =>
+          message.role === "user" ? (
+            <section className="flex flex-col gap-2 rounded-box border bg-card p-3.5" key={message.id}>
+              <p className="flex items-center gap-2 font-medium">
+                <MessageCircleQuestion aria-hidden className="size-4 shrink-0 text-muted-foreground" />
+                {message.parts.flatMap((p) => (p.type === "text" ? [p.text] : [])).join(" ")}
+              </p>
+              {messages[index + 1]?.role === "assistant" && (
+                <Answer
+                  graphParts={parts}
+                  message={messages[index + 1]!}
+                  stopped={!(streaming && index + 1 === messages.length - 1)}
+                />
+              )}
+            </section>
+          ) : null,
+        )}
+      </div>
       {status === "submitted" && <Working>Answering…</Working>}
       {chat.error !== undefined && <ProblemView error={chat.error} uncoded="llm/failed" />}
+    </div>
+  );
+}
+
+/** What was answered to a question: its prose, and each data part drawn as `Chat` draws it (`askParts`). */
+function Answer({
+  message,
+  graphParts,
+  stopped,
+}: {
+  message: UIMessage;
+  graphParts: ReturnType<typeof askParts>;
+  /** Its read will never land: the chat is not streaming this message. */
+  stopped: boolean;
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      {message.parts.map((part, i) => {
+        const key = `${message.id}-${i}`;
+        if (part.type === "text")
+          return (
+            <p className="whitespace-pre-wrap" key={key}>
+              {part.text}
+            </p>
+          );
+        if (!part.type.startsWith("data-")) return null;
+        const draw = graphParts[part.type.slice("data-".length)];
+        return <div key={key}>{draw?.(part as Parameters<NonNullable<typeof draw>>[0], { stopped })}</div>;
+      })}
     </div>
   );
 }

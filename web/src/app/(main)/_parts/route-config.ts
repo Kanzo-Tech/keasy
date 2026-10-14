@@ -36,7 +36,7 @@ const ROUTES: Record<string, RouteDef> = {
   "/":                            { name: "Dashboard", icon: Home, sidebar: true },
   "/graphs":                        { name: WORDS.graphs, icon: Workflow, sidebar: true },
   "/graphs/new":                    { name: `New ${lower(WORDS.graph)}` },
-  "/graphs/new/assistant":          { name: "Assistant" },
+  "/graphs/new/assistant":          { name: `New ${lower(WORDS.graph)}` },
   "/connections":                 { name: "Connections", icon: Database, sidebar: true },
   "/connections/new":             { name: "New connection" },
   // Settings (not in main sidebar — reached via the user menu)
@@ -77,7 +77,8 @@ function findRoute(path: string): Crumb | undefined {
 
 /**
  * The trail to `path`. `search` is the query it was opened with: the studio opened on a draft
- * (`/graphs/new?draft=…`) edits that graph's recipe, and says so.
+ * (`/graphs/new?draft=…`) edits that graph's recipe, and says so; the assistant's
+ * (`/graphs/new/assistant?graph=…`) names the graph its conversation built.
  */
 export function generateBreadcrumbs(path: string, search?: URLSearchParams): Crumb[] {
   const crumbs: Crumb[] = [{ path: "/", name: "Dashboard" }];
@@ -88,6 +89,16 @@ export function generateBreadcrumbs(path: string, search?: URLSearchParams): Cru
       { ...ROUTES["/graphs"], path: "/graphs" },
       { path: `/graphs/${draft}`, name: WORDS.graph, label: { kind: "graph", id: draft } },
       { path: `/graphs/new?draft=${draft}`, name: `Edit ${lower(WORDS.recipe)}` },
+    ];
+  }
+
+  // The assistant is one page: *New graph*, and once its conversation has built one, that graph's name.
+  if (path === "/graphs/new/assistant") {
+    const built = search?.get("graph");
+    return [
+      ...crumbs,
+      { ...ROUTES["/graphs"], path: "/graphs" },
+      built ? { path: `/graphs/${built}`, name: WORDS.graph, label: { kind: "graph", id: built } } : { ...ROUTES[path], path },
     ];
   }
 

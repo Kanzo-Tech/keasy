@@ -20,7 +20,7 @@ import { usePreview } from "@/lib/fossil/preview";
 import { useGraphEditorStore } from "../graph-editor-store";
 import { useBuild } from "../use-build";
 import { AssistantChat } from "./assistant-chat";
-import { type Replies, type Restored, restore } from "./conversation";
+import { graphName, type Replies, type Restored, restore } from "./conversation";
 import type { Question } from "./model";
 import type { Preview } from "./preview-turn";
 import { useAssistant } from "./use-assistant";
@@ -50,6 +50,13 @@ function Loaded() {
   // Read once: the conversation's id is written back to the URL as it is saved, and that is not a
   // conversation to open again.
   const params = useSearchParams();
+  // `new` is a conversation started from the page of another (*Start a new one from here*): the same
+  // route, opened clean.
+  return <Opened connections={connections} formats={formats} key={params.get("new") ?? ""} />;
+}
+
+function Opened({ connections, formats }: { connections: readonly StorageConnection[]; formats: readonly Format[] }) {
+  const params = useSearchParams();
   const [opened] = useState(() => ({ conversation: params.get("conversation"), decision: params.get("decision") }));
   return <AssistantFlow connections={connections} formats={formats} {...opened} />;
 }
@@ -76,7 +83,10 @@ export function AssistantFlow({
   useEffect(() => {
     const url = new URL(window.location.href);
     if (url.searchParams.get("conversation") === kept.id) return;
-    window.history.replaceState(null, "", `${url.pathname}?conversation=${encodeURIComponent(kept.id)}`);
+    // Whatever else the URL carries — the page's `new`, the graph built — stays.
+    url.searchParams.set("conversation", kept.id);
+    url.searchParams.delete("decision");
+    window.history.replaceState(null, "", url);
   }, [kept.id]);
   if (kept.problem !== undefined) return <ProblemView className="m-auto" error={kept.problem} />;
   if (kept.messages === undefined) {
@@ -91,7 +101,7 @@ export function AssistantFlow({
 
 /**
  * The conversation over `useAssistant`, from `seed`: the preview of the program the mapping writes,
- * and the whole graph built on request, from the conversation saved first. **Advanced** leaves for
+ * and the whole graph built on request, from the conversation saved first. **Open in the editor** leaves for
  * the studio with the picked files already written as the program's sources.
  */
 function Resumed({
@@ -123,7 +133,7 @@ function Resumed({
 
   // The whole graph, once asked for, from the conversation saved first: a save over a built
   // conversation starts a new one, so the build waits for the id the save answered.
-  const { progress, build } = useBuild(assistant.mapped, assistant.described, { conversation: kept.id });
+  const { progress, build } = useBuild(assistant.mapped, assistant.described, { conversation: kept.id, name: graphName(assistant.files) });
   const [asked, setAsked] = useState<{ conversation: string; program: string } | null>(null);
   useEffect(() => {
     if (asked !== null && asked.conversation === kept.id && asked.program === assistant.mapped) build();
@@ -142,6 +152,16 @@ function Resumed({
     );
   };
 
+  // Built, the header's trail ends with the graph's name: the id on the URL names it (`route-config`),
+  // for this visit only — a reload opens the conversation, which is kept as it was built.
+  const graphId = progress?.state === "done" ? progress.graphId : null;
+  useEffect(() => {
+    if (graphId === null) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set("graph", graphId);
+    window.history.replaceState(null, "", url);
+  }, [graphId]);
+
   const advanced = () => {
     const store = useGraphEditorStore.getState();
     store.setScript(assistant.program);
@@ -155,14 +175,13 @@ function Resumed({
       built={kept.built}
       initial={seed.replies}
       onAdvanced={advanced}
-      onBack={() => router.push("/graphs")}
       onBuild={onBuild}
       onChoose={assistant.choose}
-      onExpandedChange={assistant.setExpanded}
+      onClear={assistant.clear}
+      onPick={assistant.pick}
       onQuestionsChange={setQuestions}
       onReplies={onReplies}
       onSave={onSave}
-      onSelectedChange={assistant.setSelected}
       preview={preview}
       program={assistant.mapped}
       questions={assistant.questions}

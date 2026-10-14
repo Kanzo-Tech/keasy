@@ -1,14 +1,12 @@
 "use client";
 
-import { ArrowRight, Check, CircleCheck, CircleHelp, CircleX, Hammer, Lightbulb, MessageCircleQuestion, Sparkles } from "lucide-react";
+import { ArrowRight, Check, CircleHelp, CircleX, ExternalLink, Lightbulb, MessageCircleQuestion } from "lucide-react";
+import { useId, useState } from "react";
 import { Link } from "@kanzo-tech/navigation/next";
-import { Message, MessageContent, Working } from "@kanzo-tech/ai";
+import { Message, MessageContent } from "@kanzo-tech/ai";
 import {
-  Alert,
-  AlertTitle,
   Badge,
   Button,
-  Progress,
   Question,
   QuestionChoice,
   QuestionChoices,
@@ -24,7 +22,8 @@ import {
 } from "@kanzo-tech/ui";
 import { ProblemView } from "@/components/problem-view";
 import { askHref } from "@/app/(main)/(workspace)/graphs/[id]/discover/_parts/ask-handoff";
-import { takenLabel } from "./conversation";
+import { type SentSource, takenLabel } from "./conversation";
+import type { Step } from "./steps";
 import { holdsLine, inWords } from "./tasks/words";
 import {
   type BuildProgress,
@@ -32,12 +31,11 @@ import {
   optionOf,
   type Question as AskedQuestion,
   type QuestionOffer,
-  type ReadingProgress,
   type Relation,
   type TaskFailure,
   type Thing,
 } from "./model";
-import { SourcePicker, type SourcePickerProps } from "./source-picker";
+import { ChainOfThought, ChainOfThoughtStep } from "./chain-of-thought";
 
 
 /** The assistant's turn: its words first, then what it carries. */
@@ -74,107 +72,70 @@ function Label({ children }: { children: React.ReactNode }) {
   return <h3 className="font-medium text-muted-foreground text-xs uppercase tracking-wide">{children}</h3>;
 }
 
-// ── Which data ──────────────────────────────────────────────────────────────
+// ── What the person sent, and the steps ─────────────────────────────────────
 
-export interface PickTurnProps extends SourcePickerProps {
-  /** Still waiting on the pick: the tree is drawn, with the reply under it. */
-  live: boolean;
-  onPicked: () => void;
-  /** Why the reply cannot be sent yet, beside it. */
-  reason: string | null;
-}
+/** A connection's chip on the first message: *@Nobel laureates · 6 files*. */
+const chipOf = ({ connection, files }: SentSource) => `@${connection} · ${files === 1 ? "1 file" : `${files} files`}`;
 
-/** "Which data do you want to explore?" — the files as a tree, and *Read these files* as the reply. */
-export function PickTurn({ live, onPicked, reason, ...picker }: PickTurnProps) {
-  const picked = picker.selected.size;
+/**
+ * The first message: the files sent as a chip a connection above what the person said they are about
+ * (nothing, when they said nothing). Both travel together, from the composer.
+ */
+export function SentTurn({ sources, about }: { sources: readonly SentSource[]; about: string }) {
   return (
-    <Said>
-      <p className="font-medium text-base">Which data do you want to explore?</p>
-      {live && (
-        <>
-          <p className="text-muted-foreground">
-            Pick the files to read. A folder&rsquo;s box picks every file in it.
-          </p>
-          <div className="overflow-hidden rounded-box border bg-card shadow-xs/5">
-            <div className="max-h-96 overflow-auto p-1.5">
-              <SourcePicker {...picker} />
-            </div>
-            <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-2 border-t bg-muted/40 px-3 py-2.5">
-              <span className="me-auto text-muted-foreground text-xs" id="pick-status">
-                {reason ?? (picked === 1 ? "One file picked" : `${picked} files picked`)}
-              </span>
-              {/* Off, it stops looking like the way on: the primary fill at 64% still reads as one. */}
-              <Button
-                aria-describedby="pick-status"
-                disabled={reason !== null}
-                onClick={onPicked}
-                size="sm"
-                variant={reason === null ? "default" : "secondary"}
-              >
-                Read {picked === 1 ? "this file" : "these files"}
-                <ArrowRight />
-              </Button>
-            </div>
-          </div>
-        </>
-      )}
-    </Said>
-  );
-}
-
-/** Work under way: `Working`'s words beside a spinner, and its bar under them — indeterminate without a value. */
-function UnderWay({ children, value }: { children: React.ReactNode; value?: number }) {
-  return (
-    <div className="flex flex-col gap-2">
-      <Working>{children}</Working>
-      <Progress className="max-w-xs" indeterminate={value === undefined} value={value} />
-    </div>
-  );
-}
-
-/** "Reading your files… 4 of 6", live, with its bar; "Read 6 files" once it is done. */
-export function ReadingTurn({
-  reading,
-  total,
-  problems,
-}: {
-  reading: ReadingProgress | null;
-  total: number;
-  problems: readonly { id: string; problem: unknown }[];
-}) {
-  return (
-    <Said>
-      {reading === null ? (
-        <p className="flex items-center gap-2 text-muted-foreground" role="status">
-          <CircleCheck aria-hidden className="size-4 text-success-foreground" />
-          Read {total === 1 ? "the file" : `all ${total} files`}.
-        </p>
-      ) : (
-        <UnderWay value={(reading.done / reading.total) * 100}>
-          Reading your files… {reading.done} of {reading.total}
-        </UnderWay>
-      )}
-      {problems.map(({ id, problem }) => (
-        <ProblemView error={problem} key={id} />
-      ))}
-    </Said>
+    <Message data-reply="" role="user">
+      <MessageContent className="gap-1.5">
+        <span className="flex flex-wrap gap-1.5">
+          {sources.map((source) => (
+            <Badge key={source.connection} variant="secondary">
+              {chipOf(source)}
+            </Badge>
+          ))}
+        </span>
+        {about && <span>{about}</span>}
+      </MessageContent>
+    </Message>
   );
 }
 
 /**
- * "While I read them: what is it about?" — optional, answered or skipped in the composer. Once it is,
- * the composer is gone, and so is the line about how to answer.
+ * *What I am doing*: a list of steps, each done, under way, waiting on the person or still to come,
+ * so what the assistant has done and what is left are read in one place. **Open in the editor** is an
+ * action on the step that wrote the program, and what a step stopped on is said under the list.
  */
-export function AboutTurn({ live }: { live: boolean }) {
+export function StepsTurn({
+  steps,
+  onEditor,
+  problems = [],
+}: {
+  steps: readonly Step[];
+  onEditor: () => void;
+  problems?: readonly { id: string; problem: unknown }[];
+}) {
   return (
-    <Said>
-      <p>
-        While I read them: <span className="font-medium">what is this data about?</span>
-      </p>
-      {live && (
-        <p className="text-muted-foreground">A sentence is enough, and it is optional. It helps me read the files the way you mean them.</p>
-      )}
-    </Said>
+    <div className="flex flex-col gap-2">
+      <ChainOfThought aria-label="What I am doing">
+        {steps.map((step) => (
+          <ChainOfThoughtStep
+            description={step.description}
+            icon={step.failed ? CircleX : undefined}
+            key={step.id}
+            label={step.label}
+            status={step.status}
+          >
+            {step.action === "editor" && (
+              <Button className="h-auto p-0 font-normal text-sm" onClick={onEditor} title="Write the shapes and the program yourself" variant="link">
+                Open in the editor
+                <ExternalLink aria-hidden className="size-3.5" />
+              </Button>
+            )}
+          </ChainOfThoughtStep>
+        ))}
+      </ChainOfThought>
+      {problems.map(({ id, problem }) => (
+        <ProblemView error={problem} key={id} />
+      ))}
+    </div>
   );
 }
 
@@ -309,20 +270,36 @@ export function DecideTurn({
 }
 
 /**
- * A default taken without asking, said as what was taken — *I assumed: A fraction of the prize* —
- * and the question it answers under it as a decision's is, the one taken selected: picking another is
- * how it changes. It blocks nothing.
+ * A default taken without asking, said as what was taken under what was understood — *I assumed:
+ * A fraction of the prize · Change* — with its options behind **Change**, the one door to them:
+ * picking another is how it changes. It blocks nothing.
  */
-export function AssumedTurn({ item, onChoose }: { item: DecisionItem; onChoose: (option: string) => void }) {
+export function AssumedTurn({
+  item,
+  onChoose,
+  open: opened = false,
+}: {
+  item: DecisionItem;
+  onChoose: (option: string) => void;
+  /** Its options already showing: the decision Discover's **Change** named. */
+  open?: boolean;
+}) {
+  const [open, setOpen] = useState(opened);
+  const options = useId();
   return (
     <Said decision={item.decision.id} label={item.decision.question}>
-      <Alert data-assumption={item.decision.id}>
-        <Lightbulb aria-hidden />
-        <AlertTitle>
-          I assumed: <span className="font-semibold">{takenLabel(item)}</span>
-        </AlertTitle>
-      </Alert>
-      <DecisionChoice item={item} onChoose={onChoose} />
+      <p className="flex flex-wrap items-center gap-x-1.5 text-muted-foreground text-sm" data-assumption={item.decision.id}>
+        <Lightbulb aria-hidden className="size-4" />
+        <span>
+          I assumed: <span className="font-semibold text-foreground">{takenLabel(item)}</span>
+        </span>
+        <Button aria-controls={options} aria-expanded={open} className="h-auto p-0 text-sm" onClick={() => setOpen(!open)} variant="link">
+          Change
+        </Button>
+      </p>
+      <div hidden={!open} id={options}>
+        {open && <DecisionChoice item={item} onChoose={onChoose} />}
+      </div>
     </Said>
   );
 }
@@ -408,9 +385,10 @@ export function AskDone({ questions, onDone }: { questions: number; onDone: () =
 // ── The graph ───────────────────────────────────────────────────────────────
 
 /**
- * *Build the whole graph*, on request, once the preview has been seen: every row of every file, as a
- * graph of its own (`useBuild`). Then its progress, and once it is done the hand-off — **Ask your
- * data** as the one primary action, and the person's questions as prompts to take to Discover.
+ * *Build the graph*, on request, once the preview has been seen: every row of every file, as a graph
+ * of its own (`useBuild`). Its progress is the steps' (`StepsTurn`); once it is done, a tinted panel —
+ * **Ask your data** as the primary action, **Open the graph**, and the person's questions to take to
+ * Discover.
  */
 export function BuildTurn({
   build,
@@ -426,26 +404,23 @@ export function BuildTurn({
 }) {
   if (build === null) {
     return (
-      <Said>
-        <p className="text-muted-foreground">
-          {questions.length > 0 ? "When the answers look right" : "When you are ready"}, I&rsquo;ll build the whole graph:
-          every row of every file, kept to come back to.
+      <section className="flex flex-col gap-3 border-t pt-4">
+        <p>
+          {questions.length > 0 ? "When the answers look right" : "When you are ready"}, I&rsquo;ll build the whole graph: every row of
+          every file. This conversation is kept with it.
         </p>
-        <Button className="self-start" disabled={!ready} onClick={onBuild} size="lg">
-          <Hammer />
-          Build the whole graph
-        </Button>
-      </Said>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <Button disabled={!ready} onClick={onBuild} size="lg">
+            Build the graph
+          </Button>
+          <span className="text-muted-foreground text-sm">or change a decision above, and the preview runs again</span>
+        </div>
+      </section>
     );
   }
   switch (build.state) {
-    case "building": {
-      return (
-        <Said>
-          <UnderWay>{build.graphId === null ? "Making your graph…" : "Building your graph…"}</UnderWay>
-        </Said>
-      );
-    }
+    case "building":
+      return null;
     case "failed":
       return (
         <Said>
@@ -455,17 +430,19 @@ export function BuildTurn({
       );
     case "done":
       return (
-        <Said>
-          <p className="flex items-center gap-2 font-medium text-base">
-            <Sparkles aria-hidden className="size-4 text-primary" />
-            Your graph is ready to explore.
-          </p>
-          <Button asChild className="self-start" size="lg">
-            <Link href={askHref(build.graphId)}>
-              <MessageCircleQuestion />
-              Ask your data
-            </Link>
-          </Button>
+        <section className="flex flex-col gap-3 rounded-box border border-success/30 bg-success/7 p-4" data-built-panel="">
+          <p className="font-semibold text-base">Your graph is ready to explore.</p>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild size="lg">
+              <Link href={askHref(build.graphId)}>
+                <MessageCircleQuestion />
+                Ask your data
+              </Link>
+            </Button>
+            <Button asChild size="lg" variant="outline">
+              <Link href={`/graphs/${build.graphId}`}>Open the graph</Link>
+            </Button>
+          </div>
           {questions.length > 0 && (
             <section className="flex flex-col gap-2 pt-1">
               <Label>Start from your questions</Label>
@@ -474,7 +451,6 @@ export function BuildTurn({
                   <li key={q.id}>
                     <Button asChild className="h-auto w-full justify-start py-2 text-start whitespace-normal" variant="outline">
                       <Link href={askHref(build.graphId, q.text)}>
-                        <MessageCircleQuestion className="text-muted-foreground" />
                         <span className="flex-1">{q.text}</span>
                         <ArrowRight className="text-muted-foreground" />
                       </Link>
@@ -484,7 +460,7 @@ export function BuildTurn({
               </ul>
             </section>
           )}
-        </Said>
+        </section>
       );
   }
 }

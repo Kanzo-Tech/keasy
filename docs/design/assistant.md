@@ -4,12 +4,13 @@ Status: a direction. Built: the model in the page, in place of the gateway, serv
 origin and preloaded with intent (2026-10-13); the guided chat (2026-10-13); and its three Tasks,
 `model`, `mapping` and `requirements`, over fossil's profile (2026-10-13, below); the conversation
 kept, and the preview run in memory and shown in the chat, the chat wired to both and to the build
-(2026-10-13). Decided, not built: the chat as **one thread** — the sources picked in the composer, the
-Tasks drawn as steps, every result a new message at the end, a checkpoint per preview, and the
-conversation closed by its build (2026-10-13, [below](#one-thread-top-to-bottom)); it waits on the
-three parts kanzo-ui adds for it ([what is kanzo-ui's](#what-is-kanzo-uis-and-what-is-keasys)). This
-page describes the thread; the code under `graphs/new/_parts/assistant/` is still the turn-by-turn chat
-it replaces. The pattern this rests on — a *Task*: a small model in the browser fills a small artefact under a JSON Schema, a deterministic oracle checks it, a bounded loop repairs
+(2026-10-13). **The chat as one thread, built 2026-10-14** ([below](#one-thread-top-to-bottom)): the
+sources picked on pills above the composer and sent with what they are about as the first message, the
+Tasks drawn as steps, the details pinned above the thread, the model badge in the app's header, and the
+conversation closed by its build. **Decided, not built:** every result a new message at the end with a
+checkpoint per preview that restores and cuts the thread, node and edge counts in the build's step, a
+composer under the preview, and Discover showing decisions without *Change*; each says so where it is
+described. The pattern this rests on — a *Task*: a small model in the browser fills a small artefact under a JSON Schema, a deterministic oracle checks it, a bounded loop repairs
 it or asks the person — and its API, its model and its decisions are kanzo-ui's, on
 [Tasks](https://kanzo-tech.github.io/ui/docs/design/tasks). fossil's half — `fossil-profile` in place
 of introspect, and a mapping spec from which Fossil is emitted — is on
@@ -51,17 +52,27 @@ with kanzo-ui's chat parts (`Conversation`, `Message`) as Ask's panel is.
 
 **The person's replies are choices, chips or questions — never free-form instructions.** What they send
 or write is drawn as their message (the files with *what is it about?*, a question); a choice made on a
-message's options is not said again as a reply — it stays selected where it was made, which is where it
-is changed, by picking another. A thing said twice reads as two things, and a way to change it under
-the reply (a *Change* link) was a second door to the same options that nobody read as one. Free text
-goes in only where it is a question, or the optional *what is it about?*; the composer's field is off
-otherwise, and the step at the end of the thread says what the assistant is doing or waiting on.
-*What would reverse it:* a transcript read away from its options — exported, or shown where they
-cannot be drawn — where the choice has to be said in words; then a decision answered is a reply again.
+decision's options is not said again as a reply — it stays selected where it was made, which is where
+it is changed, by picking another. A thing said twice reads as two things. Free text goes in only where
+it is a question, or the optional *what is it about?*; the composer's field is off otherwise, and says
+in its placeholder what the thread waits on.
+
+**A default taken is said once, with one door to its options: *I assumed: id · Change*.** The line is
+what was taken, and *Change* opens the question under it; the options are not drawn beside it. This
+reverses the rule that said an assumption's options are always in place, with no *Change*, because
+they were a second door to the options of the decision it assumed for, and nobody read them as one —
+the artifact the thread was designed in (*Asistente en un hilo*) draws the line alone, and a grid of
+radios under every assumption turned a line into a form. A decision with no safe answer is the
+opposite case and keeps its options in the open, because the thread waits on it. *What would reverse
+it:* people who change an assumption and do not find *Change* — a line that reads as plain text —
+then the options are in place again, and the line is their heading.
+*What would reverse the whole rule:* a transcript read away from its options — exported, or shown
+where they cannot be drawn — where the choice has to be said in words; then a decision answered is a
+reply again.
 
 ## One thread, top to bottom
 
-**Decided 2026-10-13, not built.** The whole of the assistant is one thread read from top to bottom:
+**Decided 2026-10-13, built 2026-10-14 except where a section says otherwise.** The whole of the assistant is one thread read from top to bottom:
 what the person sends, the steps the assistant takes for it, and each result as a message after them,
 in the order it happens. The references are ChatGPT's data analysis and Julius, which put a result —
 a table, a chart — in the thread under the step that made it, rather than in a panel beside it;
@@ -74,20 +85,24 @@ The thread, for the Nobel files:
 
 1. **The composer, with the sources on it.** The person picks files on the pills above the field, says
    *what is it about?* (or nothing), and sends both as their first message.
-2. **Steps** — *Read the files*, *Propose the types* — each a tool call with its state.
+2. **Steps** — *Read the files*, *Propose the types*, and what comes after them, still to do.
 3. ***Here's what's in your data*** — the things with real counts and what each holds, and how they
    hang together as sentences with one real row: *each award has a laureate, a category and a year;
    e.g. Marie Curie · Physics · 1903*. Never shape, IRI, predicate or cardinality. Under it, what was
-   assumed, each as *I assumed: id · Change* — the option taken, and its options behind *Change*.
+   assumed, each as *I assumed: id · Change* — the option taken, and its options behind *Change*. They
+   come before the decision that blocks, so the first thing the person is asked is the last thing said.
 4. **The one decision with no safe answer**, as kanzo-ui's `Question`: its question and its options. It
    blocks what comes after it; an assumption blocks nothing.
 5. ***What would you like to know?*** — the questions already answerable from these files, as
    `Suggestions`, and the composer for one's own; each question kept says whether these files can
    answer it. *That's all, show me a preview* ends it.
-6. **Steps** — *Write the program*, *Run the preview* — then **the preview**: each question kept,
-   answered over the first 200 rows with Ask's cards, a checkpoint above it, and **Build the graph**.
-7. **The build** — its steps, then *Your graph is ready* with **Ask your data**, **Open the graph** and
-   the person's questions — and the composer gives way to the conversation's close.
+6. **Steps** — *Wrote the program · Open in the editor*, *Ran it over the first 200 rows of each file*
+   — then **the preview**: each question kept, answered over the first 200 rows with Ask's cards, two
+   to a row, a footnote that the whole graph counts every row, and **Build the graph**. (A checkpoint
+   above it is decided and not built, [below](#checkpoints).)
+7. **The build** — the person's *Build the graph*, its steps (*Kept this conversation*, *Built the graph
+   from every row*), then *Your graph is ready* in a tinted panel with **Ask your data**, **Open the
+   graph** and the person's questions — and the composer gives way to the conversation's close.
 
 ### Sources in the composer, as Claude's connectors
 
@@ -104,17 +119,33 @@ What goes: the *Which data do you want to explore?* turn, its `SourcePicker` tre
 (folders opened one by one, a folder's box picking what is listed under it), its *Read these files*
 reply, and the separate *what is it about?* turn after it. The tree was a second surface inside a
 message — a form posted into the chat — and the reply under it said again what the tree already
-showed. A file in a folder is an item of its connection's menu by its path; the menu lists what the
-connection's listing returns, without opening folders. *What would reverse it:* a connection whose
+showed. The menu lists what the connection's listing returns, and a folder it returns is a submenu
+that lists itself when it is opened — a folder is never opened for the person. **Select all** takes
+every file under the connection, folders included. The pill's cross and **Select all** are keasy's own
+elements: `Menu`'s checkable items and `PromptInputHeader` are kanzo-ui 0.46's, and neither has a
+chip with a cross. *What would reverse it:* a connection whose
 readable files do not fit a menu — hundreds, or folders that only make sense as folders — then the
 pill's menu opens a submenu per folder, and a search over it is Claude's next step, not a dialog.
 Or more connections than fit above the field: then one *+ Add sources* pill lists them, each a
 submenu, as Claude's *+* does.
 
+### The details, pinned above the thread
+
+Once the first message is sent, a block is pinned above the conversation, outside its scroll: the
+sentence the person said the data is about, and *Used 6 files*, which opens to the files by their
+connection and path. The steps scroll with the thread and never move it, and the person can always
+read what the thread was made from without going back up to its first message. It is AI Elements'
+`Sources` in shape (`Sources`, `SourcesTrigger` with a `count`, `SourcesContent`, `Source`), a thin
+local component in `sources.tsx`, and a candidate for `@kanzo-tech/ai` in kanzo-ui 0.47. *What would
+reverse it:* a thread short enough that the first message is always in view — then the block is a
+repeat of it, and goes.
+
 ### The model badge in the page's header
 
 *Model ready* (`ModelStatus`, kanzo-ui's `ModelBadge`) sits at the end of the page's own header, the
-shell's, through `HeaderEnd` as Discover's controls do. **The assistant's top bar goes**: its *Graphs*
+shell's, through `HeaderEnd` as Discover's controls do. The trail reads *Dashboard › Graphs › New
+graph*, and once the conversation has built a graph, the graph's name in its place
+(`/graphs/new/assistant?graph=<id>`, as `?draft=` names a recipe). **The assistant's top bar goes**: its *Graphs*
 and *New graph* repeated the breadcrumbs beside it, and its other button, **Advanced**, becomes an
 action on the step that writes the program — **Open in the editor**, which leaves for the studio with
 the program and the picked files as its sources, as Advanced did. An action on the thing it acts on is
@@ -124,28 +155,33 @@ composer's toolbar, as Ask's does.
 
 ### Steps while it works
 
-Each piece of work is **a step drawn as a tool call with its state**, with `@kanzo-tech/ai`'s existing
-`Tool` part — as Claude draws its tool use, and as AI Elements' `Tool` does: *Read the files*
-(fossil's profile, 4 of 6), *Propose the types* (the `model` Task), *Write the program* (the
-`mapping` Task), *Run the preview* (`usePreview`), and, for the build, *Build the graph*. A step is
-waiting, working, done or failed — `Tool`'s four tones over the AI SDK's states — and its body says
-what it took and what it gave, so it is always clear what the assistant is doing and what it waits on:
-the person, a step, or the model still downloading. A Task's attempts and its oracles' diagnostics are
-in its step, opened on request; a failed step carries the problem and **Retry** in place of the
-`TaskFailed` message after the thread. The `requirements` Task is not a step: while it runs, the
-`Suggestions` show as pending pills where the questions will be, which says what they wait on in the
-place the person is looking. *What would reverse it:* suggestions slow enough that pending pills read
-as broken — then it is a step like the others.
+Each piece of work is **a step with its state**, in a list headed *What I am doing*: *Read 6 files ·
+1,026 awards, 1,012 laureates*, *Proposed the types*, *Waiting for you: one decision has no safe
+answer*, *Write the program*, *Run the preview*. A step is done, under way (or waiting on the person)
+or still to come, and **the steps still to come are on the list from the start**, so the person reads
+what is left as well as what is done. A step's state is derived each time from what the conversation
+already knows (`steps.ts`: the reading, the `model` Task, the decisions, the program, the preview, the
+build) and is not kept; a Task's problem is said where it stopped, with **Retry**, as before. The
+`requirements` Task is not a step: while it runs, the `Suggestions` show as pending pills where the
+questions will be. There are three lists in the thread — reading and proposing, writing and running,
+and building — and the work to come on the first moves to the second once the questions are asked.
 
-This replaces the reading turn's bar and `Working`'s lines (*Writing how your files become a graph…*)
-— sentences that said something was happening, but not which of four things, nor whether it had
-finished or failed. *What would reverse it:* people in a user test who cannot say what the assistant
-was doing from its steps — the tool call's vocabulary read as a developer's — then a step is a
-sentence again, with its bar.
+**The list is AI Elements' `ChainOfThought` in shape, not `Tool`.** A step takes `icon`, `label`,
+`description` and a `status` of `complete`, `active` or `pending`, in `chain-of-thought.tsx` — a thin
+local component, a candidate for `@kanzo-tech/ai` in kanzo-ui 0.47 so that replacing it is an import
+swap. `Tool` was the first choice and is not the right one: it is a bordered, collapsible card bound
+to an AI SDK tool part, with a badge for its state, and cannot say what has not started. The icons are
+the library's: `Working`'s spinner for a step under way, so there is still one vocabulary for busy.
+*What would reverse it:* steps that carry what a plain line cannot — a Task's attempts and its oracles'
+diagnostics, opened on request — then a step that has them is a `Tool`, and the plain line stays for
+the rest.
+
+*What would reverse it (steps at all):* people in a user test who cannot say what the assistant was
+doing from its steps — then a step is a sentence again, with its bar.
 
 ### Each result is a new message at the end
 
-Every result is **a message added at the end, in the order it happens**, and **nothing transforms in
+**Decided, not built.** Today the preview is still one message that is replaced in place under *Updating…*, dimmed and inert, as the section on the preview says. Every result is **a message added at the end, in the order it happens**, and **nothing transforms in
 place**: *what's in your data* with what it assumed, the one decision, the suggested questions, the
 preview, the build. A decision changed — on its `Question`, or behind an assumption's *Change* — stays
 selected where it was made, and what it causes is new: the steps that write the program again and run
@@ -160,7 +196,7 @@ a split layout, the chat beside a panel that holds the current preview.
 
 ### Checkpoints
 
-**One checkpoint per preview run** — each time the program changes and runs again — drawn with
+**Decided, not built** — it waits on the thread above being append-only. **One checkpoint per preview run** — each time the program changes and runs again — drawn with
 `@kanzo-tech/ai`'s `Checkpoint` (AI Elements' part, being added to kanzo-ui) above its preview, with
 **Restore**. **Restoring cuts the thread there**, as AI Elements' `Checkpoint` example and v0 do:
 every message after the checkpoint is removed, from the screen and from the stored conversation, and
@@ -176,10 +212,16 @@ the checkpoint, instead of removing them.
 
 ### Building closes the conversation
 
-**Build the graph** adds a last message: its steps, then *Your graph is ready* with **Ask your data**,
-**Open the graph** and the person's questions as links to Discover. The composer is replaced by *This
-conversation built <graph> and stays as it was built · Start a new one from here*, which starts a new
-conversation from the current checkpoint. This is the storage rule already — a conversation a graph was
+**Built 2026-10-14**, except what the checkpoint gives. **Build the graph** adds the person's message,
+then its steps, then *Your graph is ready* in a tinted panel with **Ask your data**, **Open the graph**
+and the person's questions as links to Discover. The graph is named after the connections its files were
+read through (*Nobel laureates*), since the conversation has no other name to give it. The composer is
+replaced by *This conversation built <graph> and stays as it was built · Start a new one from here*,
+which opens a new assistant, clean — *from the current checkpoint* waits on the checkpoints, and until
+then a new conversation does not carry this one's. A conversation reopened after its build is the old
+rule still: it carries on in a new conversation under a note at its top, because the close is drawn
+only in the visit that built it and the graph's name is not read back. The build's step says *Built the
+graph from every row* and no count: the run does not return one, and node and edge counts wait for it. This is the storage rule already — a conversation a graph was
 built from is that graph's record ([below](#the-conversation-is-kept)) — now said in the UI where it
 applies, instead of as a note above the first message when a built one is opened and a save that
 quietly forked. *What would reverse it:* people who build and then keep refining in the same place,
@@ -408,11 +450,13 @@ decision to its message in the conversation, still read-only. `useAssistantConve
 (`lib/assistant-conversation.ts`) is the web's side: `{ id, messages, save, decisions }`, over
 `@kanzo-tech/ai`'s `useKeptChat`.
 
-**One message per result** (`conversation.ts`'s `messagesOf`): each carries a `data-turn` with its
+**One message per turn** (`conversation.ts`'s `messagesOf`; checkpoints below are decided, not built, and
+a preview is one message until they are): each carries a `data-turn` with its
 kind, and its id is the kind and what it is about (`decide:<decision>`, `asked:<question>`,
 `preview:<checkpoint>`), so a save of a message already there replaces it and a new result adds one.
-The person's messages are `user` messages: the first carries `data-files` and `data-about` together,
-as the composer sends them; `data-decision` on a decision answered (`option: null` while it is asked;
+The person's messages are `user` messages (`sent`, `decided`, `asked`, `asked-all`, `build-reply`): the
+first carries `data-files` and `data-about` together, as the composer sends them, and the steps are
+not kept — they are said again from what the conversation knows; `data-decision` on a decision answered (`option: null` while it is asked;
 the last word on each wins), and `data-question` per question kept. Each preview message carries its
 checkpoint, `data-checkpoint`: the program it ran and the option each decision stood at; the last is
 the current one, since restoring cuts what came after it. `restore` reads the same parts back, and the thread starts where it stood: the
@@ -596,8 +640,9 @@ replaced the wizard on 2026-10-13 — "Assistant" in the new-graph picker opens 
 BFF's `/api/ai` forward and their configuration went the same day. The phases are on
 [Tasks](https://kanzo-tech.github.io/ui/docs/design/tasks#phases).
 
-The thread comes next, once kanzo-ui ships `Checkpoint`, the slot above `PromptInput`'s field and
-checkable `Menu` items. The `nobel-assistant` demo (`e2e/demos/nobel-assistant.demo.ts`) keeps what it
+The thread is built (2026-10-14) on kanzo-ui 0.46's slot above `PromptInput`'s field and checkable
+`Menu` items; what is left of it is the append-only thread with `Checkpoint` and its restore, the build's
+counts, a composer under the preview, and Discover without *Change*. The `nobel-assistant` demo (`e2e/demos/nobel-assistant.demo.ts`) keeps what it
 has — its subtitles at the top, and the model double answering at a model's pace — and is rewritten to
 the thread's flow with it: the files picked on *@Nobel laureates*' pill and sent with *what is it
 about?*, the steps, each result below the last, a decision changed and a checkpoint restored, and the

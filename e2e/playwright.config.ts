@@ -27,7 +27,7 @@ const GPU = {
 /**
  * The GPU, with WebGPU on: the model runs in the page (`web/src/lib/ai.ts`), and headless Chromium
  * offers WebGPU only when asked — on Linux, over Vulkan. A machine with no GPU still has none, and
- * Ask says so (`ai/unavailable`).
+ * Ask says so (`llm/unavailable`).
  */
 const WEBGPU = {
   args: [...GPU.args, "--enable-unsafe-webgpu", ...(process.platform === "linux" ? ["--enable-features=Vulkan"] : [])],

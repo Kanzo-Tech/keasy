@@ -1,7 +1,8 @@
 "use client";
 
 import { createContext, createElement, type ReactNode, useCallback, useContext, useEffect, useSyncExternalStore } from "react";
-import { AiError, type LanguageModel, type ModelLoad } from "@kanzo-tech/llm";
+import type { LanguageModel } from "ai";
+import { LlmError, type ModelLoad } from "@kanzo-tech/llm";
 import { type LocalModelSettings, loadLocalModel, localModel, localModelLoad, watchLocalModel } from "@kanzo-tech/llm/local";
 
 /**
@@ -26,7 +27,7 @@ export const LIBRARY = "lib/v0_2_86/Qwen3-4B-q4f16_1_cs1k-webgpu.wasm";
  * Where the model's shards are served (`KEASY_MODEL_URL`), read by the server at request time so one
  * image serves any deployment, and handed down from the layout: a path on keasy's own origin, `/models`
  * in development and behind a deployment's edge alike. Unset, or on another origin, there is no model
- * — never a third party's copy — and Ask and the assistant say so (`ai/unavailable`, `reason:
+ * — never a third party's copy — and Ask and the assistant say so (`llm/unavailable`, `reason:
  * "unserved"`).
  */
 const ModelUrl = createContext<string | undefined>(undefined);
@@ -36,7 +37,7 @@ export function ModelProvider({ url, children }: { url: string | undefined; chil
 }
 
 const unserved = () =>
-  new AiError("ai/unavailable", "This deployment serves no model on its origin (KEASY_MODEL_URL)", { reason: "unserved" });
+  new LlmError("llm/unavailable", "This deployment serves no model on its origin (KEASY_MODEL_URL)", { reason: "unserved" });
 
 /** The load of a deployment that serves no model: failed before anything is asked, and for good. */
 const UNSERVED_LOAD: ModelLoad = { state: "failed", error: unserved() };
@@ -50,7 +51,7 @@ function servedFrom(url: string | undefined): URL | undefined {
 
 /**
  * The model of a page with none to ask: on the server, where nothing calls it, and in a deployment that
- * serves none, where every call fails as `ai/unavailable` before anything is asked.
+ * serves none, where every call fails as `llm/unavailable` before anything is asked.
  */
 const UNSERVED: LanguageModel = {
   specificationVersion: "v4",
@@ -60,21 +61,6 @@ const UNSERVED: LanguageModel = {
   doGenerate: () => Promise.reject(unserved()),
   doStream: () => Promise.reject(unserved()),
 };
-
-/**
- * The end-to-end suite's model double (`e2e/support/model.ts`): a model, and where its load stands, put
- * on the page before it loads, which every screen then asks in place of WebLLM — CI's browsers have no
- * WebGPU. Development builds only: `process.env.NODE_ENV` is inlined when the bundle is built, so a
- * production bundle keeps neither this branch nor the name it reads (`model-double.test.ts`).
- */
-interface ModelDouble {
-  model: LanguageModel;
-  load: ModelLoad;
-}
-function modelDouble(): ModelDouble | undefined {
-  if (process.env.NODE_ENV === "production") return undefined;
-  return (window as { __keasyModelDouble?: ModelDouble }).__keasyModelDouble;
-}
 
 // One engine per page, in a worker of its own: the first caller's settings are the engine's for good.
 let settings: LocalModelSettings | undefined;
@@ -90,12 +76,12 @@ function settingsFor(base: URL): LocalModelSettings {
 
 /**
  * Starts the download and load, unless it is under way or done: a failed one is tried again. Its
- * failure is `localModelLoad`'s to say. A double's load and a deployment with no model have nothing
- * to start.
+ * failure is `localModelLoad`'s to say. A deployment with no model has nothing to start. A test's
+ * scripted model (`@kanzo-tech/testing`'s `playwright(page, { models })`) is `localModel`'s to answer.
  */
 function start(url: string | undefined) {
   const base = servedFrom(url);
-  if (modelDouble() || !base) return;
+  if (!base) return;
   const { state } = localModelLoad(MODEL);
   if (state === "loading" || state === "ready") return;
   // eslint-disable-next-line no-restricted-syntax -- not lost: localModelLoad says it failed, and why
@@ -107,7 +93,7 @@ export function useModel(): LanguageModel {
   const url = useContext(ModelUrl);
   if (typeof window === "undefined") return UNSERVED;
   const base = servedFrom(url);
-  return modelDouble()?.model ?? (base ? localModel(MODEL, settingsFor(base)) : UNSERVED);
+  return base ? localModel(MODEL, settingsFor(base)) : UNSERVED;
 }
 
 /** Starts the download and load now — or again, after a failure: a retry's action. */
@@ -120,7 +106,7 @@ export function useLoadModel(): () => void {
  * Starts the download and load in the background when a person opens something they will ask the
  * model about — a graph, the wizard, the assistant — so the first question does not wait on the
  * weights; the page works without it meanwhile. Loaded once per page, whichever screen asked first.
- * Without WebGPU it fails at once, as `ai/unavailable`, before anything is downloaded.
+ * Without WebGPU it fails at once, as `llm/unavailable`, before anything is downloaded.
  */
 export function usePreloadModel(): void {
   const loadModel = useLoadModel();
@@ -128,12 +114,12 @@ export function usePreloadModel(): void {
 }
 
 /**
- * How the model's download and load stand in this page — `@kanzo-tech/llm/local`'s, the double's, or
- * failed for good where no model is served: what Ask and the assistant show until it is ready.
+ * How the model's download and load stand in this page — `@kanzo-tech/llm/local`'s, or failed for good
+ * where no model is served: what Ask and the assistant show until it is ready.
  */
 export function useModelLoad(): ModelLoad {
   const url = useContext(ModelUrl);
-  const current = () => modelDouble()?.load ?? (servedFrom(url) ? localModelLoad(MODEL) : UNSERVED_LOAD);
+  const current = () => (servedFrom(url) ? localModelLoad(MODEL) : UNSERVED_LOAD);
   return useSyncExternalStore(
     useCallback((listener: () => void) => watchLocalModel(MODEL, listener), []),
     current,

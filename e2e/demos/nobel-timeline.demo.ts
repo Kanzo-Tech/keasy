@@ -48,7 +48,7 @@ demo("nobel-timeline", "Nobel prizes on a map and a timeline: a century of scien
     await graph.ready();
     // The settings leave the dock to Info, as on the other maps.
     await discover.panel("Info");
-    const timeline = await env.harness(TimelineHarness.with({ title: /^Timeline: / }));
+    const timeline = await env.getHarness(TimelineHarness.with({ title: /^Timeline: / }));
     return { discover, graph, timeline, bar: await discover.filters() };
   },
 

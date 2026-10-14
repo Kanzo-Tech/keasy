@@ -40,11 +40,11 @@ export class SettingsPanel extends ComponentHarness {
    * level more. Resolves once the slider reads the level.
    */
   async labels(level: Labels): Promise<void> {
-    const slider = await this.one({ role: "slider", name: "Labels" }, "the panel has no Labels");
-    const at = async () => (await slider.attribute("aria-valuetext")) === level || (await slider.attribute("aria-valuenow")) === String(LABELS.indexOf(level));
+    const slider = await this.locatorFor({ role: "slider", name: "Labels" }, "the panel has no Labels")();
+    const at = async () => (await slider.getAttribute("aria-valuetext")) === level || (await slider.getAttribute("aria-valuenow")) === String(LABELS.indexOf(level));
     if (await at()) return;
-    await slider.press("Home");
-    for (let step = 0; step < LABELS.indexOf(level); step++) await slider.press("ArrowRight");
+    await slider.sendKeys("Home");
+    for (let step = 0; step < LABELS.indexOf(level); step++) await slider.sendKeys("ArrowRight");
     await this.env.until(at, `Labels did not change to ${level}`);
   }
 
@@ -55,8 +55,8 @@ export class SettingsPanel extends ComponentHarness {
    */
   async backdrop({ vignette, grid }: { vignette: boolean; grid: boolean }): Promise<void> {
     for (const [name, on] of [["Vignette", vignette], ["Dot grid", grid]] as const) {
-      const toggle = await this.one({ role: "switch", name }, `the panel has no ${name}`);
-      if ((await isChecked(toggle)) !== on) await toggle.press("Space");
+      const toggle = await this.locatorFor({ role: "switch", name }, `the panel has no ${name}`)();
+      if ((await isChecked(toggle)) !== on) await toggle.sendKeys("Space");
       await this.env.until(async () => (await isChecked(toggle)) === on, `${name} did not turn ${on ? "on" : "off"}`);
     }
   }

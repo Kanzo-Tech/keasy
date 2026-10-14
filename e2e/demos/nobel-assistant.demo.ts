@@ -1,8 +1,9 @@
 import { expect, type Page } from "@playwright/test";
+import type { ModelTurn } from "@kanzo-tech/testing";
 
 import { AskPanel } from "../support/app";
 import { chooseRadio } from "../support/app/controls";
-import { promptsOf, type Rule, useModelDouble } from "../support/model";
+import { promptsOf, scriptModel } from "../support/model";
 import { demo } from "./record";
 
 /** The Nobel example's connection, as the dev stack names it, and its six files. */
@@ -98,7 +99,7 @@ Affiliations : Award from awards.join(affiliations, on = awards.id == affiliatio
  * the program written after the decision changed from the first — and Ask's, per question. The second
  * question's prompt carries the first, so it is looked for first.
  */
-function script(origin: string): Rule[] {
+function script(origin: string): ModelTurn[] {
   const json = (value: unknown) => ({ text: JSON.stringify(value) });
   return [
     { when: "You design what a person's data is about", reply: json(DRAFT) },
@@ -147,7 +148,7 @@ demo("nobel-assistant", "The guided assistant: the Nobel files to a preview in t
     await page.goto("/graphs");
     const origin = new URL(page.url()).origin;
     // At a model's pace, so each turn arrives on camera rather than all at once.
-    await useModelDouble(page, { rules: script(origin), pace: PACE });
+    await scriptModel(page, { turns: script(origin), pace: PACE });
     await page.goto("/graphs/new/assistant");
     await expect(page.getByRole("tree", { name: "Files" }).getByText(`@${CONNECTION}`, { exact: true })).toBeVisible();
     return { page };
@@ -180,7 +181,7 @@ demo("nobel-assistant", "The guided assistant: the Nobel files to a preview in t
     },
     {
       subtitle: "What has no safe answer is yours to decide",
-      action: () => chooseRadio(env, env.root, LINK, ONE),
+      action: () => chooseRadio(env, env.rootElement, LINK, ONE),
       check: () => expect(page.getByRole("radiogroup", { name: LINK }).getByRole("radio", { name: ONE })).toBeChecked(),
     },
     {
@@ -211,7 +212,7 @@ demo("nobel-assistant", "The guided assistant: the Nobel files to a preview in t
       subtitle: "Change a decision: the preview runs again",
       async action() {
         await page.getByRole("radiogroup", { name: COUNTRY }).scrollIntoViewIfNeeded();
-        await chooseRadio(env, env.root, COUNTRY, "name");
+        await chooseRadio(env, env.rootElement, COUNTRY, "name");
       },
       async check() {
         // The program written again, for the country's other key, and the answers read over it.
@@ -230,7 +231,7 @@ demo("nobel-assistant", "The guided assistant: the Nobel files to a preview in t
       action: () => page.getByRole("link", { name: "Ask your data" }).click(),
       async check() {
         await expect(page).toHaveURL(/\/graphs\/[^/]+\/discover/);
-        await env.harness(AskPanel);
+        await env.getHarness(AskPanel);
       },
     },
   ],

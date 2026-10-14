@@ -67,13 +67,13 @@ describe("a failure's cause", () => {
 
 describe("a library's coded failure", () => {
   it("is keyed by its code, its data kept", () => {
-    const unavailable = Object.assign(new Error("This browser cannot run the model"), { code: "ai/unavailable", data: { reason: "webgpu" } });
-    expect(coded(unavailable)).toMatchObject({ code: "ai/unavailable", data: { reason: "webgpu" } });
+    const unavailable = Object.assign(new Error("This browser cannot run the model"), { code: "llm/unavailable", data: { reason: "webgpu" } });
+    expect(coded(unavailable)).toMatchObject({ code: "llm/unavailable", data: { reason: "webgpu" } });
   });
 
   it("says which way the model cannot run: the browser, or a deployment that serves none", () => {
-    expect(descriptionOf("ai/unavailable", { reason: "webgpu" })?.title).toBe("This browser cannot run the model.");
-    expect(descriptionOf("ai/unavailable", { reason: "unserved" })?.title).toBe("This workspace has no model.");
+    expect(descriptionOf("llm/unavailable", { reason: "webgpu" })?.title).toBe("This browser cannot run the model.");
+    expect(descriptionOf("llm/unavailable", { reason: "unserved" })?.title).toBe("This workspace has no model.");
   });
 
   it("is read in fossil's grammar, digits and all", () => {

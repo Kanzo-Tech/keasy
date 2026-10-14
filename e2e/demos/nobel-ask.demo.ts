@@ -1,8 +1,8 @@
 import { expect } from "@playwright/test";
-import type { TileHarness } from "@kanzo-tech/testing";
+import type { ModelTurn, TileHarness } from "@kanzo-tech/testing";
 
 import { DiscoverPage, saveDashboard } from "../support/app";
-import { type Rule, useModelDouble } from "../support/model";
+import { scriptModel } from "../support/model";
 import { seedGraph } from "../support/seeds";
 import { demo } from "./record";
 
@@ -24,7 +24,7 @@ const GERMANY = "Which ones were won in Germany?";
  * The relation each needs is the page's to find, and the rows are DuckDB's, under the page's filter.
  */
 const BY_UNIVERSITY = { of: "LaureateAward", show: { kind: "chart", type: "bar", x: "University.name", y: { op: "count" } }, top: 8 };
-const RULES: Rule[] = [
+const TURNS: ModelTurn[] = [
   { when: `Question: ${GERMANY}`, reply: { text: JSON.stringify({ ...BY_UNIVERSITY, where: [{ field: "Country.name", in: ["Germany"] }] }) } },
   { when: `Question: ${UNIVERSITIES}`, reply: { text: JSON.stringify(BY_UNIVERSITY) } },
 ];
@@ -53,7 +53,7 @@ const holds = (rows: Record<string, string>[], value: string, n: number) =>
  */
 demo("nobel-ask", "Ask over the Nobel prizes: an answer added to the dashboard and opened there, then one that filters the map", {
   async arrange({ page, env }) {
-    await useModelDouble(page, { rules: RULES });
+    await scriptModel(page, { turns: TURNS });
     const id = await seedGraph(page, "nobel", { name: "Demo · Nobel laureates", reuse: true });
     await saveDashboard(page, id, RELATION, DASHBOARD);
     const discover = await DiscoverPage.open(page, env, id);
@@ -115,7 +115,7 @@ demo("nobel-ask", "Ask over the Nobel prizes: an answer added to the dashboard a
         const tile = await dashboard.tile("Count by University.name");
         await expect
           .poll(async () => {
-            const { y, height } = await tile.host.rect();
+            const { top: y, height } = await tile.host.getDimensions();
             return y >= 0 && y + height / 2 <= 900;
           })
           .toBe(true);

@@ -357,8 +357,8 @@ worker of its own, for Ask, its offers and the assistant alike.
 **The shards are keasy's, served from its own origin, never a third party's** (2026-10-13). WebLLM's
 default is its prebuilt list — the weights from Hugging Face, the library from GitHub — and keasy does
 not fall back to it: with `KEASY_MODEL_URL` empty, or naming another origin, there is no model, and Ask
-and the assistant say so (`ai/unavailable` with `reason: "unserved"`, the one code `@kanzo-tech/llm`'s
-`AiError` has). `make models` (`infra/models.sh`) downloads them once — the weights at a pinned Hugging
+and the assistant say so (`llm/unavailable` with `reason: "unserved"`, the one code `@kanzo-tech/llm`'s
+`LlmError` has). `make models` (`infra/models.sh`) downloads them once — the weights at a pinned Hugging
 Face revision, the library at a pinned commit of `binary-mlc-llm-libs`, every file checked — into
 `infra/models`, which the `models` service (nginx, `compose.yaml`) serves at `/models`: through Next's
 rewrite in development, which has no edge, and through Traefik in a deployment (`infra/prod/README.md`).
@@ -378,24 +378,19 @@ Cache Storage, behind `navigator.storage.persist()`. Not yet: versioning — the
 the new one is whole. *What would reverse it:* people who open graphs and never ask, on metered
 connections — then the download waits for the first screen that asks.
 
-**The e2e suite runs on a model double in the page**, because CI's Chromium has no WebGPU:
-`e2e/support/model.ts` puts a scripted `LanguageModel`, and its load as a `ModelLoad`, on `window.__keasyModelDouble` before the page
-loads, and `lib/ai.ts` asks it in place of WebLLM — in a development build only, behind
-`process.env.NODE_ENV`, which `next build` inlines, so the production bundle has neither the branch nor
-the name (`model-double.test.ts`, run on the built bundle in CI). Scenario 11 still forces a browser
-without WebGPU, with no double; 12–16 and the dashboard's are real again over the double. What it
-cannot show is WebLLM itself: that the pinned shards load and answer is a browser with WebGPU's to
-check (`make models`, then the eval).
-
-**Direction (2026-10-13): one double, and it is `@kanzo-tech/llm`'s.** keasy holds three —
-`e2e/support/model.ts`, `lib/ai.ts`'s `modelDouble()` with its `UNSERVED` and the built-bundle guard
-`model-double.test.ts`, and `nobel.fixture.ts`'s `scripted()` over `MockLanguageModelV4` — and the
-library two more. Once `@kanzo-tech/llm` ships one scripted double that `localModel` consults through
-`__KANZO_TESTING__`, keasy's injection branch, its window name, its guard test and its unit-test
-double go, and `UNSERVED` becomes `localModel`'s own `ai/unavailable { reason: "unserved" }` (~180
-lines). The model's load already moved (`localModelLoad`, above): keasy holds no store of it. *What
-would reverse it:* a double that cannot be kept out of a production bundle by the library — then
-keasy keeps its guard on the built bundle, and only that.
+**The e2e suite runs on `@kanzo-tech/llm`'s model double**, because CI's Chromium has no WebGPU:
+`e2e/support/model.ts` registers a script for keasy's model with `@kanzo-tech/testing`'s
+`playwright(page, { models })` before the page loads, and `localModel` answers from it — its load
+included — in place of WebLLM, recording every prompt. keasy's code has no branch for it. The library's probe for the hook
+(`__KANZO_TESTING__.models`) is in the production bundle — nothing inlines it away — so a script that
+runs in the page before keasy could answer for the model; one that runs there can already do anything
+the page can. The Tasks' unit tests use the same double,
+`scriptedModel` from `@kanzo-tech/llm/testing` (`nobel.fixture.ts`). Scenario 11 still forces a
+browser without WebGPU, with no script; 12–16 and the dashboard's run over the script. What it cannot
+show is WebLLM itself: that the pinned shards load and answer is a browser with WebGPU's to check
+(`make models`, then the eval). `UNSERVED`, the model of a deployment that serves none, stays keasy's:
+the library knows no deployment. *What would reverse it:* a page that runs third-party script before its own — then the probe must
+leave the production bundle, in the library, and keasy guards the built bundle again.
 
 ## The executor leaves the page's main thread
 

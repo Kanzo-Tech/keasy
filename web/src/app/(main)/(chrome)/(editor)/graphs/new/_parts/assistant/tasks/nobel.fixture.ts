@@ -1,10 +1,10 @@
 /**
  * A small Nobel, as fossil's profile answers it — laureates, their awards, the institutions they
  * were at and the affiliations linking the two, and a countries file nothing points at — with a
- * model double that answers each call with the next scripted reply. For the Tasks' tests only.
+ * model that answers each call with the next scripted reply. For the Tasks' tests only.
  */
 
-import { MockLanguageModelV4 } from "ai/test";
+import { promptOf, scriptedModel } from "@kanzo-tech/llm/testing";
 import type { Engine, Input, Primitive, Profile } from "@fossil-lang/types";
 import type { Draft } from "./model";
 import { profiledOf } from "./profile";
@@ -101,24 +101,17 @@ export const DRAFT: Draft = {
   ],
 };
 
-const usage = { inputTokens: { total: 1, noCache: 1, cacheRead: 0, cacheWrite: 0 }, outputTokens: { total: 1, text: 1, reasoning: 0 } };
-
 /**
- * A model that answers each call with the next of `replies` — an object as its JSON, a string as
- * it is — and the last one after that, keeping every prompt it was asked.
+ * `@kanzo-tech/llm/testing`'s model, answering each call with the next of `replies` — an object as
+ * its JSON, a string as it is — and the last one after that, keeping every prompt it was asked.
  */
 export function scripted(...replies: unknown[]) {
   const prompts: string[] = [];
-  const model = new MockLanguageModelV4({
-    doGenerate: async (call) => {
-      prompts.push(JSON.stringify(call.prompt));
-      const reply = replies[Math.min(prompts.length - 1, replies.length - 1)];
-      return {
-        content: [{ type: "text", text: typeof reply === "string" ? reply : JSON.stringify(reply) }],
-        finishReason: { unified: "stop", raw: "stop" },
-        usage,
-        warnings: [],
-      };
+  const model = scriptedModel({
+    turns: (call, index) => {
+      prompts.push(promptOf(call));
+      const reply = replies[Math.min(index, replies.length - 1)];
+      return typeof reply === "string" ? { text: reply } : { object: reply };
     },
   });
   return { model, prompts };

@@ -64,6 +64,7 @@
     "zustand": "^5.0.12"
   },
   "devDependencies": {
+    "@kanzo-tech/testing": "^0.46.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

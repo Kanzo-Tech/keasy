@@ -13,7 +13,7 @@ export class AskPanel extends ComponentHarness {
 
   /** The library's harness over the panel's composer and its answer cards. */
   composer(): Promise<AnswerHarness> {
-    return this.locate(AnswerHarness.with({ name: COMPOSER }));
+    return this.locatorFor(AnswerHarness.with({ name: COMPOSER }))();
   }
 
   /**
@@ -21,9 +21,9 @@ export class AskPanel extends ComponentHarness {
    * drawn (a browser that cannot run the model), whose failure is the panel's `Problem`, not a card's.
    */
   async send(question: string): Promise<void> {
-    const box = await this.one({ role: "textbox", name: COMPOSER }, "the panel has no composer");
+    const box = await this.locatorFor({ role: "textbox", name: COMPOSER }, "the panel has no composer")();
     await box.fill(question);
-    await box.press("Enter");
+    await box.sendKeys("Enter");
   }
 
   /**
@@ -32,18 +32,18 @@ export class AskPanel extends ComponentHarness {
    * model and not the load. A browser that cannot run it fails at once, with the code behind the badge.
    */
   async warmUp(): Promise<void> {
-    const panel = await this.one({ css: "[data-model]" }, "the panel says nothing of the model");
+    const panel = await this.locatorFor({ css: "[data-model]" }, "the panel says nothing of the model")();
     const state = await this.env.until(async () => {
-      const now = await panel.attribute("data-model");
+      const now = await panel.getAttribute("data-model");
       return now === "ready" || now === "failed" ? now : undefined;
     }, "the model never loaded");
     if (state === "ready") return;
     // Why is behind the model's badge, in a popover outside the panel.
-    await (await this.one({ css: '[data-slot="model-badge"]' }, "the panel has no model badge")).click();
+    await (await this.locatorFor({ css: '[data-slot="model-badge"]' }, "the panel has no model badge")()).click();
     const problem = await this.env.until(
-      async () => (await this.env.root.find({ css: '[data-slot="model-badge-content"] [data-code]' }))[0],
+      async () => (await this.env.rootElement.find({ css: '[data-slot="model-badge-content"] [data-code]' }))[0],
       "the model's badge opened no problem",
     );
-    throw new Error(`the model cannot run in this browser: ${(await problem?.attribute("data-code")) ?? "no code"}`);
+    throw new Error(`the model cannot run in this browser: ${(await problem?.getAttribute("data-code")) ?? "no code"}`);
   }
 }

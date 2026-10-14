@@ -1,7 +1,7 @@
 import { type Code, CODES, type Foreign, helpUrl, isCode, isFossilError } from "@fossil-lang/types";
 import type { AuthErrorCode } from "@kanzo-tech/auth";
 import type { GraphError } from "@kanzo-tech/graph";
-import type { AiError } from "@kanzo-tech/llm";
+import type { LlmError } from "@kanzo-tech/llm";
 import type { EngineError } from "@kanzo-tech/mosaic";
 import { type ProblemDescription, toast } from "@kanzo-tech/ui";
 
@@ -53,7 +53,7 @@ const signIn = { label: "Sign in again", href: "/api/auth/signin" };
  * kanzo-ui's own failures, in the same grammar — its sign-in, its graph, its engine, its model
  * calls — as each library's error class declares them, so a code it renames is a type error here.
  */
-type KanzoCode = AuthErrorCode | GraphError["code"] | EngineError["code"] | AiError["code"];
+type KanzoCode = AuthErrorCode | GraphError["code"] | EngineError["code"] | LlmError["code"];
 
 const registry: Partial<Record<ErrorCode | NoBodyCode | ClientCode | Code | KanzoCode, Copy>> = {
   "callback/state-mismatch": {
@@ -82,7 +82,7 @@ const registry: Partial<Record<ErrorCode | NoBodyCode | ClientCode | Code | Kanz
   "idp/unreachable": { title: "The identity provider could not be reached.", link: signIn },
   // The model runs in the page, and cannot here: this browser has no WebGPU, or this deployment serves
   // no model (`data.reason`: `webgpu`, `unserved` — lib/ai.ts).
-  "ai/unavailable": {
+  "llm/unavailable": {
     title: (data) => (reasonOf(data) === "unserved" ? "This workspace has no model." : "This browser cannot run the model."),
     detail: (data) =>
       reasonOf(data) === "unserved"
@@ -157,7 +157,7 @@ export function pageOf(code: string): string | undefined {
 
 /**
  * A failure by the fields every coded error here shares — fossil's `FossilError`, the server's
- * `ApiError`, kanzo-ui's `AuthError`, `GraphError`, `EngineError` and `AiError` — which is what
+ * `ApiError`, kanzo-ui's `AuthError`, `GraphError`, `EngineError` and `LlmError` — which is what
  * kanzo-ui's `Problem` reads. `detail` is a stored problem's word for `message`.
  */
 export interface Coded {
@@ -174,7 +174,7 @@ const isCoded = (err: unknown): err is Coded =>
 
 /**
  * Any thrown value with a code to branch on: one that carries a code is itself — a model call's
- * `AiError` (`ai/unavailable`) included; anything else is `uncoded`, in its own words, its cause
+ * `LlmError` (`llm/unavailable`) included; anything else is `uncoded`, in its own words, its cause
  * kept — a model that failed to load or to answer.
  */
 export function coded(err: unknown, uncoded: ClientCode | ErrorCode = "web/unknown"): Coded {

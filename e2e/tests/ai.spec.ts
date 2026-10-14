@@ -5,7 +5,7 @@ import type { HarnessEnvironment } from "@kanzo-tech/testing";
 import { api, SOURCE } from "../support/stack/api";
 import { AskPanel, DiscoverPage } from "../support/app";
 import { test } from "../support/fixtures";
-import { promptsOf, useModelDouble } from "../support/model";
+import { promptsOf, scriptModel } from "../support/model";
 import { expectModelProblem, expectProblem } from "../support/stack/problem";
 
 /**
@@ -69,17 +69,17 @@ async function failedOnQuestions(page: Page) {
   await expect(page.getByRole("button", { name: "Who bought the most?" })).toHaveCount(0);
 }
 
-test("11 a browser without WebGPU fails the answer in Ask as ai/unavailable", async ({ page, env, corpusGraph }) => {
+test("11 a browser without WebGPU fails the answer in Ask as llm/unavailable", async ({ page, env, corpusGraph }) => {
   await withoutWebGPU(page);
   await (await askPanel(page, env, corpusGraph)).send("How many people are there?");
   // Said at once, by its code, rather than a load that never finishes.
-  await expectProblem(page, "ai/unavailable", { within: 15_000 });
+  await expectProblem(page, "llm/unavailable", { within: 15_000 });
 });
 
 test("12 the shards of the model cannot be downloaded: Ask says so, not an empty answer", async ({ page, env, corpusGraph }) => {
   // WebLLM's words for a shard the origin does not serve; a call after a failed load fails the same way.
   const fail = "Cannot fetch http://acme.localhost:3000/models/Qwen3-4B-q4f16_1-MLC/resolve/a5c9fab/params_shard_0.bin";
-  await useModelDouble(page, { load: { fail }, rules: [{ when: question("How many people are there?"), reply: { fail } }] });
+  await scriptModel(page, { load: { fail }, turns: [{ when: question("How many people are there?"), reply: { fail } }] });
   const panel = await askPanel(page, env, corpusGraph);
   // The load began as the graph opened, and its failure is the panel's badge before anything is asked.
   await expectModelProblem(page, "llm/failed", { within: 15_000 });
@@ -89,8 +89,8 @@ test("12 the shards of the model cannot be downloaded: Ask says so, not an empty
 
 test("13 a model that stops writing mid-answer can be stopped, and the next question is answered", async ({ page, env, corpusGraph }) => {
   const words = "How many people are there?";
-  await useModelDouble(page, {
-    rules: [
+  await scriptModel(page, {
+    turns: [
       { when: question(words), reply: { hang: true }, once: true },
       { when: question(words), reply: { text: JSON.stringify({ of: "Person", show: { kind: "stat", measure: { op: "count" } } }) } },
     ],
@@ -110,8 +110,8 @@ test("13 a model that stops writing mid-answer can be stopped, and the next ques
 test("14 a model that fails mid-answer is a failure, not a short answer", async ({ page }) => {
   // One whole question, then the engine fails: what was written is not taken for the whole list.
   const one = JSON.stringify({ text: "Who bought the most?", of: "Person", fields: ["Person.name"] });
-  await useModelDouble(page, {
-    rules: [
+  await scriptModel(page, {
+    turns: [
       { when: MODEL, reply: { text: JSON.stringify(PERSON) } },
       { when: REQUIREMENTS, reply: { after: `{"elements":[${one},{"text":"How many`, fail: "The GPU device was lost" } },
     ],
@@ -123,8 +123,8 @@ test("14 a model that fails mid-answer is a failure, not a short answer", async 
 
 test("15 a structured answer that does not parse fails the step of the assistant, not as no suggestions", async ({ page }) => {
   // The questions are asked for as JSON; prose instead fails the call, and says so.
-  await useModelDouble(page, {
-    rules: [
+  await scriptModel(page, {
+    turns: [
       { when: MODEL, reply: { text: JSON.stringify(PERSON) } },
       { when: REQUIREMENTS, reply: { text: "You should look at the people table." } },
     ],
@@ -139,7 +139,7 @@ test("16 an answer the spec does not admit is refused in the reply, and the mode
   // anything runs, sent back with the check's own words, and refused once the attempts are spent.
   const words = "How many people wear a 42?";
   const spec = { of: "Person", where: [{ field: "Person.shoeSize", in: ["42"] }], show: { kind: "stat", measure: { op: "count" } } };
-  await useModelDouble(page, { rules: [{ when: question(words), reply: { text: JSON.stringify(spec) } }] });
+  await scriptModel(page, { turns: [{ when: question(words), reply: { text: JSON.stringify(spec) } }] });
   await (await askPanel(page, env, corpusGraph)).send(words);
   await expect(page.getByText(/I could not answer that over this data: .*Person\.shoeSize is not a field of Person/)).toBeVisible({
     timeout: 15_000,
@@ -151,19 +151,19 @@ test("16 an answer the spec does not admit is refused in the reply, and the mode
   expect(asked[1]).toMatch(/It does not hold:[\s\S]*Person\.shoeSize is not a field of Person/);
 });
 
-test("the assistant on a browser without WebGPU says so as ai/unavailable, not as no suggestions", async ({ page }) => {
+test("the assistant on a browser without WebGPU says so as llm/unavailable, not as no suggestions", async ({ page }) => {
   await withoutWebGPU(page);
   await page.goto("/graphs/new");
   await page.getByText("Assistant", { exact: true }).click();
   await expect(page).toHaveURL(/\/graphs\/new\/assistant$/);
-  await expectModelProblem(page, "ai/unavailable", { within: 20_000 });
+  await expectModelProblem(page, "llm/unavailable", { within: 20_000 });
 });
 
 test("an answer added to the dashboard is saved as a tile of its relation", async ({ page, env, corpusGraph }) => {
   const title = `Asked ${Date.now()}`;
   const words = "How many people are there?";
-  await useModelDouble(page, {
-    rules: [{ when: question(words), reply: { text: JSON.stringify({ of: "Person", show: { kind: "stat", measure: { op: "count" }, title } }) } }],
+  await scriptModel(page, {
+    turns: [{ when: question(words), reply: { text: JSON.stringify({ of: "Person", show: { kind: "stat", measure: { op: "count" }, title } }) } }],
   });
   const answers = await (await askPanel(page, env, corpusGraph)).composer();
   await answers.ask(words);
@@ -181,12 +181,12 @@ test("an answer added to the dashboard is saved as a tile of its relation", asyn
 
 test("the assistant's question reaches Ask once: asked as Discover opens, not again on a refresh", async ({ page, env, corpusGraph }) => {
   const words = "How many people are there?";
-  await useModelDouble(page, {
-    rules: [{ when: question(words), reply: { text: JSON.stringify({ of: "Person", show: { kind: "stat", measure: { op: "count" } } }) } }],
+  await scriptModel(page, {
+    turns: [{ when: question(words), reply: { text: JSON.stringify({ of: "Person", show: { kind: "stat", measure: { op: "count" } } }) } }],
   });
   // What the assistant's last turn links to: Ask docked, the person's question handed over.
   await page.goto(`/graphs/${corpusGraph}/discover?panel=ask&q=${encodeURIComponent(words)}`);
-  const ask = await env.harness(AskPanel);
+  const ask = await env.getHarness(AskPanel);
   await ask.warmUp();
   const answers = await ask.composer();
   expect(await answers.rows()).toEqual([{ count: String(PEOPLE) }]);
@@ -195,6 +195,6 @@ test("the assistant's question reaches Ask once: asked as Discover opens, not ag
 
   // The question left the URL as it was sent: the page opened again asks nothing.
   await page.reload();
-  await (await env.harness(AskPanel)).warmUp();
+  await (await env.getHarness(AskPanel)).warmUp();
   expect((await promptsOf(page)).filter((prompt) => prompt.includes(question(words)))).toHaveLength(0);
 });

@@ -35,7 +35,7 @@ graph, the wizard or the assistant opens, about 2.3 GB once, and keeps it; nothi
 leaves the browser, and no server holds a key. Its shards come from keasy's own origin, never a third
 party's: `make models` downloads them once into `infra/models`, which the stack serves at `/models`
 (`KEASY_MODEL_URL`, [`.env.example`](.env.example)). Without them, or in a browser without WebGPU,
-Ask and the assistant say so (`ai/unavailable`); everything else works.
+Ask and the assistant say so (`llm/unavailable`); everything else works.
 
 ## Dev accounts
 

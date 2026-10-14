@@ -1,6 +1,9 @@
-import { type By, FindingsBadgeHarness, FindingsItemHarness, type Handle, type Severity } from "@kanzo-tech/testing";
+import { type By, FindingsBadgeHarness, FindingsItemHarness, type TestElement } from "@kanzo-tech/testing";
 
 import { nameOf } from "./controls";
+
+/** A finding's severity, as the findings harness reads it (`@kanzo-tech/ui`'s `FindingSeverity`). */
+type Severity = Awaited<ReturnType<FindingsItemHarness["severity"]>>;
 
 /** The scope line once a check has ended: *All 3,218 nodes checked · 2,930 conform*, *4 of 20 nodes checked · 4 conform*. */
 const CHECKED = /\bnodes checked\b/;
@@ -10,7 +13,7 @@ const CONFORMS = "Keep what conforms";
 /** A rule's own Show, at the end of its heading: the group's items hold theirs in a line of their own. */
 const RULE_SHOW = { css: '[data-slot="findings-actions"] [data-slot="findings-action"]' };
 const count = (words: string) => Number(/[\d,]+/.exec(words)?.[0]?.replace(/,/g, "") ?? Number.NaN);
-const pressed = async (button: Handle) => (await button.attribute("aria-pressed")) === "true";
+const pressed = async (button: TestElement) => (await button.getAttribute("aria-pressed")) === "true";
 const WORD: Record<Severity, "Violation" | "Warning" | "Note"> = { violation: "Violation", warning: "Warning", info: "Note" };
 const NOUN: Record<Severity, string> = { violation: "violation", warning: "warning", info: "note" };
 
@@ -28,7 +31,7 @@ export class RulesBadge extends FindingsBadgeHarness {
    * file named `name`. The input is hidden and unnamed, so it is found by its type in the bar.
    */
   async drop(name: string, text: string, type = "text/turtle"): Promise<void> {
-    const input = await this.one({ css: '[data-slot="filter-bar"] input[type="file"]' }, "the rules take no file", this.env.root);
+    const input = await this.locatorFor({ css: '[data-slot="filter-bar"] input[type="file"]' }, "the rules take no file")(this.env.rootElement);
     await input.evaluate(
       (element, file) => {
         const transfer = new DataTransfer();
@@ -54,7 +57,7 @@ export class RulesBadge extends FindingsBadgeHarness {
   /** Presses *Check* (or *Check again*) and returns at once: a long check is waited on by the caller. */
   async start(): Promise<void> {
     const dialog = await this.open();
-    const button = await this.one({ role: "button", name: /^Check( again)?$/ }, "the rules offer no Check", dialog);
+    const button = await this.locatorFor({ role: "button", name: /^Check( again)?$/ }, "the rules offer no Check")(dialog);
     await button.click();
     // React commits a press's update before the event returns: the line reads *Checking…* from here,
     // so `checked()` waits for this check, not the last one.
@@ -85,9 +88,9 @@ export class RulesBadge extends FindingsBadgeHarness {
    * under its layer takes no click until it has closed.
    */
   async close(): Promise<void> {
-    const [dialog] = await this.env.root.find({ role: "dialog" });
+    const [dialog] = await this.env.rootElement.find({ role: "dialog" });
     if (!dialog) return;
-    await dialog.press("Escape");
+    await dialog.sendKeys("Escape");
     await this.env.until(async () => (await this.openDialogs()) === 0, "the rules did not close");
   }
 
@@ -101,33 +104,33 @@ export class RulesBadge extends FindingsBadgeHarness {
    * closed the popover: the page is what shows what it kept, so the popover is not opened again.
    */
   async conforms(on = true): Promise<void> {
-    const button = await this.one({ role: "button", name: CONFORMS }, "the rules offer no Keep what conforms", await this.open());
+    const button = await this.locatorFor({ role: "button", name: CONFORMS }, "the rules offer no Keep what conforms")(await this.open());
     if ((await pressed(button)) === on) return;
     await button.click();
     await this.env.until(async () => (await this.openDialogs()) === 0 || null, "the rules did not close");
   }
 
   /** The popover's region for the rule `name`. */
-  async region(name: string | RegExp): Promise<Handle> {
+  async region(name: string | RegExp): Promise<TestElement> {
     const dialog = await this.open();
-    return this.one({ role: "region", name }, `no rule is named ${String(name)}`, dialog);
+    return this.locatorFor({ role: "region", name }, `no rule is named ${String(name)}`)(dialog);
   }
 
   // What a rule and its groups read through the badge, whose environment is its own.
 
   /** The first element `by` finds `within`, waited for. */
-  findOne(by: By, what: string, within: Handle): Promise<Handle> {
-    return this.one(by, what, within);
+  findOne(by: By, what: string, within: TestElement): Promise<TestElement> {
+    return this.locatorFor(by, what)(within);
   }
 
   /** The library's items `within`. */
-  rows(within: Handle): Promise<FindingsItemHarness[]> {
-    return this.env.harnesses(FindingsItemHarness, within);
+  rows(within: TestElement): Promise<FindingsItemHarness[]> {
+    return this.env.getAllHarnesses(FindingsItemHarness, within);
   }
 
   /** How many dialogs the page holds open: the popover's, or none. */
   async openDialogs(): Promise<number> {
-    return (await this.env.root.find({ role: "dialog" })).length;
+    return (await this.env.rootElement.find({ role: "dialog" })).length;
   }
 
   /** `read`, until it answers something. */
@@ -144,7 +147,7 @@ export class Rule {
   ) {}
 
   /** The region, the popover opened. */
-  region(): Promise<Handle> {
+  region(): Promise<TestElement> {
     return this.badge.region(this.name);
   }
 
@@ -218,7 +221,7 @@ export class Rule {
   }
 
   /** The first element `by` finds `within`, waited for. */
-  findOne(by: By, what: string, within: Handle): Promise<Handle> {
+  findOne(by: By, what: string, within: TestElement): Promise<TestElement> {
     return this.badge.findOne(by, what, within);
   }
 
@@ -268,7 +271,7 @@ export class RuleFinding {
     await (await this.rule.row(this.message)).act(SHOW);
   }
 
-  private async button(): Promise<Handle> {
+  private async button(): Promise<TestElement> {
     const row = await this.rule.row(this.message);
     return this.rule.findOne({ role: "button", name: SHOW }, "the finding has no Show", row.host);
   }

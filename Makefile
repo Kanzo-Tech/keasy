@@ -23,8 +23,8 @@ seed: ## Fetch every dev example's data (infra/dev/examples/*/fetch.sh, checksum
 	sh infra/dev/seed.sh
 
 # The model runs in the browser, from keasy's own origin: the stack's `models` service serves this
-# directory at /models (KEASY_MODEL_URL). Needed for Ask and the assistant on a machine with WebGPU —
-# not for `make e2e`, whose scenarios put a model double in the page. A deployment runs it on the server.
+# directory at /models, its app-config.json the listing the page reads. Needed for Ask and the
+# assistant on a machine with WebGPU — not for `make e2e`, whose scenarios register a scripted model. A deployment runs it on the server.
 models: ## Download the model the page runs (~2.3 GB, pinned, checksummed) into KEASY_MODELS (default infra/models), once
 	sh infra/models.sh
 

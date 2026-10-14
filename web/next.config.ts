@@ -23,7 +23,7 @@ const dev = process.env.NODE_ENV === "development";
  * No script, worker or `.wasm` comes from another origin: DuckDB, its httpfs
  * extension and fossil's compiler are this app's own assets, and so is the
  * model — its weights and its compiled library are served under `/models` on
- * this origin (`KEASY_MODEL_URL`, `lib/ai.ts`), read by the model's worker,
+ * this origin (`/models`, `lib/ai.ts`), read by the model's worker,
  * which is this origin's too (`worker-src 'self'`, `connect-src 'self'`).
  *
  * The permissive parts are the product, not laziness:
@@ -70,7 +70,7 @@ function contentSecurityPolicy(): string {
 
 /**
  * Development's `/models`: the model's shards, from compose's `models` service, on this origin as a
- * deployment serves them (`KEASY_MODEL_URL=/models`). A deployment's edge routes `/models/` to that
+ * deployment serves them. A deployment's edge routes `/models/` to that
  * service itself (compose.prod.yaml), so `next build` has no upstream and the image carries no rewrite.
  */
 const models = process.env.KEASY_MODELS_UPSTREAM;

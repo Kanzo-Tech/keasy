@@ -30,12 +30,12 @@ overrides any of them ([`.env.example`](.env.example)). Anything past `make dev`
 ### AI in development
 
 The model runs in the browser, on WebGPU — Chrome or Edge, Safari 26, Firefox on Windows — through
-WebLLM (`web/src/lib/ai.ts` names and pins it). The browser downloads it in the background when a
-graph, the wizard or the assistant opens, about 2.3 GB once, and keeps it; nothing about a question
-leaves the browser, and no server holds a key. Its shards come from keasy's own origin, never a third
-party's: `make models` downloads them once into `infra/models`, which the stack serves at `/models`
-(`KEASY_MODEL_URL`, [`.env.example`](.env.example)). Without them, or in a browser without WebGPU,
-Ask and the assistant say so (`llm/unavailable`); everything else works.
+WebLLM. The browser downloads it in the background when a graph or the assistant opens, about
+2.3 GB once, and keeps it; nothing about a question leaves the browser, and no server holds a key. It
+comes from keasy's own origin, never a third party's: `make models` (`infra/models.sh` pins it)
+downloads it once into `infra/models` with `app-config.json`, the listing the page reads, and the
+stack serves that directory at `/models` ([`.env.example`](.env.example)). Without them, or in a
+browser without WebGPU, Ask and the assistant say so (`llm/unavailable`); everything else works.
 
 ## Dev accounts
 
@@ -187,8 +187,8 @@ owner or an admin changes it (roles `reader ⊂ editor ⊂ admin`, from the Keyc
 organization the instance serves; the matrix is `docs/design/permissions.md`).
 
 The model runs in the browser too: `localModel` from `@kanzo-tech/llm/local`, WebLLM on
-WebGPU in a worker of its own, its shards downloaded from this origin's `/models`
-(`KEASY_MODEL_URL`, the `models` service). No call leaves the page, so there is nothing to forward,
+WebGPU in a worker of its own, the models this origin's `/models/app-config.json` lists
+(the `models` service). No call leaves the page, so there is nothing to forward,
 no model key and no budget to keep.
 
 A **credential** (S3 or Azure) is who keasy is when it reaches a store; a

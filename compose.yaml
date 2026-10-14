@@ -27,10 +27,6 @@ services:
       KEASY_SESSION_STORE_URL: redis://valkey:6379
       # The server of the organization a request addresses: each answers as <alias>-server.
       KEASY_API_URL: http://{tenant}-server:8080
-      # Where the model's shards are served, a path on this origin: `models` below, at /models. The
-      # model runs in the browser, which downloads them once. Set empty, there is no model — never a
-      # third party's copy — and Ask and the assistant say so.
-      KEASY_MODEL_URL: ${KEASY_MODEL_URL-/models}
     secrets: [keasy-oidc, keasy-session]
     # Healthy once the sign-in route answers: what a rolling update waits for before it lets the old
     # web go, and what `make dev` waits for.
@@ -47,11 +43,11 @@ services:
         condition: service_completed_successfully
     restart: unless-stopped
 
-  # The model's shards, at /models on keasy's own origin — routed there by Next in development and by
-  # the edge in a deployment (compose.prod.yaml). What `make models` downloads into KEASY_MODELS (by
-  # default infra/models): the MLC weights and the compiled library web/src/lib/ai.ts pins, each path
-  # one content for good, so served as immutable. Without them the browser's download fails, and Ask
-  # and the assistant say so.
+  # The model, at /models on keasy's own origin — routed there by Next in development and by the edge
+  # in a deployment (compose.prod.yaml). What `make models` downloads into KEASY_MODELS (by default
+  # infra/models): `app-config.json`, the listing the page reads, and the MLC weights and compiled
+  # library it names, each of those paths one content for good, so served as immutable. Without a
+  # listing there is no model — never a third party's copy — and Ask and the assistant say so.
   models:
     image: nginx:1.28-alpine
     command:
@@ -94,14 +90,20 @@ services:
       - ${KEASY_ORGANIZATIONS:-./infra/dev/orgs}:/declarations/keasy/organizations:ro
 
 configs:
-  # Static files, nothing else: a shard that is there is cached for good (a 404 is not), and nothing
-  # under a dot is served — `make models` leaves its stamp there.
+  # Static files, nothing else: a shard that is there is cached for good (a 404 is not), the listing
+  # is asked again each time, and nothing under a dot is served — `make models` leaves its stamp there.
   models-nginx:
     content: |
       server {
         listen 8080;
         location = /healthz { return 200; }
         location ~ /\. { return 404; }
+        location = /models/app-config.json {
+          alias /srv/models/app-config.json;
+          default_type application/json;
+          add_header Cache-Control "no-cache";
+          add_header X-Content-Type-Options nosniff;
+        }
         location /models/ {
           alias /srv/models/;
           types {

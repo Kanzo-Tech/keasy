@@ -4,7 +4,8 @@
  * model that answers each call with the next scripted reply. For the Tasks' tests only.
  */
 
-import { promptOf, scriptedModel } from "@kanzo-tech/llm/testing";
+import { scriptedModel } from "@kanzo-tech/llm/testing";
+import { promptOf } from "@kanzo-tech/testing";
 import type { Engine, Input, Primitive, Profile } from "@fossil-lang/types";
 import type { Draft } from "./model";
 import { profiledOf } from "./profile";

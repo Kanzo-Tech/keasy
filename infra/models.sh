@@ -1,17 +1,20 @@
 #!/bin/sh
-# Download the model the page runs (web/src/lib/ai.ts) once, into the directory keasy's own origin
-# serves at /models (compose.yaml's `models`): its MLC weights from Hugging Face at a pinned revision,
-# and its compiled library from WebLLM's binary-mlc-llm-libs at a pinned commit. Laid out as the page
-# reads them under KEASY_MODEL_URL:
+# Download the model the page runs once, into the directory keasy's own origin serves at /models
+# (compose.yaml's `models`): its MLC weights from Hugging Face at a pinned revision, and its compiled
+# library from WebLLM's binary-mlc-llm-libs at a pinned commit. Laid out as:
 #
+#   <dir>/app-config.json                   what the page serves: WebLLM's own AppConfig, which
+#                                           @kanzo-tech/llm's localProvider reads at /models
 #   <dir>/<model>/resolve/<revision>/...    the weights, as Hugging Face lays a revision out
 #   <dir>/lib/<webllm>/<library>            the library, by the WebLLM release it was compiled for
 #
 # Every file is checked: a weight against the digest the pinned revision's tree gives it (the LFS
-# sha256, or the git blob's sha1), the library against the sha256 below. A second run is a no-op.
-# web/src/lib/ai.test.ts holds these pins to the page's, and the WebLLM release to the one installed.
+# sha256, or the git blob's sha1), the library against the sha256 below. app-config.json is written
+# last, once both are whole, so a page never lists a model it cannot load. A second run is a no-op.
+# web/src/lib/ai.test.ts holds the listing to the installed WebLLM's record and release.
 #
-#   sh infra/models.sh [dir]     dir defaults to $KEASY_MODELS, else infra/models (gitignored)
+#   sh infra/models.sh [dir]        dir defaults to $KEASY_MODELS, else infra/models (gitignored)
+#   sh infra/models.sh --app-config prints the listing, and downloads nothing
 set -eu
 
 model=Qwen3-4B-q4f16_1-MLC
@@ -20,6 +23,30 @@ webllm=v0_2_86
 library=Qwen3-4B-q4f16_1_cs1k-webgpu.wasm
 libs=00fe7a40e57e5e8eb9fef87526a4bf28ad5846c0
 library_sha256=678f9537c7388113e28141ef7a8e416cc600e72a7cf2ea7aac0e045659d3ecbd
+
+# The model's record as WebLLM's prebuilt list has it for this release — its memory and its context
+# window among them — at the paths below, relative to the listing.
+app_config() {
+  cat <<JSON
+{
+  "model_list": [
+    {
+      "model": "$model/resolve/$revision/",
+      "model_id": "$model",
+      "model_lib": "lib/$webllm/$library",
+      "vram_required_MB": 3431.59,
+      "low_resource_required": true,
+      "overrides": { "context_window_size": 4096 }
+    }
+  ]
+}
+JSON
+}
+
+if [ "${1-}" = "--app-config" ]; then
+  app_config
+  exit 0
+fi
 
 here=$(cd "$(dirname "$0")" && pwd)
 dir=${1:-${KEASY_MODELS:-$here/models}}
@@ -31,6 +58,7 @@ for tool in curl python3; do
 done
 
 if [ -f "$weights/.complete" ] && [ -f "$lib" ]; then
+  app_config > "$dir/app-config.json"
   echo "models: $model already in $dir"
   exit 0
 fi
@@ -78,4 +106,5 @@ with open(path, "rb") as f:
 mv "$lib.part" "$lib"
 
 touch "$weights/.complete"
-echo "models: done — KEASY_MODEL_URL=/models serves it"
+app_config > "$dir/app-config.json"
+echo "models: done — /models serves it"

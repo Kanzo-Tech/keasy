@@ -23,16 +23,17 @@ serves the model's shards, from keasy's own origin and never a third party's. On
 make models
 ```
 
-downloads the weights and the compiled library `web/src/lib/ai.ts` pins (about 2.3 GB, each file
-checked) into `KEASY_MODELS` — `infra/models` in the checkout unless `prod.env` says otherwise.
+downloads the weights and the compiled library `infra/models.sh` pins (about 2.3 GB, each file
+checked), and `app-config.json`, the listing the page reads, into `KEASY_MODELS` — `infra/models` in the checkout unless `prod.env` says otherwise.
 `make deploy` then serves that directory read-only from the `models` service (nginx), and Traefik
-routes `/models/` on every organization's host to it ahead of the web (`compose.prod.yaml`), so
-`KEASY_MODEL_URL` stays `/models`. Each path names one content for good — the weights by their
+routes `/models/` on every organization's host to it ahead of the web (`compose.prod.yaml`), where
+the page looks. Each path the listing names is one content for good — the weights by their
 Hugging Face revision, the library by its WebLLM release — so they are served with
-`Cache-Control: public, max-age=31536000, immutable`, and a browser downloads them once. A new pin
+`Cache-Control: public, max-age=31536000, immutable`, and a browser downloads them once; the
+listing is asked again each time. A new pin
 is a new path: `make models` again before `make deploy`, and the old directories can be deleted once
-the release that named them is gone. Without them the browser's download fails and Ask and the
-assistant say so; `KEASY_MODEL_URL=` (empty) turns the model off. A browser without WebGPU says so
+the release that named them is gone. Without a listing there is no model, and Ask and the
+assistant say so; removing `app-config.json` turns the model off. A browser without WebGPU says so
 too; the rest of keasy works the same.
 
 ## Add an organization

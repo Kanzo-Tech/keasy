@@ -339,28 +339,31 @@ which would put the privacy premise in someone else's hands.
 
 ## What left keasy's configuration
 
-**Done 2026-10-13**, on kanzo-ui 0.44's `localModel`: one model, `MODEL` in `web/src/lib/ai.ts`, in a
-worker of its own, for Ask, its offers and the assistant alike.
+**Done 2026-10-13**, on kanzo-ui 0.44's `localModel`: one model, in a worker of its own, for Ask, its
+offers and the assistant alike — since kanzo-ui 0.46, the first model `/models/app-config.json` lists.
 
 | Before | Now |
 | --- | --- |
 | `ai-gateway`, `ai-postgres` and, locally, `ai-models` with Docker Model Runner | none |
-| `KEASY_AI_URL`, `KEASY_AI_CHAT_CONTEXT`, `KEASY_AI_COMPLETE_CONTEXT`, `AI_CHAT`, `AI_COMPLETE`, `AI_DB_PASSWORD` | `KEASY_MODEL_URL`: the path on keasy's origin its shards are served at (`/models`), read per request; empty, no model |
+| `KEASY_AI_URL`, `KEASY_AI_CHAT_CONTEXT`, `KEASY_AI_COMPLETE_CONTEXT`, `AI_CHAT`, `AI_COMPLETE`, `AI_DB_PASSWORD` | none: the page reads `/models/app-config.json`; no listing, no model |
 | the BFF's `/api/ai` forward, with its token exchange for the `ai-gateway` audience | nothing to forward |
 | context windows that must match the deployed model | the window travels with the model |
 | `make demo` switches the gateway to Qwen3 and back | the demo uses everyone's model |
 
 **The shards are keasy's, served from its own origin, never a third party's** (2026-10-13). WebLLM's
 default is its prebuilt list — the weights from Hugging Face, the library from GitHub — and keasy does
-not fall back to it: with `KEASY_MODEL_URL` empty, or naming another origin, there is no model, and Ask
-and the assistant say so (`llm/unavailable` with `reason: "unserved"`, the one code `@kanzo-tech/llm`'s
-`LlmError` has). `make models` (`infra/models.sh`) downloads them once — the weights at a pinned Hugging
-Face revision, the library at a pinned commit of `binary-mlc-llm-libs`, every file checked — into
-`infra/models`, which the `models` service (nginx, `compose.yaml`) serves at `/models`: through Next's
+not fall back to it: `lib/ai.ts` sets `@kanzo-tech/llm`'s provider once, `localProvider({ baseURL:
+"/models", worker })`, which serves exactly what `/models/app-config.json` lists — WebLLM's own
+`AppConfig` — and with no listing there is no model, and Ask and the assistant say so
+(`llm/unavailable` with `reason: "unserved"`). keasy's code names no model, no URL and no pin.
+`make models` (`infra/models.sh`) downloads them once — the weights at a pinned Hugging Face revision,
+the library at a pinned commit of `binary-mlc-llm-libs`, every file checked — into `infra/models`, and
+writes the listing last, WebLLM's own record of the model at those paths, its context window included.
+The `models` service (nginx, `compose.yaml`) serves that directory at `/models`: through Next's
 rewrite in development, which has no edge, and through Traefik in a deployment (`infra/prod/README.md`).
-Each path names one content for good — `<model>/resolve/<revision>/` and `lib/<webllm>/<library>` —
-so a shard is cached as immutable, and `ai.test.ts` holds the pins to the script's and the library to
-the installed WebLLM. The CSP needed nothing: the shards and the worker are `'self'`.
+Each path the listing names is one content for good — `<model>/resolve/<revision>/` and
+`lib/<webllm>/<library>` — so a shard is cached as immutable and the listing is asked again each time;
+`ai.test.ts` holds the listing to the installed WebLLM's record and release. The CSP needed nothing: the shards and the worker are `'self'`.
 *What would reverse it:* a deployment that cannot serve 2.3 GB from its own origin, where a CDN of its
 own is the answer — still not WebLLM's prebuilt, whose files change under one URL.
 
@@ -375,18 +378,18 @@ the new one is whole. *What would reverse it:* people who open graphs and never 
 connections — then the download waits for the first screen that asks.
 
 **The e2e suite runs on `@kanzo-tech/llm`'s model double**, because CI's Chromium has no WebGPU:
-`e2e/support/model.ts` registers a script for keasy's model with `@kanzo-tech/testing`'s
-`playwright(page, { models })` before the page loads, and `localModel` answers from it — its load
-included — in place of WebLLM, recording every prompt. keasy's code has no branch for it. The library's probe for the hook
-(`__KANZO_TESTING__.models`) is in the production bundle — nothing inlines it away — so a script that
-runs in the page before keasy could answer for the model; one that runs there can already do anything
-the page can. The Tasks' unit tests use the same double,
-`scriptedModel` from `@kanzo-tech/llm/testing` (`nobel.fixture.ts`). Scenario 11 still forces a
-browser without WebGPU, with no script; 12–16 and the dashboard's run over the script. What it cannot
-show is WebLLM itself: that the pinned shards load and answer is a browser with WebGPU's to check
-(`make models`, then kanzo-ui's evaluation set). `UNSERVED`, the model of a deployment that serves none, stays keasy's:
-the library knows no deployment. *What would reverse it:* a page that runs third-party script before its own — then the probe must
-leave the production bundle, in the library, and keasy guards the built bundle again.
+`e2e/support/model.ts` registers a scripted model with `@kanzo-tech/testing`'s
+`playwright(page, { models })` before the page loads. It goes into `@kanzo-tech/llm/local`'s provider
+registry, which `localModel()` asks before the models the origin serves, so it answers in their place
+— its load included — and every prompt is recorded. keasy's code has no branch for it, and the
+library's has none either: a test is a provider like any other. A script that runs in the page before
+keasy could register one too, as it could replace `fetch` or `Worker`; one that runs there can already
+do anything the page can. The Tasks' unit tests use the same double, `scriptedModel` from
+`@kanzo-tech/llm/testing` (`nobel.fixture.ts`). Scenario 11 still forces a browser without WebGPU,
+with no script; 12–16 and the dashboard's run over the script. What it cannot show is WebLLM itself:
+that the pinned shards load and answer is a browser with WebGPU's to check (`make models`, then
+kanzo-ui's evaluation set). *What would reverse it:* a page that runs third-party script before its
+own — then the registry must refuse what the page did not register, in the library.
 
 ## The executor leaves the page's main thread
 

@@ -3,7 +3,6 @@ import { forbidden } from "next/navigation";
 import { parseSidebarCookie, SIDEBAR_COOKIE_NAME, SidebarProvider } from "@kanzo-tech/ui";
 import { can } from "@kanzo-tech/auth";
 import { auth } from "@/lib/auth/server";
-import { ModelProvider } from "@/lib/ai";
 import { Shell } from "./shell";
 
 /**
@@ -27,10 +26,7 @@ export default async function MainLayout({
 
   return (
     <SidebarProvider className="h-dvh min-h-0 overflow-hidden" defaultOpen={defaultOpen}>
-      {/* Where the model's shards are served, read per request so one image serves any deployment. */}
-      <ModelProvider url={process.env.KEASY_MODEL_URL?.trim() || undefined}>
-        <Shell>{children}</Shell>
-      </ModelProvider>
+      <Shell>{children}</Shell>
     </SidebarProvider>
   );
 }

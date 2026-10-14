@@ -6,7 +6,7 @@ says is in this folder, and every change is a commit:
 
 | File | What it holds |
 |---|---|
-| [`prod.env`](prod.env) | the release, the domain, where the model is served — nothing secret |
+| [`prod.env`](prod.env) | the release and the domain — nothing secret |
 | [`orgs/`](orgs) | one file per organization: its name and domain, its server, its host |
 | `secrets.sops.env` | passwords, keys and each organization's sealing key, encrypted |
 | [`.sops.yaml`](.sops.yaml) | whose age keys can decrypt `secrets.sops.env` |
@@ -14,27 +14,27 @@ says is in this folder, and every change is a commit:
 Every task below is the same: **edit a file here, commit, and on the server `git pull && make
 deploy`.** `make deploy` changes only what the files changed, and returns when everything is up.
 
-## Serve the model
+## The model
 
-The model runs in each person's browser, on WebGPU; the server holds no key and runs no model, but it
-serves the model's shards, from keasy's own origin and never a third party's. On the server, once:
+The model runs in each person's browser, on WebGPU; the server holds no key, runs no model and serves
+no weights. Nothing here to deploy: `web/public/models/app-config.json` is a static file of the web
+image, WebLLM's own `AppConfig`, and it lists where the browser fetches the model from — the MLC
+weights from Hugging Face, the compiled library from GitHub, each at a pinned revision, with
+WebLLM's `integrity` (SRI) on the config, the library and the tokenizer.
 
-```sh
-make models
-```
+**The browser needs egress** — it, not the server — to `huggingface.co` and `us.aws.cdn.hf.co` (the
+large weight files, which Hugging Face redirects to) and `raw.githubusercontent.com`, over HTTPS. A
+network that blocks them has no model: Ask and the assistant say so, and the rest of keasy works the
+same. Keasy's own Content-Security-Policy already allows them (`connect-src https:`).
 
-downloads the weights and the compiled library `infra/models.sh` pins (about 2.3 GB, each file
-checked), and `app-config.json`, the listing the page reads, into `KEASY_MODELS` — `infra/models` in the checkout unless `prod.env` says otherwise.
-`make deploy` then serves that directory read-only from the `models` service (nginx), and Traefik
-routes `/models/` on every organization's host to it ahead of the web (`compose.prod.yaml`), where
-the page looks. Each path the listing names is one content for good — the weights by their
-Hugging Face revision, the library by its WebLLM release — so they are served with
-`Cache-Control: public, max-age=31536000, immutable`, and a browser downloads them once; the
-listing is asked again each time. A new pin
-is a new path: `make models` again before `make deploy`, and the old directories can be deleted once
-the release that named them is gone. Without a listing there is no model, and Ask and the
-assistant say so; removing `app-config.json` turns the model off. A browser without WebGPU says so
-too; the rest of keasy works the same.
+**To point keasy at a different model or host**, edit that file and deploy as for any change; it is
+one record per model, and the page asks the first. `model` is the weights' base URL (a
+Hugging Face `.../resolve/<commit>/`, or any host that serves the same files), `model_lib` the compiled
+library for the WebLLM release the web installs (`v0_2_86` in its path today), and `integrity` the
+SRI of the files whose bytes you pinned — `openssl dgst -sha256 -binary <file> | base64`, prefixed
+`sha256-`, for `mlc-chat-config.json`, the library and `tokenizer.json`. The weights are not covered
+by `integrity`, so pin them by commit, never `main`. A host of your own must answer cross-origin
+requests (`Access-Control-Allow-Origin`), range requests included.
 
 ## Add an organization
 

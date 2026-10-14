@@ -43,31 +43,6 @@ services:
         condition: service_completed_successfully
     restart: unless-stopped
 
-  # The model, at /models on keasy's own origin — routed there by Next in development and by the edge
-  # in a deployment (compose.prod.yaml). What `make models` downloads into KEASY_MODELS (by default
-  # infra/models): `app-config.json`, the listing the page reads, and the MLC weights and compiled
-  # library it names, each of those paths one content for good, so served as immutable. Without a
-  # listing there is no model — never a third party's copy — and Ask and the assistant say so.
-  models:
-    image: nginx:1.28-alpine
-    command:
-      - /bin/sh
-      - -c
-      - |
-        [ -n "$$(ls /srv/models)" ] || echo "models: none in KEASY_MODELS — run \`make models\` for Ask and the assistant"
-        exec nginx -g 'daemon off;'
-    configs:
-      - source: models-nginx
-        target: /etc/nginx/conf.d/default.conf
-    volumes:
-      - ${KEASY_MODELS:-./infra/models}:/srv/models:ro
-    healthcheck:
-      test: ["CMD", "wget", "-qO", "/dev/null", "http://127.0.0.1:8080/healthz"]
-      interval: 10s
-      timeout: 3s
-      retries: 6
-    restart: unless-stopped
-
   # The web's session store: tokens behind the cookie's ticket. No volume — losing it signs people
   # out, nothing more.
   valkey:
@@ -90,34 +65,6 @@ services:
       - ${KEASY_ORGANIZATIONS:-./infra/dev/orgs}:/declarations/keasy/organizations:ro
 
 configs:
-  # Static files, nothing else: a shard that is there is cached for good (a 404 is not), the listing
-  # is asked again each time, and nothing under a dot is served — `make models` leaves its stamp there.
-  models-nginx:
-    content: |
-      server {
-        listen 8080;
-        location = /healthz { return 200; }
-        location ~ /\. { return 404; }
-        location = /models/app-config.json {
-          alias /srv/models/app-config.json;
-          default_type application/json;
-          add_header Cache-Control "no-cache";
-          add_header X-Content-Type-Options nosniff;
-        }
-        location /models/ {
-          alias /srv/models/;
-          types {
-            application/wasm wasm;
-            application/json json;
-            application/octet-stream bin;
-            text/plain txt;
-          }
-          default_type application/octet-stream;
-          add_header Cache-Control "public, max-age=31536000, immutable";
-          add_header X-Content-Type-Options nosniff;
-        }
-      }
-
   keasy-application:
     content: |
       x-application:

@@ -350,22 +350,39 @@ offers and the assistant alike — since kanzo-ui 0.46, the first model `/models
 | context windows that must match the deployed model | the window travels with the model |
 | `make demo` switches the gateway to Qwen3 and back | the demo uses everyone's model |
 
-**The shards are keasy's, served from its own origin, never a third party's** (2026-10-13). WebLLM's
-default is its prebuilt list — the weights from Hugging Face, the library from GitHub — and keasy does
-not fall back to it: `lib/ai.ts` sets `@kanzo-tech/llm`'s provider once, `localProvider({ baseURL:
-"/models", worker })`, which serves exactly what `/models/app-config.json` lists — WebLLM's own
-`AppConfig` — and with no listing there is no model, and Ask and the assistant say so
-(`llm/unavailable` with `reason: "unserved"`). keasy's code names no model, no URL and no pin.
-`make models` (`infra/models.sh`) downloads them once — the weights at a pinned Hugging Face revision,
-the library at a pinned commit of `binary-mlc-llm-libs`, every file checked — into `infra/models`, and
-writes the listing last, WebLLM's own record of the model at those paths, its context window included.
-The `models` service (nginx, `compose.yaml`) serves that directory at `/models`: through Next's
-rewrite in development, which has no edge, and through Traefik in a deployment (`infra/prod/README.md`).
-Each path the listing names is one content for good — `<model>/resolve/<revision>/` and
-`lib/<webllm>/<library>` — so a shard is cached as immutable and the listing is asked again each time;
-`ai.test.ts` holds the listing to the installed WebLLM's record and release. The CSP needed nothing: the shards and the worker are `'self'`.
-*What would reverse it:* a deployment that cannot serve 2.3 GB from its own origin, where a CDN of its
-own is the answer — still not WebLLM's prebuilt, whose files change under one URL.
+**The weights come from WebLLM's own arrangement, pinned** (2026-10-14). The browser fetches the MLC
+weights from Hugging Face and the compiled library from GitHub, the two places WebLLM's prebuilt list
+names, and keasy hosts neither: what it serves is one static file, `web/public/models/app-config.json`
+— WebLLM's own `AppConfig`, which `lib/ai.ts` hands to `@kanzo-tech/llm`'s provider once,
+`localProvider({ baseURL: "/models", worker })`, and which serves exactly what it lists; a listing
+that lists nothing is no model, and Ask and the assistant say so (`llm/unavailable` with
+`reason: "unserved"`). keasy's code names no model, no URL and no pin. Unlike the prebuilt list, the
+record is pinned: `model` is the weights' repository at a commit
+(`.../Qwen3-4B-q4f16_1-MLC/resolve/<40 hex>/`), `model_lib` the library at a commit of
+`binary-mlc-llm-libs`, under the release of WebLLM it was compiled for, and `integrity` is WebLLM's
+SRI on `mlc-chat-config.json`, the library and `tokenizer.json` — the three it verifies; `ai.test.ts`
+holds the record to WebLLM's `ModelRecord` and `AppConfig`, every URL to a commit, and the library to
+the installed release. A commit-sha URL resolves on Hugging Face (checked 2026-10-14); the large
+files redirect to `us.aws.cdn.hf.co`, which answers CORS with `*`, range requests included. The
+browser therefore needs egress to `huggingface.co`, `us.aws.cdn.hf.co` and
+`raw.githubusercontent.com`; the CSP's `connect-src https:` already covers them, and a policy that
+enumerated hosts would add exactly those. Privacy is unchanged: inference stays in the page and
+nothing about a question is sent; what the three hosts see is a download of public files, with the
+person's IP address and user agent.
+
+What this does not cover, and nothing here has verified: the weight shards. WebLLM checks no hash on
+them, so the commit in the URL is the only pin — a commit's files do not change, and Hugging Face
+could still withdraw them. Hugging Face's terms have not been read for this use. Its anonymous
+resolver limit is 3,000 requests per five minutes per IP address, and a first load is about 80
+requests, so a few dozen first loads from one shared address in that window are refused (HTTP 429)
+and the model fails to load, retried by the person. Whether the CDN host answers CORS identically
+from every region is unverified: only `us.aws.cdn.hf.co` was seen. The browser keeps the files in Cache Storage, so
+only the first load pays any of this.
+
+*What would reverse it:* an organization that cannot open egress to Hugging Face and GitHub, or many
+first loads behind one IP address meeting the limit — then the operator mirrors the files to a host
+of its own and edits `app-config.json` to name it (`infra/prod/README.md`); and Hugging Face's terms,
+once read, forbidding this use.
 
 **The download starts with intent** — when a graph opens, or the assistant — not when
 Ask's panel does: `usePreloadModel` calls `loadLocalModel` once per page, in the background, and the
@@ -387,7 +404,7 @@ keasy could register one too, as it could replace `fetch` or `Worker`; one that 
 do anything the page can. The Tasks' unit tests use the same double, `scriptedModel` from
 `@kanzo-tech/llm/testing` (`nobel.fixture.ts`). Scenario 11 still forces a browser without WebGPU,
 with no script; 12–16 and the dashboard's run over the script. What it cannot show is WebLLM itself:
-that the pinned shards load and answer is a browser with WebGPU's to check (`make models`, then
+that the pinned shards load and answer is a browser with WebGPU's to check (open a graph, then
 kanzo-ui's evaluation set). *What would reverse it:* a page that runs third-party script before its
 own — then the registry must refuse what the page did not register, in the library.
 

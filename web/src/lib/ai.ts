@@ -11,14 +11,14 @@ import { loadLocalModel, localModel, localModelLoad, localProvider, setLocalProv
  * stands in front of it.
  *
  * Which model it is, and where its weights and library are, is not written here: the page serves
- * whatever `/models/app-config.json` lists — WebLLM's own `AppConfig`, which `make models`
- * (`infra/models.sh`) writes beside what it downloads — and asks the first model listed. A page whose
- * origin lists none has no model, never a third party's copy, and every call fails as
+ * whatever `/models/app-config.json` lists — WebLLM's own `AppConfig`, `public/models/app-config.json`,
+ * whose URLs are Hugging Face's and GitHub's at pinned revisions — and asks the first model listed. A
+ * page whose origin lists none has no model, and every call fails as
  * `llm/unavailable` with `reason: "unserved"` before anything is asked. An end-to-end test registers
  * its scripted model with `@kanzo-tech/testing`, which is asked first; nothing here knows.
  */
 
-/** The models keasy's origin serves, from the engine's own worker, set once, before anything asks one. */
+/** The models keasy's origin lists, from the engine's own worker, set once, before anything asks one. */
 let provided = false;
 function provide(): void {
   if (provided) return;

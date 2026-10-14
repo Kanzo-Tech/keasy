@@ -20,11 +20,15 @@ const dev = process.env.NODE_ENV === "development";
  * hole in it: no script from a foreign origin, no `eval`, no plugins, no
  * `<base>` rewrite, no form posting somewhere else, and no framing at all.
  *
- * No script, worker or `.wasm` comes from another origin: DuckDB, its httpfs
- * extension and fossil's compiler are this app's own assets, and so is the
- * model — its weights and its compiled library are served under `/models` on
- * this origin (`/models`, `lib/ai.ts`), read by the model's worker,
- * which is this origin's too (`worker-src 'self'`, `connect-src 'self'`).
+ * No script or worker comes from another origin: DuckDB, its httpfs extension and
+ * fossil's compiler are this app's own assets, and so is the model's worker
+ * (`worker-src 'self'`). The model's data is not: its listing is this origin's
+ * (`public/models/app-config.json`, `lib/ai.ts`), but the weights come from
+ * huggingface.co (the large files from us.aws.cdn.hf.co, to which it redirects)
+ * and the compiled library from raw.githubusercontent.com — fetched, never run
+ * as script, so `connect-src` and nothing else. `https:` below already covers them,
+ * so the model adds no line of its own; a policy that enumerated hosts would list
+ * exactly those three.
  *
  * The permissive parts are the product, not laziness:
  *
@@ -68,16 +72,8 @@ function contentSecurityPolicy(): string {
     .join("; ");
 }
 
-/**
- * Development's `/models`: the model's shards, from compose's `models` service, on this origin as a
- * deployment serves them. A deployment's edge routes `/models/` to that
- * service itself (compose.prod.yaml), so `next build` has no upstream and the image carries no rewrite.
- */
-const models = process.env.KEASY_MODELS_UPSTREAM;
-
 const nextConfig: NextConfig = {
   output: "standalone",
-  ...(models && { rewrites: async () => [{ source: "/models/:path*", destination: `${models}/models/:path*` }] }),
   // Dev serves every organization at its own subdomain (acme.localhost:3000), as prod does.
   allowedDevOrigins: ["*.localhost"],
   // The workspace contract package ships TypeScript source.

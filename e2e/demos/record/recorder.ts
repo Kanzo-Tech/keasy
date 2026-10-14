@@ -65,9 +65,9 @@ export const STATE_TIMEOUT = 120_000;
 const LEAD = 1400;
 
 /** A subtitle: one line, dark, at the foot of the frame, the same on either theme. */
-function subtitle(text: string): string {
+function subtitle(text: string, at: "top" | "bottom"): string {
   const escaped = text.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
-  return `<div style="position:fixed;left:50%;bottom:96px;transform:translateX(-50%);max-width:80%;padding:12px 22px;border-radius:14px;background:rgba(12,16,13,.86);color:#f2fff6;font:600 22px/1.3 Inter,ui-sans-serif,system-ui,sans-serif;letter-spacing:-.01em;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.25);pointer-events:none">${escaped}</div>`;
+  return `<div style="position:fixed;left:50%;${at}:96px;transform:translateX(-50%);max-width:80%;padding:12px 22px;border-radius:14px;background:rgba(12,16,13,.86);color:#f2fff6;font:600 22px/1.3 Inter,ui-sans-serif,system-ui,sans-serif;letter-spacing:-.01em;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.25);pointer-events:none">${escaped}</div>`;
 }
 const THEMES = ["light", "dark"] as const;
 type Theme = (typeof THEMES)[number];
@@ -95,6 +95,8 @@ export interface Demo<T> {
   arrange(stage: Stage): Promise<T>;
   /** The story. A demo has no title card, at the start or the end: only the steps' subtitles. */
   steps(arranged: T, stage: Stage): readonly Step[];
+  /** Where the subtitles sit: at the bottom, unless what the demo shows is there (a chat's composer). */
+  subtitles?: "top" | "bottom";
 }
 
 /** `DEMO_THEME=light|dark` records one side; unset, both. The app follows `prefers-color-scheme`
@@ -106,7 +108,7 @@ function themes(): readonly Theme[] {
   return [one as Theme];
 }
 
-export function demo<T>(name: string, description: string, { arrange, steps }: Demo<T>) {
+export function demo<T>(name: string, description: string, { arrange, steps, subtitles = "bottom" }: Demo<T>) {
   // eslint-disable-next-line playwright/expect-expect -- the checks are the steps', run in order by `take`
   test(`${name}: ${description}`, async ({ browser, baseURL }) => {
     // A first run builds the dev server's pages and runs the graph; a recording is minutes, not seconds.
@@ -135,7 +137,7 @@ export function demo<T>(name: string, description: string, { arrange, steps }: D
         const arranged = await arrange(stage);
         rmSync(frames, { recursive: true, force: true });
         mkdirSync(frames);
-        const shot = await take(page, frames, `${file}.png`, steps(arranged, stage), chapters);
+        const shot = await take(page, frames, `${file}.png`, steps(arranged, stage), chapters, subtitles);
         encode(frames, shot, `${file}.mp4`);
         writeFileSync(`${file}.chapters.json`, `${JSON.stringify(chapters, null, 2)}\n`);
       } finally {
@@ -154,6 +156,7 @@ async function take(
   poster: string,
   steps: readonly Step[],
   chapters: { text: string; start: number; end: number }[],
+  at: "top" | "bottom",
 ): Promise<{ name: string; at: number }[]> {
   const shot: { name: string; at: number }[] = [];
   const began = Date.now();
@@ -177,7 +180,7 @@ async function take(
       const last = chapters.at(-1);
       if (last) last.end = now();
       chapters.push({ text: step.subtitle, start: now(), end: now() });
-      shown = await page.screencast.showOverlay(subtitle(step.subtitle));
+      shown = await page.screencast.showOverlay(subtitle(step.subtitle, at));
       await hold(LEAD);
       await step.action?.();
       await step.check();

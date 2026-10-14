@@ -211,7 +211,7 @@ lands in the bar"* is the check of the last step rather than a step of its own.
 | 5 | Open it on the dashboard | `answers.openOnDashboard()` | that tile is in view |
 | 6 | Ask again: which ones were won in Germany? | `answers.ask("Which ones were won in Germany?")`; `answers.answer()` | its rows are not empty |
 | 7 | This one filters: keep what it found | `answers.filterTo()` | `discover.kept()` > 0 |
-| 8 | The same prizes on the map, framed on Germany | `view("Graph")`; `graph.frame()` | the Graph view's readout reads the same; ≤ 22 |
+| 8 | The same prizes on the map, framed on Germany | `view("Graph")`; `graph.frame()` | the Graph view's readout counts nodes (prizes and their universities), not the dashboard's rows: > 0 and ≤ 22 + 21 |
 
 **Numbers** (`nobel/data`; `affiliations` joins an award to its institutions)
 

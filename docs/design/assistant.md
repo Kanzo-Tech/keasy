@@ -370,6 +370,13 @@ enumerated hosts would add exactly those. Privacy is unchanged: inference stays 
 nothing about a question is sent; what the three hosts see is a download of public files, with the
 person's IP address and user agent.
 
+To point keasy at another model or host, edit that record: `model` takes the base URL of any host that
+serves the same files, `model_lib` the library for the WebLLM release the web installs (`v0_2_86` in
+its path today), and `integrity` the SRI of the three files whose bytes are pinned — `openssl dgst
+-sha256 -binary <file> | base64`, prefixed `sha256-`. A host of your own must answer cross-origin
+requests (`Access-Control-Allow-Origin`), range requests included, and its hostname joins the egress
+list above.
+
 What this does not cover, and nothing here has verified: the weight shards. WebLLM checks no hash on
 them, so the commit in the URL is the only pin — a commit's files do not change, and Hugging Face
 could still withdraw them. Hugging Face's terms have not been read for this use. Its anonymous
@@ -381,7 +388,7 @@ only the first load pays any of this.
 
 *What would reverse it:* an organization that cannot open egress to Hugging Face and GitHub, or many
 first loads behind one IP address meeting the limit — then the operator mirrors the files to a host
-of its own and edits `app-config.json` to name it (`infra/prod/README.md`); and Hugging Face's terms,
+of its own and edits `app-config.json` to name it (above); and Hugging Face's terms,
 once read, forbidding this use.
 
 **The download starts with intent** — when a graph opens, or the assistant — not when

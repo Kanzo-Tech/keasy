@@ -1,8 +1,7 @@
 name: infra-ci
 
-# The compose files are the whole system, in development and in a deployment: both must resolve —
-# the platform included from kanzo-ui at KANZO_UI_REF, every organization's file, every secret
-# named — before anything runs them.
+# The compose files are the whole system: they must resolve — the platform included from kanzo-ui
+# at KANZO_UI_REF, every secret named — before anything runs them.
 on:
   pull_request:
     paths: ["compose*.yaml", "infra/**", ".github/workflows/infra-ci.yml"]
@@ -24,22 +23,5 @@ jobs:
       - name: Development resolves
         run: docker compose --profile faults config --quiet
 
-      # The secrets' values are stand-ins: what is checked is that every one a file names is
-      # supplied — each organization's sealing key among them.
-      - name: A deployment resolves
-        run: |
-          orgs=(infra/prod/orgs/*.yaml)
-          {
-            for name in KC_ADMIN_PASSWORD KC_DB_PASSWORD KEASY_OIDC_CLIENT_SECRET KEASY_SESSION_SECRET; do
-              echo "$name=stand-in"
-            done
-            for org in "${orgs[@]}"; do
-              alias=$(basename "$org" .yaml)
-              echo "KEASY_SECRET_KEY_$(tr 'a-z-' 'A-Z_' <<<"$alias")=stand-in"
-            done
-          } > "$RUNNER_TEMP/secrets.env"
-          docker compose -f compose.yaml -f compose.prod.yaml $(printf -- '-f %s ' "${orgs[@]}") \
-            --env-file infra/prod/prod.env --env-file "$RUNNER_TEMP/secrets.env" config --quiet
-
       - name: The scripts
-        run: shellcheck infra/prod/secrets.sh infra/prod/sops infra/dev/seed.sh
+        run: shellcheck infra/dev/seed.sh

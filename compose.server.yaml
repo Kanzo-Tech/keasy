@@ -1,5 +1,5 @@
-# One organization's server, which every organization's file extends (infra/prod/orgs/<alias>.yaml;
-# compose.override.yaml in development). The server is per organization, and so is its data: it
+# One organization's server, which every organization's file extends (compose.override.yaml in
+# development). The server is per organization, and so is its data: it
 # validates the bearer token the web forwards against the realm's keys, checks `aud` against
 # keasy-api, and reads the roles for its organization alone. It holds no client secret and no
 # session; it holds its credential-sealing key, which exists nowhere else.

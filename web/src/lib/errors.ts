@@ -5,7 +5,7 @@ import type { LlmError } from "@kanzo-tech/llm";
 import type { EngineError } from "@kanzo-tech/mosaic";
 import { type ProblemDescription, toast } from "@kanzo-tech/ui";
 
-import { ApiError, type ErrorCode, type NoBodyCode } from "@keasy/api";
+import { ApiError, type ErrorCode } from "@keasy/api";
 import { schemaOf } from "@/lib/api/spec";
 import { lower, WORDS } from "@/lib/vocabulary";
 
@@ -55,7 +55,7 @@ const signIn = { label: "Sign in again", href: "/api/auth/signin" };
  */
 type KanzoCode = AuthErrorCode | GraphError["code"] | EngineError["code"] | LlmError["code"];
 
-const registry: Partial<Record<ErrorCode | NoBodyCode | ClientCode | Code | KanzoCode, Copy>> = {
+const registry: Partial<Record<ErrorCode | ClientCode | Code | KanzoCode, Copy>> = {
   "callback/state-mismatch": {
     title: "This sign-in could not be completed.",
     detail:
@@ -80,6 +80,10 @@ const registry: Partial<Record<ErrorCode | NoBodyCode | ClientCode | Code | Kanz
   "session/silent": { title: "Your session could not be read in time.", link: signIn },
   "idp/silent": { title: "The identity provider did not answer in time.", link: signIn },
   "idp/unreachable": { title: "The identity provider could not be reached.", link: signIn },
+  "api/unreachable": {
+    title: "The server could not be reached.",
+    detail: "keasy's server is not answering. Try again in a moment.",
+  },
   // The model runs in the page, and cannot here: this browser has no WebGPU, or this deployment serves
   // no model (`data.reason`: `webgpu`, `unserved` — lib/ai.ts).
   "llm/unavailable": {

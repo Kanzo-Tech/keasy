@@ -13,14 +13,11 @@ export type ErrorCode = Schemas["ErrorCode"];
 export type ErrorBody = Schemas["ErrorBody"];
 
 /**
- * What answered when neither the server nor the forwarder in front of it said why: Next's own 500
- * with the API down, a request the forwarder refused before forwarding it, a proxy. The server always
- * answers an `ErrorBody`, and the forwarder (`@kanzo-tech/auth`) a problem under its own code.
+ * Who names a refusal: the server, in an `ErrorBody`, or the forwarder in front of it
+ * (`@kanzo-tech/auth`), in a problem under its own code — `api/unreachable` when the server did not
+ * answer at all.
  */
-export type NoBodyCode = "bff/failed";
-
-/** Who may name a refusal: the server, the forwarder, or neither. */
-export type RefusalCode = ErrorCode | AuthErrorCode | NoBodyCode;
+export type RefusalCode = ErrorCode | AuthErrorCode;
 
 /** A refusal, as the server's `ErrorBody` or the forwarder's problem states it: `message` is its `detail`. */
 export class ApiError extends Error {
@@ -43,26 +40,20 @@ export class ApiError extends Error {
 
 /**
  * Read the `ErrorBody` a non-2xx response carries — the server's, or the forwarder's problem, the same
- * members under its own code — or say what answered instead.
+ * members under its own code. An answer that names no code is a plain `Error` in its own words: no
+ * code was given, so whoever shows it codes it.
  */
-export async function apiError(response: Response): Promise<ApiError> {
+export async function apiError(response: Response): Promise<Error> {
   const text = await response.clone().text();
   let body: ErrorBody | null = null;
   try {
     const parsed = JSON.parse(text) as Partial<ErrorBody> | null;
     if (parsed && typeof parsed.code === "string") body = parsed as ErrorBody;
   } catch {
-    // Not JSON: what answered was not the server, and its words become the detail below.
+    // Not JSON: neither the server nor the forwarder answered with a code, and its words are the message.
   }
-  return new ApiError(
-    body ?? {
-      code: "bff/failed",
-      title: "The request failed before it reached the server",
-      detail: text.trim().slice(0, 300) || `${response.status} ${response.statusText}`.trim(),
-      data: {},
-    },
-    response.status,
-  );
+  if (body) return new ApiError(body, response.status);
+  return new Error(text.trim().slice(0, 300) || `${response.status} ${response.statusText}`.trim());
 }
 
 const errors: Middleware = {

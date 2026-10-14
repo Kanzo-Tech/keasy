@@ -36,13 +36,13 @@ test("05 with the API down every list shows a problem, not an empty state", asyn
   await without(["acme-server"], async () => {
     for (const path of ["/graphs", "/connections", "/settings/credentials", "/"]) {
       await page.goto(path);
-      await expectProblem(page, "bff/failed", { within: 35_000 });
+      await expectProblem(page, "api/unreachable", { within: 35_000 });
     }
     const admin = await browser.newContext({ storageState: ".auth/admin.json", baseURL });
     const adminPage = await admin.newPage();
     for (const path of ["/settings/storage"]) {
       await adminPage.goto(path);
-      await expectProblem(adminPage, "bff/failed", { within: 35_000 });
+      await expectProblem(adminPage, "api/unreachable", { within: 35_000 });
     }
     await admin.close();
   });

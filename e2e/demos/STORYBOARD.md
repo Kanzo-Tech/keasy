@@ -230,7 +230,7 @@ lands in the bar"* is the check of the last step rather than a step of its own.
   University.name by count, top: 8 }`, and *…in Germany?* with the same and `where: Country.name in
   [Germany]`. The relation each needs is found by the page and the rows are DuckDB's, so the check
   that UC reads **16** (not 43) still proves "over what's in view". What the model in the page answers
-  is the evaluation set's to measure (`eval/`).
+  is the evaluation set's to measure (kanzo-ui's `packages/ai/eval`).
 - *Filter the page to these rows* keeps what the answer draws: the prizes in the categories its bars
   show. An answer drawn by university keeps those universities' prizes, at most the 22; read the
   figure off the take that captures it and pin steps 7 and 8 to it.

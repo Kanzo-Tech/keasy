@@ -388,7 +388,7 @@ the page can. The Tasks' unit tests use the same double,
 `scriptedModel` from `@kanzo-tech/llm/testing` (`nobel.fixture.ts`). Scenario 11 still forces a
 browser without WebGPU, with no script; 12–16 and the dashboard's run over the script. What it cannot
 show is WebLLM itself: that the pinned shards load and answer is a browser with WebGPU's to check
-(`make models`, then the eval). `UNSERVED`, the model of a deployment that serves none, stays keasy's:
+(`make models`, then kanzo-ui's evaluation set). `UNSERVED`, the model of a deployment that serves none, stays keasy's:
 the library knows no deployment. *What would reverse it:* a page that runs third-party script before its own — then the probe must
 leave the production bundle, in the library, and keasy guards the built bundle again.
 
@@ -432,35 +432,16 @@ headers adds one, and asserts `crossOriginIsolated`.
 
 ## Order
 
-**The evaluation set moves to kanzo-ui** (decided 2026-10-13): it scores `@kanzo-tech/ai/data`'s
-`ask` Task, which is kanzo-ui's, and belongs beside it with the Nobel fixtures already in
-`ai/src/testing/nobel.ts` — Ask's cases and their runner (`cases.ts`'s `ASK`, `ask.eval.ts`,
-`record.ts`: ~560 of the directory's 614 lines), the `eval` project and script, and `hasExample`, its
-one caller. Its 2 s polling loop and raw `data-slot` selectors are not carried over: there it waits
-with `expect.poll` and `AnswerHarness`. The four assistant examples (`cases.ts`'s `ASSISTANT`, which
-nothing reads yet) are keasy's — they measure *time to smile*, the assistant's flow — and stay as the
-seed of that measure. *What would
-reverse it:* a measure that only keasy's page can take — the assistant's whole flow, file to first
-answer, which is *time to smile* — and then that one lives here and Ask's cases do not.
+**Ask's evaluation set is kanzo-ui's** (moved 2026-10-14, `packages/ai/eval`): it scores
+`@kanzo-tech/ai/data`'s `ask` Task, which is kanzo-ui's, beside the Nobel fixtures it is asked over.
+keasy keeps no copy: `e2e/eval`, its `eval` project and script, and the four assistant examples that
+nothing ran are gone. *What would reverse it:* a measure that only keasy's page can take — the
+assistant's whole flow, file to first answer, which is *time to smile* — and then that one lives here,
+written when something runs it.
 
-Until it moves, keasy's part of phase 1 is the evaluation set, under `e2e/eval`: Ask's cases (`cases.ts`, one or two per
-shape of question — 25 on Nobel and 11 on LDBC SNB, each with its expected rows, computed with DuckDB
-over the example's files) and the four examples for the assistant, kept as data for the new
-assistant. Four cases end in words and not in rows: two ties (a prize's country, a person's
-friends), which must be asked back with the relations as numbered options, and two questions the data
-cannot answer (prize money, an age), which must draw no card. The figures that need a date in a
-cell are left out until the harness reads one. `EVAL_MODEL=<label> pnpm --filter @keasy/e2e eval` asks today's
-Ask once, as a reference number — on the page's model, so in a browser with WebGPU, and with
-the shards on a local copy (`make models`), as each case's browser starts with empty storage; `writeProgram` is not measured, it is replaced whole. The reference pass (2026-10-12, Qwen3-4B through Model Runner, today's Ask) answered **2 of 10**
-right — prizes by category and airports by country. Two failed on the page's filter: the model picked
-a relation that reaches it, and the answer read no rows, because today's Ask kept a page's clause only
-when the answer's relation had its column (fixed in kanzo-ui, where the answer now crosses a chip as
-the dashboard's tiles do). Five failed on the call itself: the model reasoned its way to the where —
-*gender female*, *country Spain*, *born 1985–1989* — and called `answer` without it, or answered a
-breakdown as one figure. One asked what the spec cannot say (*more than one prize*, a filter on a
-count). Those are what the Task addresses: a small spec decoded against its schema, and oracles that
-send back a spec that drops what the question asked for. Phase 1 (Ask as a Task) touches
-`discover/_parts/ask-panel.tsx`; phase 3 is the guided chat, which replaced the wizard on
-2026-10-13 — "Assistant" in the new-graph picker opens it. The gateway, the BFF's `/api/ai` forward
-and their configuration went the same day. The phases are on
+The reference pass (2026-10-12, Qwen3-4B through Model Runner, the Ask of the day) answered **2 of
+10** right; what failed, and what the Task changed for it, is kanzo-ui's to record beside the set.
+Phase 1 (Ask as a Task) touches `discover/_parts/ask-panel.tsx`; phase 3 is the guided chat, which
+replaced the wizard on 2026-10-13 — "Assistant" in the new-graph picker opens it. The gateway, the
+BFF's `/api/ai` forward and their configuration went the same day. The phases are on
 [Tasks](https://kanzo-tech.github.io/ui/docs/design/tasks#phases).

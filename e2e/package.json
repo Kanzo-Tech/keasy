@@ -6,7 +6,6 @@
   "scripts": {
     "test": "playwright test --project=guard --project=scenarios --project=smoke",
     "demo": "playwright test --project=demos",
-    "eval": "playwright test --project=eval",
     "guard": "playwright test --project=guard",
     "lint": "eslint",
     "typecheck": "tsc --noEmit"

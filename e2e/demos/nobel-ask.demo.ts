@@ -45,7 +45,7 @@ const holds = (rows: Record<string, string>[], value: string, n: number) =>
  *
  * The model is a double (`support/model.ts`), as `nobel-assistant`'s is: a recording that depended
  * on a small model filling the same spec on every take would be a different film each time, and what
- * the model in the page answers is the evaluation set's to measure (`eval/`). Everything else is the
+ * the model in the page answers is the evaluation set's to measure (kanzo-ui's `packages/ai/eval`). Everything else is the
  * stack's: the relation each answer needs is found by the page, and the chart and its rows are
  * DuckDB's, read under the page's filter. The check that the University of California reads 16 — its
  * Physics prizes, not its 43 in every category — proves that the answer is over what is in view. The

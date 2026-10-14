@@ -43,11 +43,6 @@ export function rules(example: Example): string {
   return read(example, "rules.ttl");
 }
 
-/** Whether the dev example `example` is in this tree: a demo of an example still on its way skips. */
-export function hasExample(example: Example): boolean {
-  return EXAMPLES.includes(example);
-}
-
 /**
  * A graph of the dev example `example`, named `name`, run to completion by the browser on `page`
  * (which must be signed in), within `within` ms. With `reuse`, a completed graph already named

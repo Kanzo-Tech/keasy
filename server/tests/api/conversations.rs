@@ -3,32 +3,51 @@ use serde_json::json;
 
 use crate::helpers::{EDITOR, READER, spawn_app};
 
-/// A conversation is started, saved whole after each reply and read back as it
-/// was saved: messages are a JSON array no heavier than the cap, saved by its
-/// owner alone, read by everyone.
+/// A conversation is saved whole after each reply under the id the client made
+/// — the first save starts it — and read back as it was saved: messages are a
+/// JSON array no heavier than the cap, saved by its owner alone, read by
+/// everyone.
 #[tokio::test]
 async fn a_conversation_is_saved_whole_and_read_back() {
     let app = spawn_app().await;
     let mine = app.token_for("u-1", EDITOR);
     let theirs = app.token_for("u-2", EDITOR);
     let reader = app.token_for("u-3", READER);
+    let id = "5d1e8f4a-2b7c-4e6d-8a9f-0c1b2d3e4f50";
+    let path = format!("/v1/conversations/{id}");
 
-    let (status, started) = app
+    let (status, body) = app.send(Method::GET, &path, &mine, json!(null)).await;
+    assert_eq!(
+        (status, body["code"].as_str()),
+        (StatusCode::NOT_FOUND, Some("conversation/not-found")),
+        "a chat never saved is not there"
+    );
+    let (status, body) = app
         .send(
-            Method::POST,
-            "/v1/conversations",
+            Method::PUT,
+            "/v1/conversations/no-such",
             &mine,
             json!({ "messages": [] }),
         )
         .await;
+    assert_eq!(
+        (status, body["data"]["field"].as_str()),
+        (StatusCode::BAD_REQUEST, Some("id"))
+    );
+
+    let (status, started) = app
+        .send(Method::PUT, &path, &mine, json!({ "messages": [] }))
+        .await;
     assert_eq!(status, StatusCode::CREATED);
     assert_eq!(
-        (started["messages"].clone(), started["built"].clone()),
-        (json!([]), json!(false))
+        (
+            started["id"].as_str(),
+            started["messages"].clone(),
+            started["built"].clone()
+        ),
+        (Some(id), json!([]), json!(false))
     );
     assert_eq!(started["owner"]["id"], "u-1");
-    let id = started["id"].as_str().unwrap();
-    let path = format!("/v1/conversations/{id}/messages");
 
     for messages in [json!({}), json!("x"), json!(null)] {
         let (status, body) = app
@@ -54,14 +73,7 @@ async fn a_conversation_is_saved_whole_and_read_back() {
     assert_eq!(saved["messages"], messages);
     assert_eq!(saved["updated_by"]["id"], "u-1");
 
-    let (status, read) = app
-        .send(
-            Method::GET,
-            &format!("/v1/conversations/{id}"),
-            &reader,
-            json!(null),
-        )
-        .await;
+    let (status, read) = app.send(Method::GET, &path, &reader, json!(null)).await;
     assert_eq!(
         (status, &read["messages"]),
         (StatusCode::OK, &messages),
@@ -76,17 +88,10 @@ async fn a_conversation_is_saved_whole_and_read_back() {
         (StatusCode::FORBIDDEN, Some("rbac/forbidden")),
         "only its owner saves it"
     );
-    let (status, body) = app
-        .send(Method::GET, "/v1/conversations/no-such", &mine, json!(null))
-        .await;
-    assert_eq!(
-        (status, body["code"].as_str()),
-        (StatusCode::NOT_FOUND, Some("conversation/not-found"))
-    );
 }
 
 /// A graph is created with its caller's conversation, which is then the
-/// graph's record: not saved over, and a copy carries on from it.
+/// graph's record: not saved over, and the chat carries on in another id.
 #[tokio::test]
 async fn a_graph_keeps_the_conversation_it_was_built_from() {
     let app = spawn_app().await;
@@ -95,15 +100,14 @@ async fn a_graph_keeps_the_conversation_it_was_built_from() {
     app.credential("key", "u-1").await;
     app.connection("sink", "key", keasy_server::domain::Direction::Sink, "u-1")
         .await;
-    let (_, conversation) = app
-        .send(
-            Method::POST,
-            "/v1/conversations",
-            &mine,
-            json!({ "messages": [{ "id": "m1" }] }),
-        )
-        .await;
-    let id = conversation["id"].as_str().unwrap();
+    let id = "7a2c9e10-4b3d-4f8e-9c1a-2d3e4f5a6b70";
+    app.send(
+        Method::PUT,
+        &format!("/v1/conversations/{id}"),
+        &mine,
+        json!({ "messages": [{ "id": "m1" }] }),
+    )
+    .await;
 
     let create = |token: &str, conversation: &str| {
         let body =
@@ -149,7 +153,7 @@ async fn a_graph_keeps_the_conversation_it_was_built_from() {
     let (status, body) = app
         .send(
             Method::PUT,
-            &format!("/v1/conversations/{id}/messages"),
+            &format!("/v1/conversations/{id}"),
             &mine,
             json!({ "messages": [] }),
         )
@@ -160,8 +164,8 @@ async fn a_graph_keeps_the_conversation_it_was_built_from() {
     );
     let (status, copy) = app
         .send(
-            Method::POST,
-            "/v1/conversations",
+            Method::PUT,
+            "/v1/conversations/8b3d0f21-5c4e-4a9f-8d2b-3e4f5a6b7c81",
             &mine,
             json!({ "messages": built["messages"] }),
         )

@@ -144,26 +144,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/conversations": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Start a conversation: with no message yet, or with another's, to continue
-         *     what a built graph decided without changing its record.
-         */
-        post: operations["create_conversation"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/conversations/{id}": {
         parameters: {
             query?: never;
@@ -172,28 +152,13 @@ export interface paths {
             cookie?: never;
         };
         get: operations["get_conversation"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/conversations/{id}/messages": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
         /**
-         * Save the conversation after a reply: every message, replacing what was
-         *     stored. Whole, not appended — an earlier answer taken again replaces the
-         *     turns after it, and a save sent twice is one save.
+         * Save the conversation `id` after a reply: every message, replacing what was
+         *     stored, or starting it when nothing is — the AI SDK's chat persistence, a
+         *     chat's id the client's own. Whole, not appended: an earlier answer taken
+         *     again replaces the turns after it, and a save sent twice is one save.
          */
-        put: operations["save_messages"];
+        put: operations["save_conversation"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1426,48 +1391,6 @@ export interface operations {
             };
         };
     };
-    create_conversation: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SaveMessagesRequest"];
-            };
-        };
-        responses: {
-            /** @description The conversation, started with these messages */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Conversation"];
-                };
-            };
-            /** @description The messages are not a JSON array (`data.field`) */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            /** @description The messages are heavier than a conversation may be */
-            413: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-        };
-    };
     get_conversation: {
         parameters: {
             query?: never;
@@ -1500,12 +1423,12 @@ export interface operations {
             };
         };
     };
-    save_messages: {
+    save_conversation: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Conversation ID */
+                /** @description Conversation ID: a UUID the client makes, as the AI SDK's chat ids are */
                 id: string;
             };
             cookie?: never;
@@ -1525,7 +1448,16 @@ export interface operations {
                     "application/json": components["schemas"]["Conversation"];
                 };
             };
-            /** @description The messages are not a JSON array (`data.field`) */
+            /** @description The conversation, started with these messages */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Conversation"];
+                };
+            };
+            /** @description The id is not a UUID, or the messages are not a JSON array (`data.field`) */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -1543,16 +1475,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
-            /** @description Conversation not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorBody"];
-                };
-            };
-            /** @description A graph was built from it (`conversation/built`): start one from its messages instead */
+            /** @description A graph was built from it (`conversation/built`): carry on in another id */
             409: {
                 headers: {
                     [name: string]: unknown;

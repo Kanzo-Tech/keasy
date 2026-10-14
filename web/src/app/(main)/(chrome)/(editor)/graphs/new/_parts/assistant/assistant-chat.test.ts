@@ -40,7 +40,7 @@ vi.mock("./use-assistant", () => ({ useAssistant: doubles.useAssistant }));
 vi.mock("@/lib/assistant-conversation", async (actual) => ({
   ...(await actual<typeof import("@/lib/assistant-conversation")>()),
   useAssistantConversation: (id: string | null) => ({
-    id: id ?? null,
+    id: id ?? "c1",
     messages: doubles.stored,
     problem: undefined,
     built: doubles.built,

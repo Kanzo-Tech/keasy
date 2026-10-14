@@ -1,5 +1,6 @@
-//! The assistant's conversations: started, read, and saved whole after each
-//! reply — the AI SDK's chat persistence, `UIMessage[]` per chat id. keasy
+//! The assistant's conversations: read, and saved whole after each reply under
+//! the id the client made — the AI SDK's chat persistence, `UIMessage[]` per
+//! chat id. keasy
 //! stores the messages opaque: what they may hold, and what they never do, is
 //! the web's `toStored` (docs/design/assistant.md, *the conversation is kept*).
 
@@ -60,26 +61,6 @@ pub fn any(conn: &rusqlite::Connection, id: &str) -> Result<Conversation, Refusa
         .ok_or_else(|| Refusal::not_found(ErrorCode::ConversationNotFound, "No such conversation"))
 }
 
-#[utoipa::path(post, path = "/v1/conversations", tag = "Conversations", security(("bearer" = ["editor"])),
-    request_body = SaveMessagesRequest,
-    responses(
-        (status = 201, description = "The conversation, started with these messages", body = Conversation),
-        (status = 400, description = "The messages are not a JSON array (`data.field`)", body = ErrorBody),
-        (status = 413, description = "The messages are heavier than a conversation may be", body = ErrorBody),
-    )
-)]
-/// Start a conversation: with no message yet, or with another's, to continue
-/// what a built graph decided without changing its record.
-pub async fn create_conversation(
-    caller: Editor,
-    State(state): State<AppState>,
-    Json(payload): Json<SaveMessagesRequest>,
-) -> Result<impl IntoResponse, Refusal> {
-    let messages = messages(payload.messages)?;
-    let conversation = conversations::insert(&*state.db.write().await, &messages, &caller.actor())?;
-    Ok((StatusCode::CREATED, Json(conversation)))
-}
-
 #[utoipa::path(get, path = "/v1/conversations/{id}", tag = "Conversations", security(("bearer" = ["reader"])),
     params(("id" = String, Path, description = "Conversation ID")),
     responses(
@@ -97,45 +78,58 @@ pub async fn get_conversation(
     Ok(Json(conversation))
 }
 
-#[utoipa::path(put, path = "/v1/conversations/{id}/messages", tag = "Conversations", security(("bearer" = ["editor"])),
-    params(("id" = String, Path, description = "Conversation ID")),
+#[utoipa::path(put, path = "/v1/conversations/{id}", tag = "Conversations", security(("bearer" = ["editor"])),
+    params(("id" = String, Path, description = "Conversation ID: a UUID the client makes, as the AI SDK's chat ids are")),
     request_body = SaveMessagesRequest,
     responses(
         (status = 200, description = "The messages, replaced whole", body = Conversation),
-        (status = 400, description = "The messages are not a JSON array (`data.field`)", body = ErrorBody),
+        (status = 201, description = "The conversation, started with these messages", body = Conversation),
+        (status = 400, description = "The id is not a UUID, or the messages are not a JSON array (`data.field`)", body = ErrorBody),
         (status = 403, description = "Neither its owner nor an admin (`rbac/forbidden`)", body = ErrorBody),
-        (status = 404, description = "Conversation not found", body = ErrorBody),
-        (status = 409, description = "A graph was built from it (`conversation/built`): start one from its messages instead", body = ErrorBody),
+        (status = 409, description = "A graph was built from it (`conversation/built`): carry on in another id", body = ErrorBody),
         (status = 413, description = "The messages are heavier than a conversation may be", body = ErrorBody),
     )
 )]
-/// Save the conversation after a reply: every message, replacing what was
-/// stored. Whole, not appended — an earlier answer taken again replaces the
-/// turns after it, and a save sent twice is one save.
-pub async fn save_messages(
+/// Save the conversation `id` after a reply: every message, replacing what was
+/// stored, or starting it when nothing is — the AI SDK's chat persistence, a
+/// chat's id the client's own. Whole, not appended: an earlier answer taken
+/// again replaces the turns after it, and a save sent twice is one save.
+pub async fn save_conversation(
     caller: Editor,
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(payload): Json<SaveMessagesRequest>,
-) -> Result<Json<Conversation>, Refusal> {
-    let messages = messages(payload.messages)?;
-    caller.ensure(Action::Manage, &any(&*state.db.read().await, &id)?)?;
-    if let Some(saved) =
-        conversations::replace(&*state.db.write().await, &id, &messages, &caller.actor())?
-    {
-        return Ok(Json(saved));
+) -> Result<impl IntoResponse, Refusal> {
+    if uuid::Uuid::parse_str(&id).is_err() {
+        return Err(Refusal::invalid_field(
+            "id",
+            "A conversation's id is a UUID",
+        ));
     }
-    any(&*state.db.read().await, &id)?;
+    let messages = messages(payload.messages)?;
+    let existing = conversations::get(&*state.db.read().await, &id)?;
+    if let Some(existing) = &existing {
+        caller.ensure(Action::Manage, existing)?;
+    }
+    let status = if existing.is_some() {
+        StatusCode::OK
+    } else {
+        StatusCode::CREATED
+    };
+    if let Some(saved) =
+        conversations::save(&*state.db.write().await, &id, &messages, &caller.actor())?
+    {
+        return Ok((status, Json(saved)));
+    }
     Err(Refusal::conflict(
         ErrorCode::ConversationBuilt,
-        "A graph was built from this conversation; start another from its messages",
+        "A graph was built from this conversation; carry on in another",
     ))
 }
 
 /// The routes this module serves.
 pub fn router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
-        .routes(routes!(create_conversation))
         .routes(routes!(get_conversation))
-        .routes(routes!(save_messages))
+        .routes(routes!(save_conversation))
 }

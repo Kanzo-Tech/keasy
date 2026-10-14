@@ -5,28 +5,29 @@ import { describe, expect, it, vi } from "vitest";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
+/** The conversations table, as `PUT /v1/conversations/{id}` keeps it: the client's id, upserted. */
 type Stored = { id: string; messages: unknown[]; built: boolean };
 const rows = new Map<string, Stored>();
-let made = 0;
-const POST = vi.fn(async (_path: string, { body }: { body: { messages: unknown[] } }) => {
-  const row = { id: `c${++made}`, messages: body.messages, built: false };
-  rows.set(row.id, row);
+type Init = { params: { path: { id: string } }; body?: { messages: unknown[] } };
+const PUT = vi.fn(async (_path: string, { params, body }: Init) => {
+  const row = rows.get(params.path.id);
+  if (row?.built) throw Object.assign(new Error("built"), { code: "conversation/built" });
+  const saved = { id: params.path.id, messages: body!.messages, built: false };
+  rows.set(saved.id, saved);
+  return { data: saved };
+});
+const GET = vi.fn(async (_path: string, { params }: Init) => {
+  const row = rows.get(params.path.id);
+  if (!row) throw Object.assign(new Error("No such conversation"), { code: "conversation/not-found" });
   return { data: row };
 });
-const PUT = vi.fn(async (_path: string, { params, body }: { params: { path: { id: string } }; body: { messages: unknown[] } }) => {
-  const row = rows.get(params.path.id)!;
-  if (row.built) throw Object.assign(new Error("built"), { code: "conversation/built" });
-  row.messages = body.messages;
-  return { data: row };
-});
-const GET = vi.fn(async (_path: string, { params }: { params: { path: { id: string } } }) => ({ data: rows.get(params.path.id)! }));
 const $api = {
-  queryOptions: (method: string, path: string, init: { params: { path: { id: string } } }) => ({
+  queryOptions: (method: string, path: string, init: Init) => ({
     queryKey: [method, path, init],
     queryFn: async () => (await GET(path, init)).data,
   }),
 };
-vi.mock("@/lib/api/client", () => ({ http: { GET, POST, PUT }, $api }));
+vi.mock("@/lib/api/client", () => ({ http: { GET, PUT }, $api }));
 
 const { QueryClient, QueryClientProvider } = await import("@tanstack/react-query");
 vi.mock("@/lib/api/query-client", async () => ({ queryClient: client }));
@@ -47,35 +48,51 @@ function mount(id?: string) {
 }
 
 describe("the assistant's conversation, as the chat holds it", () => {
-  it("is created by its first save, saved whole after, and stored stripped", async () => {
+  it("is a new id of the client's, started by its first save, saved whole after, and stored stripped", async () => {
     const { last, render, root } = mount();
     await act(async () => render());
-    expect(last()).toMatchObject({ id: null, messages: [], decisions: [] });
+    await vi.waitFor(() => expect(last()).toMatchObject({ messages: [], decisions: [] }));
+    const { id } = last();
+    expect(id).toMatch(/^[0-9a-f-]{36}$/);
 
-    let id!: string;
-    await act(async () => void (id = await last().save([question("1"), sample])));
-    expect(POST).toHaveBeenCalledTimes(1);
-    expect(rows.get(id)!.messages).toEqual([question("1"), { id: "a", role: "assistant", parts: [] }]);
-    expect(last().id).toBe(id);
+    await act(async () => void expect(await last().save([question("1"), sample])).toBe(id));
+    // The sample's row is the person's data: its part is not kept, and a message of none is not stored.
+    expect(rows.get(id)!.messages).toEqual([question("1")]);
 
     await act(async () => void (await last().save([question("1"), question("2")])));
-    expect(PUT).toHaveBeenCalledTimes(1);
     expect(rows.get(id)!.messages).toEqual([question("1"), question("2")]);
+    expect(last().id).toBe(id);
     act(() => root.unmount());
   });
 
-  it("resumes a conversation by id, and carries on in a new one once a graph was built from it", async () => {
+  it("resumes a conversation by id, and carries on in a new one when a graph was built from it", async () => {
     rows.set("built", { id: "built", messages: [question("1")], built: true });
     const { last, render, root } = mount("built");
     await act(async () => render());
     await vi.waitFor(() => expect(last().messages).toEqual([question("1")]));
+    expect(last().id).not.toBe("built");
 
     let id!: string;
     await act(async () => void (id = await last().save([question("1"), question("2")])));
-    expect(id).not.toBe("built");
+    expect(id).toBe(last().id);
     expect(rows.get("built")!.messages).toEqual([question("1")]);
     expect(rows.get(id)!.messages).toEqual([question("1"), question("2")]);
-    expect(last().id).toBe(id);
+    act(() => root.unmount());
+  });
+
+  it("carries on in a new one when a graph is built from it meanwhile", async () => {
+    rows.set("mine", { id: "mine", messages: [question("1")], built: false });
+    const { last, render, root } = mount("mine");
+    await act(async () => render());
+    await vi.waitFor(() => expect(last().messages).toEqual([question("1")]));
+    expect(last().id).toBe("mine");
+
+    rows.get("mine")!.built = true;
+    let id!: string;
+    await act(async () => void (id = await last().save([question("1"), question("2")])));
+    expect(id).not.toBe("mine");
+    expect(rows.get(id)!.messages).toEqual([question("1"), question("2")]);
+    await vi.waitFor(() => expect(last().id).toBe(id));
     act(() => root.unmount());
   });
 });

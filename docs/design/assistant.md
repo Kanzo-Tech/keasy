@@ -170,15 +170,16 @@ the rest in the background, the way fossil's profile already splits.
 
 ### `requirements` — questions the data can answer
 
-- **Context**: the accepted model's types, fields and edges, as `Type.field` names.
-- **Contract**: `{ text, of, fields }`, `of` a type and `fields` a list of `Type.field`, both enums.
-- **Oracle**: Ask's resolver — `resolveRelation` from `@kanzo-tech/mosaic` over the join graph the
-  accepted model will be — reaches every field's type from `of` (`requirements/unreachable`); a tie
-  is answerable, because Ask asks it back.
+- **Context**: the accepted model's types, and from each the paths Ask's model writes, two links out
+  at most (`category`, `laureate.affiliation.name`, `^laureate.category`), keys left out.
+- **Contract**: `{ text, of, fields }`, `of` a type and `fields` a list of paths from it, both enums.
+- **Oracle**: Ask's resolver — `JoinResolver` from `@kanzo-tech/mosaic` over the join graph the
+  accepted model will be (`joinGraphOf`, written by hand: nothing has run yet) — reaches each path
+  from `of` (`requirements/unreachable`, naming the paths it does not).
 - **Offered** with `propose` through `useTask`, five at a time, as chips; a chip is answerable by
   construction. **A question the person types** is marked by Ask's own Task, `ask` from
-  `@kanzo-tech/ai/data`, run over the same join graph with the profile's columns as its fields:
-  answerable when its spec holds or only asks which way. Until a model is accepted, `answerable`
+  `@kanzo-tech/ai/data`, run over the same join graph, which says what each field is: answerable when
+  its spec holds or only asks the person a decision. Until a model is accepted, `answerable`
   stays `null`.
 - *What would reverse it:* questions marked answerable here that Ask, over the built graph, cannot
   answer — then marking waits for the preview and runs Ask on it.
@@ -269,13 +270,14 @@ whole of a source — then the chat says so and offers the build in its place.
 
 **Built 2026-10-13**, as reference chat systems keep one — the AI SDK's `UIMessage[]` per chat id,
 resumed with `useChat({ id, messages })`; Vercel's chatbot template's `Chat` and `Message` tables;
-OpenAI's Threads: a `conversations` table (`POST /v1/conversations`, `GET /v1/conversations/{id}`,
-`PUT /v1/conversations/{id}/messages`), its messages a JSON array keasy never reads, under a 256 KiB
-cap; and a `conversation` on each graph, set when it is created from its creator's own. The decisions
+OpenAI's Threads: a `conversations` table (`GET` and `PUT /v1/conversations/{id}`, the id a UUID
+the client makes, as the AI SDK's chat ids are, and the first save starting it), its messages a JSON
+array keasy never reads, under a 256 KiB cap; and a `conversation` on each graph, set when it is created from its creator's own. The decisions
 are data parts of those messages (`data-decision`: the options offered, the one taken, whether it was
 assumed), so Discover's *What I decided* reads them from the graph's conversation and **Change**
 opens `/graphs/new/assistant?conversation=<id>&decision=<id>`. `useAssistantConversation(id?)`
-(`lib/assistant-conversation.ts`) is the web's side: `{ id, messages, save, decisions }`.
+(`lib/assistant-conversation.ts`) is the web's side: `{ id, messages, save, decisions }`, over
+`@kanzo-tech/ai`'s `useKeptChat`.
 
 **One message per turn** (`conversation.ts`'s `messagesOf`): each carries a `data-turn` with its kind,
 and its id is the kind and what it is about (`decide:<decision>`, `asked:<question>`), so a save
@@ -322,20 +324,18 @@ carrying example rows through it and finds none. *What would reverse it:* a need
 transcript, rows and all — an audit, a support case — and then it is stored in the person's own
 storage, under their own credential, never in keasy's database.
 
-**Direction (2026-10-13): the keeping moves to `@kanzo-tech/ai`, and keasy keeps the store and the
-filter.** Nothing above is keasy's but where the array lives and what may be in it: a guided chat
-whose messages are `UIMessage[]` by id, validated on the way back in, saved whole after each reply,
-one save at a time, refused and carried on in a new id once its record is sealed — any guided chat
-of the library needs the same. So `@kanzo-tech/ai` keeps it, on the AI SDK's own model (`UIMessage[]`
-per chat id, `validateUIMessages` on load) with a `keep` filter it calls on every save and every
-load; keasy hands it `load(id)` and `save(id, messages)` against `GET /v1/conversations/{id}` and
-`PUT /v1/conversations/{id}/messages`, and `keep` — today's `toStored`, the allow-list, unchanged,
-with its test. `useAssistantConversation`'s queue, the save-after-reply timing and the
-`conversation/built` carry-on go (~200 lines with their test; `conversation.ts`'s turns, which say
-what keasy's chat is, stay). *What would reverse it:* a second guided chat in the library that needs
-a different saving rule — appended, not whole — and then the library's piece is the narrower one and
-keasy keeps its own rule; or the library's `keep` running anywhere but on keasy's side of the save,
-which would put the privacy premise in someone else's hands.
+**The keeping is `@kanzo-tech/ai`'s, and the store and the filter keasy's** (kanzo-ui 0.46,
+`useKeptChat`). Reading once per id, validating what comes back with the AI SDK's
+`validateUIMessages`, and saving whole after each reply, one save at a time, are the library's;
+keasy hands it `load(id)` and `save(id, messages)` against `GET` and `PUT /v1/conversations/{id}`,
+and `keep` — `keptPart`, the allow-list `toStored` is made of, part by part. A message the filter
+leaves no part of is not stored. What stays keasy's is the rule of its record: a conversation a graph
+was built from is not saved over — opened, the chat carries on from its messages under a new id; built
+from meanwhile, in another tab, the save that meets `conversation/built` writes the new id instead.
+*What would reverse it:* a second guided chat in the library that needs a different saving rule —
+appended, not whole — and then the library's piece is the narrower one and keasy keeps its own rule;
+or the library's `keep` running anywhere but on keasy's side of the save, which would put the privacy
+premise in someone else's hands.
 
 ## What left keasy's configuration
 

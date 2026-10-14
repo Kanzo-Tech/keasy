@@ -74,7 +74,6 @@ export function AssistantFlow({
   const kept = useAssistantConversation(conversation);
   // The id of the conversation the next save goes to, on the URL, so a reload resumes it.
   useEffect(() => {
-    if (kept.id === null) return;
     const url = new URL(window.location.href);
     if (url.searchParams.get("conversation") === kept.id) return;
     window.history.replaceState(null, "", `${url.pathname}?conversation=${encodeURIComponent(kept.id)}`);
@@ -124,7 +123,7 @@ function Resumed({
 
   // The whole graph, once asked for, from the conversation saved first: a save over a built
   // conversation starts a new one, so the build waits for the id the save answered.
-  const { progress, build } = useBuild(assistant.mapped, assistant.described, { conversation: kept.id ?? undefined });
+  const { progress, build } = useBuild(assistant.mapped, assistant.described, { conversation: kept.id });
   const [asked, setAsked] = useState<{ conversation: string; program: string } | null>(null);
   useEffect(() => {
     if (asked !== null && asked.conversation === kept.id && asked.program === assistant.mapped) build();

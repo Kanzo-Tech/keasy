@@ -1,23 +1,26 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 // eslint-disable-next-line no-restricted-imports -- a failed read is the hook's `problem`, for the chat to say beside the turns it can draw
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import type { UIMessage } from "ai";
+import { useKeptChat } from "@kanzo-tech/ai";
 import type { Decision } from "@kanzo-tech/ai/task";
 import { $api, http, type Schemas } from "@/lib/api/client";
 import { queryClient } from "@/lib/api/query-client";
 
 /**
- * The assistant's conversation, kept as reference chat systems keep one — the AI SDK's `UIMessage[]`
- * per chat id, saved after each reply and handed back to `useChat({ id, messages })` — in keasy's
- * `conversations` table, and named by the graph built from it (`Graph.conversation`). What was
+ * The assistant's conversation, kept as the AI SDK keeps a chat — its `UIMessage[]` under a chat id
+ * the client makes, read once and saved whole after each reply, through `@kanzo-tech/ai`'s
+ * `useKeptChat` — in keasy's `conversations` table (`PUT /v1/conversations/{id}`), and named by the
+ * graph built from it (`Graph.conversation`). What was
  * decided travels as data parts of those messages, so Discover lists the decisions and **Change**
  * opens the conversation at one of them.
  *
  * **Structure only, never the person's data** (docs/design/assistant.md, *the conversation is
  * kept*): the person's data never leaves the browser, and a saved conversation is no exception.
- * {@link toStored} is the one gate: every save goes through it, and so does every read.
+ * {@link toStored} is the one gate: every save goes through it, part by part, as the kept chat's
+ * `keep`, and so does every read.
  */
 
 /** A file the person picked, by where it is — never what it holds. */
@@ -105,7 +108,7 @@ const KEPT: { [K in keyof StoredParts]: (data: Json) => StoredParts[K] | null } 
 };
 
 /** A part as it is kept, or `null` when it is not. */
-function keptPart(role: string, part: unknown): AssistantMessage["parts"][number] | null {
+export function keptPart(role: string, part: unknown): AssistantMessage["parts"][number] | null {
   if (!isObject(part) || !str(part.type)) return null;
   // What the person typed is theirs to keep: their questions, their reply. What the assistant
   // said in prose may quote a row ("e.g. Marie Curie · Physics · 1903"), and is said again from
@@ -160,21 +163,21 @@ export const changeHref = (conversation: string, decision: string) =>
 export const conversationQuery = (id: string) => $api.queryOptions("get", "/v1/conversations/{id}", { params: { path: { id } } });
 
 export interface AssistantConversation {
-  /** The conversation's id: `null` until the first save of a new one. */
-  id: string | null;
+  /** The conversation's id, the client's own: what the next save writes. */
+  id: string;
   /** Its messages as stored — `[]` for a new one — or `undefined` while they are read. */
   messages: AssistantMessage[] | undefined;
   /** Why it could not be read. */
   problem: unknown;
   /**
-   * A graph was built from it: it is that graph's record, so the next save starts a new
+   * A graph was built from it: it is that graph's record, so the chat carries on in a new
    * conversation from these messages rather than change it.
    */
   built: boolean;
   /**
-   * Save every message, after each reply: through {@link toStored}, replacing what was stored.
-   * The first save of a new conversation creates it; a conversation a graph was built from is that
-   * graph's record and is not saved over — the save starts a new one from these messages, and `id`
+   * Save every message, after each reply, through {@link toStored}, replacing what was stored, one
+   * save at a time. A conversation a graph was built from — when it was opened, or meanwhile, in
+   * another tab — is not saved over: the save starts a new one from these messages, and `id`
    * becomes its. Resolves with the id saved under.
    */
   save(messages: readonly UIMessage[]): Promise<string>;
@@ -182,55 +185,75 @@ export interface AssistantConversation {
   decisions: TakenDecision[];
 }
 
+/** Whether `error` is the API's word that a graph was built from the conversation. */
+const isBuilt = (error: unknown) => (error as { code?: unknown } | null)?.code === "conversation/built";
+
+/** A chat never saved: there is nothing under its id yet. */
+const isUnsaved = (error: unknown) => (error as { code?: unknown } | null)?.code === "conversation/not-found";
+
 /**
- * The assistant's conversation `id`, or a new one: what the chat resumes from and saves to. Saves
- * are made one at a time, in order, so a reply's save never lands under the one after it.
+ * The assistant's conversation `opened`, or a new one: what the chat resumes from and saves to.
+ * Reading, validating, and saving one at a time are `useKeptChat`'s; what is keasy's is the store
+ * (`/v1/conversations/{id}`), the gate (`keptPart`), and the rule that a built conversation is its
+ * graph's record: the chat carries on from its messages in an id of its own.
  */
-export function useAssistantConversation(id?: string | null): AssistantConversation {
-  const [saved, setSaved] = useState<string | null>(null);
-  const current = saved ?? id ?? null;
-  const read = useQuery({
-    ...conversationQuery(current ?? ""),
-    enabled: current !== null,
-    staleTime: Infinity,
-  });
-  // Where the next save goes: the conversation as read, until a save answers where it went.
-  const resumed = useRef({ id: current, built: false });
-  const afterSave = useRef<{ id: string; built: boolean } | null>(null);
-  const built = read.data?.built ?? false;
-  useEffect(() => {
-    resumed.current = { id: current, built };
-  }, [current, built]);
+export function useAssistantConversation(opened?: string | null): AssistantConversation {
+  const [fresh] = useState(() => crypto.randomUUID());
+  // The opened conversation: whether a graph was built from it decides which id the chat saves to.
+  const source = useQuery({ ...conversationQuery(opened ?? ""), enabled: !!opened, staleTime: Infinity, retry: false });
+  const openedBuilt = source.data?.built ?? false;
+  // A conversation carried on from a built one, under its new id, with what it held.
+  const [carried, setCarried] = useState<{ id: string; messages: AssistantMessage[] } | null>(null);
+  const id = carried?.id ?? (opened && !openedBuilt ? opened : fresh);
+  const savedAt = useRef(id);
 
-  // One save at a time, in the order they were made: a mutation scope is TanStack's queue.
-  const { mutateAsync: save } = useMutation({
-    scope: { id: `conversation ${useId()}` },
-    mutationFn: async (messages: readonly UIMessage[]) => {
-      const body = { messages: toStored(messages) as unknown as Schemas["SaveMessagesRequest"]["messages"] };
-      const { id: at, built } = afterSave.current ?? resumed.current;
-      let conversation: Schemas["Conversation"];
-      if (at === null || built) {
-        conversation = (await http.POST("/v1/conversations", { body })).data!;
-      } else {
-        try {
-          conversation = (await http.PUT("/v1/conversations/{id}/messages", { params: { path: { id: at } }, body })).data!;
-        } catch (error) {
-          // Built from meanwhile, in another tab: carry on in a new one.
-          if ((error as { code?: unknown }).code !== "conversation/built") throw error;
-          conversation = (await http.POST("/v1/conversations", { body })).data!;
-        }
+  const put = useCallback(async (at: string, messages: AssistantMessage[]) => {
+    const body = { messages: messages as unknown as Schemas["SaveMessagesRequest"]["messages"] };
+    const { data } = await http.PUT("/v1/conversations/{id}", { params: { path: { id: at } }, body });
+    queryClient.setQueryData(conversationQuery(at).queryKey, data);
+    savedAt.current = at;
+  }, []);
+
+  const kept = useKeptChat<AssistantMessage>({
+    id,
+    load: async (at, { signal }) => {
+      if (carried?.id === at) return carried.messages;
+      // A message the gate left no part of is not one the AI SDK reads back.
+      const stored = (messages: readonly unknown[]) => toStored(messages).filter((m) => m.parts.length > 0);
+      // A new conversation from a built one starts with what the built one holds.
+      if (at === fresh && opened && openedBuilt) return stored(source.data!.messages);
+      try {
+        const { data } = await http.GET("/v1/conversations/{id}", { params: { path: { id: at } }, signal });
+        return stored(data!.messages);
+      } catch (error) {
+        if (isUnsaved(error)) return [];
+        throw error;
       }
-      afterSave.current = { id: conversation.id, built: conversation.built };
-      queryClient.setQueryData(conversationQuery(conversation.id).queryKey, conversation);
-      setSaved(conversation.id);
-      return conversation.id;
     },
+    save: async (at, messages) => {
+      try {
+        await put(at, messages);
+      } catch (error) {
+        // Built from meanwhile, in another tab: carry on in a new one.
+        if (!isBuilt(error)) throw error;
+        const next = crypto.randomUUID();
+        await put(next, messages);
+        setCarried({ id: next, messages });
+      }
+    },
+    keep: (part, message) => keptPart(message.role, part) ?? undefined,
   });
 
-  const messages = useMemo(
-    () => (current === null ? [] : read.data ? toStored(read.data.messages) : undefined),
-    [current, read.data],
+  const { save: keep } = kept;
+  const save = useCallback(
+    async (messages: readonly UIMessage[]) => {
+      await keep(messages as AssistantMessage[]);
+      return savedAt.current;
+    },
+    [keep],
   );
+  const problem = source.error ?? (kept.state === "failed" ? kept.error : undefined);
+  const messages = opened && source.isPending ? undefined : kept.messages;
   const decisions = useMemo(() => decisionsOf(messages ?? []), [messages]);
-  return { id: current, messages, problem: read.error ?? undefined, built, save, decisions };
+  return { id, messages, problem: problem ?? undefined, built: id === opened && openedBuilt, save, decisions };
 }

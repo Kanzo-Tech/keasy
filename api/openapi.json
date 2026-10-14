@@ -550,64 +550,6 @@
         ]
       }
     },
-    "/v1/conversations": {
-      "post": {
-        "tags": [
-          "Conversations"
-        ],
-        "summary": "Start a conversation: with no message yet, or with another's, to continue\nwhat a built graph decided without changing its record.",
-        "operationId": "create_conversation",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SaveMessagesRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "The conversation, started with these messages",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Conversation"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "The messages are not a JSON array (`data.field`)",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "413": {
-            "description": "The messages are heavier than a conversation may be",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": [
-              "editor"
-            ]
-          }
-        ]
-      }
-    },
     "/v1/conversations/{id}": {
       "get": {
         "tags": [
@@ -654,20 +596,18 @@
             ]
           }
         ]
-      }
-    },
-    "/v1/conversations/{id}/messages": {
+      },
       "put": {
         "tags": [
           "Conversations"
         ],
-        "summary": "Save the conversation after a reply: every message, replacing what was\nstored. Whole, not appended — an earlier answer taken again replaces the\nturns after it, and a save sent twice is one save.",
-        "operationId": "save_messages",
+        "summary": "Save the conversation `id` after a reply: every message, replacing what was\nstored, or starting it when nothing is — the AI SDK's chat persistence, a\nchat's id the client's own. Whole, not appended: an earlier answer taken\nagain replaces the turns after it, and a save sent twice is one save.",
+        "operationId": "save_conversation",
         "parameters": [
           {
             "name": "id",
             "in": "path",
-            "description": "Conversation ID",
+            "description": "Conversation ID: a UUID the client makes, as the AI SDK's chat ids are",
             "required": true,
             "schema": {
               "type": "string"
@@ -695,8 +635,18 @@
               }
             }
           },
+          "201": {
+            "description": "The conversation, started with these messages",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Conversation"
+                }
+              }
+            }
+          },
           "400": {
-            "description": "The messages are not a JSON array (`data.field`)",
+            "description": "The id is not a UUID, or the messages are not a JSON array (`data.field`)",
             "content": {
               "application/json": {
                 "schema": {
@@ -715,18 +665,8 @@
               }
             }
           },
-          "404": {
-            "description": "Conversation not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
           "409": {
-            "description": "A graph was built from it (`conversation/built`): start one from its messages instead",
+            "description": "A graph was built from it (`conversation/built`): carry on in another id",
             "content": {
               "application/json": {
                 "schema": {

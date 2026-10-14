@@ -1,3 +1,4 @@
+import type { AuthErrorCode } from "@kanzo-tech/auth";
 import createFetchClient, { type Middleware } from "openapi-fetch";
 import type { Readable, Writable, components, paths } from "./schema";
 
@@ -12,19 +13,23 @@ export type ErrorCode = Schemas["ErrorCode"];
 export type ErrorBody = Schemas["ErrorBody"];
 
 /**
- * What answered when the server did not: the BFF in front of it, a proxy, or Next's own 500 with the
- * API down. The server itself always answers an `ErrorBody`.
+ * What answered when neither the server nor the forwarder in front of it said why: Next's own 500
+ * with the API down, a request the forwarder refused before forwarding it, a proxy. The server always
+ * answers an `ErrorBody`, and the forwarder (`@kanzo-tech/auth`) a problem under its own code.
  */
 export type NoBodyCode = "bff/failed";
 
-/** A refusal, as the server's `ErrorBody` states it: `message` is its `detail`. */
+/** Who may name a refusal: the server, the forwarder, or neither. */
+export type RefusalCode = ErrorCode | AuthErrorCode | NoBodyCode;
+
+/** A refusal, as the server's `ErrorBody` or the forwarder's problem states it: `message` is its `detail`. */
 export class ApiError extends Error {
-  readonly code: ErrorCode | NoBodyCode;
+  readonly code: RefusalCode;
   readonly title: string;
   readonly data: ErrorBody["data"];
 
   constructor(
-    body: Pick<ErrorBody, "title" | "detail" | "data"> & { code: ErrorCode | NoBodyCode },
+    body: Pick<ErrorBody, "title" | "detail" | "data"> & { code: RefusalCode },
     readonly status?: number,
     options?: ErrorOptions,
   ) {
@@ -36,7 +41,10 @@ export class ApiError extends Error {
   }
 }
 
-/** Read the `ErrorBody` a non-2xx response carries, or say what answered instead. */
+/**
+ * Read the `ErrorBody` a non-2xx response carries — the server's, or the forwarder's problem, the same
+ * members under its own code — or say what answered instead.
+ */
 export async function apiError(response: Response): Promise<ApiError> {
   const text = await response.clone().text();
   let body: ErrorBody | null = null;

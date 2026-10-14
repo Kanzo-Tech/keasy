@@ -1,6 +1,7 @@
 /**
  * The one place keasy's web bounds a wait on something outside the process: every `fetch` goes
- * through {@link deadlineFetch}. The session store is bounded by `@kanzo-tech/auth`'s `ticketStore`.
+ * through {@link deadlineFetch}, save the session read and its renewal, which `@kanzo-tech/auth`'s
+ * `bffAuth` bounds itself. The session store is bounded by `@kanzo-tech/auth`'s `ticketStore`.
  * A deadline that fires is coded by who did not answer, never as a bare timeout.
  */
 
@@ -14,9 +15,13 @@ const NO_BODY = new Set([101, 204, 205, 304]);
  * last — so a JSON answer and a stream are bounded alike, and a stream whose server sends keep-alives
  * is never cut while it is alive. When the deadline fires, the request is aborted and `silent(ms)` is
  * what the caller sees, from the `fetch` or from the body read. A caller's own `signal` still aborts
- * as itself.
+ * as itself. `through` is the `fetch` it bounds: the global one unless a caller's own wraps it.
  */
-export function deadlineFetch(silent: (ms: number) => Error, ms: number = DEADLINE_MS): typeof fetch {
+export function deadlineFetch(
+  silent: (ms: number) => Error,
+  ms: number = DEADLINE_MS,
+  through: typeof fetch = (input, init) => globalThis.fetch(input, init),
+): typeof fetch {
   return async (input, init) => {
     const outer = init?.signal ?? (input instanceof Request ? input.signal : undefined);
     const controller = new AbortController();
@@ -37,7 +42,7 @@ export function deadlineFetch(silent: (ms: number) => Error, ms: number = DEADLI
     arm();
     let response: Response;
     try {
-      response = await globalThis.fetch(input, { ...init, signal: controller.signal });
+      response = await through(input, { ...init, signal: controller.signal });
     } catch (err) {
       throw named(err);
     } finally {

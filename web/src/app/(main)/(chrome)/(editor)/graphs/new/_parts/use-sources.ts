@@ -34,7 +34,7 @@ export function useSources(connections: readonly StorageConnection[], formats: r
           params: { path: { name: connection.name }, ...(under && { query: { prefix: under } }) },
         }),
       );
-      return childrenOf(node, files, formats);
+      return await childrenOf(node, files, formats);
     },
     onLoadChildrenComplete: (d) => setCollection(d.collection),
     onLoadChildrenError: ({ nodes }) =>

@@ -16,8 +16,8 @@ type Col = [name: string, primitive: Primitive, nulls?: number];
 function source(file: string, columns: Col[], keys: string[], sample: (string | null)[][]): Profile["sources"][number] {
   return {
     descriptor: { key: `${BASE}${file}`, etag: "", columns: columns.map(([name, primitive]) => ({ name, primitive })) },
-    columns: columns.map(([name, , nulls = 0]) => ({ name, nulls, distinct: sample.length })),
-    keys,
+    columns: columns.map(([name, , nulls = 0]) => ({ name, null_count: nulls, distinct_count: sample.length })),
+    candidate_keys: keys,
     rows: sample.length,
     sampled: false,
     sample: sample as string[][],
@@ -117,7 +117,8 @@ export function scripted(...replies: unknown[]) {
   return { model, prompts };
 }
 
-const DUCKDB: Record<Primitive, string> = {
+/** The DuckDB type a fixture column is described as; a file holds no language-tagged string. */
+const DUCKDB: Record<Exclude<Primitive, "lang_string">, string> = {
   string: "VARCHAR",
   integer: "BIGINT",
   float: "DOUBLE",
@@ -138,7 +139,7 @@ export const DESCRIBING: Engine = {
     const described = PROFILE.sources.find((s) => sql.includes(s.descriptor.key));
     if (!/^DESCRIBE/.test(sql) || !described) throw new Error(`The fixture engine answers no ${sql}`);
     const header = ["column_name", "column_type", "null", "key", "default", "extra"];
-    const rows = described.descriptor.columns.map((c) => [c.name, DUCKDB[c.primitive], "YES", null, null, null]);
+    const rows = described.descriptor.columns.map((c) => [c.name, DUCKDB[c.primitive as Exclude<Primitive, "lang_string">], "YES", null, null, null]);
     return {
       numRows: rows.length,
       schema: { fields: header.map((name) => ({ name })) },

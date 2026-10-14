@@ -18,10 +18,11 @@ describe("the profile, as the Tasks read it", () => {
     expect(profiledOf(sampled, INPUTS).sources.map((s) => s.rows)).toEqual([null, 4, 2, 3, 2]);
   });
 
-  it("gives two files of one name two bindings", () => {
+  it("gives two sources of one binding two names", () => {
     const twice = PROFILE.sources[0]!;
-    const other = { ...twice, descriptor: { ...twice.descriptor, key: "https://elsewhere.example/laureates.csv" } };
-    const profiled = profiledOf({ ...PROFILE, sources: [twice, other], inclusions: [] }, []);
+    const key = "https://elsewhere.example/laureates.csv";
+    const other = { ...twice, descriptor: { ...twice.descriptor, key } };
+    const profiled = profiledOf({ ...PROFILE, sources: [twice, other], inclusions: [] }, [INPUTS[0]!, { ...INPUTS[0]!, key, location: key }]);
     expect(profiled.sources.map((s) => s.name)).toEqual(["laureates", "laureates_2"]);
   });
 

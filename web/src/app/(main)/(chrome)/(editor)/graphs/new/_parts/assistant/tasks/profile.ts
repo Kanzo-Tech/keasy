@@ -6,7 +6,6 @@
  */
 
 import type { Input, Primitive, Profile } from "@fossil-lang/types";
-import { bindingName } from "../../sources";
 
 /** One column of a source, with what the profile counted of it. */
 export interface Column {
@@ -60,15 +59,16 @@ const fileOf = (key: string) => key.slice(key.lastIndexOf("/") + 1);
 
 /**
  * The profile, named by binding: each described source with its columns, counts, keys and sample,
- * and each inclusion between two of them. Two bindings that would collide get a numeric suffix, so
- * every name is one source.
+ * and each inclusion between two of them. A source is named by the binding of the input it was read
+ * as (`inputs()`'s), and a source no input names — none, when the profile is of `inputs` — by its key.
+ * Two names that would collide get a numeric suffix, so every name is one source.
  */
 export function profiledOf(profile: Profile, inputs: readonly Input[]): Profiled {
   const names = new Map<string, string>();
   const taken = new Set<string>();
   for (const s of profile.sources) {
     const key = s.descriptor.key;
-    const base = inputs.find((i) => i.key === key)?.binding ?? bindingName(fileOf(key));
+    const base = inputs.find((i) => i.key === key)?.binding ?? key;
     let name = base;
     for (let n = 2; taken.has(name); n++) name = `${base}_${n}`;
     taken.add(name);
@@ -85,10 +85,10 @@ export function profiledOf(profile: Profile, inputs: readonly Input[]): Profiled
       option: input?.option,
       columns: s.descriptor.columns.map((c) => {
         const stats = s.columns.find((x) => x.name === c.name);
-        return { name: c.name, primitive: c.primitive, nulls: stats?.nulls ?? 0, distinct: stats?.distinct ?? 0 };
+        return { name: c.name, primitive: c.primitive, nulls: stats?.null_count ?? 0, distinct: stats?.distinct_count ?? 0 };
       }),
       rows: s.sampled || s.rows === undefined ? null : s.rows,
-      keys: s.keys,
+      keys: s.candidate_keys,
       sample: s.sample,
     };
   });

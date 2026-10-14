@@ -43,6 +43,9 @@ import { spoken, thingName } from "./tasks/words";
 /** The rows the profile keeps of each file: enough for one row of each relation to be found across files. */
 const SHOWN = 50;
 
+/** No kept file resolved yet. */
+const NONE_KEPT: ReadonlyMap<string, SourceFile | null> = new Map();
+
 /** A file's id in the tree, `<connection>:<path>` (`childrenOf`'s), and the location it names. */
 const fileId = ({ connection, path }: FileReference) => `${connection}:${path}`;
 const locationOf = (id: string): FileReference => {
@@ -57,13 +60,22 @@ const readable = (c: StorageConnection) => c.kind === "data" && c.direction !== 
  * A kept file as the tree writes it (`childrenOf`, down the folders it is in), without listing them:
  * `null` when its connection is gone or no reader takes it.
  */
-function keptFile(file: FileReference, connections: readonly StorageConnection[], formats: readonly Format[]): SourceFile | null {
+async function keptFile(
+  file: FileReference,
+  connections: readonly StorageConnection[],
+  formats: readonly Format[],
+  signal: AbortSignal,
+): Promise<SourceFile | null> {
   const connection = connections.find((c) => c.name === file.connection && readable(c));
   if (!connection) return null;
   const listing = [{ path: file.path, size: 0 }];
-  const down = (node: SourceNode): SourceFile[] =>
-    node.kind === "file" ? [node] : childrenOf(node, listing, formats).flatMap(down);
-  return down(connectionNode(connection))[0] ?? null;
+  // One path listed: each level holds the one folder it goes down, or the file.
+  for (let level: SourceNode[] = [connectionNode(connection)]; level[0]; ) {
+    const node = level[0];
+    if (node.kind === "file") return node;
+    level = await childrenOf(node, listing, formats, { signal });
+  }
+  return null;
 }
 
 /** The picked file a source's reference names, by its id; the reference itself when none does. */
@@ -165,10 +177,15 @@ export function useAssistant({
   const [chosen, setChosen] = useState<Record<string, string>>(() => ({ ...seed?.chosen }));
   // The kept files, read without opening the folders they are in; and the kept program.
   const [kept] = useState(() => seed?.files ?? []);
-  const keptFiles = useMemo(
-    () => new Map(kept.map((f) => [fileId(f), keptFile(f, connections, formats)] as const)),
-    [kept, connections, formats],
-  );
+  // Each kept file's line names it by fossil's binding, which waits for fossil's module.
+  const keptRead = useQuery({
+    queryKey: ["assistant", "kept", kept, connections, formats],
+    queryFn: async ({ signal }) =>
+      new Map(await Promise.all(kept.map(async (f) => [fileId(f), await keptFile(f, connections, formats, signal)] as const))),
+    staleTime: Infinity,
+    retry: false,
+  });
+  const keptFiles = keptRead.data ?? NONE_KEPT;
   const [keptProgram] = useState(() => seed?.program ?? null);
 
   const picked = [...selected].flatMap((id) => {
@@ -202,6 +219,7 @@ export function useAssistant({
       id,
       problem: new ClientError("web/unknown", "A file this conversation read cannot be read", `${id} is not on a connection this workspace reads.`),
     })),
+    ...(keptRead.error ? [{ id: "kept", problem: keptRead.error }] : []),
     ...(read.error
       ? [{ id: "profile", problem: read.error }]
       : (read.data?.undescribed ?? []).map(({ source, problem }) => ({ id: fileOf(picked, source.key), problem }))),

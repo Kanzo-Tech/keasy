@@ -40,6 +40,7 @@ const FOSSIL_TYPE: Record<Primitive, string> = {
   time: "Time",
   g_year: "GYear",
   any_uri: "AnyUri",
+  lang_string: "LangString",
 };
 
 /** `https://acme.example/` → the IRIs of a workspace's vocabulary and of its things, under it. */

@@ -130,8 +130,10 @@ waiting, working, done or failed — `Tool`'s four tones over the AI SDK's state
 what it took and what it gave, so it is always clear what the assistant is doing and what it waits on:
 the person, a step, or the model still downloading. A Task's attempts and its oracles' diagnostics are
 in its step, opened on request; a failed step carries the problem and **Retry** in place of the
-`TaskFailed` message after the thread. The `requirements` Task is not a step: it is what the
-`Suggestions` are pending on, and they say so.
+`TaskFailed` message after the thread. The `requirements` Task is not a step: while it runs, the
+`Suggestions` show as pending pills where the questions will be, which says what they wait on in the
+place the person is looking. *What would reverse it:* suggestions slow enough that pending pills read
+as broken — then it is a step like the others.
 
 This replaces the reading turn's bar and `Working`'s lines (*Writing how your files become a graph…*)
 — sentences that said something was happening, but not which of four things, nor whether it had
@@ -158,12 +160,17 @@ a split layout, the chat beside a panel that holds the current preview.
 
 **One checkpoint per preview run** — each time the program changes and runs again — drawn with
 `@kanzo-tech/ai`'s `Checkpoint` (AI Elements' part, being added to kanzo-ui) above its preview, with
-**Restore**. Restoring returns the program and the decisions to that point and runs its preview again,
-as a new message at the end under that checkpoint; the messages between are not cut, since the thread
-is the record of what was tried. **Building builds from the current checkpoint**: the last one run or
-restored. A checkpoint is what makes changing a decision safe to try — a wrong turn is one click back,
-not a decision to remember and undo. *What would reverse it:* restoring never used — every person
-going forward by changing decisions again — then checkpoints go, and the last preview is the one built.
+**Restore**. **Restoring cuts the thread there**, as AI Elements' `Checkpoint` example and v0 do:
+every message after the checkpoint is removed, from the screen and from the stored conversation, and
+the program and the decisions return to what they were at that point — so the checkpoint's preview is
+the last message again, and the thread goes on from it. The current checkpoint is therefore always the
+last one, and **building builds from it**. A checkpoint is what makes changing a decision safe to try —
+a wrong turn is one click back, not a decision to remember and undo — and the cut keeps the thread one
+line of what led to the build, rather than every branch tried and abandoned, which is what a record of
+a graph needs. *What would reverse it:* restoring never used — every person going forward by changing
+decisions again — then checkpoints go, and the last preview is the one built. Or people who restore
+and then want back what the cut removed — then a restore keeps the messages after it, collapsed under
+the checkpoint, instead of removing them.
 
 ### Building closes the conversation
 
@@ -185,7 +192,7 @@ a slot above `PromptInput`'s field, for the pills; and checkable items in `@kanz
 
 **keasy's**: the pills and their menus, over the connections' listings; the order of the messages
 (`converse`, now an append-only thread); closing the conversation on build; the Tasks' runs as `Tool`
-parts; and the checkpoints — what each holds, and what restoring one sets back and runs.
+parts; and the checkpoints — what each holds, and what restoring one sets back, cuts and runs.
 
 Why a conversation rather than screens: it is **one presentation with Ask**, which is where the person
 goes next, so the hand-off is the same surface continuing; **the transcript keeps what was decided**,
@@ -363,8 +370,13 @@ OpenAI's Threads: a `conversations` table (`POST /v1/conversations`, `GET /v1/co
 `PUT /v1/conversations/{id}/messages`), its messages a JSON array keasy never reads, under a 256 KiB
 cap; and a `conversation` on each graph, set when it is created from its creator's own. The decisions
 are data parts of those messages (`data-decision`: the options offered, the one taken, whether it was
-assumed), so Discover's *What I decided* reads them from the graph's conversation and **Change**
-opens `/graphs/new/assistant?conversation=<id>&decision=<id>`. `useAssistantConversation(id?)`
+assumed), so Discover's *What I decided* reads them from the graph's conversation and shows them, with
+a link to the conversation. **Discover changes nothing**: it has no *Change*. A decision is changed
+from the conversation — opened, closed by its build, and *Start a new one from here* from its
+checkpoint — so there is one door to a decision, the thread it was taken in, and no second route
+(`?decision=`) that opens the assistant at one. *What would reverse it:* people who look for the
+decision in Discover and give up before finding the conversation — then *What I decided* links each
+decision to its message in the conversation, still read-only. `useAssistantConversation(id?)`
 (`lib/assistant-conversation.ts`) is the web's side: `{ id, messages, save, decisions }`.
 
 **One message per result** (`conversation.ts`'s `messagesOf`): each carries a `data-turn` with its
@@ -373,21 +385,20 @@ kind, and its id is the kind and what it is about (`decide:<decision>`, `asked:<
 The person's messages are `user` messages: the first carries `data-files` and `data-about` together,
 as the composer sends them; `data-decision` on a decision answered (`option: null` while it is asked;
 the last word on each wins), and `data-question` per question kept. Each preview message carries its
-checkpoint, `data-checkpoint`: the program it ran and the option each decision stood at — and which
-checkpoint is current. `restore` reads the same parts back, and the thread starts where it stood: the
+checkpoint, `data-checkpoint`: the program it ran and the option each decision stood at; the last is
+the current one, since restoring cuts what came after it. `restore` reads the same parts back, and the thread starts where it stood: the
 files read again without listing their folders (a file whose connection is gone is said, as a problem
 of the reading step), the current checkpoint's choices taken again, an assumption left to its default,
 the questions kept, and its program previewed until the mapping writes it again. The `model` Task is
-asked again, from the profile, so a decision is raised again by its id; **Change** in Discover
-(`?decision=`) opens the graph's conversation at that decision — closed, since a graph was built from
-it, so the change is made in the new conversation its close starts from the checkpoint the graph was
-built from. *What would reverse it:* a model that raises other
+asked again, from the profile, so a decision is raised again by its id. *What would reverse it:* a
+model that raises other
 decisions on the same files when asked again — then the accepted `model` artefact is kept too, as
 structure, and reopening skips the Task.
 
 **Saved whole after each reply, not appended.** The array is small — structure only, below — and
 whole is what the AI SDK hands back on finish; the thread grows at its end, but a decision's last word
-and the current checkpoint are changes to messages already saved, which an append cannot say; and a
+changes a message already saved and a restore removes every message after its checkpoint, which an
+append cannot say; and a
 save sent twice, or retried after a timeout, is one save. *What
 would reverse it:* conversations long enough that a reply's save is felt — then messages get rows of
 their own, as the chatbot template's do, and a save sends what changed.

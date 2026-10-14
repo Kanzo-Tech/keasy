@@ -2,22 +2,18 @@
 
 import { ArrowRight, Check, CircleCheck, CircleHelp, CircleX, Hammer, Lightbulb, MessageCircleQuestion, Sparkles } from "lucide-react";
 import { Link } from "@kanzo-tech/navigation/next";
-import {
-  Message,
-  MessageContent,
-  Question,
-  QuestionDescription,
-  QuestionOption,
-  QuestionOptions,
-  QuestionPrompt,
-  Working,
-} from "@kanzo-tech/ai";
+import { Message, MessageContent, Working } from "@kanzo-tech/ai";
 import {
   Alert,
   AlertTitle,
   Badge,
   Button,
   Progress,
+  Question,
+  QuestionChoice,
+  QuestionChoices,
+  QuestionDescription,
+  QuestionPrompt,
   StatDescription,
   StatLabel,
   StatRoot,
@@ -255,7 +251,7 @@ export function UnderstoodTurn({ things, relations }: { things: readonly Thing[]
 // ── Decisions ───────────────────────────────────────────────────────────────
 
 /**
- * A decision as `@kanzo-tech/ai`'s `Question`: its question, and its options to pick one of — never a
+ * A decision as `@kanzo-tech/ui`'s `Question`: its question, and its options to pick one of — never a
  * free answer. An option's `detail` is not drawn: the label is the option.
  */
 export function DecisionChoice({
@@ -269,16 +265,21 @@ export function DecisionChoice({
 }) {
   const { decision } = item;
   return (
-    <Question onValueChange={(d) => d.value && onChoose(d.value)} value={optionOf(item)}>
+    <Question
+      name={decision.id}
+      // One option, never several: the answer is a string.
+      onValueChange={(d) => typeof d.value === "string" && d.value && onChoose(d.value)}
+      value={optionOf(item)}
+    >
       <QuestionPrompt>{decision.question}</QuestionPrompt>
       {description && <QuestionDescription>{description}</QuestionDescription>}
-      <QuestionOptions>
+      <QuestionChoices>
         {decision.options.map((option) => (
-          <QuestionOption key={option.id} value={option.id}>
+          <QuestionChoice key={option.id} value={option.id}>
             {option.label}
-          </QuestionOption>
+          </QuestionChoice>
         ))}
-      </QuestionOptions>
+      </QuestionChoices>
     </Question>
   );
 }

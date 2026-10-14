@@ -21,9 +21,11 @@ setup("declare the suite's connections", async ({ browser, baseURL }) => {
   const context = await browser.newContext({ storageState: ".auth/editor.json", baseURL });
   const page = await context.newPage();
   for (const connection of CONNECTIONS) {
-    const created = await api(page, "POST", "/v1/connections", connection);
     // 409: a previous run declared it.
-    expect([201, 409], `${connection.name}: ${JSON.stringify(created.body)}`).toContain(created.status);
+    const status = await api(page)
+      .POST("/v1/connections", { body: connection })
+      .then(() => 201, (refused: { status?: number; message?: string }) => refused.status);
+    expect([201, 409], connection.name).toContain(status);
   }
   await context.close();
 });

@@ -19,6 +19,7 @@ import {
   SectionTitleGroup,
   Skeleton,
   toast,
+  FormatNumber,
 } from "@kanzo-tech/ui";
 import {
   actionsColumn,
@@ -31,9 +32,8 @@ import {
 import { Blocked } from "@/components/blocked";
 import { Provenance } from "@/components/provenance";
 import { ValidationBadge } from "@/components/validation-badge";
-import { $api, invalidate, type Schemas } from "@/lib/api/client";
+import { $api, type Schemas } from "@/lib/api/client";
 import { formatsQuery } from "@/lib/fossil/checker";
-import { toastError } from "@/lib/errors";
 import { blocked } from "@/lib/permissions";
 import { reference } from "@/lib/connections";
 import { Boundary, Loading } from "@/components/boundary";
@@ -66,8 +66,7 @@ function ConnectionView({ name }: { name: string }) {
   const connection = settled($api.useSuspenseQuery("get", "/v1/connections/{name}", path));
   const storage = connection.target;
   const validate = $api.useMutation("post", "/v1/connections/{name}/validate", {
-    onSuccess: () => invalidate("/v1/connections"),
-    onError: (err) => toastError(err, "Failed to validate"),
+    meta: { failure: "Failed to validate", invalidates: ["/v1/connections"] },
   });
 
   return (
@@ -151,7 +150,7 @@ function Files({ name, url, kind }: { name: string; url: string; kind: "data" | 
   const formats = settled(useSuspenseQuery(formatsQuery));
   const readable = listed.filter((f) => formatFor(f.path, kind, formats));
   const cut = truncated && (
-    <p className="text-muted-foreground text-xs">Only the first {listed.length.toLocaleString()} files are listed.</p>
+    <p className="text-muted-foreground text-xs">Only the first <FormatNumber value={listed.length} /> files are listed.</p>
   );
 
   function copyReference(path: string) {

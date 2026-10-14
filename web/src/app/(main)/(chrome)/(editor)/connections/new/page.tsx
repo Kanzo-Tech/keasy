@@ -1,5 +1,6 @@
 "use client";
 
+import type { Role } from "@fossil-lang/types";
 import { use, useMemo } from "react";
 import {
   Button,
@@ -33,27 +34,31 @@ import {
   SelectTrigger,
   SelectValue,
   Skeleton,
-  toast,
 } from "@kanzo-tech/ui";
 import { revalidateLogic, useForm } from "@tanstack/react-form";
 import * as z from "zod";
 import { Link, useRouter } from "@kanzo-tech/navigation/next";
 import { UnsavedChangesGuard } from "@/lib/ui/unsaved-changes-guard";
-import { $api, type Inputs, invalidate } from "@/lib/api/client";
+import { $api, type Inputs } from "@/lib/api/client";
 import { cloudOf, type Credential } from "@/lib/connections";
 import { requiredName } from "@/lib/resource-name";
 import { getProviderIcon } from "@/lib/ui/provider-icons";
 import { ProblemView } from "@/components/problem-view";
 import { Boundary, Loading } from "@/components/boundary";
 import { settled } from "@/lib/api/settled";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { formatsQuery } from "@/lib/fossil/checker";
 
 type Holds = Inputs["ConnectionKind"];
 
-/** What a source connection holds; where graphs land is the workspace's one sink, under Workspace storage. */
+/**
+ * What a source connection holds, and the role fossil reads its files in; where graphs land is the
+ * workspace's one sink, under Workspace storage.
+ */
 const HOLDS = [
-  { value: "data", label: "Data", hint: "CSV, Parquet, JSON" },
-  { value: "vocab", label: "Vocabulary", hint: "ShEx, SHACL, RDF" },
-] as const satisfies readonly { value: Holds; label: string; hint: string }[];
+  { value: "data", label: "Data", role: "data" },
+  { value: "vocab", label: "Vocabulary", role: "schema" },
+] as const satisfies readonly { value: Holds; label: string; role: Role }[];
 
 const errorText = (errors: ReadonlyArray<{ message: string } | undefined>) =>
   errors.map((issue) => issue?.message).join(", ");
@@ -94,18 +99,22 @@ function Credentials({ holds }: { holds: Holds }) {
 function Form({ credentials, holds }: { credentials: Credential[]; holds: Holds }) {
   const router = useRouter();
   const create = $api.useMutation("post", "/v1/connections", {
-    onSuccess: async (_, { body }) => {
-      toast.create({ title: "Connection validated and created", type: "success" });
-      await invalidate("/v1/connections", "/v1/secrets");
-      router.push(`/connections?type=${body.target.kind}`);
-    },
+    meta: { success: "Connection validated and created", invalidates: ["/v1/connections", "/v1/secrets"] },
+    onSuccess: (_, { body }) => router.push(`/connections?type=${body.target.kind}`),
   });
   const sending = create.isPending || create.isSuccess;
+  // The formats it may hold are fossil's to say.
+  const formats = settled(useSuspenseQuery(formatsQuery));
+  const readIn = (role: Role) =>
+    formats
+      .filter((f) => f.kind === role || f.kind === "both")
+      .map((f) => f.name)
+      .join(", ");
   const collection = useMemo(
     () =>
       createListCollection({
-        // A credential someone else owns is used once they share it (docs/design/permissions.md):
-        // offered, disabled, with whom to ask.
+        // A credential someone else owns is theirs and an admin's (docs/design/permissions.md):
+        // offered, disabled, saying whose.
         items: credentials.map((c) => ({
           label: c.name,
           value: c.name,
@@ -167,10 +176,10 @@ function Form({ credentials, holds }: { credentials: Credential[]; holds: Holds 
                   onValueChange={(details) => details.value && field.handleChange(details.value as Holds)}
                   value={field.state.value}
                 >
-                  {HOLDS.map(({ value, label, hint }) => (
+                  {HOLDS.map(({ value, label, role }) => (
                     <RadioGroupCard key={value} value={value}>
                       <RadioGroupText>{label}</RadioGroupText>
-                      <span className="text-muted-foreground text-xs">{hint}</span>
+                      <span className="text-muted-foreground text-xs">{readIn(role)}</span>
                     </RadioGroupCard>
                   ))}
                 </RadioGroup>
@@ -228,7 +237,7 @@ function Form({ credentials, holds }: { credentials: Credential[]; holds: Holds 
                             <Icon className="size-3.5 opacity-60" />
                             {item.label}
                             {item.disabled && (
-                              <span className="text-muted-foreground ms-auto text-xs">Ask {item.owner} to share it</span>
+                              <span className="text-muted-foreground ms-auto text-xs">Only {item.owner} or an admin can use it</span>
                             )}
                           </SelectItem>
                         );

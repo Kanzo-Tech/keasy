@@ -2,7 +2,7 @@ import type { Page } from "@playwright/test";
 
 import { signIn } from "./auth/sign-in";
 import { expect, test as base } from "./env";
-import { api, createGraph } from "./stack/api";
+import { api, BASE_URL, createGraph } from "./stack/api";
 
 /**
  * A graph the browser has run to completion, so its corpus opens in Discovery: the suite's shop, or
@@ -22,7 +22,7 @@ export async function runToCompletion(
   await expect
     .poll(
       async () => {
-        const graph = (await api(page, "GET", `/v1/graphs/${id}`)).body as { status: string; problem?: unknown };
+        const graph = (await api(page).GET("/v1/graphs/{id}", { params: { path: { id } } })).data!;
         if (["completed", "failed", "cancelled"].includes(graph.status)) ended = graph;
         return ended?.status;
       },
@@ -55,7 +55,7 @@ export const test = base.extend<object, { corpusGraph: string }>({
       // Worker-scoped, so it signs in on a context of its own rather than a test's.
       const context = await browser.newContext({
         storageState: { cookies: [], origins: [] },
-        baseURL: process.env.KEASY_URL ?? "http://acme.localhost:3000",
+        baseURL: BASE_URL,
       });
       const page = await context.newPage();
       await signIn(page, "bruno");

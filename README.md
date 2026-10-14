@@ -41,7 +41,7 @@ Ask and the assistant say so (`ai/unavailable`); everything else works.
 
 The platform's seed users (kanzo-ui `services/auth/seed`), all with password `password`.
 This instance serves the `acme` organization. A role comes from the organization group
-the user is in, which the seed maps onto keasy's roles (`infra/dev/roles.yaml`):
+the user is in, which the seed maps onto keasy's roles (`configs.keasy-roles` in `infra/dev/platform.yaml`):
 
 | User | acme (this instance) | globex | What it shows |
 |------|----------------------|--------|---------------|
@@ -141,12 +141,6 @@ zone and 218 above 4,000 ft, where takeoff performance is limited.
 with no country, one with two, and 356 participations that do not say whether the organisation is an
 SME; and it warns about 12,525 projects that declare a total cost of 0, 1,675 organisations with no
 position, and 3,164 participations that have ended.
-
-**A stack seeded before the examples moved** (when they were `infra/dev/seed/` and `snb.fossil`,
-`geo.fossil` at `infra/dev/`) keeps its old connections. The instance declares a connection only when
-none of that name exists, so **LDBC SNB** and **OpenFlights** still point at `ldbc/` and `geo/`, and
-**Dev shapes** stays in the list. Wipe the volume (`docker compose down -v`), run `make seed` and
-`make dev` again, and delete the old `infra/dev/seed/` folder, which nothing ignores any more.
 
 `s3.localhost` is load-bearing: Docker's DNS answers it inside the compose network
 and `*.localhost` is loopback on the host, so the endpoint the server is given
@@ -286,7 +280,7 @@ page's own (`e2e/demos/record/cursor.ts`): an overlay injected into the recordin
 follows the real pointer events, glides to each target before the action lands and rings where a
 button goes down; while a demo records, every click, hover, fill (typed) and `page.mouse` gesture waits
 out that glide, so the cursor arrives before the page answers. `snb-explore.demo.ts` is the worked
-example. A demo whose example or feature is not on main yet says so in `skip`, and is listed but skipped.
+example.
 
 ## API contract
 

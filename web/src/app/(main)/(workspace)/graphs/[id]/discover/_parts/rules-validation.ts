@@ -1,5 +1,6 @@
 "use client";
 
+// eslint-disable-next-line no-restricted-imports -- follows the rules file and the page's subset; a file or a check that fails is shown in the findings' place
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { and, column, count, createTable, type ExprNode, isIn, literal, Query, sql, TableRefNode } from "@uwdata/mosaic-sql";
@@ -8,6 +9,7 @@ import { usePick } from "@kanzo-tech/graph";
 import type { RdfFindingGroup, RdfFindingGroups, RdfPlace, Shapes, ShapeModelJson, TermValue } from "@kanzo-tech/rudof-wasm";
 import { type FindingSeverity, type FindingTally, tallyFindings } from "@kanzo-tech/ui";
 import { corpusKey, useCorpus, useGraphKey, useVertices } from "@/lib/fossil/corpus";
+import { queryClient } from "@/lib/api/query-client";
 
 /**
  * A graph's rules, run by rudof on the page's one DuckDB over the corpus as RDF — the
@@ -16,19 +18,21 @@ import { corpusKey, useCorpus, useGraphKey, useVertices } from "@/lib/fossil/cor
  * focus nodes that conform beside it; keasy only says which subset and reads the answer back.
  */
 
-/** rudof's SHACL stack, instantiated once and only when the rules are read: the graph never loads it. */
-let rudofOnce: Promise<typeof import("@kanzo-tech/rudof-wasm")> | undefined;
+/**
+ * rudof's SHACL stack, instantiated once and only when the rules are read: the graph never loads it.
+ * A failed instantiation is not kept: the next read tries again.
+ */
 function rudof() {
-  if (!rudofOnce) {
-    const loading = import("@kanzo-tech/rudof-wasm").then(async (module) => {
-      await module.default();
-      return module;
-    });
-    rudofOnce = loading;
-    // A failed instantiation is not kept: the next read tries again.
-    loading.catch(() => rudofOnce === loading && (rudofOnce = undefined));
-  }
-  return rudofOnce;
+  return queryClient.fetchQuery({
+    queryKey: ["rudof"],
+    queryFn: async () => {
+      const rudofWasm = await import("@kanzo-tech/rudof-wasm");
+      await rudofWasm.default();
+      return rudofWasm;
+    },
+    staleTime: Infinity,
+    gcTime: Infinity,
+  });
 }
 
 /** The rules file as rudof read it: the shapes it runs, and the model a reader names them by. */

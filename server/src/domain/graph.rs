@@ -2,9 +2,7 @@ use crate::authentication::permission::{Action, Can, Kind, Securable};
 use crate::authentication::role::Caller;
 use serde::{Deserialize, Serialize};
 
-use super::{
-    Access, Actor, Grant, GraphFolder, Provenance, ResourceName, StorageLocation, now_iso8601,
-};
+use super::{Access, Actor, GraphFolder, Provenance, ResourceName, StorageLocation, now_iso8601};
 use crate::error::{ErrorCode, Refusal};
 
 #[derive(
@@ -71,13 +69,9 @@ pub struct Graph {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[schema(value_type = Option<Value>)]
     pub problem: Option<serde_json::Value>,
-    /// Who owns the graph — with its managers and an admin, who may change or
-    /// delete it, and its rules and dashboard. Its creator, to begin with.
+    /// Who owns the graph — with an admin, who may change or delete it, and
+    /// its rules and dashboard. Its creator, to begin with.
     pub owner: Actor,
-    /// Who else manages it: people and groups, granted by its owner, a
-    /// manager or an admin.
-    #[serde(default)]
-    pub grants: Vec<Grant>,
     /// Who created the graph, and when. Taken from the token, never the body.
     #[serde(flatten)]
     pub provenance: Provenance,
@@ -140,7 +134,6 @@ impl Graph {
             cancel_requested: false,
             problem: None,
             owner: created_by.as_owner(),
-            grants: vec![],
             provenance: Provenance::created(created_by),
             sink_connection,
             folder: folder.map(GraphFolder::into_inner),
@@ -307,10 +300,6 @@ impl Securable for Graph {
     fn owner(&self) -> &Actor {
         &self.owner
     }
-
-    fn grants(&self) -> &[Grant] {
-        &self.grants
-    }
 }
 
 /// Why a graph's state does not allow what was asked: the one table of a graph's
@@ -383,7 +372,6 @@ mod tests {
             user_id: sub.into(),
             name: sub.into(),
             roles: Roles::from_claim([role]),
-            groups: vec![],
         }
     }
 

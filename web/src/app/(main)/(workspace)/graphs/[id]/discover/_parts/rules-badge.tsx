@@ -1,7 +1,6 @@
 "use client";
 
 import type * as React from "react";
-import { useMutation } from "@tanstack/react-query";
 import { EllipsisIcon, RotateCwIcon, ShieldCheckIcon, SquareIcon, UploadIcon } from "lucide-react";
 import {
   Button,
@@ -39,12 +38,13 @@ import {
 import type { RdfPlace } from "@kanzo-tech/rudof-wasm";
 import { ProblemView } from "@/components/problem-view";
 import { SavedBy } from "@/components/provenance";
-import { $api, http, type Schemas } from "@/lib/api/client";
+import { $api,  type Schemas } from "@/lib/api/client";
 import { queryClient } from "@/lib/api/query-client";
 import { settled } from "@/lib/api/settled";
 import { toastError } from "@/lib/errors";
 import { useParams } from "next/navigation";
 import { groupKey, type Rule, rulesOf, type Stale, tallyOf, useReadRules, useRules } from "./rules-validation";
+import { counted, figure } from "@/lib/ui/format";
 
 /**
  * The graph's rules as a badge in the filter bar — the recipe editor's findings badge, read in Graph
@@ -63,11 +63,10 @@ export function RulesBadge() {
   // Everyone reads the rules; only whoever manages the graph replaces them.
   const { can } = settled($api.useSuspenseQuery("get", "/v1/graphs/{id}", init));
 
-  const save = useMutation({
-    mutationFn: async (file: File) =>
-      (await http.PUT("/v1/graphs/{id}/rules", { ...init, body: { name: file.name, shapes: await file.text() } })).data,
+  const save = $api.useMutation("put", "/v1/graphs/{id}/rules", {
     onSuccess: (written) => queryClient.setQueryData(read.queryKey, written),
   });
+  const upload = async (file: File) => save.mutate({ ...init, body: { name: file.name, shapes: await file.text() } });
 
   return (
     // `contents`: the root is only where the file input and its context live; the badge sits in the bar.
@@ -76,7 +75,7 @@ export function RulesBadge() {
       className="contents"
       disabled={!can.manage || save.isPending}
       maxFiles={1}
-      onFileAccept={({ files: [file] }) => file && save.mutate(file)}
+      onFileAccept={({ files: [file] }) => file && void upload(file)}
     >
       {/* One badge whether or not there is a file yet: saving the first one changes its words, and
           the popover it opens stays the one that is open. */}
@@ -113,14 +112,14 @@ function NoRules({ can_manage }: { can_manage: boolean }) {
   );
 }
 
-/** The plural a severity reads in, in the badge's tally. */
-const NOUN = { violation: ["violation", "violations"], warning: ["warning", "warnings"], info: ["note", "notes"] } as const;
+/** The noun a severity reads in, in the badge's tally. */
+const NOUN = { violation: "violation", warning: "warning", info: "note" } as const;
 
 /** *2 violations · 3 warnings*: the badge's words, and so its name. */
 function tallyWords(tally: FindingTally): string {
   return (["violation", "warning", "info"] as const)
     .filter((severity) => tally[severity] > 0)
-    .map((severity) => `${tally[severity].toLocaleString()} ${NOUN[severity][tally[severity] === 1 ? 0 : 1]}`)
+    .map((severity) => counted(tally[severity], NOUN[severity]))
     .join(" · ");
 }
 
@@ -137,7 +136,7 @@ const STALE: Record<Stale, string> = {
  * The rules file, read, and checked when asked: the badge's tally — kept, and marked out of date,
  * once a filter or the file moves past it — and the popover's groups.
  */
-function Checked({ saved, can_manage, refused }: { saved: Schemas["Rules"] | undefined; can_manage: boolean; refused: Error | null }) {
+function Checked({ saved, can_manage, refused }: { saved: Schemas["Rules"] | undefined; can_manage: boolean; refused: unknown }) {
   const { rules: read, failure: unreadable } = useReadRules(saved?.shapes);
   const rulesCheck = useRules(read, saved?.shapes ?? "");
   const { checked, checking, failure, picked, withdraw, conforming } = rulesCheck;
@@ -161,14 +160,14 @@ function Checked({ saved, can_manage, refused }: { saved: Schemas["Rules"] | und
     picked === label ? withdraw() : void publish().catch(failed);
   /** A Show: toggles the clause `label`, and reads pressed while it holds. */
   const show = (n: number, label: string, publish: () => Promise<void>) => ({
-    label: `Show ${n.toLocaleString()}`,
+    label: `Show ${figure(n)}`,
     pressed: picked === label,
     run: () => toggle(label, publish),
   });
 
   const problem = !saved ? (
     <>
-      {refused && <ProblemView error={refused} uncoded="rules/refused" />}
+      {refused != null && <ProblemView error={refused} uncoded="rules/refused" />}
       <NoRules can_manage={can_manage} />
     </>
   ) : unreadable !== undefined ? (
@@ -289,7 +288,7 @@ interface RulesHeaderProps {
   saved: Schemas["Rules"];
   count: number | undefined;
   can_manage: boolean;
-  refused: Error | null;
+  refused: unknown;
   /** The check, once the file is read: what it was over, whether it runs, and its controls. */
   check: Pick<ReturnType<typeof useRules>, "checked" | "checking" | "stale" | "check" | "stop"> | undefined;
   conforms: { pressed: boolean; toggle: () => void };
@@ -310,13 +309,13 @@ function RulesHeader({ saved, count, can_manage, refused, check, conforms }: Rul
   const scope = check?.checking
     ? "Checking what the page holds…"
     : checked
-      ? `${checked.inScope === checked.total ? "All" : `${checked.inScope.toLocaleString()} of`} ${checked.total.toLocaleString()} nodes checked · ${(checked.inScope - checked.broken).toLocaleString()} conform`
+      ? `${checked.inScope === checked.total ? "All" : `${figure(checked.inScope)} of`} ${figure(checked.total)} nodes checked · ${figure(checked.inScope - checked.broken)} conform`
       : "Not checked";
   return (
     <>
       <FindingsSource>
         {saved.name}
-        {count !== undefined && ` · ${count} ${count === 1 ? "rule" : "rules"}`}
+        {count !== undefined && ` · ${counted(count, "rule")}`}
       </FindingsSource>
       <FindingsActions>
         {check &&
@@ -357,7 +356,7 @@ function RulesHeader({ saved, count, can_manage, refused, check, conforms }: Rul
           </MenuContent>
         </Menu>
       </FindingsActions>
-      {refused && (
+      {refused != null && (
         <div className="flex basis-full flex-col gap-1">
           <ProblemView error={refused} uncoded="rules/refused" />
           <p className="text-muted-foreground text-xs">Nothing changed: the graph keeps {saved.name}.</p>

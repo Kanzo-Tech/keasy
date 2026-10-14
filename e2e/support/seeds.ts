@@ -61,8 +61,7 @@ export async function seedGraph(
 ): Promise<string> {
   const script = mapping(example);
   if (reuse) {
-    const listed = await api(page, "GET", "/v1/graphs");
-    const graphs = listed.body as { id: string; name: string | null; status: string; script: string }[];
+    const graphs = (await api(page).GET("/v1/graphs")).data!;
     const done = graphs.find((g) => g.name === name && g.status === "completed" && g.script === script);
     if (done) return done.id;
   }

@@ -50,7 +50,10 @@ test("05 with the API down every list shows a problem, not an empty state", asyn
   // re-fetch cooldown, refusing with auth/keys-unavailable for a while. The next scenario is not
   // about that, so wait until the API answers again.
   await expect
-    .poll(async () => (await api(page, "GET", "/v1/connections")).status, { timeout: 120_000, intervals: [5_000] })
+    .poll(async () => api(page).GET("/v1/connections").then(() => 200, (refused: { status?: number }) => refused.status), {
+      timeout: 120_000,
+      intervals: [5_000],
+    })
     .toBe(200);
 });
 

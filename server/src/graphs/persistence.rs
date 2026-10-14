@@ -3,8 +3,7 @@
 use rusqlite::{Connection, OptionalExtension, params};
 
 use crate::database::{
-    DbError, DbResult, constraint, created_columns, enum_column, grants_column, grants_of,
-    json_column_opt, owner_columns,
+    DbError, DbResult, constraint, created_columns, enum_column, json_column_opt, owner_columns,
 };
 use crate::domain::{Actor, Graph};
 use crate::error::{ErrorBody, ErrorCode};
@@ -13,14 +12,6 @@ const COLUMNS: &str = "id, name, status, created_at, started_at, completed_at, h
                        runner, runner_name, cancel_requested, problem, owner, owner_name, \
                        created_by, created_by_name, sink_connection, folder, script, report, \
                        conversation";
-
-/// [`COLUMNS`], and each row's grants.
-fn select() -> String {
-    format!(
-        "SELECT {COLUMNS}, {} FROM graphs",
-        grants_of("graphs", "graph", "id")
-    )
-}
 
 /// What the schema refused about `graph`, said in its terms.
 fn refused(graph: &Graph, e: rusqlite::Error) -> DbError {
@@ -81,7 +72,11 @@ pub fn insert(conn: &Connection, graph: &Graph) -> DbResult<()> {
 
 pub fn get(conn: &Connection, id: &str) -> DbResult<Option<Graph>> {
     Ok(conn
-        .query_row(&format!("{} WHERE id = ?1", select()), [id], row_to_graph)
+        .query_row(
+            &format!("SELECT {COLUMNS} FROM graphs WHERE id = ?1"),
+            [id],
+            row_to_graph,
+        )
         .optional()?)
 }
 
@@ -191,7 +186,9 @@ pub fn renew(
 /// Every graph in the workspace, the newest first: the work is shared.
 pub fn list(conn: &Connection) -> DbResult<Vec<Graph>> {
     let graphs = conn
-        .prepare(&format!("{} ORDER BY created_at DESC", select()))?
+        .prepare(&format!(
+            "SELECT {COLUMNS} FROM graphs ORDER BY created_at DESC"
+        ))?
         .query_map([], row_to_graph)?
         .collect::<rusqlite::Result<_>>()?;
     Ok(graphs)
@@ -217,7 +214,6 @@ fn row_to_graph(row: &rusqlite::Row<'_>) -> rusqlite::Result<Graph> {
         cancel_requested: row.get("cancel_requested")?,
         problem: json_column_opt(row, "problem")?,
         owner: owner_columns(row)?,
-        grants: grants_column(row)?,
         provenance: created_columns(row)?,
         sink_connection: row.get("sink_connection")?,
         folder: row.get("folder")?,

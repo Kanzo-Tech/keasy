@@ -12,7 +12,7 @@ use secrecy::SecretString;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use super::{Actor, Grant, Provenance, ValidationReport};
+use super::{Actor, Provenance, ValidationReport};
 
 fn us_east_1() -> String {
     "us-east-1".into()
@@ -39,12 +39,9 @@ pub enum SecretSpec {
         #[serde(default)]
         external_id: Option<String>,
     },
-    #[schema(title = "Azure Blob — account key")]
-    AzureAccountKey {
-        account: String,
-        #[schema(value_type = String, format = Password, write_only)]
-        key: SecretString,
-    },
+    // Azure's one way in: a service principal, whose Entra token gets a
+    // user-delegation key that signs a SAS over one directory — never an
+    // account key (docs/design/cleanup.md).
     #[schema(title = "Azure Blob — service principal")]
     AzureServicePrincipal {
         account: String,
@@ -68,8 +65,6 @@ pub enum SecretSpecView {
         #[serde(skip_serializing_if = "Option::is_none")]
         external_id: Option<String>,
     },
-    #[schema(title = "Azure Blob — account key")]
-    AzureAccountKey { account: String },
     #[schema(title = "Azure Blob — service principal")]
     AzureServicePrincipal {
         account: String,
@@ -93,9 +88,6 @@ impl SecretSpec {
                 role_arn: role_arn.clone(),
                 external_id: external_id.clone(),
             },
-            Self::AzureAccountKey { account, .. } => SecretSpecView::AzureAccountKey {
-                account: account.clone(),
-            },
             Self::AzureServicePrincipal {
                 account,
                 tenant_id,
@@ -117,19 +109,15 @@ pub struct SecretView {
     /// The connections that use this secret.
     pub used_by: Vec<String>,
     /// Who owns it: its creator, or the workspace for what the instance
-    /// declares. Its owner, its managers or an admin manages it.
+    /// declares. Its owner or an admin manages it.
     pub owner: Actor,
-    /// Who else manages it, and who may use it: what the workspace does not
-    /// own, an editor uses only by a grant.
-    pub grants: Vec<Grant>,
     #[serde(flatten)]
     pub provenance: Provenance,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub validation: Option<ValidationReport>,
-    /// What the caller may do to it: use it in a connection (by a grant),
-    /// test it (any editor), manage it (its owner, a manager or an admin)
-    /// and give it away (its owner or an admin). Its value is never returned
-    /// to anyone.
+    /// What the caller may do to it: use it in a connection (its owner or an
+    /// admin; every editor the workspace's), test it (any editor) and manage
+    /// it (its owner or an admin). Its value is never returned to anyone.
     pub can: Can,
 }
 
@@ -140,10 +128,6 @@ impl Securable for SecretView {
 
     fn owner(&self) -> &Actor {
         &self.owner
-    }
-
-    fn grants(&self) -> &[Grant] {
-        &self.grants
     }
 }
 
@@ -160,7 +144,6 @@ pub struct Credential {
     pub name: String,
     pub spec: SecretSpec,
     pub owner: Actor,
-    pub grants: Vec<Grant>,
     pub provenance: Provenance,
     pub validation: Option<ValidationReport>,
 }
@@ -173,10 +156,6 @@ impl Securable for Credential {
     fn owner(&self) -> &Actor {
         &self.owner
     }
-
-    fn grants(&self) -> &[Grant] {
-        &self.grants
-    }
 }
 
 impl Credential {
@@ -186,7 +165,6 @@ impl Credential {
             spec: self.spec.view(),
             used_by,
             owner: self.owner.clone(),
-            grants: self.grants.clone(),
             provenance: self.provenance.clone(),
             validation: self.validation.clone(),
             can: Can::default(),

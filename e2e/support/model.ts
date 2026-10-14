@@ -27,6 +27,12 @@ export interface Rule {
 
 export interface Script {
   rules: Rule[];
+  /**
+   * How fast the double answers, for a recording: `wait` ms before the first word, then `perWord` ms a
+   * word — a generation arrives whole after the lot, a stream a word at a time. Left out, it answers at
+   * once, as a scenario wants.
+   */
+  pace?: { wait: number; perWord: number };
   /** The load fails with these words, as WebLLM's does when a shard cannot be downloaded. */
   load?: { fail: string };
 }
@@ -48,7 +54,7 @@ export function promptsOf(page: Page): Promise<string[]> {
 }
 
 /** Runs in the page, before anything of it: serialized by Playwright, so nothing from outside. */
-function install({ rules, load }: Script) {
+function install({ rules, load, pace }: Script) {
   type Part = { type: string; text?: string };
   type Options = { prompt: { content: string | Part[] }[]; abortSignal?: AbortSignal };
   const calls: string[] = [];
@@ -71,6 +77,13 @@ function install({ rules, load }: Script) {
       signal?.addEventListener("abort", () => reject(signal.reason ?? new DOMException("Stopped", "AbortError")), { once: true }),
     );
   const words = (text: string) => text.match(/\S+\s*|\s+/g) ?? [];
+  const sleep = (ms: number, signal: AbortSignal | undefined) =>
+    ms <= 0
+      ? Promise.resolve()
+      : new Promise<void>((resolve, reject) => {
+          const timer = setTimeout(resolve, ms);
+          signal?.addEventListener("abort", () => (clearTimeout(timer), reject(signal.reason ?? new DOMException("Stopped", "AbortError"))), { once: true });
+        });
 
   const model = {
     specificationVersion: "v4",
@@ -81,6 +94,7 @@ function install({ rules, load }: Script) {
       const reply = replyTo(options);
       if ("hang" in reply) return stopped(options.abortSignal);
       if ("fail" in reply) throw new Error(reply.fail);
+      if (pace) await sleep(pace.wait + words(reply.text).length * pace.perWord, options.abortSignal);
       return {
         content: [{ type: "text", text: reply.text }],
         finishReason: { unified: "stop", raw: "stop" },
@@ -92,7 +106,7 @@ function install({ rules, load }: Script) {
       const reply = replyTo(options);
       return {
         stream: new ReadableStream({
-          start(controller) {
+          async start(controller) {
             controller.enqueue({ type: "stream-start", warnings: [] });
             controller.enqueue({ type: "text-start", id: "t" });
             if ("hang" in reply) {
@@ -100,7 +114,16 @@ function install({ rules, load }: Script) {
               return;
             }
             const text = "fail" in reply ? (reply.after ?? "") : reply.text;
-            for (const delta of words(text)) controller.enqueue({ type: "text-delta", id: "t", delta });
+            try {
+              if (pace) await sleep(pace.wait, options.abortSignal);
+              for (const delta of words(text)) {
+                if (pace) await sleep(pace.perWord, options.abortSignal);
+                controller.enqueue({ type: "text-delta", id: "t", delta });
+              }
+            } catch (reason) {
+              controller.error(reason);
+              return;
+            }
             if ("fail" in reply) {
               controller.enqueue({ type: "error", error: new Error(reply.fail) });
             } else {

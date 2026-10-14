@@ -12,13 +12,14 @@
  */
 
 import { useEffect, useState } from "react";
+// eslint-disable-next-line no-restricted-imports -- follows every pause in typing; the editor shows the failure beside the program
 import { useQuery } from "@tanstack/react-query";
 import { type FossilProgram, inputs } from "@fossil-lang/wasm";
 import { engine } from "@kanzo-tech/ui/analytics";
 
 import { host } from "@/lib/fossil/host";
 
-export const sourceDescriptorsKey = (sources: readonly string[]) => ["source-descriptors", sources] as const;
+const sourceDescriptorsKey = (sources: readonly string[]) => ["source-descriptors", sources] as const;
 
 /** What could be described, and each source that could not, with its problem — shown, never dropped. */
 type Described = Awaited<ReturnType<FossilProgram["describe"]>>;

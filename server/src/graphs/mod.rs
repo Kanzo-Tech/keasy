@@ -5,7 +5,6 @@ pub mod rules;
 use axum::http::StatusCode;
 use rusqlite::Connection;
 
-use crate::authentication::permission::Action;
 use crate::authentication::role::Caller;
 use crate::credentials::sealing::SecretKey;
 use crate::database::Database;
@@ -27,21 +26,6 @@ pub async fn sweep(db: &Database) -> Result<(), Refusal> {
 pub fn any(conn: &Connection, id: &str) -> Result<Graph, Refusal> {
     persistence::get(conn, id)?
         .ok_or_else(|| Refusal::not_found(ErrorCode::GraphNotFound, "No such graph"))
-}
-
-/// The graph, if `caller` may take `action` on it: run it (operate, any
-/// editor), or change it, its rules and its dashboard (manage, its owner or an
-/// admin). Refused with `rbac/forbidden`, not a 404, for a graph everyone can
-/// see exists.
-pub fn permitted(
-    conn: &Connection,
-    caller: &Caller,
-    id: &str,
-    action: Action,
-) -> Result<Graph, Refusal> {
-    let graph = any(conn, id)?;
-    caller.ensure(action, &graph)?;
-    Ok(graph)
 }
 
 /// The graph as `caller` is shown it: who may change and stop it, and where its

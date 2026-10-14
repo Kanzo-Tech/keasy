@@ -5,7 +5,7 @@ const POST = vi.fn(async (path: string, init: { params?: { path: { id: string } 
   calls.push(path);
   return { data: { id: init.params?.path.id ?? "g1", script: "program" } };
 });
-vi.mock("@/lib/api/client", () => ({ http: { POST, GET: vi.fn() }, invalidate: vi.fn() }));
+vi.mock("@/lib/api/client", () => ({ http: { POST, GET: vi.fn() }, invalidate: vi.fn(), connectionsQuery: {} }));
 vi.mock("@/lib/api/query-client", () => ({
   queryClient: { fetchQuery: async () => [{ name: "lake", target: { direction: "source" } }, { name: "out", target: { direction: "sink" } }] },
 }));
@@ -32,8 +32,8 @@ describe("keasy's build steps", () => {
   it("answer the whole run's problem as theirs", async () => {
     const problem = new Error("over budget");
     startRun.mockResolvedValueOnce({ status: "failed", problem });
-    await expect(keasySteps().full({ id: "g1" } as never, undefined, () => {})).rejects.toBe(problem);
+    await expect(keasySteps().full({ id: "g1" } as never, undefined)).rejects.toBe(problem);
     startRun.mockResolvedValueOnce({ status: "completed" });
-    await expect(keasySteps().full({ id: "g1" } as never, undefined, () => {})).resolves.toBeUndefined();
+    await expect(keasySteps().full({ id: "g1" } as never, undefined)).resolves.toBeUndefined();
   });
 });

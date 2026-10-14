@@ -6,7 +6,7 @@ import { expectProblem } from "../support/stack/problem";
 test("06 a 500 on the graph is shown as its code, and the poll stops", async ({ page }) => {
   // Running, with no tab running it, so the page polls it; the first read is real, the rest fail.
   const id = await createGraph(page);
-  await api(page, "POST", `/v1/graphs/${id}/run`);
+  await api(page).POST("/v1/graphs/{id}/run", { params: { path: { id } } });
   let asked = 0;
   await page.route(`**/api/v1/graphs/${id}`, async (route) => {
     if (route.request().method() !== "GET") return route.fallback();
@@ -30,7 +30,7 @@ test("18 a run too large for the browser is shown as run/over-budget", async ({ 
   // A real 2 GB run is not something to put in CI: the graph is failed with the problem the runner
   // stores for one, and what is forced is that the stored problem reaches the screen whole.
   const id = await createGraph(page);
-  await api(page, "POST", `/v1/graphs/${id}/run`);
+  await api(page).POST("/v1/graphs/{id}/run", { params: { path: { id } } });
   const problem = {
     code: "run/over-budget",
     title: "Over budget",
@@ -38,7 +38,7 @@ test("18 a run too large for the browser is shown as run/over-budget", async ({ 
     severity: "error",
     data: { budget: 2_147_483_648, consumer: "join", requested: 3_221_225_472, reserved: 0 },
   };
-  await api(page, "POST", `/v1/graphs/${id}/status`, { status: "failed", problem });
+  await api(page).POST("/v1/graphs/{id}/status", { params: { path: { id } }, body: { status: "failed", problem } });
   await page.goto(`/graphs/${id}`);
   await expectProblem(page, "run/over-budget", { within: 10_000 });
 });
@@ -52,28 +52,28 @@ test("19 a tab closed mid-run ends the graph as graph/abandoned, and it can be d
   await runner.goto(`/graphs/${id}`);
   await runner.getByRole("button", { name: "Run", exact: true }).click();
   await expect
-    .poll(async () => ((await api(page, "GET", `/v1/graphs/${id}`)).body as { status: string }).status, { timeout: 60_000 })
+    .poll(async () => (await api(page).GET("/v1/graphs/{id}", { params: { path: { id } } })).data!.status, { timeout: 60_000 })
     .toBe("running");
   await runner.close();
 
   // Every read sweeps; the lease is 60 s from the last heartbeat.
   await expect
-    .poll(async () => ((await api(page, "GET", `/v1/graphs/${id}`)).body as { status: string }).status, {
+    .poll(async () => (await api(page).GET("/v1/graphs/{id}", { params: { path: { id } } })).data!.status, {
       timeout: 120_000,
       intervals: [5_000],
     })
     .toBe("failed");
   await page.goto(`/graphs/${id}`);
   await expectProblem(page, "graph/abandoned");
-  expect((await api(page, "DELETE", `/v1/graphs/${id}`)).status).toBe(204);
+  await api(page).DELETE("/v1/graphs/{id}", { params: { path: { id } } });
 });
 
 test("20 deleting a running graph is refused as graph/still-running", async ({ page }) => {
   // The graphs list offers no Delete for a running graph, so the refusal is asked of the API, through
   // the BFF, as the page would ask it.
   const id = await createGraph(page);
-  await api(page, "POST", `/v1/graphs/${id}/run`);
-  expectRefusal(await api(page, "DELETE", `/v1/graphs/${id}`), 409, "graph/still-running");
+  await api(page).POST("/v1/graphs/{id}/run", { params: { path: { id } } });
+  await expectRefusal(api(page).DELETE("/v1/graphs/{id}", { params: { path: { id } } }), 409, "graph/still-running");
 });
 
 test("22 a draft that does not exist opens as graph/not-found, and nothing autosaves", async ({ page }) => {

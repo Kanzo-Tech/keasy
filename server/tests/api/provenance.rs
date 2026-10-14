@@ -282,7 +282,7 @@ async fn a_declared_secret_is_the_bootstraps_and_the_workspace_owns_it() {
     );
     assert_eq!(
         secret["can"],
-        json!({ "use": true, "operate": true, "manage": false, "transfer": false }),
+        json!({ "use": true, "operate": true, "manage": false }),
         "every editor uses what the workspace owns; only an admin changes it"
     );
     let admin = app.token_for("u-9", ADMIN);
@@ -291,6 +291,6 @@ async fn a_declared_secret_is_the_bootstraps_and_the_workspace_owns_it() {
         .await;
     assert_eq!(
         secret["can"],
-        json!({ "use": true, "operate": true, "manage": true, "transfer": true })
+        json!({ "use": true, "operate": true, "manage": true })
     );
 }

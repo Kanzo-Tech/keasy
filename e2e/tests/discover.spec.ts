@@ -26,7 +26,7 @@ test("17 a rules file rudof cannot read is rules/refused in the rules' popover, 
   // Dropped as a person drops it: the server reads it with rudof and refuses it where Turtle stops.
   await rules.drop("broken.ttl", "@prefix sh: <http://www.w3.org/ns/shacl#> .\n<#S> a sh:NodeShape ;\n  sh:path .\n");
   await expectProblem(page, "rules/refused", { within: 20_000 });
-  expect((await api(page, "GET", `/v1/graphs/${corpusGraph}/rules`)).body).toBeNull();
+  expect((await api(page).GET("/v1/graphs/{id}/rules", { params: { path: { id: corpusGraph } } })).data).toBeNull();
 });
 
 test("the tile editor is the Dashboard view's: Graph view hides it, and its draft comes back with Dashboard", async ({ page, env, corpusGraph }) => {

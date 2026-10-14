@@ -40,7 +40,7 @@ export interface SourceFile {
 }
 
 /** What a program reads a connection's files as: a vocabulary's are schemas, the rest data. */
-export const roleOf = (c: StorageConnection) => (c.kind === "vocab" ? "schema" : "data");
+const roleOf = (c: StorageConnection) => (c.kind === "vocab" ? "schema" : "data");
 
 /** A connection, unopened. */
 export function connectionNode(c: StorageConnection): SourceBranch {

@@ -59,7 +59,7 @@ export type Backing =
   | { kind: "link"; inclusion: Inclusion; back: Inclusion };
 
 /** The inclusion behind `edge`, or `undefined` when none backs it. */
-export function backing(edge: DraftEdge, draft: Draft, profiled: Profiled): Backing | undefined {
+function backing(edge: DraftEdge, draft: Draft, profiled: Profiled): Backing | undefined {
   const inclusion = profiled.inclusions.find((i) => i.id === edge.via);
   const from = draft.types.find((t) => t.name === edge.from);
   const to = draft.types.find((t) => t.name === edge.to);

@@ -27,6 +27,7 @@ function useCrumbName(crumb: Crumb): string {
   // The named exception to "useSuspenseQuery only" (fossil docs/design/failure, G2.4): the header
   // must not suspend or fail on a label. The route's name stands until the graph's arrives, and the
   // page below the header reads the same graph and shows its failure.
+  // eslint-disable-next-line no-restricted-properties -- a crumb's label: the route's name stands until the graph's arrives, and the graph's page shows its failure
   const { data: graph } = $api.useQuery(
     "get",
     "/v1/graphs/{id}",

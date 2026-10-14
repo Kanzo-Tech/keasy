@@ -19,7 +19,7 @@ dev: ## Start or rebuild the dev stack, and wait until the web answers
 	docker compose up -d --build --wait --wait-timeout 1800
 	@echo "keasy: http://acme.localhost:3000"
 
-seed: ## Fetch the dev graphs (LDBC SNB SF0.1, ~17 MB; OpenFlights, ~3.5 MB; Nobel laureates, ~4 MB; checksummed) for the next `make dev` to upload
+seed: ## Fetch every dev example's data (infra/dev/examples/*/fetch.sh, checksummed) for the next `make dev` to upload
 	sh infra/dev/seed.sh
 
 # The model runs in the browser, from keasy's own origin: the stack's `models` service serves this
@@ -49,16 +49,13 @@ e2e: seed ## Run the e2e suite against the compose stack (main checkout only: Ke
 
 # ── Product demos ──────────────────────────────────────────────────────────
 # Recorded, not asserted (e2e/demos/): a Playwright script per demo against the stack `make dev`
-# and `make seed` bring up, on :3000 (main checkout only, as for e2e). The web is restarted with
-# NEXT_PUBLIC_KEASY_DEMO, which turns off the dev server's own furniture, and put back after. Each
-# demo is written to e2e/demos/out/<demo>-<theme>.mp4 and .png; the MP4 needs ffmpeg on PATH.
+# and `make seed` bring up, on :3000 (main checkout only, as for e2e). Each demo is written to
+# e2e/demos/out/<demo>-<theme>.mp4 and .png; the MP4 needs ffmpeg on PATH.
 #   make demo                       list the demos
 #   make demo DEMO=snb-explore      record one, light and dark
 #   make demo DEMO=all THEME=dark   record every demo, one side
-# `docker compose build web` first: the web image carries next.config.ts, which reads the switch.
 # A demo that asks the model asks everyone's, in the recording's browser, on its GPU: no container
-# changes for it. The dev server's own furniture is hidden in that browser too (e2e/demos/record.ts)
-# rather than by restarting the web with NEXT_PUBLIC_KEASY_DEMO.
+# changes for it. The dev server's own furniture is hidden in that browser (e2e/demos/record/recorder.ts).
 
 demo: ## List the product demos; DEMO=<name>|all records them (THEME=light|dark for one side)
 ifeq ($(DEMO),)

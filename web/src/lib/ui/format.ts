@@ -1,5 +1,19 @@
 import type { Schemas } from "@/lib/api/client";
 
+/** The page's language (`<html lang>`), which every number, plural and date on it is written in. */
+export const LOCALE = "en";
+
+const numbers = new Intl.NumberFormat(LOCALE);
+const plurals = new Intl.PluralRules(LOCALE);
+
+/** A number, as the page writes it: `1,024`. */
+export const figure = (n: number) => numbers.format(n);
+
+/** `n` and its noun, as the page writes them: *1 type*, *1,024 relations*. */
+export function counted(n: number, one: string, many = `${one}s`): string {
+  return `${figure(n)} ${plurals.select(n) === "one" ? one : many}`;
+}
+
 function formatDuration(startIso: string, endIso: string): string {
   const ms = new Date(endIso).getTime() - new Date(startIso).getTime();
   if (ms < 0) return "";
@@ -19,7 +33,7 @@ export function formatGraphDuration(graph: Schemas["Graph"]): string {
 
 export function formatDate(dateStr: string | null | undefined): string {
   if (!dateStr) return "Unknown";
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat(LOCALE, {
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -30,7 +44,7 @@ export function formatDate(dateStr: string | null | undefined): string {
 
 /** A day, as a line of provenance says it: "3 Oct 2026". */
 export function formatDay(dateStr: string): string {
-  return new Intl.DateTimeFormat(undefined, { year: "numeric", month: "short", day: "numeric" }).format(
+  return new Intl.DateTimeFormat(LOCALE, { year: "numeric", month: "short", day: "numeric" }).format(
     new Date(dateStr),
   );
 }

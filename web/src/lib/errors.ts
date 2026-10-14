@@ -5,7 +5,8 @@ import type { AiError } from "@kanzo-tech/llm";
 import type { EngineError } from "@kanzo-tech/mosaic";
 import { type ProblemCopy, toast } from "@kanzo-tech/ui";
 
-import { ApiError, type ErrorCode, type NoBodyCode } from "@/lib/api/client";
+import { ApiError, type ErrorCode, type NoBodyCode } from "@keasy/api";
+import { schemaOf } from "@/lib/api/spec";
 import { lower, WORDS } from "@/lib/vocabulary";
 
 /**
@@ -103,31 +104,8 @@ const registry: Partial<Record<ErrorCode | NoBodyCode | ClientCode | Code | Kanz
   "engine/unavailable": { title: "The in-browser engine would not start." },
   "storage/host-silent": { title: "keasy did not answer the data reader in time." },
   "module/unreachable": { title: "Part of the app could not be downloaded. Check the connection and retry." },
-  "probe/failed": {
-    title: "The store did not accept the credential.",
-    link: { label: "Go to Credentials", href: "/settings/credentials" },
-  },
-  "resource/in-use": { title: "It is still in use." },
-  "secret/not-found": { title: "No such credential." },
-  "graph/folder-taken": { title: `Another ${lower(WORDS.graph)} writes to this folder already.` },
-  "graph/still-running": { title: `The ${lower(WORDS.graph)} is running; it can be deleted once the run ends.` },
-  "graph/not-running": { title: `The ${lower(WORDS.graph)} is not running.` },
-  "graph/already-running": { title: `The ${lower(WORDS.graph)} is running already.` },
-  "rbac/no-membership": { title: "You have no role in this workspace." },
-  "rbac/insufficient-role": { title: "Your role in this workspace does not allow this." },
-  "rbac/forbidden": { title: "You are not allowed to do this to it." },
-  "graph/ended": { title: "The run has already ended." },
-  "graph/abandoned": {
-    title: "The run was abandoned",
-    detail: `The tab running this ${lower(WORDS.graph)} closed or lost its connection, so the run was ended. ${WORDS.run} it again.`,
-  },
-  "graph/interrupted": {
-    title: "The run was interrupted",
-    detail: `The tab running this ${lower(WORDS.graph)} reloaded or closed before it finished.`,
-  },
-  "server/silent": { title: "The server did not answer in time." },
-  "store/silent": { title: "The store did not answer in time." },
-  "store/refused": { title: "The store refused to open the data." },
+  // The server's own title stands; keasy adds where to fix it.
+  "probe/failed": { link: { label: "Go to Credentials", href: "/settings/credentials" } },
   "source/not-found": {
     title: "The source names no file",
     detail: (data) => {
@@ -146,6 +124,20 @@ const registry: Partial<Record<ErrorCode | NoBodyCode | ClientCode | Code | Kanz
     },
   },
 };
+
+/**
+ * The codes the server owns, whose titles are its own (`server/src/error.rs`, `ErrorCode::title`):
+ * the registry above re-words none of them.
+ */
+const SERVER_CODES: ReadonlySet<string> = new Set(schemaOf("ErrorCode").enum);
+
+/**
+ * What a failure is called: keasy's words for a code it re-words, else the server's own title for a
+ * code the server owns — `undefined` for any other, whose own words are its detail.
+ */
+export function titleOf({ code, title, data }: { code: string; title?: string; data?: unknown }): string | undefined {
+  return copyOf(code, data)?.title ?? (SERVER_CODES.has(code) ? title : undefined);
+}
 
 /** keasy's copy for `code`, where it overrides the code's own words; `data` is the problem's. */
 export function copyOf(code: string, data?: unknown): ProblemCopy | undefined {
@@ -249,6 +241,6 @@ export function fieldProblem(error: unknown): FieldProblem | null {
 
 /** Toast a failed action: `title` names the action, the description is the code's copy or the failure's own words. */
 export function toastError(error: unknown, title: string): void {
-  const { code, message, detail } = coded(error);
-  toast.create({ title, description: copyOf(code)?.title ?? message ?? detail, type: "error" });
+  const problem = coded(error);
+  toast.create({ title, description: titleOf(problem) ?? problem.message ?? problem.detail, type: "error" });
 }

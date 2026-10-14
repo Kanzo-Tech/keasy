@@ -289,7 +289,7 @@ function WorkspaceSwitcher({ role, collapsed, isMobile }: { role: Role | null; c
   const { session } = useSession();
   const current = branding.organization;
   const workspaces = switchable(session).map((o) => o.alias);
-  const workspaceName = branding.name || titleCase(current) || "Keasy";
+  const workspaceName = branding.name;
 
   async function switchTo(slug: string) {
     if (slug === current) return;

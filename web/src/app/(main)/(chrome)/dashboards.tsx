@@ -44,6 +44,7 @@ import { lower, WORDS } from "@/lib/vocabulary";
 import { settled } from "@/lib/api/settled";
 import { Boundary, Loading } from "@/components/boundary";
 import { GRAPH_COLUMNS } from "@/components/graph-columns";
+import { counted } from "@/lib/ui/format";
 
 type Graph = Schemas["Graph"];
 
@@ -57,7 +58,6 @@ interface Figure {
 
 const FIGURES = [WORDS.graphs, "Sources"] as const;
 
-const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 /** The newest graphs the dashboard lists; the rest are a click away on the Graphs page. */
 const RECENT = 5;
@@ -156,7 +156,7 @@ function Overview() {
         {
           label: "Sources",
           value: sources.length,
-          description: `through ${plural(credentials, "credential")} · ${plural(outputs, lower(WORDS.output))}`,
+          description: `through ${counted(credentials, "credential")} · ${counted(outputs, lower(WORDS.output))}`,
           href: "/connections",
         },
       ]}
@@ -231,7 +231,7 @@ function Setup() {
       done: sources.length > 0,
       description:
         sources.length > 0
-          ? `${plural(sources.length, "source")}, ${plural(outputs, lower(WORDS.output))}`
+          ? `${counted(sources.length, "source")}, ${counted(outputs, lower(WORDS.output))}`
           : "A storage prefix to read from",
       href: "/connections/new",
     },

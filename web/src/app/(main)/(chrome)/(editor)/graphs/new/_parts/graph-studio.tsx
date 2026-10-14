@@ -25,7 +25,7 @@ import {
 } from "@kanzo-tech/ui";
 import { Check, ChevronDown, FolderTree, Save } from "lucide-react";
 import { useRouter } from "@kanzo-tech/navigation/next";
-import { $api, http, invalidate, type Schemas } from "@/lib/api/client";
+import { $api, http,  type Schemas } from "@/lib/api/client";
 import { Boundary, Loading } from "@/components/boundary";
 import { settled } from "@/lib/api/settled";
 import { storageConnections } from "@/lib/connections";
@@ -43,6 +43,7 @@ import { StudioOutput, type OutputValues } from "./studio-output";
 import { UnsavedChangesGuard } from "@/lib/ui/unsaved-changes-guard";
 import { useGraphEditorStore } from "./graph-editor-store";
 import { lower, WORDS } from "@/lib/vocabulary";
+import { counted } from "@/lib/ui/format";
 
 /** Quiet before the draft writes itself. Long enough that a pause in typing is
  *  a pause, short enough that leaving the tab does not lose a paragraph. */
@@ -218,18 +219,18 @@ function GraphStudio({ draft }: { draft?: Schemas["Graph"] }) {
     mutationFn: () => {
       // The id lands in the chain itself: Create awaits this promise, and `onSuccess` runs later.
       const run = (savingRef.current ?? Promise.resolve())
-        .catch(() => undefined) // the last save toasted its own failure
+        // eslint-disable-next-line no-restricted-syntax -- the last save toasted its own failure
+        .catch(() => undefined)
         .then(writeDraft)
         .then((id) => (draftIdRef.current = id));
       savingRef.current = run;
       return run;
     },
-    onSuccess: async (id) => {
+    meta: { failure: "Failed to save draft", invalidates: ["/v1/graphs"] },
+    onSuccess: (id) => {
       setDraftId(id);
       setSaved(true);
-      await invalidate("/v1/graphs");
     },
-    onError: (err) => toastError(err, "Failed to save draft"),
   });
 
   const save = draftMutation.mutate;
@@ -254,7 +255,8 @@ function GraphStudio({ draft }: { draft?: Schemas["Graph"] }) {
     mutationFn: async (sent: { name: string; folder: string }) => {
       submittingRef.current = true;
       clearTimeout(autosaveRef.current);
-      await savingRef.current?.catch(() => undefined); // a failed save toasted itself; Create sends the script anyway
+      // eslint-disable-next-line no-restricted-syntax -- a failed save toasted itself; Create sends the script anyway
+      await savingRef.current?.catch(() => undefined);
       // A graph begins as a draft, always; submitting it is what makes it run. The script crosses
       // once: in the draft written now, or in the submit when the last save did not carry it.
       const existing = draftIdRef.current;
@@ -265,10 +267,8 @@ function GraphStudio({ draft }: { draft?: Schemas["Graph"] }) {
       const { data: graph } = await http.POST("/v1/graphs/{id}/submit", { params: { path: { id } }, body });
       return graph!;
     },
-    onSuccess: async (graph) => {
-      await invalidate("/v1/graphs");
-      router.push(`/graphs/${graph.id}`);
-    },
+    meta: { invalidates: ["/v1/graphs"] },
+    onSuccess: (graph) => router.push(`/graphs/${graph.id}`),
     onError: (err, sent) => {
       submittingRef.current = false;
       const problem = fieldProblem(err);
@@ -433,7 +433,7 @@ function GraphStudio({ draft }: { draft?: Schemas["Graph"] }) {
 
       <div className="flex h-8 shrink-0 flex-row items-center gap-2 border-t px-3 text-muted-foreground text-xs">
         <span className="truncate">
-          {inputCount} reference{inputCount === 1 ? "" : "s"}
+          {counted(inputCount, "reference")}
           {" · "}
           {draftMutation.isPending ? "saving…" : saved ? "draft saved" : "unsaved changes"}
         </span>

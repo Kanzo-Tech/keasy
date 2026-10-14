@@ -1,10 +1,9 @@
 "use client";
 
 import { createContext, use, useMemo, type ReactNode } from "react";
-import { useMutation } from "@tanstack/react-query";
 import { type Dashboards, parseDashboards } from "@kanzo-tech/ui/analytics";
 import type { AnswerAdded } from "@kanzo-tech/ai/data";
-import { $api, http, type Schemas } from "@/lib/api/client";
+import { $api, type Schemas } from "@/lib/api/client";
 import { queryClient } from "@/lib/api/query-client";
 import { toastError } from "@/lib/errors";
 import { useParams } from "next/navigation";
@@ -58,7 +57,9 @@ export function DashboardStoreProvider({ onOpen, children }: {
   const { id: graphId } = useParams<{ id: string }>();
   const init = { params: { path: { id: graphId } } };
   const read = $api.queryOptions("get", "/v1/graphs/{id}/dashboard", init);
+  // eslint-disable-next-line no-restricted-properties -- a failed read is drawn in the Dashboard view, and the graph and the dock stay
   const saved = $api.useQuery("get", "/v1/graphs/{id}/dashboard", init);
+  // eslint-disable-next-line no-restricted-properties -- as above: the page holds the graph for the whole of it
   const graph = $api.useQuery("get", "/v1/graphs/{id}", init);
 
   // What the server holds, checked whole: a document an earlier release wrote is refused, not
@@ -72,19 +73,18 @@ export function DashboardStoreProvider({ onOpen, children }: {
     }
   }, [saved.data]);
 
-  const save = useMutation({
+  const save = $api.useMutation("put", "/v1/graphs/{id}/dashboard", {
     // One at a time, in the order they were made: an edit flushed before an add lands before it.
     scope: { id: `dashboard ${graphId}` },
-    mutationFn: async (spec: Dashboards) => (await http.PUT("/v1/graphs/{id}/dashboard", { ...init, body: { spec: { ...spec } } })).data,
     onSuccess: (written) => queryClient.setQueryData(read.queryKey, written),
   });
   // The editor's failed writes are toasted; an add's is drawn in its card (./dashboard-writes).
   const { draft, change, add: addNow } = useDashboardWrites(stored.spec, {
-    write: (spec) => save.mutateAsync(spec),
+    write: (spec) => save.mutateAsync({ ...init, body: { spec: { ...spec } } }),
     report: (err) => toastError(err, "Failed to save the dashboard"),
     delay: SAVE_MS,
   });
-  const current = draft !== stored.spec ? draft : save.isPending ? save.variables : draft;
+  const current = draft !== stored.spec ? draft : save.isPending ? (save.variables?.body.spec as Dashboards | undefined) : draft;
 
   const error = saved.error ?? graph.error ?? stored.error;
   const store: DashboardStore =

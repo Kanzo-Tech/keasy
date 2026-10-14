@@ -1,8 +1,7 @@
 # The product demos — storyboard
 
-The seven videos on keasy.github.io's hero, written as stories before they are written as code, so
-that once `@kanzo-tech/testing` ships (kanzo-ui v0.35.0) each `*.demo.ts` is a transcription of its
-table here. Review the stories first; the code follows them.
+The videos on keasy.github.io's hero, written as stories before they are written as code, so that
+each `*.demo.ts` is a transcription of its table here. Review the stories first; the code follows them.
 
 **The rules every demo keeps** (`demo-video-style`): subtitles only, no title cards; recorded at
 native 1600×900; each step's subtitle **leads** it (the `chapter()` call comes before the action it
@@ -19,8 +18,7 @@ step the subtitle goes and the page is held for `TAIL` (3 s, `record/pace.ts`) b
 
 `env` is `await playwright(page)`, made **before** the first `page.goto` (the hook registers charts
 and canvases as they mount). `bar` is `await env.harness(FilterBarHarness)`. `discover`, `settings`,
-`search`, `rules`, `ask` are the keasy page objects listed at the end
-([Page objects](#the-keasy-page-objects-the-demos-need)). What the filters keep is the page's one
+`search`, `rules`, `ask` are keasy's page objects (`e2e/support/app/`). What the filters keep is the page's one
 count, the filter bar's readout, read in full by `discover.kept()`: `"778"` of the Dashboard view's
 relation, `"132"` of the Graph view's nodes.
 
@@ -213,7 +211,7 @@ lands in the bar"* is the check of the last step rather than a step of its own.
 | 5 | Open it on the dashboard | `answers.openOnDashboard()` | that tile is in view |
 | 6 | Ask again: which ones were won in Germany? | `answers.ask("Which ones were won in Germany?")`; `answers.answer()` | its rows are not empty |
 | 7 | This one filters: keep what it found | `answers.filterTo()` | `discover.kept()` > 0 |
-| 8 | The same prizes on the map, framed on Germany | `view("Graph")`; `graph.frame()` | the Graph view's readout reads the same; ≤ 22 |
+| 8 | The same prizes on the map, framed on Germany | `view("Graph")`; `graph.frame()` | the Graph view's readout counts nodes (prizes and their universities), not the dashboard's rows: > 0 and ≤ 22 + 21 |
 
 **Numbers** (`nobel/data`; `affiliations` joins an award to its institutions)
 
@@ -431,55 +429,10 @@ sample's.
 
 ---
 
-## The keasy page objects the demos need
-
-Beyond the library harnesses (`GraphCanvasHarness`, `ChartHarness`, `TimelineHarness`,
-`DashboardHarness`/`TileHarness`, `FilterBarHarness`, `AnswerHarness`, `DockHarness`), under
-`e2e/support/app/`, each built from those harnesses and named after keasy's own parts. Today's
-`demos/geo.ts` helpers fold into them.
-
-| Page object | Methods | Replaces / why |
-| --- | --- | --- |
-| `DiscoverPage` (`support/app/discover.ts`) | `open(id, { view?, panel? })` (deep link, `discoverUrl`); `view("Graph" \| "Dashboard")` (the view switch through `DockHarness.with({ name: <its group name> })`); `relation(root, hops?)` (*Root type* select, *Hop* menu items `label → Type`); `widenDock(px)`; `onMap()` (the shared OpenFlights arrange); `figure(title)` (a figure tile's value); `counts()` (the footer's GraphCounts, in either view); `hoverChip(field)` | `openGraphView`, `onMap`, `widenDock`, the `dispatchEvent("click")` on *Dashboard*. The relation is not in the URL, so it is a call |
-| `SettingsPanel` (`support/app/settings.ts`) | `placement("Map", { x, y })`; `marks("Legible")`; `edges("Hidden")`; `labels(n)`; `timeline(column)` | `placeOnMap`, `hideEdges`, `choose`; `timeline` is new (the *Timeline* select, `time-by`) |
-| `GraphSearch` (`support/app/search.ts`) | `add(query): Promise<number>` — opens *Find anything in the graph*, types, presses *Add N to the subset*, returns N | demo 2's inline steps |
-| `RulesBadge` (`support/app/rules.ts`, on `FindingsBadgeHarness`) | `check()` / `checked()` (the scope line, *All 3,218 nodes checked · 2,930 conform*); `stale()` (the reason the scope line gives once it is out of date); `rule(name)` → `state()` (the tally badges), `showAll()` / `hideAll()` / `offersShowAll()` (the rule's own *Show N* at the end of its heading), `show(message \| RegExp)` (a finding's *Show N* toggle, through `FindingsItemHarness.act`); `conforms(on?)` (*Keep what conforms*; resolves once the popover has closed) | the library's `FindingsItemHarness` reads each finding |
-| `AskPanel` (`support/app/ask.ts`) | `warmUp()`; `composer()` → `AnswerHarness.with({ name: "Ask about your data…" })` | `warmUp` in `nobel-ask.demo.ts` |
-| seeds / API (`support/seeds.ts`, `support/stack/api.ts`) | `saveRules(id, example)`; `saveDashboard(id, relationKey, spec)` | rules PUT exists inline in flights-rules; the dashboard PUT is new (demo 6) |
-
-The view switch and dock: `DockHarness` drives any single-select toggle group; it needs the view
-switch's accessible group name (today the demos press `radio "Dashboard"` without one). If the
-group is unnamed, naming it (*View*) is a one-line keasy change and the clean fix.
-
-## The site changes (keasy.github.io)
-
-`src/content/demos.ts`:
-
-1. **One new tab**, first:
-   ```ts
-   { id: "nobel", label: "Nobel timeline",
-     stat: "1,026 Nobel prizes since 1901 — play them forward in time",
-     steps: [ /* from nobel-timeline-{light,dark}.chapters.json */ ], ...files("nobel") },
-   ```
-   and `public/videos/nobel/{light,dark}.mp4` + `poster-{light,dark}.webp`, made as the
-   handoff note says (ffmpeg `-crf 22 -g 30 -keyint_min 30 -sc_threshold 0 -movflags +faststart`;
-   posters via sharp, 1600 wide).
-2. **Steps re-read for every tab** from the new chapters (the 0.40 re-cut): Hidden patterns gains
-   *Frame Spain* before the lasso; Crossfilter's switch to the graph and its frame are one step;
-   Ask moves to Nobel: Physics, the universities, *Open it on the dashboard*, Germany and the frame on the map;
-   Assessment shows the rule's 288, frames twice and ends on *Keep what conforms*; Nobel is
-   re-cut as a century moving west, then the women.
-3. Stat lines: the five existing ones stand. Assessment's *3,218 airports assessed* is right (3,218).
-4. **Six tabs** in the hero: check that the tab row wraps or scrolls at phone width (16 px gutter,
-   no horizontal page scroll) — five fit today.
-
 ## Anything in the data that contradicts a planned subtitle
 
 - **Assessment, "show the violations (44)"** — superseded by the rule's one *Show N* (kanzo-ui
   0.40): 288 airports, of either severity; 218 is the high-altitude finding the take shows.
-- **Assessment, "the Andes, Rockies, Ethiopia, Tibet"** — settled: *"The Rockies, the Andes, Iran,
-  Ethiopia, Tibet"*.
-- **Hidden patterns, framing Spain** — settled: the `PENINSULA` lasso (31, all Spanish) before the frame.
 - **Nobel, "the camera into Europe" / "across the Atlantic"** — the frames cannot say it: both
   windows keep prizes from California to India or Japan, so each frame is near the world view. The
   subtitles name where the prizes were won (9 in 10 in Europe; 65 of 86 in the US), and the frame

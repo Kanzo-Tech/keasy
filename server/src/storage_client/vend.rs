@@ -5,18 +5,29 @@
 //! Azure directory SAS names the prefix, and a request outside it is refused
 //! by the store whatever the reader asks for.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
+use std::sync::Arc;
 use std::time::Duration;
 
 use aws_sdk_sts::config::timeout::TimeoutConfig;
 use aws_sdk_sts::config::{BehaviorVersion, Credentials, Region};
 use aws_sdk_sts::error::SdkError;
+use azure_core::cloud::{CloudConfiguration, CustomConfiguration};
+use azure_core::credentials::{Secret, TokenCredential};
+use azure_core::error::ErrorKind;
+use azure_core::http::headers::{HeaderName, HeaderValue, Headers};
+use azure_core::http::{
+    AsyncRawResponse, Body, ClientOptions, HttpClient, Request, RetryOptions, Transport, Url,
+};
+use azure_core::time::OffsetDateTime;
+use azure_identity::{ClientSecretCredential, ClientSecretCredentialOptions};
+use azure_storage_blob::models::KeyInfo;
+use azure_storage_blob::{BlobServiceClient, BlobServiceClientOptions};
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD;
-use chrono::{DateTime, SecondsFormat, Utc};
 use hmac::{Hmac, KeyInit, Mac};
+use jiff::{SignedDuration, Timestamp};
 use secrecy::{ExposeSecret, SecretString};
-use serde::Deserialize;
 use sha2::Sha256;
 
 use super::{Endpoints, StoreFailure};
@@ -28,7 +39,7 @@ pub const VENDED_FOR: Duration = Duration::from_secs(3600);
 
 /// Azure refuses a SAS whose start is ahead of its clock; Polaris backdates by
 /// the same margin.
-const CLOCK_SKEW: Duration = Duration::from_secs(300);
+const CLOCK_SKEW: SignedDuration = SignedDuration::from_secs(300);
 
 /// The role a configured STS endpoint is asked for when the credential names
 /// none. The dev store (`infra/dev/seaweedfs/iam.json`) declares exactly this
@@ -36,8 +47,6 @@ const CLOCK_SKEW: Duration = Duration::from_secs(300);
 const S3_COMPATIBLE_ROLE: &str = "arn:aws:iam::000000000000:role/keasy-vended";
 
 const AZURE_VERSION: &str = "2022-11-02";
-
-const ENTRA: &str = "https://login.microsoftonline.com";
 
 /// How long a vend waits on what is outside the process: Entra, Azure Blob,
 /// STS. Each call is bounded on its own, and a vend can make two in a row
@@ -60,15 +69,86 @@ const _: () = assert!(
     "a vend's two calls in a row end inside the server's request deadline"
 );
 
-/// A reqwest failure, as a refusal or as `who` going silent.
-fn reqwest_error(who: &'static str, deadlines: Deadlines, e: reqwest::Error) -> StoreFailure {
-    if e.is_timeout() {
-        StoreFailure::Silent {
-            who,
-            after: deadlines.request,
+/// What an Azure call failed with: `who` going silent — a request deadline
+/// fired anywhere under it — or a refusal, in the SDK's words.
+fn azure_failure(who: &'static str, deadlines: Deadlines, e: azure_core::Error) -> StoreFailure {
+    let mut cause: Option<&(dyn std::error::Error + 'static)> = Some(&e);
+    while let Some(error) = cause {
+        if error
+            .downcast_ref::<reqwest::Error>()
+            .is_some_and(reqwest::Error::is_timeout)
+        {
+            return StoreFailure::Silent {
+                who,
+                after: deadlines.request,
+            };
         }
-    } else {
-        StoreFailure::Refused(format!("{who}: {e}"))
+        cause = error.source();
+    }
+    StoreFailure::Refused(format!("{who} refused: {e}"))
+}
+
+/// The Azure SDK's requests, sent by keasy's own client: its deadlines, and
+/// one try — a vend waits a request's worth, and a silent service is named,
+/// not asked again.
+#[derive(Debug)]
+struct Bounded(reqwest::Client);
+
+#[async_trait::async_trait]
+impl HttpClient for Bounded {
+    async fn execute_request(&self, request: &Request) -> azure_core::Result<AsyncRawResponse> {
+        let io = |e: reqwest::Error| {
+            azure_core::Error::with_error(ErrorKind::Io, e, "Azure did not answer")
+        };
+        let Body::Bytes(body) = request.body() else {
+            return Err(azure_core::Error::with_message(
+                ErrorKind::Other,
+                "a streamed body",
+            ));
+        };
+        let method = reqwest::Method::from_bytes(request.method().as_ref().as_bytes())
+            .map_err(|e| azure_core::Error::with_error(ErrorKind::Other, e, "an HTTP method"))?;
+        let mut sent = self
+            .0
+            .request(method, request.url().as_str())
+            .body(body.clone());
+        for (name, value) in request.headers().iter() {
+            sent = sent.header(name.as_str(), value.as_str());
+        }
+        let answer = sent.send().await.map_err(io)?;
+        let status = answer.status().as_u16();
+        let headers: HashMap<HeaderName, HeaderValue> = answer
+            .headers()
+            .iter()
+            .filter_map(|(name, value)| {
+                let value = value.to_str().ok()?.to_owned();
+                Some((
+                    HeaderName::from(name.as_str().to_owned()),
+                    HeaderValue::from(value),
+                ))
+            })
+            .collect();
+        let body = answer.bytes().await.map_err(io)?;
+        Ok(AsyncRawResponse::new(
+            status.into(),
+            Headers::from(headers),
+            Box::pin(futures::stream::once(async move { Ok(body) })),
+        ))
+    }
+}
+
+/// The SDK's client options: keasy's transport, no retries, and — for a test —
+/// the authority Entra is reached at.
+fn sdk_options(deadlines: Deadlines, authority: Option<&str>) -> ClientOptions {
+    ClientOptions {
+        transport: Some(Transport::new(Arc::new(Bounded(http(deadlines))))),
+        retry: RetryOptions::none(),
+        cloud: authority.map(|host| {
+            let mut custom = CustomConfiguration::default();
+            custom.authority_host = host.into();
+            Arc::new(CloudConfiguration::from(custom))
+        }),
+        ..Default::default()
     }
 }
 
@@ -135,19 +215,10 @@ async fn vend_within(
             client_id,
             client_secret,
         } => {
-            let client = http(deadlines);
-            let token = entra_token(
-                &client,
-                deadlines,
-                ENTRA,
-                tenant_id,
-                client_id,
-                client_secret,
-            )
-            .await?;
+            let entra = entra(tenant_id, client_id, client_secret, deadlines, None)?;
             let (start, expiry) = window();
             let blob = format!("https://{account}.blob.core.windows.net");
-            let key = user_delegation_key(&client, deadlines, &blob, &token, start, expiry).await?;
+            let key = user_delegation_key(entra, deadlines, &blob, start, expiry).await?;
             Ok(azure_credential(
                 account,
                 location,
@@ -155,21 +226,13 @@ async fn vend_within(
                 user_delegation_sas(account, location, access, start, expiry, &key)?,
             ))
         }
-        SecretSpec::AzureAccountKey { account, key } => {
-            let (start, expiry) = window();
-            Ok(azure_credential(
-                account,
-                location,
-                expiry,
-                service_sas(account, key, location, access, start, expiry)?,
-            ))
-        }
     }
 }
 
-fn window() -> (DateTime<Utc>, DateTime<Utc>) {
-    let now = Utc::now();
-    (now - CLOCK_SKEW, now + VENDED_FOR)
+fn window() -> (Timestamp, Timestamp) {
+    let now = Timestamp::now();
+    let lives = SignedDuration::from_secs(VENDED_FOR.as_secs() as i64);
+    (now - CLOCK_SKEW, now + lives)
 }
 
 /// The object-key prefix a location opens: its path and a `/`, or the whole
@@ -289,7 +352,7 @@ fn aws_error<E: std::error::Error + 'static>(e: &E) -> String {
 fn azure_credential(
     account: &str,
     location: &StorageLocation,
-    expiry: DateTime<Utc>,
+    expiry: Timestamp,
     sas: String,
 ) -> VendedCredential {
     let host = format!("{account}.dfs.core.windows.net");
@@ -297,7 +360,7 @@ fn azure_credential(
     config.insert(format!("adls.sas-token.{host}"), SecretString::from(sas));
     config.insert(
         format!("adls.sas-token-expires-at-ms.{host}"),
-        SecretString::from(expiry.timestamp_millis().to_string()),
+        SecretString::from(expiry.as_millisecond().to_string()),
     );
     VendedCredential {
         prefix: location.to_string(),
@@ -332,8 +395,8 @@ fn permissions(access: Access) -> &'static str {
     }
 }
 
-fn azure_time(t: DateTime<Utc>) -> String {
-    t.to_rfc3339_opts(SecondsFormat::Secs, true)
+fn azure_time(t: Timestamp) -> String {
+    t.strftime("%Y-%m-%dT%H:%M:%SZ").to_string()
 }
 
 fn hmac_base64(key: &[u8], message: &str) -> Result<String, String> {
@@ -350,8 +413,7 @@ fn query(pairs: &[(&str, &str)]) -> String {
     out.finish()
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "PascalCase")]
+/// A user-delegation key as the SAS is signed with it: the SDK's, spelled.
 struct UserDelegationKey {
     signed_oid: String,
     signed_tid: String,
@@ -359,78 +421,93 @@ struct UserDelegationKey {
     signed_expiry: String,
     signed_service: String,
     signed_version: String,
-    value: String,
+    value: Vec<u8>,
 }
 
-#[derive(Deserialize)]
-struct EntraToken {
-    access_token: String,
-}
-
-/// A token for Azure Storage from the service principal: the OAuth 2.0 client
-/// credentials grant.
-async fn entra_token(
-    client: &reqwest::Client,
-    deadlines: Deadlines,
-    base: &str,
+/// The service principal, as the Azure SDK's credential: it gets the Entra
+/// token, the OAuth 2.0 client credentials grant. `authority` is a test's.
+fn entra(
     tenant_id: &str,
     client_id: &str,
     client_secret: &SecretString,
-) -> Result<SecretString, StoreFailure> {
-    let silent = |e| reqwest_error("Entra", deadlines, e);
-    let response = client
-        .post(format!("{base}/{tenant_id}/oauth2/v2.0/token"))
-        .form(&[
-            ("grant_type", "client_credentials"),
-            ("client_id", client_id),
-            ("client_secret", client_secret.expose_secret()),
-            ("scope", "https://storage.azure.com/.default"),
-        ])
-        .send()
-        .await
-        .map_err(silent)?;
-    if !response.status().is_success() {
-        return Err(StoreFailure::Refused(format!(
-            "Entra refused the service principal ({})",
-            response.status()
-        )));
-    }
-    let token: EntraToken = response.json().await.map_err(silent)?;
-    Ok(SecretString::from(token.access_token))
+    deadlines: Deadlines,
+    authority: Option<&str>,
+) -> Result<Arc<ClientSecretCredential>, StoreFailure> {
+    ClientSecretCredential::new(
+        tenant_id,
+        client_id.into(),
+        Secret::new(client_secret.expose_secret().to_owned()),
+        Some(ClientSecretCredentialOptions {
+            client_options: sdk_options(deadlines, authority),
+        }),
+    )
+    .map_err(|e| StoreFailure::Refused(format!("the service principal: {e}")))
 }
 
-/// Get User Delegation Key: a key only Entra-authenticated principals obtain,
-/// valid for the credential's lifetime.
+/// Get User Delegation Key, through the Azure SDK: a key only an
+/// Entra-authenticated principal obtains, for the credential's lifetime. The
+/// token is asked for first, so a silent Entra is named, not Azure Blob.
 async fn user_delegation_key(
-    client: &reqwest::Client,
+    entra: Arc<impl TokenCredential + 'static>,
     deadlines: Deadlines,
     blob: &str,
-    token: &SecretString,
-    start: DateTime<Utc>,
-    expiry: DateTime<Utc>,
+    start: Timestamp,
+    expiry: Timestamp,
 ) -> Result<UserDelegationKey, StoreFailure> {
-    let silent = |e| reqwest_error("Azure Blob", deadlines, e);
-    let body = format!(
-        "<?xml version=\"1.0\" encoding=\"utf-8\"?><KeyInfo><Start>{}</Start><Expiry>{}</Expiry></KeyInfo>",
-        azure_time(start),
-        azure_time(expiry)
-    );
-    let response = client
-        .post(format!("{blob}/?restype=service&comp=userdelegationkey"))
-        .bearer_auth(token.expose_secret())
-        .header("x-ms-version", AZURE_VERSION)
-        .body(body)
-        .send()
+    entra
+        .get_token(&[STORAGE_SCOPE], None)
         .await
-        .map_err(silent)?;
-    if !response.status().is_success() {
-        return Err(StoreFailure::Refused(format!(
-            "Azure refused a user delegation key ({})",
-            response.status()
-        )));
-    }
-    let text = response.text().await.map_err(silent)?;
-    quick_xml::de::from_str(&text).map_err(|e| StoreFailure::Refused(e.to_string()))
+        .map_err(|e| azure_failure("Entra", deadlines, e))?;
+    let failed = |e| azure_failure("Azure Blob", deadlines, e);
+    let url = Url::parse(blob).map_err(|e| StoreFailure::Refused(format!("{blob}: {e}")))?;
+    let client = BlobServiceClient::new(
+        url,
+        Some(entra),
+        Some(BlobServiceClientOptions {
+            client_options: sdk_options(deadlines, None),
+            ..Default::default()
+        }),
+    )
+    .map_err(failed)?;
+    let window = KeyInfo {
+        start: Some(offset(start)?),
+        expiry: Some(offset(expiry)?),
+        ..Default::default()
+    };
+    let key = client
+        .get_user_delegation_key(window.try_into().map_err(failed)?, None)
+        .await
+        .map_err(failed)?
+        .into_model()
+        .map_err(failed)?;
+    let missing = || StoreFailure::Refused("Azure answered an incomplete delegation key".into());
+    let spelled =
+        |t: Option<_>| -> Result<String, StoreFailure> { spelled(t.ok_or_else(missing)?) };
+    Ok(UserDelegationKey {
+        signed_oid: key.signed_oid.ok_or_else(missing)?,
+        signed_tid: key.signed_tid.ok_or_else(missing)?,
+        signed_start: spelled(key.signed_start)?,
+        signed_expiry: spelled(key.signed_expiry)?,
+        signed_service: key.signed_service.ok_or_else(missing)?,
+        signed_version: key.signed_version.ok_or_else(missing)?,
+        value: key.value.ok_or_else(missing)?,
+    })
+}
+
+/// Azure Storage's scope: what the token is for.
+const STORAGE_SCOPE: &str = "https://storage.azure.com/.default";
+
+/// A timestamp as the SDK's clock holds it.
+fn offset(t: Timestamp) -> Result<OffsetDateTime, StoreFailure> {
+    OffsetDateTime::from_unix_timestamp(t.as_second())
+        .map_err(|e| StoreFailure::Refused(e.to_string()))
+}
+
+/// The SDK's time as a SAS spells it.
+fn spelled(t: OffsetDateTime) -> Result<String, StoreFailure> {
+    Timestamp::from_second(t.unix_timestamp())
+        .map(azure_time)
+        .map_err(|e| StoreFailure::Refused(e.to_string()))
 }
 
 /// A user delegation SAS over the location's directory: the string-to-sign of
@@ -439,8 +516,8 @@ fn user_delegation_sas(
     account: &str,
     location: &StorageLocation,
     access: Access,
-    start: DateTime<Utc>,
-    expiry: DateTime<Utc>,
+    start: Timestamp,
+    expiry: Timestamp,
     key: &UserDelegationKey,
 ) -> Result<String, String> {
     let (resource, depth) = sas_resource(location);
@@ -473,8 +550,7 @@ fn user_delegation_sas(
         "", // rscc, rscd, rsce, rscl, rsct
     ]
     .join("\n");
-    let key_bytes = STANDARD.decode(&key.value).map_err(|e| e.to_string())?;
-    let signature = hmac_base64(&key_bytes, &to_sign)?;
+    let signature = hmac_base64(&key.value, &to_sign)?;
     let depth = depth.map(|d| d.to_string()).unwrap_or_default();
     Ok(query(&[
         ("sv", AZURE_VERSION),
@@ -490,56 +566,6 @@ fn user_delegation_sas(
         ("ske", &key.signed_expiry),
         ("sks", &key.signed_service),
         ("skv", &key.signed_version),
-        ("sig", &signature),
-    ]))
-}
-
-/// A service SAS over the location's directory, signed with the account key.
-/// A directory SAS needs a hierarchical namespace; on a flat account the store
-/// refuses it, and the connection does not validate.
-fn service_sas(
-    account: &str,
-    key: &SecretString,
-    location: &StorageLocation,
-    access: Access,
-    start: DateTime<Utc>,
-    expiry: DateTime<Utc>,
-) -> Result<String, String> {
-    let (resource, depth) = sas_resource(location);
-    let (st, se) = (azure_time(start), azure_time(expiry));
-    let permissions = permissions(access);
-    let to_sign = [
-        permissions,
-        &st,
-        &se,
-        &canonical_resource(account, location),
-        "", // signedIdentifier
-        "", // signedIP
-        "https",
-        AZURE_VERSION,
-        resource,
-        "", // signedSnapshotTime
-        "", // signedEncryptionScope
-        "",
-        "",
-        "",
-        "",
-        "", // rscc, rscd, rsce, rscl, rsct
-    ]
-    .join("\n");
-    let key_bytes = STANDARD
-        .decode(key.expose_secret())
-        .map_err(|_| "the account key is not base64".to_string())?;
-    let signature = hmac_base64(&key_bytes, &to_sign)?;
-    let depth = depth.map(|d| d.to_string()).unwrap_or_default();
-    Ok(query(&[
-        ("sv", AZURE_VERSION),
-        ("sr", resource),
-        ("sdd", &depth),
-        ("st", &st),
-        ("se", &se),
-        ("sp", permissions),
-        ("spr", "https"),
         ("sig", &signature),
     ]))
 }
@@ -587,19 +613,53 @@ mod tests {
         let root = loc("az://c");
         assert_eq!(sas_resource(&root), ("c", None));
         assert_eq!(canonical_resource("acct", &root), "/blob/acct/c");
-        let key = SecretString::from(STANDARD.encode(b"key"));
+        let key = UserDelegationKey {
+            signed_oid: "oid".into(),
+            signed_tid: "tid".into(),
+            signed_start: "s".into(),
+            signed_expiry: "e".into(),
+            signed_service: "b".into(),
+            signed_version: AZURE_VERSION.into(),
+            value: b"key".to_vec(),
+        };
         let (st, se) = window();
-        let sas = service_sas("acct", &key, &dir, Access::Read, st, se).unwrap();
+        let sas = user_delegation_sas("acct", &dir, Access::Read, st, se, &key).unwrap();
         assert!(sas.contains("sr=d") && sas.contains("sdd=2") && sas.contains("sp=rl"));
-        assert!(!sas.contains("skoid"));
+        assert!(sas.contains("skoid=oid"));
+        let half: Timestamp = "2026-10-13T12:00:00.5Z".parse().unwrap();
+        assert_eq!(
+            azure_time(half),
+            "2026-10-13T12:00:00Z",
+            "whole seconds, in UTC"
+        );
     }
 
     /// A listener that accepts every connection and never answers: the
-    /// kernel completes the handshake, so only a request deadline ends the wait.
-    async fn silent() -> (tokio::net::TcpListener, String) {
+    /// kernel completes the handshake, so only a request deadline ends the
+    /// wait — over `https` too, whose TLS handshake gets no answer either (the
+    /// Azure SDK reaches Entra only over `https`).
+    async fn silent(scheme: &str) -> (tokio::net::TcpListener, String) {
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
-        let url = format!("http://{}", listener.local_addr().unwrap());
+        let url = format!("{scheme}://{}", listener.local_addr().unwrap());
         (listener, url)
+    }
+
+    /// A credential that has its token already: what Azure Blob is asked with.
+    #[derive(Debug)]
+    struct Granted;
+
+    #[async_trait::async_trait]
+    impl TokenCredential for Granted {
+        async fn get_token(
+            &self,
+            _: &[&str],
+            _: Option<azure_core::credentials::TokenRequestOptions<'_>>,
+        ) -> azure_core::Result<azure_core::credentials::AccessToken> {
+            Ok(azure_core::credentials::AccessToken::new(
+                "token",
+                OffsetDateTime::now_utc() + std::time::Duration::from_secs(3600),
+            ))
+        }
     }
 
     const SHORT: Deadlines = Deadlines {
@@ -613,42 +673,39 @@ mod tests {
 
     #[tokio::test]
     async fn an_entra_that_accepts_and_never_answers_is_named_silent() {
-        let (_held, url) = silent().await;
+        let (_held, url) = silent("https").await;
         let started = std::time::Instant::now();
-        let err = entra_token(
-            &http(SHORT),
+        let entra = entra("t", "c", &SecretString::from("s"), SHORT, Some(&url)).unwrap();
+        let (start, expiry) = window();
+        let Err(err) = user_delegation_key(
+            entra,
             SHORT,
-            &url,
-            "t",
-            "c",
-            &SecretString::from("s"),
+            "https://acct.blob.core.windows.net",
+            start,
+            expiry,
         )
         .await
-        .unwrap_err();
+        else {
+            panic!("a silent Entra vended a key");
+        };
         assert!(is_silent(&err, "Entra"), "{err}");
         assert!(started.elapsed() < Duration::from_secs(3));
     }
 
     #[tokio::test]
     async fn an_azure_blob_that_accepts_and_never_answers_is_named_silent() {
-        let (_held, url) = silent().await;
+        let (_held, url) = silent("https").await;
         let (start, expiry) = window();
-        let err = user_delegation_key(
-            &http(SHORT),
-            SHORT,
-            &url,
-            &SecretString::from("token"),
-            start,
-            expiry,
-        )
-        .await
-        .unwrap_err();
+        let Err(err) = user_delegation_key(Arc::new(Granted), SHORT, &url, start, expiry).await
+        else {
+            panic!("a silent Azure Blob vended a key");
+        };
         assert!(is_silent(&err, "Azure Blob"), "{err}");
     }
 
     #[tokio::test]
     async fn an_sts_that_accepts_and_never_answers_is_named_silent() {
-        let (_held, url) = silent().await;
+        let (_held, url) = silent("http").await;
         let credential = SecretSpec::S3 {
             access_key_id: "AK".into(),
             secret_access_key: SecretString::from("secret"),

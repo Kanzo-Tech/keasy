@@ -24,6 +24,7 @@ import {
   StatValue,
   Suggestion,
   Suggestions,
+  FormatNumber,
 } from "@kanzo-tech/ui";
 import { ProblemView } from "@/components/problem-view";
 import { askHref } from "@/app/(main)/(workspace)/graphs/[id]/discover/_parts/ask-handoff";
@@ -42,7 +43,6 @@ import {
 } from "./model";
 import { SourcePicker, type SourcePickerProps } from "./source-picker";
 
-const count = new Intl.NumberFormat("en");
 
 /** The assistant's turn: its words first, then what it carries. */
 export function Said({ children, label, decision }: { children: React.ReactNode; label?: string; decision?: string }) {
@@ -193,7 +193,7 @@ function ThingCard({ thing }: { thing: Thing }) {
       {thing.count === null ? (
         <span className="col-span-full pt-1 text-muted-foreground text-xs">Not counted yet</span>
       ) : (
-        <StatValue className="pt-1 text-xl">{count.format(thing.count)}</StatValue>
+        <StatValue className="pt-1 text-xl"><FormatNumber value={thing.count} /></StatValue>
       )}
       {holds && <StatDescription className="col-span-full pt-1 text-xs">Each one holds {holds}.</StatDescription>}
     </StatRoot>
@@ -439,12 +439,9 @@ export function BuildTurn({
   }
   switch (build.state) {
     case "building": {
-      const percent = build.percent === null ? null : Math.round(build.percent);
       return (
         <Said>
-          <UnderWay value={percent ?? undefined}>
-            {build.graphId === null ? "Making your graph…" : `Building your graph${percent === null ? "…" : `… ${percent}%`}`}
-          </UnderWay>
+          <UnderWay>{build.graphId === null ? "Making your graph…" : "Building your graph…"}</UnderWay>
         </Said>
       );
     }

@@ -18,8 +18,8 @@ pub struct Settings {
 }
 
 pub struct ApplicationSettings {
-    /// Read from `KEASY_BIND_ADDR`, default `0.0.0.0:8080`. Port 0 binds a
-    /// free port, which [`crate::startup::Application::port`] reports.
+    /// `0.0.0.0:8080`, the port every compose file maps. Port 0 (a test's)
+    /// binds a free port, which [`crate::startup::Application::port`] reports.
     pub bind_addr: SocketAddr,
     /// Display name of this workspace. Read from `KEASY_WORKSPACE_NAME`,
     /// default `"Workspace"`. The switcher's name for this instance.
@@ -196,6 +196,10 @@ impl DatabaseSettings {
     }
 }
 
+/// This API's audience — what the tenant client's audience mapper names (the
+/// platform's declaration, `compose.yaml`), and what `aud` must contain.
+pub const AUDIENCE: &str = "keasy-api";
+
 pub struct OidcSettings {
     /// The **public** OIDC issuer, exactly as it appears in a token's `iss`.
     /// Read from KEASY_OIDC_ISSUER_URL. Example: https://auth.example/auth/realms/keasy
@@ -204,9 +208,6 @@ pub struct OidcSettings {
     /// token, and the key into `resource_access` that carries the roles.
     /// Read from KEASY_OIDC_CLIENT_ID. Example: keasy-ws-dev
     pub client_id: String,
-    /// This API's audience — what the tenant client's audience mapper names, and
-    /// what `aud` must contain. Read from KEASY_OIDC_AUDIENCE, default "keasy-api".
-    pub audience: String,
     /// The **origin** at which this process reaches Keycloak, when that is not
     /// where the browser reaches it (`http://keycloak:8080`). Only the origin is
     /// replaced; the issuer's path is its own.
@@ -215,11 +216,6 @@ pub struct OidcSettings {
 }
 
 pub fn get_configuration() -> Result<Settings, String> {
-    let bind_addr = std::env::var("KEASY_BIND_ADDR")
-        .unwrap_or_else(|_| "0.0.0.0:8080".to_string())
-        .parse()
-        .map_err(|e| format!("KEASY_BIND_ADDR is not a socket address: {e}"))?;
-
     // There is no unauthenticated mode to fall back to: a resource server that
     // cannot name its issuer cannot refuse anything.
     let issuer_url = nonblank("KEASY_OIDC_ISSUER_URL")
@@ -229,7 +225,7 @@ pub fn get_configuration() -> Result<Settings, String> {
 
     Ok(Settings {
         application: ApplicationSettings {
-            bind_addr,
+            bind_addr: SocketAddr::from(([0, 0, 0, 0], 8080)),
             workspace_name: nonblank("KEASY_WORKSPACE_NAME")
                 .unwrap_or_else(|| "Workspace".to_string()),
             org_alias: nonblank("KEASY_ORG_ALIAS").ok_or(
@@ -247,7 +243,6 @@ pub fn get_configuration() -> Result<Settings, String> {
         oidc: OidcSettings {
             issuer_url,
             client_id,
-            audience: nonblank("KEASY_OIDC_AUDIENCE").unwrap_or_else(|| "keasy-api".to_string()),
             internal_base_url: nonblank("KEASY_OIDC_INTERNAL_BASE_URL"),
         },
     })

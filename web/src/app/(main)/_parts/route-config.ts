@@ -36,13 +36,15 @@ const ROUTES: Record<string, RouteDef> = {
   "/":                            { name: "Dashboard", icon: Home, sidebar: true },
   "/graphs":                        { name: WORDS.graphs, icon: Workflow, sidebar: true },
   "/graphs/new":                    { name: `New ${lower(WORDS.graph)}` },
+  "/graphs/new/assistant":          { name: "Assistant" },
   "/connections":                 { name: "Connections", icon: Database, sidebar: true },
+  "/connections/new":             { name: "New connection" },
   // Settings (not in main sidebar — reached via the user menu)
   "/settings":                    { name: "Settings", icon: Settings2 },
   "/settings/preferences":        { name: "Preferences" },
   "/settings/security":           { name: "Security" },
   "/settings/credentials":        { name: "Credentials", icon: KeyRound },
-  "/settings/credentials/new":    { name: "New Credential" },
+  "/settings/credentials/new":    { name: "New credential" },
   "/settings/storage":            { name: "Workspace storage", icon: GalleryVerticalEnd },
   "/settings/members":            { name: "Members", icon: Users },
 };
@@ -50,11 +52,13 @@ const ROUTES: Record<string, RouteDef> = {
 /**
  * Routes with a dynamic segment: the name shown until the label resolves, and
  * what to resolve it from. Static routes win, so `/graphs/new` is not a graph.
+ * A connection and a credential are keyed by their name, so the segment is it.
  */
-const DYNAMIC: { pattern: RegExp; name: string; label?: (id: string) => CrumbLabel }[] = [
+const DYNAMIC: { pattern: RegExp; name: string | ((id: string) => string); label?: (id: string) => CrumbLabel }[] = [
   { pattern: /^\/graphs\/([^/]+)$/, name: WORDS.graph, label: (id) => ({ kind: "graph", id }) },
-  { pattern: /^\/graphs\/[^/]+\/recipe$/, name: WORDS.recipe },
   { pattern: /^\/graphs\/[^/]+\/discover$/, name: WORDS.explore },
+  { pattern: /^\/connections\/([^/]+)$/, name: (name) => name },
+  { pattern: /^\/settings\/credentials\/([^/]+)$/, name: (name) => name },
 ];
 
 // ── Derived ──────────────────────────────────────────────────────────────────
@@ -64,7 +68,9 @@ function findRoute(path: string): Crumb | undefined {
   if (def) return { ...def, path };
   for (const { pattern, name, label } of DYNAMIC) {
     const match = pattern.exec(path);
-    if (match) return { path, name, label: label?.(decodeURIComponent(match[1])) };
+    if (!match) continue;
+    const id = match[1] === undefined ? "" : decodeURIComponent(match[1]);
+    return { path, name: typeof name === "function" ? name(id) : name, label: label?.(id) };
   }
   return undefined;
 }
@@ -90,14 +96,9 @@ export function generateBreadcrumbs(path: string, search?: URLSearchParams): Cru
     let current = "";
     for (let i = 0; i < segments.length; i++) {
       current += `/${segments[i]}`;
-      crumbs.push(
-        findRoute(current) ?? {
-          path: current,
-          name: segments[i]
-            .replace(/-/g, " ")
-            .replace(/\b\w/g, (l) => l.toUpperCase()),
-        },
-      );
+      // A path the route table does not know has no crumb: the URL is not a name.
+      const crumb = findRoute(current);
+      if (crumb) crumbs.push(crumb);
     }
   }
 

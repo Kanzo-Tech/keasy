@@ -15,7 +15,7 @@ use crate::authentication::permission::Action;
 use crate::authentication::role::{Editor, Reader};
 use crate::domain::{Graph, GraphFolder, GraphStatus, ResourceName};
 use crate::error::{ErrorBody, ErrorCode, Refusal};
-use crate::graphs::{any, permitted, persistence, present, transition};
+use crate::graphs::{any, persistence, present, transition};
 use crate::startup::AppState;
 
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
@@ -95,7 +95,8 @@ pub struct GraphStatusReport {
     #[schema(value_type = Option<Value>)]
     pub report: Option<serde_json::Value>,
     /// Why the run failed (on `failed`): the run's problem, stored verbatim
-    /// and opaque.
+    /// and opaque — but for the title of a code the server owns, which it
+    /// fills in when the problem carries none.
     #[serde(default)]
     #[schema(value_type = Option<Value>)]
     pub problem: Option<serde_json::Value>,
@@ -208,7 +209,7 @@ pub async fn edit_draft(
     Path(id): Path<String>,
     Json(edits): Json<DraftEdits>,
 ) -> Result<impl IntoResponse, Refusal> {
-    permitted(&*state.db.read().await, &caller, &id, Action::Manage)?;
+    caller.ensure(Action::Manage, &any(&*state.db.read().await, &id)?)?;
     let graph = transition(&state.db, &id, |graph| {
         graph.edit()?;
         edits.clone().apply(graph)
@@ -237,7 +238,7 @@ pub async fn submit_graph(
     Path(id): Path<String>,
     Json(edits): Json<DraftEdits>,
 ) -> Result<impl IntoResponse, Refusal> {
-    permitted(&*state.db.read().await, &caller, &id, Action::Manage)?;
+    caller.ensure(Action::Manage, &any(&*state.db.read().await, &id)?)?;
     let graph = transition(&state.db, &id, |graph| {
         graph.edit()?;
         edits.clone().apply(graph)?;
@@ -267,7 +268,7 @@ pub async fn run_graph(
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, Refusal> {
     crate::graphs::sweep(&state.db).await?;
-    permitted(&*state.db.read().await, &caller, &id, Action::Operate)?;
+    caller.ensure(Action::Operate, &any(&*state.db.read().await, &id)?)?;
     let graph = transition(&state.db, &id, |graph| Ok(graph.run(caller.actor())?)).await?;
     Ok(Json(present(&*state.db.read().await, &caller, graph)?))
 }
@@ -310,7 +311,7 @@ pub async fn report_status(
             &caller.user_id,
             payload.status.clone(),
             payload.report.clone(),
-            payload.problem.clone(),
+            payload.problem.clone().map(crate::error::titled),
         )?)
     })
     .await?;
@@ -357,7 +358,9 @@ pub async fn delete_graph(
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, Refusal> {
     crate::graphs::sweep(&state.db).await?;
-    permitted(&*state.db.read().await, &caller, &id, Action::Manage)?.delete()?;
+    let graph = any(&*state.db.read().await, &id)?;
+    caller.ensure(Action::Manage, &graph)?;
+    graph.delete()?;
 
     persistence::delete(&*state.db.write().await, &id)?;
     Ok(StatusCode::NO_CONTENT)

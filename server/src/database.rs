@@ -17,7 +17,7 @@ use serde::de::DeserializeOwned;
 use tokio::sync::{Mutex, MutexGuard};
 
 use crate::credentials::sealing::SecretKey;
-use crate::domain::{Actor, Grant, Provenance};
+use crate::domain::{Actor, Provenance};
 use crate::error::{ErrorCode, Refusal};
 
 const READ_POOL_SIZE: usize = 4;
@@ -140,30 +140,6 @@ pub(crate) fn owner_columns(row: &rusqlite::Row<'_>) -> rusqlite::Result<Actor> 
         id: row.get("owner")?,
         name: row.get("owner_name")?,
     })
-}
-
-/// The `grants` column a `SELECT` over `table` adds: the row's grants as one
-/// JSON array, read by [`grants_column`]. `column` is the grants' column that
-/// names the row, `key` the row's own.
-pub(crate) fn grants_of(table: &str, column: &str, key: &str) -> String {
-    format!(
-        "(SELECT json_group_array(json_object(
-             'principal', json_object('kind', principal_kind, 'id', principal,
-                                      'name', principal_name),
-             'relation', relation,
-             'granted_by', json_object('id', created_by, 'name', created_by_name),
-             'granted_at', created_at))
-          FROM grants WHERE grants.{column} = {table}.{key}) AS grants"
-    )
-}
-
-/// The `grants` column [`grants_of`] selects, managers first and then by name.
-pub(crate) fn grants_column(row: &rusqlite::Row<'_>) -> rusqlite::Result<Vec<Grant>> {
-    let mut grants: Vec<Grant> = json_column(row, "grants")?;
-    grants.sort_by(|a, b| {
-        (a.relation.as_ref(), &a.principal.name).cmp(&(b.relation.as_ref(), &b.principal.name))
-    });
-    Ok(grants)
 }
 
 /// [`created_columns`], and who changed the row last and when, if anyone has.
@@ -385,36 +361,6 @@ CREATE TABLE rules (
     updated_by_name TEXT,
     updated_at      TEXT
 );
-
--- Who besides its owner manages an object, and who uses a secret: one tuple a
--- row (Zanzibar's object, relation, principal), the object in exactly one of
--- three columns so each has its foreign key — a rename carries the grant
--- along, a delete takes it away.
-CREATE TABLE grants (
-    secret          TEXT REFERENCES credentials (name) ON UPDATE CASCADE ON DELETE CASCADE,
-    connection      TEXT REFERENCES connections (name) ON UPDATE CASCADE ON DELETE CASCADE,
-    graph           TEXT REFERENCES graphs (id) ON DELETE CASCADE,
-    principal_kind  TEXT NOT NULL CHECK (principal_kind IN ('user', 'group')),
-    -- A person's `sub` or a group's Keycloak id; its name as it was granted.
-    principal       TEXT NOT NULL,
-    principal_name  TEXT NOT NULL,
-    -- 'user' uses a secret; nothing else is used by a grant.
-    relation        TEXT NOT NULL
-        CHECK (relation = 'manager' OR (relation = 'user' AND secret IS NOT NULL)),
-    created_by      TEXT NOT NULL,
-    created_by_name TEXT NOT NULL,
-    created_at      TEXT NOT NULL,
-    CHECK ((secret IS NOT NULL) + (connection IS NOT NULL) + (graph IS NOT NULL) = 1)
-);
--- A tuple once: the object's NULL columns read as '' so they compare equal.
-CREATE UNIQUE INDEX grants_one_tuple ON grants (
-    coalesce(secret, ''), coalesce(connection, ''), coalesce(graph, ''),
-    principal_kind, principal, relation
-);
-CREATE INDEX grants_of_secret ON grants (secret) WHERE secret IS NOT NULL;
-CREATE INDEX grants_of_connection ON grants (connection) WHERE connection IS NOT NULL;
-CREATE INDEX grants_of_graph ON grants (graph) WHERE graph IS NOT NULL;
-CREATE INDEX grants_to ON grants (principal_kind, principal);
 ";
 
 /// Every table and index a fresh database of `schema` holds.
@@ -494,48 +440,6 @@ mod tests {
         assert!(insert("[]").is_ok());
         assert!(insert("{}").is_err());
         assert!(insert("not json").is_err());
-    }
-
-    /// One tuple, once; one object a row; and a user only of a secret.
-    #[test]
-    fn the_grants_table_holds_well_formed_tuples_only() {
-        let conn = rusqlite::Connection::open_in_memory().unwrap();
-        conn.execute_batch("PRAGMA foreign_keys=ON;").unwrap();
-        apply_schema(&conn).unwrap();
-        conn.execute_batch(
-            r#"
-            INSERT INTO credentials (name, spec, owner, owner_name, created_by, created_by_name, created_at)
-                VALUES ('s', x'00', 'u-1', 'Ana', 'u-1', 'Ana', 't');
-            INSERT INTO connections (name, credential, target, owner, owner_name, created_by, created_by_name, created_at)
-                VALUES ('c', 's', '{"direction":"source"}', 'u-1', 'Ana', 'u-1', 'Ana', 't');
-            "#,
-        )
-        .unwrap();
-        let grant = |object: &str, relation: &str| {
-            conn.execute_batch(&format!(
-                "INSERT INTO grants ({object}, principal_kind, principal, principal_name,
-                                     relation, created_by, created_by_name, created_at)
-                     VALUES ('{}', 'user', 'u-2', 'Bruno', '{relation}', 'u-1', 'Ana', 't')",
-                if object == "secret" { "s" } else { "c" }
-            ))
-        };
-        grant("secret", "user").unwrap();
-        grant("secret", "manager").unwrap();
-        grant("connection", "manager").unwrap();
-        assert!(grant("secret", "user").is_err(), "a second of one tuple");
-        assert!(
-            grant("connection", "user").is_err(),
-            "a connection is not used by a grant"
-        );
-        assert!(
-            conn.execute_batch(
-                "INSERT INTO grants (secret, connection, principal_kind, principal, principal_name,
-                                     relation, created_by, created_by_name, created_at)
-                     VALUES ('s', 'c', 'user', 'u-3', 'Caro', 'manager', 'u-1', 'Ana', 't')"
-            )
-            .is_err(),
-            "two objects in one row"
-        );
     }
 
     #[test]

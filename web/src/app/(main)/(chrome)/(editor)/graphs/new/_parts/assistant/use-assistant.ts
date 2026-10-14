@@ -19,6 +19,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
+// eslint-disable-next-line no-restricted-imports -- one listing per opened folder, the profile of the picked files and each Task's answer; each failure is shown in its place, beside the rest
 import { keepPreviousData, useQueries, useQuery } from "@tanstack/react-query";
 import { useTask } from "@kanzo-tech/ai";
 import { type Proposal, runTask } from "@kanzo-tech/ai/task";
@@ -69,7 +70,7 @@ function keptFile(file: FileReference, connections: readonly StorageConnection[]
 const fileOf = (picked: readonly SourceFile[], key: string) => picked.find((f) => f.line.includes(`"${key}"`))?.id ?? key;
 
 /** One thing per file read, with its count and what it holds: what the profile says before any model. */
-export function thingsOf(profiled: Profiled, picked: readonly SourceFile[]): Thing[] {
+function thingsOf(profiled: Profiled, picked: readonly SourceFile[]): Thing[] {
   return profiled.sources.map((s) => ({
     id: fileOf(picked, s.key),
     name: thingName(s.file),
@@ -82,7 +83,7 @@ export function thingsOf(profiled: Profiled, picked: readonly SourceFile[]): Thi
  * The decisions a draft raises, each with the default the profile settles it with, if any, and the
  * person's pick over it.
  */
-export function decisionItems(draft: Draft, profiled: Profiled, chosen: Readonly<Record<string, string>>): DecisionItem[] {
+function decisionItems(draft: Draft, profiled: Profiled, chosen: Readonly<Record<string, string>>): DecisionItem[] {
   const defaults = defaultsOf(profiled);
   return decisionsOf(draft, profiled).map((decision) => ({
     decision,

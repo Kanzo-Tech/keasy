@@ -28,11 +28,13 @@ export async function attachInMemory(
     for (const [at, file] of files.entries()) await engine.registerFileBuffer(names[at]!, file.bytes);
     attached = await attach(name, { engine, url: prefix, ...(signal ? { signal } : {}) });
   } catch (cause) {
-    await drop().catch(() => undefined); // The attach's failure is the one said; a buffer left behind is not.
+    // eslint-disable-next-line no-restricted-syntax -- the attach's failure is the one said; a buffer left behind is not
+    await drop().catch(() => undefined);
     throw cause;
   }
   let detached: Promise<void> | undefined;
   const detach = () =>
+    // eslint-disable-next-line no-restricted-syntax -- one detach, whatever it ends in: a second would drop what the first dropped
     (detached ??= (async () => {
       try {
         await attached.detach();

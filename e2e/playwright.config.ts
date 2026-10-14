@@ -1,5 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
+import { BASE_URL } from "./support/stack/api";
+
 /**
  * The end-to-end suite: the compose stack on :3000, one test per scenario of the failure audit, each
  * breaking one thing and asserting the one view that names it (`expectProblem`). Serial, because a
@@ -41,7 +43,7 @@ export default defineConfig({
   expect: { timeout: 10_000 },
   reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : [["list"]],
   use: {
-    baseURL: process.env.KEASY_URL ?? "http://acme.localhost:3000",
+    baseURL: BASE_URL,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     ...devices["Desktop Chrome"],

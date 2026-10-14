@@ -4,6 +4,7 @@ import { DiscoverPage } from "./app";
 import { signIn } from "./auth/sign-in";
 import { expect, test as base } from "./env";
 import { type Example, seedGraph } from "./seeds";
+import { BASE_URL } from "./stack/api";
 
 /**
  * The smoke suite's fixtures: the dev seed graphs, run once per worker from the programs `make
@@ -42,7 +43,7 @@ function watch(context: BrowserContext): string[] {
 async function guardedSeed(browser: Browser, name: string, example: Example, within: number) {
   const context = await browser.newContext({
     storageState: { cookies: [], origins: [] },
-    baseURL: process.env.KEASY_URL ?? "http://acme.localhost:3000",
+    baseURL: BASE_URL,
   });
   const errors = watch(context);
   const page = await context.newPage();

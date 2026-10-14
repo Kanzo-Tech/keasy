@@ -111,11 +111,6 @@ fn plaintext(spec: &SecretSpec) -> Vec<u8> {
             "role_arn": role_arn,
             "external_id": external_id,
         }),
-        SecretSpec::AzureAccountKey { account, key } => json!({
-            "kind": "azure_account_key",
-            "account": account,
-            "key": key.expose_secret(),
-        }),
         SecretSpec::AzureServicePrincipal {
             account,
             tenant_id,

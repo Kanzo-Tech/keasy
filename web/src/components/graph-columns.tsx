@@ -3,7 +3,7 @@
 import { Badge } from "@kanzo-tech/ui";
 import { type ColumnDef, facetFilterFn, sortableHeader } from "@kanzo-tech/ui/table";
 import type { Schemas } from "@/lib/api/client";
-import { copyOf } from "@/lib/errors";
+import { titleOf } from "@/lib/errors";
 import { runProblem, STATUS } from "@/lib/graphs";
 import { formatDate, formatGraphDuration } from "@/lib/ui/format";
 
@@ -23,7 +23,8 @@ export const GRAPH_COLUMNS: ColumnDef<Graph>[] = [
     cell: ({ getValue, row }) => {
       const { label, variant } = STATUS[getValue<GraphStatus>()];
       // A failure keasy has its own words for says them; any other says "Failed".
-      const worded = row.original.status === "failed" ? copyOf(runProblem(row.original)?.code ?? "")?.title : undefined;
+      const problem = runProblem(row.original);
+      const worded = row.original.status === "failed" && problem ? titleOf(problem) : undefined;
       if (worded) return <Badge variant="destructive">{worded}</Badge>;
       return <Badge variant={variant}>{label}</Badge>;
     },

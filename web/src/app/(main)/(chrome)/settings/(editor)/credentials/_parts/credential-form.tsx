@@ -37,14 +37,13 @@ import {
   SegmentGroup,
   Separator,
   Skeleton,
-  toast,
 } from "@kanzo-tech/ui";
 import { revalidateLogic, useForm } from "@tanstack/react-form";
 import * as z from "zod";
 import { Link, useRouter } from "@kanzo-tech/navigation/next";
 import { schemaOf, type JsonSchema } from "@/lib/api/spec";
 import { UnsavedChangesGuard } from "@/lib/ui/unsaved-changes-guard";
-import { $api, type Inputs, invalidate } from "@/lib/api/client";
+import { $api, type Inputs } from "@/lib/api/client";
 import { CLOUDS, cloudOf, type Credential } from "@/lib/connections";
 import { blocked } from "@/lib/permissions";
 import { requiredName } from "@/lib/resource-name";
@@ -144,13 +143,16 @@ function Stored({ name }: { name: string }) {
 
 function Form({ credential }: { credential?: Credential }) {
   const router = useRouter();
-  const done = async (title: string) => {
-    toast.create({ title, type: "success" });
-    await invalidate("/v1/secrets", "/v1/connections");
-    router.push("/settings/credentials");
-  };
-  const create = $api.useMutation("post", "/v1/secrets", { onSuccess: () => done("Credential validated and saved") });
-  const update = $api.useMutation("patch", "/v1/secrets/{name}", { onSuccess: () => done("Credential rotated") });
+  const invalidates = ["/v1/secrets", "/v1/connections"] as const;
+  const done = () => router.push("/settings/credentials");
+  const create = $api.useMutation("post", "/v1/secrets", {
+    meta: { success: "Credential validated and saved", invalidates },
+    onSuccess: done,
+  });
+  const update = $api.useMutation("patch", "/v1/secrets/{name}", {
+    meta: { success: "Credential rotated", invalidates },
+    onSuccess: done,
+  });
   const failure = create.error ?? update.error;
   const sending = create.isPending || update.isPending || create.isSuccess || update.isSuccess;
 

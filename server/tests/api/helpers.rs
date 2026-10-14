@@ -104,7 +104,6 @@ pub async fn spawn_app_with(options: Options) -> TestApp {
         oidc: OidcSettings {
             issuer_url: realm.issuer.clone(),
             client_id: CLIENT.into(),
-            audience: "keasy-api".into(),
             internal_base_url: None,
         },
     };
@@ -144,19 +143,6 @@ impl TestApp {
         claims.remove("preferred_username");
         claims.extend(profile.as_object().unwrap().clone());
         mint(&self.realm, json!(claims))
-    }
-
-    /// `sub`, holding `roles` here and in the groups `groups` (their ids, as
-    /// the platform's Organization Group Ids mapper writes them).
-    pub fn token_grouped(&self, sub: &str, roles: &[&str], groups: &[&str]) -> String {
-        let mut claims = good(&self.realm);
-        claims["sub"] = json!(sub);
-        claims["organization"] = json!({ ORG: {
-            "id": format!("{ORG}-id"),
-            "groups": groups,
-            "resource_access": { CLIENT: { "roles": roles } }
-        } });
-        mint(&self.realm, claims)
     }
 
     /// `sub`, holding `roles` in organization `org` only.
@@ -332,7 +318,6 @@ impl TestApp {
             secret: credential.into(),
             target,
             owner: actor(by).as_owner(),
-            grants: vec![],
             provenance: Provenance::created(actor(by)),
             validation: None,
             can: Default::default(),

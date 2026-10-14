@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Network, Plus } from "lucide-react";
+import { Network } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -9,42 +9,18 @@ import {
   AlertDialogContent,
   AlertDialogFooter,
   AlertDialogHeader,
-  Button,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyIndicator,
-  EmptyRoot,
-  EmptyTitle,
   SectionBody,
   SectionRoot,
-  Skeleton,
-  toast,
 } from "@kanzo-tech/ui";
-import {
-  actionsColumn,
-  type ColumnDef,
-  DataTableContent,
-  DataTableFacetFilter,
-  DataTablePagination,
-  DataTableRoot,
-  DataTableSearch,
-  DataTableToolbar,
-  DataTableViewOptions,
-  useDataTable,
-} from "@kanzo-tech/ui/table";
-import { Link, useRouter } from "@kanzo-tech/navigation/next";
-import { $api, invalidate, type Schemas } from "@/lib/api/client";
+import { actionsColumn, type ColumnDef, DataTableFacetFilter } from "@kanzo-tech/ui/table";
+import { useSession } from "@kanzo-tech/auth";
+import { $api, type Schemas } from "@/lib/api/client";
 import { hasRunningGraphs, pollWhile, STATUS } from "@/lib/graphs";
-import { toastError } from "@/lib/errors";
 import { blocked } from "@/lib/permissions";
 import { lower, WORDS } from "@/lib/vocabulary";
 import { BlockedMenuItem } from "@/components/blocked";
-import { Boundary, Loading } from "@/components/boundary";
 import { GRAPH_COLUMNS } from "@/components/graph-columns";
-import { settled } from "@/lib/api/settled";
-import { useSession } from "@kanzo-tech/auth";
-import { PAGE_TABLE } from "@/lib/ui/table-heights";
+import { ResourceList } from "@/components/resource-list";
 
 type Graph = Schemas["Graph"];
 type GraphStatus = Schemas["GraphStatus"];
@@ -52,38 +28,15 @@ type GraphStatus = Schemas["GraphStatus"];
 const STATUS_OPTIONS = (Object.keys(STATUS) as GraphStatus[]).map((value) => ({ value, label: STATUS[value].label }));
 
 export default function GraphsPage() {
-  return (
-    <SectionRoot>
-      <SectionBody className="overflow-hidden" scale="page">
-        <Boundary
-          fallback={
-            <Loading>
-              <Skeleton className="h-40 w-full" />
-            </Loading>
-          }
-        >
-          <Graphs />
-        </Boundary>
-      </SectionBody>
-    </SectionRoot>
-  );
-}
-
-function Graphs() {
-  const router = useRouter();
   const editor = useSession().can("editor");
   const [deleting, setDeleting] = useState<Graph | null>(null);
 
-  const graphs = settled(
-    $api.useSuspenseQuery("get", "/v1/graphs", {}, { refetchInterval: pollWhile(hasRunningGraphs) }),
-  );
-
   const { mutate: deleteGraph } = $api.useMutation("delete", "/v1/graphs/{id}", {
-    onSuccess: () => {
-      toast.create({ title: `${WORDS.graph} deleted`, type: "success" });
-      void invalidate("/v1/graphs");
+    meta: {
+      success: `${WORDS.graph} deleted`,
+      failure: `Could not delete the ${lower(WORDS.graph)}`,
+      invalidates: ["/v1/graphs"],
     },
-    onError: (err) => toastError(err, `Could not delete the ${lower(WORDS.graph)}`),
   });
 
   const columns = useMemo<ColumnDef<Graph>[]>(
@@ -108,84 +61,42 @@ function Graphs() {
     ],
     [editor],
   );
-  // TanStack's page reset is queued as a microtask from inside render, so a reset that lands before
-  // this component first commits is a state update React refuses (the facet filter's row model is
-  // what reaches it), and every poll that changes a row sent the reader back to page one. The page
-  // resets where it should: when the reader filters.
-  const table = useDataTable({
-    columns,
-    data: graphs,
-    autoResetPageIndex: false,
-    onColumnFiltersChange: () => table.setPageIndex(0),
-  });
 
-  return graphs.length === 0 ? (
-    <EmptyRoot>
-      <EmptyHeader>
-        <EmptyIndicator variant="icon">
-          <Network />
-        </EmptyIndicator>
-        <EmptyTitle asChild>
-          <h2>No {lower(WORDS.graphs)} yet</h2>
-        </EmptyTitle>
-        <EmptyDescription>
-          A {lower(WORDS.graph)} is a {lower(WORDS.recipe)} over your connections, run to write its{" "}
-          {lower(WORDS.output)} to {lower(WORDS.storage)}.
-        </EmptyDescription>
-      </EmptyHeader>
-      {editor && (
-        <EmptyContent>
-          <Button asChild size="sm" variant="outline">
-            <Link href="/graphs/new">New {lower(WORDS.graph)}</Link>
-          </Button>
-        </EmptyContent>
-      )}
-    </EmptyRoot>
-  ) : (
-    <>
-      <DataTableRoot className={PAGE_TABLE.root} table={table}>
-        <DataTableToolbar>
-          <DataTableSearch column="name" placeholder={`Search ${lower(WORDS.graphs)}...`} />
-          <DataTableFacetFilter column="status" label="Status" options={STATUS_OPTIONS} size="sm" />
-          <div className="ms-auto flex items-center gap-2">
-            <DataTableViewOptions />
-            {editor && (
-              <Button asChild size="sm">
-                <Link href="/graphs/new">
-                  <Plus />
-                  New {lower(WORDS.graph)}
-                </Link>
-              </Button>
-            )}
-          </div>
-        </DataTableToolbar>
-        <DataTableContent<Graph>
-          className={PAGE_TABLE.content}
-          maxHeight={PAGE_TABLE.maxHeight}
-          stickyHeader
-          empty={`No ${lower(WORDS.graphs)} match this filter.`}
+  return (
+    <SectionRoot>
+      <SectionBody className="overflow-hidden" scale="page">
+        <ResourceList
+          columns={columns}
+          create={editor ? { label: `New ${lower(WORDS.graph)}`, href: "/graphs/new" } : undefined}
+          empty={{
+            icon: <Network />,
+            title: `No ${lower(WORDS.graphs)} yet`,
+            description: `A ${lower(WORDS.graph)} is a ${lower(WORDS.recipe)} over your connections, run to write its ${lower(WORDS.output)} to ${lower(WORDS.storage)}.`,
+          }}
+          filters={<DataTableFacetFilter column="status" label="Status" options={STATUS_OPTIONS} size="sm" />}
           // One home per graph: its page, a draft's included; the recipe editor is reached from there.
-          onRowClick={(graph) => router.push(`/graphs/${graph.id}`)}
+          href={(graph) => `/graphs/${graph.id}`}
+          noun={lower(WORDS.graphs)}
+          query={{ ...$api.queryOptions("get", "/v1/graphs"), refetchInterval: pollWhile(hasRunningGraphs) }}
         />
-        <DataTablePagination />
-      </DataTableRoot>
-      <AlertDialog onOpenChange={(d) => !d.open && setDeleting(null)} open={deleting !== null}>
-        <AlertDialogContent size="sm">
-          <AlertDialogHeader
-            description={`${deleting?.name ?? deleting?.id ?? ""} and its record go. Its ${lower(WORDS.output)} stays in ${lower(WORDS.storage)}.`}
-            title={`Delete this ${lower(WORDS.graph)}?`}
-          />
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deleting && deleteGraph({ params: { path: { id: deleting.id } } })}
-              variant="destructive"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+        <AlertDialog onOpenChange={(d) => !d.open && setDeleting(null)} open={deleting !== null}>
+          <AlertDialogContent size="sm">
+            <AlertDialogHeader
+              description={`${deleting?.name ?? deleting?.id ?? ""} and its record go. Its ${lower(WORDS.output)} stays in ${lower(WORDS.storage)}.`}
+              title={`Delete this ${lower(WORDS.graph)}?`}
+            />
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => deleting && deleteGraph({ params: { path: { id: deleting.id } } })}
+                variant="destructive"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </SectionBody>
+    </SectionRoot>
   );
 }

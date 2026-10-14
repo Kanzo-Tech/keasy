@@ -117,7 +117,6 @@ pub async fn create(
         secret,
         target,
         owner: by.as_owner(),
-        grants: vec![],
         provenance: Provenance::created(by.clone()),
         validation: None,
         can: Default::default(),

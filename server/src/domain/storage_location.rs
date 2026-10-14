@@ -32,9 +32,7 @@ impl StoreKind {
     pub fn of(credential: &SecretSpec) -> Self {
         match credential {
             SecretSpec::S3 { .. } => Self::S3,
-            SecretSpec::AzureAccountKey { .. } | SecretSpec::AzureServicePrincipal { .. } => {
-                Self::Azure
-            }
+            SecretSpec::AzureServicePrincipal { .. } => Self::Azure,
         }
     }
 }
@@ -151,8 +149,7 @@ impl StorageLocation {
             (Store::S3 { .. }, SecretSpec::S3 { .. }) => {}
             (
                 Store::Azure { account, .. },
-                SecretSpec::AzureAccountKey { account: a, .. }
-                | SecretSpec::AzureServicePrincipal { account: a, .. },
+                SecretSpec::AzureServicePrincipal { account: a, .. },
             ) => match account {
                 Some(named) if named != a => {
                     return Err(format!(
@@ -288,9 +285,11 @@ mod tests {
     fn the_account_a_credential_reaches_is_part_of_the_identity() {
         let data = loc("s3://b/data/").within(&s3()).unwrap();
         assert!(data.contains(&loc("s3://b/data/x").within(&s3()).unwrap()));
-        let az = SecretSpec::AzureAccountKey {
+        let az = SecretSpec::AzureServicePrincipal {
             account: "acct".into(),
-            key: SecretString::from("k"),
+            tenant_id: "t".into(),
+            client_id: "c".into(),
+            client_secret: SecretString::from("s"),
         };
         assert!(loc("s3://b/").within(&az).is_err());
         assert!(

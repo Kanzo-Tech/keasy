@@ -29,9 +29,7 @@ import {
 } from "@kanzo-tech/ui";
 import type { Schemas } from "@/lib/api/client";
 import { CorpusProvider, useCorpus } from "@/lib/fossil/corpus";
-import { formatDate, formatGraphDuration } from "@/lib/ui/format";
-import { SchemaDiagram } from "./schema-diagram";
-import type { EdgeTable, VertexType } from "./schema-layout";
+import { counted, formatDate, formatGraphDuration } from "@/lib/ui/format";
 import { PART_TABLE_HEIGHT } from "@/lib/ui/table-heights";
 
 /**
@@ -60,6 +58,18 @@ interface Held {
   name: string;
   rows: number;
   columns: { name: string; type: string }[];
+}
+
+/** A vertex type of the corpus: one `fossil_tables` row of kind `vertex`. */
+interface VertexType {
+  name: string;
+  rows: number;
+}
+
+/** An edge table of the corpus: its `source` and `destination` are the vertex tables it joins. */
+interface EdgeTable extends VertexType {
+  source: string;
+  destination: string;
 }
 
 const sum = (tables: { rows: number }[]) => tables.reduce((n, t) => n + t.rows, 0);
@@ -102,14 +112,14 @@ function Holds({ graph }: { graph: Schemas["Graph"] }) {
           <StatValue>
             <FormatNumber notation="compact" value={sum(types)} />
           </StatValue>
-          <StatDescription>{count(types.length, "type")}</StatDescription>
+          <StatDescription>{counted(types.length, "type")}</StatDescription>
         </StatRoot>
         <StatRoot>
           <StatLabel>Edges</StatLabel>
           <StatValue>
             <FormatNumber notation="compact" value={sum(edges)} />
           </StatValue>
-          <StatDescription>{count(edges.length, "relation")}</StatDescription>
+          <StatDescription>{counted(edges.length, "relation")}</StatDescription>
         </StatRoot>
         <StatRoot>
           <StatLabel>Run took</StatLabel>
@@ -117,10 +127,6 @@ function Holds({ graph }: { graph: Schemas["Graph"] }) {
           <StatDescription>{formatDate(graph.completed_at)}</StatDescription>
         </StatRoot>
       </div>
-
-      <Part title="Schema">
-        <SchemaDiagram edges={edges} types={types} />
-      </Part>
 
       <Part title="Vertices">
         <Table maxHeight={PART_TABLE_HEIGHT} stickyHeader>
@@ -142,7 +148,7 @@ function Holds({ graph }: { graph: Schemas["Graph"] }) {
         <CollapsibleTrigger asChild>
           <Button className="-ms-2.5" variant="ghost">
             <span className="font-semibold">Edges</span>
-            <span className="text-muted-foreground">{count(edges.length, "relation")}</span>
+            <span className="text-muted-foreground">{counted(edges.length, "relation")}</span>
             <CollapsibleIndicator />
           </Button>
         </CollapsibleTrigger>
@@ -175,7 +181,6 @@ function Holds({ graph }: { graph: Schemas["Graph"] }) {
   );
 }
 
-const count = (n: number, word: string) => `${n.toLocaleString()} ${word}${n === 1 ? "" : "s"}`;
 
 /** A vertex type's row, and under it, opened, the columns its table holds. */
 function Columns({ table }: { table: Held }) {

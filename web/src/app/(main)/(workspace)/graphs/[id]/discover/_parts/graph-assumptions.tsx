@@ -1,6 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
+// eslint-disable-next-line no-restricted-imports -- a footnote: a failed read of the graph's conversation leaves the Info panel as it was
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@kanzo-tech/navigation/next";
 import { Badge, Button } from "@kanzo-tech/ui";

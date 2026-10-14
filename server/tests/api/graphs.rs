@@ -56,7 +56,7 @@ async fn a_graph_is_read_by_all_run_by_editors_and_changed_by_its_owner_or_an_ad
         .await;
     assert_eq!(
         graph["can"],
-        json!({ "use": true, "operate": true, "manage": true, "transfer": true })
+        json!({ "use": true, "operate": true, "manage": true })
     );
     assert_eq!(graph["owner"]["id"], "u-1");
     let id = graph["id"].as_str().unwrap().to_string();
@@ -71,7 +71,7 @@ async fn a_graph_is_read_by_all_run_by_editors_and_changed_by_its_owner_or_an_ad
             .send(Method::GET, "/v1/graphs", token, json!(null))
             .await;
         assert_eq!(listed.as_array().unwrap().len(), 1, "{who} lists it");
-        let can = json!({ "use": true, "operate": operate, "manage": manage, "transfer": manage });
+        let can = json!({ "use": true, "operate": operate, "manage": manage });
         assert_eq!(listed[0]["can"], can, "{who}");
         let (status, read) = app.send(Method::GET, &path, token, json!(null)).await;
         assert_eq!((status, &read["can"]), (StatusCode::OK, &can), "{who}");

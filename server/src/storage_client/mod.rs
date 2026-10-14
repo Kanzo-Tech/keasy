@@ -231,12 +231,6 @@ pub fn store(
             }
             CloudStore::S3(builder.build().map_err(|e| e.to_string())?)
         }
-        SecretSpec::AzureAccountKey { account, key } => CloudStore::Azure(
-            azure(bucket, account)
-                .with_access_key(key.expose_secret())
-                .build()
-                .map_err(|e| e.to_string())?,
-        ),
         SecretSpec::AzureServicePrincipal {
             account,
             tenant_id,

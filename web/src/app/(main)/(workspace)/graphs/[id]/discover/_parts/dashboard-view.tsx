@@ -64,9 +64,12 @@ function useShowTile(
     const group = figure ? "dashboard-figures" : "dashboard-tiles";
     const until = performance.now() + SHOW_WITHIN_MS;
     let frame = 0;
+    let settling: ResizeObserver | undefined;
+    const done = new AbortController();
     const find = () => {
-      const element = within.current?.querySelector(`[data-slot="${group}"]`)?.children[index];
-      if (!element) {
+      const board = within.current;
+      const element = board?.querySelector(`[data-slot="${group}"]`)?.children[index];
+      if (!board || !element) {
         if (performance.now() < until) frame = requestAnimationFrame(find);
         return;
       }
@@ -76,9 +79,23 @@ function useShowTile(
         [{ outline: "2px solid var(--color-primary)", outlineOffset: "2px" }, { outline: "2px solid transparent", outlineOffset: "2px" }],
         { duration: RING_MS, easing: "ease-in" },
       );
+      // The tiles above it are still drawing, and each one that grows pushes it down: it is kept in
+      // view while the board settles, until the reader scrolls for themselves or the time is up.
+      settling = new ResizeObserver(() => {
+        if (performance.now() > until) return done.abort();
+        element.scrollIntoView({ block: "center", behavior: "auto" });
+      });
+      settling.observe(board);
+      for (const type of ["wheel", "touchstart", "keydown"] as const) {
+        window.addEventListener(type, () => done.abort(), { signal: done.signal, passive: true });
+      }
+      done.signal.addEventListener("abort", () => settling?.disconnect());
     };
     find();
-    return () => cancelAnimationFrame(frame);
+    return () => {
+      cancelAnimationFrame(frame);
+      done.abort();
+    };
     // Once per press — `shown` is a new object each time *Open on the dashboard* is pressed — and not
     // again when the reader comes back to the relation later.
     // eslint-disable-next-line react-hooks/exhaustive-deps

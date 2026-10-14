@@ -2,7 +2,7 @@
 
 import { useCallback } from "react";
 import type { Profiled } from "@fossil-lang/types";
-import { http, invalidate, type Schemas } from "@/lib/api/client";
+import { connectionsQuery, http, invalidate, type Schemas } from "@/lib/api/client";
 import { queryClient } from "@/lib/api/query-client";
 import { startBuild, useProgramBuild, type BuildProgress, type BuildSteps } from "@/lib/fossil/build";
 import { startRun } from "@/app/(main)/(chrome)/graphs/[id]/_parts/use-browser-graph-runner";
@@ -26,10 +26,7 @@ const UNNAMED = "New graph";
 /** The sink the graph lands in: the one named, else the workspace's first. */
 async function sinkOf(named: string | undefined): Promise<string> {
   if (named) return named;
-  const connections = await queryClient.fetchQuery({
-    queryKey: ["get", "/v1/connections", {}],
-    queryFn: async ({ signal }) => (await http.GET("/v1/connections", { signal })).data ?? [],
-  });
+  const connections = await queryClient.fetchQuery(connectionsQuery);
   const sink = connections.find((c) => c.target.direction === "sink");
   if (!sink) throw new Error("There is no sink connection to build the graph into. Add one under Connections.");
   return sink.name;

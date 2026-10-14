@@ -10,23 +10,23 @@ vi.mock("@kanzo-tech/mosaic", () => ({ engine: async () => ENGINE }));
 vi.mock("@/lib/fossil/host", () => ({ host: { name: "keasy" } }));
 vi.mock("@/lib/errors", () => ({ toastError: vi.fn() }));
 const FILES = [{ path: "fossil.json", bytes: new Uint8Array([123, 125]) }];
-const runInWorker = vi.fn<(program: string, options: unknown) => Promise<{ report: object; files: typeof FILES }>>(async () => ({ report: {}, files: FILES }));
-vi.mock("./run-worker", () => ({ runInWorker }));
+const runInto = vi.fn<(program: string, options: unknown) => Promise<{ report: object; files: typeof FILES }>>(async () => ({ report: {}, files: FILES }));
+vi.mock("./executor", () => ({ runInto }));
 type Attached = { name: string; detach: () => Promise<void> };
-const attachInMemory = vi.fn<(name: string, files: unknown, options: unknown) => Promise<Attached>>(async (name) => ({ name, detach: vi.fn(async () => {}) }));
-vi.mock("./memory-corpus", () => ({ attachInMemory }));
+const attach = vi.fn<(name: string, options: unknown) => Promise<Attached>>(async (name) => ({ name, detach: vi.fn(async () => {}) }));
+vi.mock("@fossil-lang/corpus", () => ({ attach }));
 
 const { QueryClient, QueryClientProvider } = await import("@tanstack/react-query");
 const { corpusKey } = await import("./corpus");
 const { previewName, previewQuery, usePreview } = await import("./preview");
 
 describe("the assistant's preview", () => {
-  it("runs the program into memory in the run's worker, and attaches the files it answered", async () => {
+  it("runs the program into memory, and attaches the files it answered", async () => {
     const client = new QueryClient();
     const profiled = { descriptors: [], undescribed: [] } as never;
     const corpus = await client.fetchQuery(previewQuery("program", profiled));
-    expect(runInWorker).toHaveBeenCalledWith("program", expect.objectContaining({ host: { name: "keasy" }, into: "memory", profiled }));
-    expect(attachInMemory).toHaveBeenCalledWith(previewName("program"), FILES, expect.objectContaining({ engine: ENGINE }));
+    expect(runInto).toHaveBeenCalledWith("program", expect.objectContaining({ host: { name: "keasy" }, into: "memory", profiled }));
+    expect(attach).toHaveBeenCalledWith(previewName("program"), expect.objectContaining({ engine: ENGINE, files: FILES }));
     expect(corpus).toMatchObject({ name: previewName("program"), engine: ENGINE });
     expect(client.getQueryData(corpusKey(previewName("program")))).toBe(corpus);
   });
@@ -56,7 +56,7 @@ describe("the assistant's preview", () => {
     expect(first.name).toBe(previewName("first"));
 
     let land!: () => void;
-    attachInMemory.mockImplementationOnce(
+    attach.mockImplementationOnce(
       (name) => new Promise((resolve) => (land = () => resolve({ name, detach: vi.fn(async () => {}) }))),
     );
     await act(async () => render("second"));
@@ -69,7 +69,7 @@ describe("the assistant's preview", () => {
 
   it("fails with the run's problem, and runs again when asked", async () => {
     const client = new QueryClient();
-    runInWorker.mockRejectedValueOnce(new Error("over budget"));
+    runInto.mockRejectedValueOnce(new Error("over budget"));
     const seen: ReturnType<typeof usePreview>[] = [];
     const last = () => seen.at(-1);
     function Probe() {

@@ -2,17 +2,17 @@
 
 // eslint-disable-next-line no-restricted-imports -- the preview fails as a state of the chat's, beside the decisions that changed it, and keeps the corpus it had
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { attach } from "@fossil-lang/corpus";
 import type { Profiled } from "@fossil-lang/types";
 
 import { corpusOf, type Corpus } from "./corpus";
+import { runInto } from "./executor";
 import { host } from "./host";
-import { attachInMemory } from "./memory-corpus";
-import { runInWorker } from "./run-worker";
 
 /**
- * The assistant's preview: the program run over the first rows of each source, in this tab's run
+ * The assistant's preview: the program run over the first rows of each source, in fossil's run
  * worker and into memory (`into: "memory"`, `executor.ts`), and its corpus attached to the page's
- * engine from those bytes (`memory-corpus.ts`) — nothing written to storage, nothing asked of keasy
+ * engine from those bytes (fossil's `attach(name, { engine, files })`) — nothing written to storage, nothing asked of keasy
  * but the read credentials. The chat answers the person's questions over it, and a decision changed
  * is a program changed, which runs it again: 200 rows, in memory (docs/design/assistant.md, *the
  * preview is in the chat*).
@@ -41,8 +41,8 @@ export function previewName(program: string): string {
 export function previewQuery(program: string, profiled: Profiled | null) {
   const name = previewName(program);
   return corpusOf(name, async (engine, signal) => {
-    const { files } = await runInWorker(program, { host, into: "memory", ...(profiled ? { profiled } : {}), signal });
-    return attachInMemory(name, files, { engine, signal });
+    const { files } = await runInto(program, { host, into: "memory", ...(profiled ? { profiled } : {}), signal });
+    return attach(name, { engine, files, signal });
   });
 }
 

@@ -1,14 +1,15 @@
-import { type CorpusFile, run } from "@fossil-lang/executor";
-import type { Host, Profiled, RunReport } from "@fossil-lang/types";
+import { run } from "@fossil-lang/executor";
+import type { CorpusFile, Host, Profiled, RunReport } from "@fossil-lang/types";
 
 /**
  * keasy's one door to fossil's executor: every run — a graph's, written under its job, and the
  * assistant's preview, answered in memory — goes through {@link runInto}, so a change to fossil's
  * `run` is one edit here.
  *
- * fossil 0.3.0-alpha.31's `run(program, { host, into, … })` says where the corpus goes: `{ job }`
- * writes it under the job's prefix with a credential the host vends, and answers the report;
- * `"memory"`, with a `limit` of rows per source, writes nothing and answers the corpus's files.
+ * fossil 0.3.0-alpha.32's `run(program, { host, into, … })` runs in a worker of fossil's own, so the
+ * page paints and a Stop is pressed while it does, and says where the corpus goes: `{ job }` writes it
+ * under the job's prefix with a credential the host vends, and answers the report; `"memory"`, with a
+ * `limit` of rows per source, writes nothing and answers the corpus's files.
  */
 
 /** The rows of each source a preview reads. */

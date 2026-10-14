@@ -3,7 +3,7 @@ import type { Profiled } from "@fossil-lang/types";
 import { http, invalidate, retryable, type Schemas } from "@/lib/api/client";
 import { bounds } from "@/lib/api/spec";
 import { host } from "@/lib/fossil/host";
-import { runInWorker } from "@/lib/fossil/run-worker";
+import { runInto } from "@/lib/fossil/executor";
 import { toastError, wireOf } from "@/lib/errors";
 
 /**
@@ -164,11 +164,11 @@ export function startRun(graph: Schemas["Graph"], { profiled }: { profiled?: Pro
   const ended = (async (): Promise<RunOutcome> => {
     try {
       // `run` reads every document and source the program names through the host, writes the
-      // corpus under the graph, and answers its report or throws its `FossilError` — in a worker of
-      // its own, so the page paints and its Stop is pressable while it does (`run-worker.ts`). The
+      // corpus under the graph, and answers its report or throws its `FossilError` — in fossil's own
+      // worker, so the page paints and its Stop is pressable while it does. The
       // report crosses untouched — `GraphStatusReport.report` is opaque JSON on the server — and is
       // asked again for as long as the lease is ours.
-      const { report } = await runInWorker(program, { host, into: { job: graphId }, profiled, signal: run.signal });
+      const { report } = await runInto(program, { host, into: { job: graphId }, profiled, signal: run.signal });
       ran = true;
       await held.report(() => reportStatus(graphId, { status: "completed", report }));
       return { status: "completed" };

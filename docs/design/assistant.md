@@ -215,15 +215,11 @@ retry; nothing downstream runs on a refused artefact.
 
 **Built 2026-10-13.** Once there is a program, it runs over the first 200 rows
 of each source **into memory** — fossil's `run(program, { host, into: "memory", limit: 200 })`, in
-this tab's run worker, which answers the corpus's files as bytes and writes nothing — and the files are
-attached to the assistant page's engine from those bytes: each registered with DuckDB-WASM as a buffer
-under a prefix of its own, and fossil's `attach` pointed at that prefix as a corpus at a URL, which
-needs nothing of fossil it lacks (`lib/fossil/memory-corpus.ts`). **Direction (2026-10-13):** fossil
-reads what fossil wrote — `@fossil-lang/corpus`'s `attach({ files })` takes the `CorpusFile[]` that
-`into: "memory"` answers, registers and drops the buffers itself, and `memory-corpus.ts` and its test
-go (~125 lines; `corpus-attach` and `corpus-lifetime`'s tests shrink with it). *What would reverse
-it:* fossil declining a third `attach` form — then keasy keeps its 44 lines, and says why on fossil's
-page, not here. `usePreview(program, profiled)`
+fossil's run worker, which answers the corpus's files as bytes and writes nothing — and the files are
+attached to the assistant page's engine from those bytes with `@fossil-lang/corpus`'s
+`attach(name, { engine, files })` (fossil 0.3.0-alpha.32), which registers the buffers under a prefix
+of their own and gives them back on detach: fossil reads what fossil wrote. *What would reverse it:*
+fossil dropping that `attach` form — then keasy registers the buffers itself again. `usePreview(program, profiled)`
 (`lib/fossil/preview.ts`) is the hook: `idle`, `running` — the last corpus kept on screen —, `ready`
 or `failed`, each corpus named by its program and cached as a graph's is, so a decision changed is a
 preview of its own and the one it replaces is given back once nothing reads it. Inside `CorpusScope`
@@ -397,16 +393,14 @@ leave the production bundle, in the library, and keasy guards the built bundle a
 **Confirmed 2026-10-12:** `startRun` (`graphs/[id]/_parts/use-browser-graph-runner.ts`) imports
 `@fossil-lang/executor` and calls `run`, which constructs `FossilExecutor` in the calling realm —
 the page. Nothing in `web/src` creates a `Worker`. Today that blocks only a page whose person is
-waiting for a run; with a preview run while they talk to the assistant, it would block the chat. The
-executor moves to a worker of its own — done: `lib/fossil/run.worker.ts` runs both.
+waiting for a run; with a preview run while they talk to the assistant, it would block the chat.
 
-**Direction (2026-10-13): the worker is fossil's.** Nothing in `lib/fossil/run-worker.ts` (168 lines,
-its test 139, `run.worker.ts` 6) is keasy's: the message protocol, the `Host` proxied over a port,
-abort, failures rebuilt across `structuredClone` and buffers transferred are what every browser host
-of `@fossil-lang/executor` needs, because `run` holds the thread it is called on. So fossil's `run`
-runs in a worker of its own, and keasy calls it from the page; `executor.ts`'s door stays (~310 lines
-go). *What would reverse it:* a host that needs `run` on its own thread — a Node host, a test — and
-then fossil keeps both and keasy still calls the worker one.
+**The worker is fossil's** (fossil 0.3.0-alpha.32): `run` starts a module worker of its own wherever
+`Worker` is a constructor, proxies the `Host` to the page, and a stopped run terminates it. keasy calls
+it from the page through `lib/fossil/executor.ts`'s door, and keeps no worker, protocol or port of its
+own; the CSP's `worker-src 'self'` admits it, as the bundle serves it. *What would reverse it:* a run
+that needs something only keasy's page holds and fossil's protocol cannot carry — then that crosses
+in fossil's protocol, not in a second worker here.
 
 ## Cross-origin isolation
 

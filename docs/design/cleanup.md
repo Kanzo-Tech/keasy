@@ -127,8 +127,7 @@ listener, because the SDK reaches Entra over `https` only, and Azure Blob with a
 its token already. The signer stays: no 1.x crate builds a SAS.
 
 The SDK brings what rejecting `azure_storage` 0.21 was partly about: `time` 0.3 beside `jiff`, and
-`azure_core` 1.1's `hmac` 0.12 and `sha2` 0.10 beside keasy's 0.13 and 0.11 (the lockfile keeps
-`spareval` on `sha2` 0.10, whose `md-5` it shares). The owner took that price for less of keasy's own
+`azure_core` 1.1's `hmac` 0.12 and `sha2` 0.10 beside keasy's 0.13 and 0.11. The owner took that price for less of keasy's own
 code between it and Entra (2026-10-13). *What would reverse it:* an SDK version, or a dependency it
 brings, that breaks the build or an advisory check; or the `https`-only authority host blocking a real
 deployment's Entra — then the token and the key are fetched by hand again, as they were.

@@ -261,7 +261,7 @@ export function useAssistant({
   }, [acceptedKey]);
   const offers: QuestionOffer[] | null =
     accepted && offered.state === "ready"
-      ? offered.proposals.map((p) => ({ id: p.id, text: p.value.text, rationale: `Reads ${p.value.fields.map((f) => spoken(f.slice(f.indexOf(".") + 1))).join(", ")}` }))
+      ? offered.proposals.map((p) => ({ id: p.id, text: p.value.text, rationale: `Reads ${p.value.fields.map(spoken).join(", ")}` }))
       : null;
   // A chip is answerable by construction: the resolver reached it before it was offered.
   const offeredTexts = new Set((offers ?? []).map((o) => o.text));
@@ -269,7 +269,7 @@ export function useAssistant({
   const marked = useQueries({
     queries: typed.map((q) => ({
       queryKey: ["assistant", "answerable", acceptedKey, q.text],
-      queryFn: ({ signal }: { signal: AbortSignal }) => isAnswerable(q.text, accepted!, profiled!, { model, signal }),
+      queryFn: ({ signal }: { signal: AbortSignal }) => isAnswerable(q.text, accepted!, { model, signal }),
       enabled: accepted !== null,
       retry: false,
       staleTime: Infinity,

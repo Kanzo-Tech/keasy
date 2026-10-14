@@ -2,10 +2,10 @@
 
 import { useEffect } from "react";
 import { MessageCircleQuestion, Sparkles } from "lucide-react";
-import { AnswerCard, askEdit, AskChips, type AskOutput } from "@kanzo-tech/ai/data";
 import { Spinner } from "@kanzo-tech/ui";
+import { askParts } from "@/components/ask-parts";
 import { Boundary } from "@/components/boundary";
-import { describeProblem, ProblemView } from "@/components/problem-view";
+import { ProblemView } from "@/components/problem-view";
 import { useModelLoad } from "@/lib/ai";
 import { useCorpusAsk } from "@/lib/fossil/ask";
 import { type Corpus, CorpusScope } from "@/lib/fossil/corpus";
@@ -15,9 +15,6 @@ import { Said } from "./turns";
 
 /** How many rows of each file the preview reads: `run`'s `limit` for `into: "memory"`. */
 const ROWS = 200;
-
-/** A tool call that will never settle: the chat is not streaming it, and it has no output. */
-const UNSETTLED = new Set(["input-streaming", "input-available"]);
 
 export type Preview = PreviewState & { rerun: () => void };
 
@@ -95,11 +92,12 @@ function Answers({ corpus, questions }: { corpus: Corpus; questions: readonly Qu
 
 /**
  * Ask over the preview, as Discover's panel runs it (`useCorpusAsk`): each kept question sent in turn
- * once the model is ready — one at a time, as a chat answers — and each answer an `AnswerCard` with
- * its `AskChips`, which ask an edited spec again with no model.
+ * once the model is ready — one at a time, as a chat answers — and each part drawn as `Chat` draws it
+ * (`askParts`): an answer as an `AnswerCard` with its `AskChips`, which ask an edited spec again with
+ * no model, and a decision as a question.
  */
 function Asked({ questions }: { questions: readonly Question[] }) {
-  const { chat, graph, over } = useCorpusAsk();
+  const { chat, graph } = useCorpusAsk();
   const ready = useModelLoad().state === "ready";
   const { messages, status, sendMessage } = chat;
   const sent = messages.filter((m) => m.role === "user").length;
@@ -110,6 +108,7 @@ function Asked({ questions }: { questions: readonly Question[] }) {
   }, [next, sendMessage]);
 
   const streaming = status === "streaming" || status === "submitted";
+  const parts = askParts({ graph, send: (message) => void sendMessage(message) });
   return (
     <div className="flex flex-col gap-4" data-preview-answers="">
       {!ready && <Working>Preparing the model to answer your questions…</Working>}
@@ -129,15 +128,10 @@ function Asked({ questions }: { questions: readonly Question[] }) {
                     {part.text}
                   </p>
                 );
-              if (part.type !== "tool-answer") return null;
-              const stopped = !(streaming && index === messages.length - 1) && UNSETTLED.has(part.state);
-              const spec = part.state === "output-available" ? (part.output as AskOutput).spec : undefined;
-              return (
-                <div className="flex flex-col gap-2" key={key}>
-                  <AnswerCard describe={describeProblem} graph={graph} part={part} stopped={stopped} />
-                  {spec && <AskChips onChange={(edited) => void sendMessage(askEdit(edited))} over={over} spec={spec} />}
-                </div>
-              );
+              if (!part.type.startsWith("data-")) return null;
+              // Its read will never land once the chat is not streaming this message.
+              const draw = parts[part.type.slice("data-".length)];
+              return <div key={key}>{draw?.(part as Parameters<NonNullable<typeof draw>>[0], { stopped: !(streaming && index === messages.length - 1) })}</div>;
             })}
           </div>
         ),

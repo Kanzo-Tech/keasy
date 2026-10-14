@@ -77,6 +77,18 @@ writer. The platform services (Keycloak) move with `KANZO_UI_REF` in
 start on the old volume, which is deleted (`docker volume rm keasy_<alias>-data`) for the server to
 create it again, empty ([`docs/design/permissions.md`](../../docs/design/permissions.md#the-schema)).
 
+**From a release on kanzo-ui 0.45 or before**, delete each organization's saved dashboards once,
+before its first page opens: they name fields `Type.column`, and kanzo-ui 0.46 names a field by its
+path from the relation's root (`country`, `affiliation.name`), so a saved tile would read columns
+that are not there. The schema is unchanged; only the rows go:
+
+```sh
+docker run --rm -v keasy_<alias>-data:/var/lib/keasy alpine:3.22 \
+  sh -c 'apk add -q sqlite && sqlite3 /var/lib/keasy/keasy.db "DELETE FROM dashboards;"'
+```
+
+Each graph then draws its automatic dashboard until someone saves another.
+
 ## Who can deploy
 
 The secrets are encrypted with [SOPS](https://getsops.io) to the [age](https://age-encryption.org)

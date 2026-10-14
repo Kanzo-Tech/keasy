@@ -8,7 +8,8 @@ import type { JoinGraph } from "@kanzo-tech/mosaic";
 import { useClauses, useMosaic } from "@kanzo-tech/ui/analytics";
 import { Badge, EmptyDescription, EmptyHeader, EmptyIndicator, EmptyRoot } from "@kanzo-tech/ui";
 import { Chat, ChatSkeleton } from "@kanzo-tech/ai";
-import { AnswerCard, askEdit, AskChips, askOffers, type AnswerRelation, type AskOutput } from "@kanzo-tech/ai/data";
+import { askEdit, askOffers } from "@kanzo-tech/ai/data";
+import { askParts } from "@/components/ask-parts";
 import { describeProblem, ProblemView } from "@/components/problem-view";
 import { ModelStatus } from "@/components/model-status";
 import { useModel, useModelLoad } from "@/lib/ai";
@@ -20,7 +21,7 @@ import { useDashboardStore } from "./dashboard-store";
 
 /**
  * The Ask panel — `@kanzo-tech/ai/data` over the graph (`useCorpusAsk`, which the assistant's chat
- * reads its preview through too): each type of the corpus's join graph read alone, each question one run of the `ask` Task on the page's engine under
+ * reads its preview through too): the corpus's join graph and what it holds, each question one run of the `ask` Task on the page's engine under
  * the page's one selection (`useAskChat`), its own checked offers as the pills (`askOffers`), and each
  * answer an `AnswerCard` — the dashboard tile it is, which *Filter the page to these rows* narrows the
  * page to (when it filters at all), *Add to the dashboard* adds to the Dashboard view's saved
@@ -56,7 +57,7 @@ function AskEmpty() {
  * to ask. Ask's own offers, each checked before it is shown, so every pill is one the chat answers. A
  * failure is drawn in their place, with a retry, and the chat works the same.
  */
-function useStarters(graph: JoinGraph, types: readonly AnswerRelation[]) {
+function useStarters(graph: JoinGraph) {
   const { name: corpus } = useCorpus();
   const { selection } = useMosaic();
   const model = useModel();
@@ -66,7 +67,7 @@ function useStarters(graph: JoinGraph, types: readonly AnswerRelation[]) {
   useClauses(selection);
   const starters = useQuery({
     queryKey: [...corpusKey(corpus), "starters", String(selection.predicate(null) ?? "")],
-    queryFn: ({ signal }) => askOffers({ model, graph, types, selection, signal }),
+    queryFn: ({ signal }) => askOffers({ model, graph, selection, signal }),
     staleTime: Infinity,
     retry: false,
     enabled: ready,
@@ -108,13 +109,13 @@ function SubsetPill() {
 }
 
 function AskChat() {
-  const { chat, graph, types, over } = useCorpusAsk();
+  const { chat, graph } = useCorpusAsk();
   // The download started when the graph opened (`usePreloadModel`); the badge says how it stands.
   const load = useModelLoad();
   // The question the assistant handed over (`?q=`), asked once the model is ready.
   const { sendMessage } = chat;
   useHandedQuestion(useCallback((text: string) => void sendMessage({ text }), [sendMessage]), load.state === "ready");
-  const starters = useStarters(graph, types);
+  const starters = useStarters(graph);
   const adding = useAdding();
 
   return (
@@ -126,6 +127,8 @@ function AskChat() {
         chat={{ ...chat, error: chat.error === undefined ? undefined : coded(chat.error, "llm/failed") }}
         describe={describeProblem}
         className="p-2"
+        // Each answer the dashboard tile it is, with its chips; a decision Ask needs, as a question.
+        data={askParts({ graph, send: (message) => void sendMessage(message), adding })}
         context={
           <>
             <ModelStatus />
@@ -139,18 +142,6 @@ function AskChat() {
         notice={load.state === "ready" ? starters.failure : undefined}
         proposing={starters.proposing}
         proposals={starters.proposals}
-        tools={{
-          answer: (part, { stopped }) => {
-            // What the answer was read as, each part a chip: taking one asks the edited spec, no model.
-            const spec = part.state === "output-available" ? (part.output as AskOutput).spec : undefined;
-            return (
-              <div className="flex flex-col gap-2">
-                <AnswerCard describe={describeProblem} graph={graph} part={part} stopped={stopped} {...adding} />
-                {spec && <AskChips onChange={(next) => void chat.sendMessage(askEdit(next))} over={over} spec={spec} />}
-              </div>
-            );
-          },
-        }}
         translations={{ placeholder: "Ask about your data…" }}
       />
     </div>

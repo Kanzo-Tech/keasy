@@ -151,7 +151,7 @@ Removed outright; a dev stack that needs it says `make clean` once in the releas
 | **Dependencies**: web `openapi-fetch` (only `@keasy/api` uses it), `streamdown` (`@kanzo-tech/ai`'s dependency, not a peer), `@fossil-lang/storage` (the executor's); server `tokio-stream` (no use), `chrono` beside `jiff` (with the Azure step) | `web/package.json`, `server/Cargo.toml` | 5 |
 
 *What would reverse it:* for each variable, a deployment that sets it — then it is set in
-`compose*.yaml` and `prod.env` and documented in the README, not left as a default nobody turns. That
+`compose*.yaml` and documented in the README, not left as a default nobody turns. That
 includes the audience and the bind address, which come back when a deployment needs them. For the
 console URL, an organization whose console is not the Keycloak one `@kanzo-tech/auth` knows. For the
 dependencies, an import of them.

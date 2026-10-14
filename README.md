@@ -201,8 +201,7 @@ An instance's look is declared, not edited: `KEASY_BRANDING_FILE` names a YAML
 file holding exactly what kanzo-ui's theme generator exports (`branding:` with
 `theme_css`, `families`, `default`, `lock`, and optionally `logo`), validated at
 boot and served publicly at `GET /v1/branding`. Without it every shipped theme is
-offered. Example: `infra/dev/branding.example.yml`; in a deployment, mounted from the
-organization's file (`infra/prod/README.md`).
+offered. Example: `infra/dev/branding.example.yml`.
 
 Stored credentials are sealed with `KEASY_SECRET_KEY`: 32 random bytes in base64
 (`openssl rand -base64 32`). The server refuses to start without one, and refuses
@@ -210,23 +209,6 @@ a database whose schema is not the one it ships — there are no migrations: a s
 change is the database dropped and created again, so wipe the volume (`make clean`, or
 `docker compose down -v`) and start the stack again. The latest such change is the
 `conversations` table (the assistant's conversations, and each graph's own).
-
-## Deployment
-
-The same compose files, on one server: `compose.yaml` with `compose.prod.yaml` — the platform as it
-runs in production, Traefik with Let's Encrypt in front — and one file per organization in
-`infra/prod/orgs/`. What a deployment says is versioned in `infra/prod/`: `prod.env` (the release,
-the domain, where the model is served) and `secrets.sops.env`, encrypted with SOPS and age to the keys of whoever
-deploys. On the server:
-
-```sh
-git pull && make deploy
-```
-
-Serving the model, adding or removing an organization, moving to a new release: edit a line in
-`infra/prod/`, commit, `make deploy`. [`infra/prod/README.md`](infra/prod/README.md) is the guide.
-Images are published to GHCR by `.github/workflows/images.yml` on `v*` tags, after the server and
-web CI pass.
 
 ## Development
 
@@ -238,12 +220,13 @@ web CI pass.
 | `make e2e` | The failure scenarios and the smoke over the dev seeds (`e2e/`, Playwright) against the stack, as CI; main checkout only, as Keycloak admits :3000 alone |
 | `make demo` | List the product demos; `DEMO=<name>` or `DEMO=all` records them (see [Demos](#demos)) |
 | `make api` | Regenerate the API contract ([API contract](#api-contract)) |
-| `make deploy`, `make secrets`, `make key` | A deployment ([`infra/prod/README.md`](infra/prod/README.md)) |
 
 Everything else is `docker compose`, which reads `compose.yaml` and `compose.override.yaml` on its
-own. The platform's release is `KANZO_UI_REF`, in the `include:` of `compose.override.yaml` and
-`compose.prod.yaml`, and moves with `@kanzo-tech/*` in `web/package.json`; the Rust toolchain is
-pinned once, in `server/rust-toolchain.toml`.
+own. The platform's release is `KANZO_UI_REF`, in the `include:` of `compose.override.yaml`, and moves with `@kanzo-tech/*` in `web/package.json`; the Rust toolchain is
+pinned once, in `server/rust-toolchain.toml`. Images are published to GHCR by
+`.github/workflows/images.yml` on `v*` tags, after the server and web CI pass. There is no deployment yet:
+what one will need to know is in [`docs/design/permissions.md`](docs/design/permissions.md#when-a-deployment-exists)
+and [`docs/design/assistant.md`](docs/design/assistant.md).
 
 ## Demos
 
@@ -300,11 +283,9 @@ make api   # UPDATE_EXPECT=1 cargo test --test api openapi, then pnpm generate
 api/                @keasy/api: the committed spec, its generated types and the client
 e2e/                @keasy/e2e: one Playwright test per failure scenario, the smoke over the dev seeds, its fixtures, and the `faults` profile's servers
 compose.yaml        keasy as it runs anywhere: the web, its sessions, its declaration in the realm
-compose.server.yaml one organization's server, which each organization's file extends
+compose.server.yaml one organization's server, which compose.override.yaml extends
 compose.override.yaml  development: the platform in its dev shape, builds, the S3 store, the faults
-compose.prod.yaml   a deployment: the platform as deployed, Traefik, secrets from the environment
 infra/dev/          development's organization, secrets, roles, S3 config and seed examples
-infra/prod/         a deployment's values: prod.env, orgs/, secrets.sops.env, and its guide
 server/             Rust API (Dockerfile = release, Dockerfile.dev = cargo-watch)
   src/main.rs       configures from the environment and serves
   src/startup.rs    Application, AppState, the router and the spec it publishes

@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from "react";
 import type { Profiled } from "@fossil-lang/types";
-import { ApiError, http, invalidate, type Schemas } from "@/lib/api/client";
+import { http, invalidate, retryable, type Schemas } from "@/lib/api/client";
 import { bounds } from "@/lib/api/spec";
 import { host } from "@/lib/fossil/host";
 import { runInWorker } from "@/lib/fossil/run-worker";
@@ -13,12 +13,6 @@ import { toastError, wireOf } from "@/lib/errors";
  */
 export const LEASE_MS = bounds.graph_lease_ms;
 export const HEARTBEAT_MS = LEASE_MS / 4;
-
-/** A failure worth asking again: no answer, a server failure or a rate limit — never a refusal. */
-function transient(err: unknown): boolean {
-  if (!(err instanceof ApiError)) return true;
-  return err.status === undefined || err.status >= 500 || err.status === 429;
-}
 
 export interface Lease {
   /** Start renewing the lease every {@link HEARTBEAT_MS}. */
@@ -79,7 +73,7 @@ export function lease(
             },
             (err: unknown) => {
               // The graph ended without us (the sweep, or another tab): nothing left to hold.
-              if (!transient(err)) clearInterval(timer);
+              if (!retryable(err)) clearInterval(timer);
             },
           )
           .finally(() => {
@@ -98,7 +92,7 @@ export function lease(
         try {
           return await send();
         } catch (err) {
-          if (!transient(err) || now() + delay - renewed >= LEASE_MS) throw err;
+          if (!retryable(err) || now() + delay - renewed >= LEASE_MS) throw err;
           await wait(delay);
         }
       }

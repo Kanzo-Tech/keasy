@@ -39,11 +39,36 @@ export class ApiError extends Error {
 }
 
 /**
- * Read the `ErrorBody` a non-2xx response carries — the server's, or the forwarder's problem, the same
- * members under its own code. An answer that names no code is a plain `Error` in its own words: no
- * code was given, so whoever shows it codes it.
+ * A non-2xx answer that names no code — a refusal the forwarder gives none (a cross-site request, a
+ * path under no mount), a proxy's page: its status, and its own words. Whoever shows it codes it.
  */
-export async function apiError(response: Response): Promise<Error> {
+export class HttpError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+    this.name = "HttpError";
+  }
+}
+
+/**
+ * Whether asking again may get another answer, by what HTTP says and nothing else, as the AWS SDKs'
+ * and gRPC's retry policies decide it: no answer at all (a network failure, a deadline), 408, 429 and
+ * any 5xx — the forwarder's `api/unreachable` among them — and never another 4xx, coded or not. A 4xx
+ * is a refusal or a misconfiguration, and the same request meets it again.
+ */
+export function retryable(err: unknown): boolean {
+  const status = err instanceof ApiError || err instanceof HttpError ? err.status : undefined;
+  if (status === undefined) return true;
+  return status === 408 || status === 429 || status >= 500;
+}
+
+/**
+ * Read the `ErrorBody` a non-2xx response carries — the server's, or the forwarder's problem, the same
+ * members under its own code — or, where it names none, an {@link HttpError}.
+ */
+export async function apiError(response: Response): Promise<ApiError | HttpError> {
   const text = await response.clone().text();
   let body: ErrorBody | null = null;
   try {
@@ -53,7 +78,7 @@ export async function apiError(response: Response): Promise<Error> {
     // Not JSON: neither the server nor the forwarder answered with a code, and its words are the message.
   }
   if (body) return new ApiError(body, response.status);
-  return new Error(text.trim().slice(0, 300) || `${response.status} ${response.statusText}`.trim());
+  return new HttpError(text.trim().slice(0, 300) || `${response.status} ${response.statusText}`.trim(), response.status);
 }
 
 const errors: Middleware = {

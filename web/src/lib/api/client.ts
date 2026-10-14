@@ -6,7 +6,7 @@ import { API } from "@/lib/routes";
 
 import { auth } from "./session";
 
-export { ApiError } from "@keasy/api";
+export { ApiError, HttpError, retryable } from "@keasy/api";
 export type { ErrorCode, Inputs, Schemas, paths } from "@keasy/api";
 export { invalidate } from "./query-client";
 

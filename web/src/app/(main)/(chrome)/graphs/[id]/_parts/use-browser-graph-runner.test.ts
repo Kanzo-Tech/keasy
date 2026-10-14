@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/api/client", async () => {
-  const { ApiError } = await import("@keasy/api");
-  return { ApiError, http: {}, invalidate: vi.fn() };
+  const { ApiError, retryable } = await import("@keasy/api");
+  return { ApiError, retryable, http: {}, invalidate: vi.fn() };
 });
 vi.mock("@fossil-lang/corpus", () => ({}));
 vi.mock("@/lib/fossil/host", () => ({ host: {} }));

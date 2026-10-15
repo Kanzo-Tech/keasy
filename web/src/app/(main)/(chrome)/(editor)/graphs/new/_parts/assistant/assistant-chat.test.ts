@@ -451,17 +451,6 @@ describe("the assistant, as a conversation", () => {
     expect(ids.slice(0, 2)).toEqual(["sent", "understood"]);
   });
 
-  it("opens the decision Discover's Change named at its options", async () => {
-    const { host } = mount({
-      selected: new Set(["nobel:laureates.csv"]),
-      decisions: [share],
-      initial: { about: "", asked: true, built: false },
-      reopen: "share",
-    });
-    expect(host.querySelector('[data-assumption="share"]')).not.toBeNull();
-    expect([...host.querySelectorAll<HTMLInputElement>('input[type="radio"]')].map((r) => r.value)).toEqual(["fraction", "amount"]);
-  });
-
   it("a Task that failed is said where the conversation stopped, with a retry", async () => {
     const retry = vi.fn();
     const { host } = mount({
@@ -520,7 +509,7 @@ function keptConversation(): AssistantMessage[] {
   return messagesOf(turns, { files: [{ connection: "nobel", path: "laureates.csv" }], program: "program two" });
 }
 
-function mountFlow(props: { conversation?: string; decision?: string } = {}) {
+function mountFlow(props: { conversation?: string } = {}) {
   const host = document.body.appendChild(document.createElement("div"));
   const root = createRoot(host);
   act(() => root.render(createElement(AssistantFlow, { connections: [], formats: [], ...props })));
@@ -552,7 +541,7 @@ describe("the assistant, wired", () => {
     doubles.useAssistant.mockImplementation(useFakeAssistant);
     doubles.useBuild.mockReturnValue({ progress: null, build: doubles.build });
     doubles.save.mockClear();
-    const host = mountFlow({ conversation: "c1", decision: "award-key" });
+    const host = mountFlow({ conversation: "c1" });
     const one = [...host.querySelectorAll<HTMLInputElement>('input[type="radio"]')].find((r) => r.value === "one")!;
     await act(async () => one.click());
     expect(doubles.usePreview.mock.lastCall![0]).toBe("program one");
@@ -577,32 +566,24 @@ describe("the assistant, wired", () => {
     expect(doubles.build).toHaveBeenCalledTimes(1);
   });
 
-  it("says a conversation a graph was built from is kept as it was", () => {
+  it("opens a conversation a graph was built from as the closed thread: read, and never saved", async () => {
     doubles.stored = keptConversation();
     doubles.built = true;
     doubles.useAssistant.mockImplementation(useFakeAssistant);
     doubles.useBuild.mockReturnValue({ progress: null, build: doubles.build });
+    doubles.save.mockClear();
     const host = mountFlow({ conversation: "c1" });
-    expect(host.querySelector("[data-built]")?.textContent).toContain("A graph was built from this conversation");
     doubles.built = false;
-  });
-
-  it("opened at a decision, says it was built just above it, where the page lands", () => {
-    doubles.stored = keptConversation();
-    doubles.built = true;
-    doubles.useAssistant.mockImplementation(useFakeAssistant);
-    doubles.useBuild.mockReturnValue({ progress: null, build: doubles.build });
-    const scrolled = vi.fn();
-    const original = Element.prototype.scrollIntoView;
-    Element.prototype.scrollIntoView = function (this: Element) {
-      scrolled(this);
-    } as never;
-    const host = mountFlow({ conversation: "c1", decision: "award-key" });
-    Element.prototype.scrollIntoView = original;
-    doubles.built = false;
-    const note = host.querySelector("[data-built]")!;
-    expect(note.nextElementSibling?.getAttribute("data-decision")).toBe("award-key");
-    expect(scrolled).toHaveBeenCalledWith(note);
+    // The bar of a build, and nothing of the note that carried on in a new conversation.
+    expect(host.querySelector("[data-closed]")?.textContent).toContain("stays as it was built");
+    expect(host.querySelector("[data-built]")).toBeNull();
+    expect(button(host, "Build the graph")).toBeUndefined();
+    expect(host.querySelector("textarea")).toBeNull();
+    // Its decisions are read, not taken again.
+    const one = [...host.querySelectorAll<HTMLInputElement>('input[type="radio"]')].find((r) => r.value === "one")!;
+    await act(async () => one.click());
+    expect(doubles.useAssistant.mock.lastCall![0]).toMatchObject({ seed: { chosen: { "award-key": "two" } } });
+    expect(doubles.save).not.toHaveBeenCalled();
   });
 });
 

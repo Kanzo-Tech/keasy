@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { changeHref, decisionsOf, labelOf, toStored } from "./assistant-conversation";
+import { decisionsOf, labelOf, toStored } from "./assistant-conversation";
 
 const share = {
   id: "count/affiliations",
@@ -84,9 +84,5 @@ describe("the decisions of a conversation", () => {
     ]);
     const taken = decisionsOf(messages);
     expect(taken.map((d) => [d.decision.id, d.option, d.assumed, labelOf(d)])).toEqual([["count/affiliations", "two", false, "Two, one per person"]]);
-  });
-
-  it("are changed in the assistant, at the conversation and the decision", () => {
-    expect(changeHref("c 1", "count/x")).toBe("/graphs/new/assistant?conversation=c%201&decision=count%2Fx");
   });
 });

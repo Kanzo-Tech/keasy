@@ -1,8 +1,5 @@
 import { type Code, CODES, type Foreign, helpUrl, isCode, isFossilError } from "@fossil-lang/types";
-import type { AuthErrorCode } from "@kanzo-tech/auth";
-import type { GraphError } from "@kanzo-tech/graph";
-import type { LlmError } from "@kanzo-tech/llm";
-import type { EngineError } from "@kanzo-tech/mosaic";
+import type { ProblemCode } from "@kanzo-tech/kernel";
 import { type ProblemDescription, toast } from "@kanzo-tech/ui";
 
 import { ApiError, type ErrorCode } from "@keasy/api";
@@ -52,9 +49,9 @@ const signIn = { label: "Sign in again", href: "/api/auth/signin" };
 
 /**
  * kanzo-ui's own failures, in the same grammar — its sign-in, its graph, its engine, its model
- * calls — as each library's error class declares them, so a code it renames is a type error here.
+ * calls — as the kernel's registry names them, so a code it renames is a type error here.
  */
-type KanzoCode = AuthErrorCode | GraphError["code"] | EngineError["code"] | LlmError["code"];
+type KanzoCode = ProblemCode;
 
 const registry: Partial<Record<ErrorCode | ClientCode | Code | KanzoCode, Copy>> = {
   "callback/state-mismatch": {

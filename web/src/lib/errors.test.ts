@@ -1,5 +1,5 @@
 import { FossilError, isFossilError } from "@fossil-lang/types";
-import { LlmError } from "@kanzo-tech/llm";
+import { Problem } from "@kanzo-tech/kernel";
 import { describe, expect, it } from "vitest";
 import { ApiError } from "@/lib/api/client";
 import { coded, descriptionOf, fieldProblem, pageOf, wireOf } from "./errors";
@@ -48,7 +48,7 @@ describe("a failure, kept as JSON", () => {
   });
 
   it("keeps a cut-off answer's code through the path every chat failure takes, uncoded or not", () => {
-    const cut = new LlmError("llm/truncated", "The answer did not fit the model's context", { reason: "context" });
+    const cut = new Problem("llm/truncated", "The answer did not fit the model's context", { reason: "context" });
     expect(coded(cut, "llm/failed")).toBe(cut);
     expect(descriptionOf(coded(cut, "llm/failed").code, cut.data)?.detail).toContain("ran out of room");
     expect(coded(new Error("boom"), "llm/failed").code).toBe("llm/failed");

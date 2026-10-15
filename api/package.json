@@ -13,7 +13,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@kanzo-tech/auth": "^0.47.0",
+    "@kanzo-tech/kernel": "^0.47.0",
     "openapi-fetch": "^0.17.0"
   },
   "devDependencies": {

@@ -13,8 +13,8 @@ make dev
 `make dev` brings everything up and returns when the web answers: open
 [http://acme.localhost:3000](http://acme.localhost:3000) and log in at Keycloak. The first one takes
 a while — it compiles the server's dependencies and the web's first pages — and later ones reuse the
-cached volumes. The platform's service, identity, is kanzo-ui's, included by URL at `KANZO_UI_REF`;
-nothing is checked out.
+cached volumes. The platform's services, identity and the session's edge, are kanzo-ui's, included by
+URL at `KANZO_UI_REF`; nothing is checked out.
 
 Every dev value is a literal in `compose.yaml` and `compose.override.yaml`, and a local `.env`
 overrides any of them ([`.env.example`](.env.example)). Anything past `make dev` is plain
@@ -23,7 +23,7 @@ overrides any of them ([`.env.example`](.env.example)). Anything past `make dev`
 
 | What | Where |
 |------|-------|
-| App (web BFF, `/api/v1`) | [http://acme.localhost:3000](http://acme.localhost:3000) — one web, each organization at its subdomain |
+| App (the edge, then the web; `/api/v1`) | [http://acme.localhost:3000](http://acme.localhost:3000) — one web, each organization at its subdomain |
 | Keycloak | [http://localhost:8080](http://localhost:8080) (admin `admin` / `admin`) |
 | API, for curl | `http://localhost:8081` |
 
@@ -146,38 +146,38 @@ position, and 3,164 participations that have ended.
 `s3.localhost` is load-bearing: Docker's DNS answers it inside the compose network
 and `*.localhost` is loopback on the host, so the endpoint the server is given
 (`AWS_ENDPOINT_URL_S3`, and the vended credential names) works from both sides. The issuer is `http://localhost:8080/realms/kanzo`, the one the
-browser sees; the server and the BFF fetch its keys at `http://keycloak:8080`
-(`KEASY_OIDC_INTERNAL_BASE_URL`).
+browser sees; the server and the web fetch its keys at `http://keycloak:8080`
+(`KEASY_OIDC_INTERNAL_BASE_URL`, `KEASY_OIDC_JWKS_URL`).
 
 ## Architecture
 
 ```mermaid
 graph TD
-    Browser --> Web["Web (Next.js BFF)"]
+    Browser --> Edge["Edge (auth-proxy, oauth2-proxy)"]
     Browser -->|"sign-in"| Keycloak["Keycloak (OIDC)"]
+    Edge -->|"access token"| Web["Web (Next.js)"]
+    Edge -->|"OIDC code flow"| Keycloak
+    Edge -->|"sessions"| Valkey[("auth-valkey")]
     Web -->|"/v1 + bearer token"| Server["Server (Rust/Axum)"]
-    Web -->|"OIDC code flow"| Keycloak
-    Web -->|"session records"| Valkey[("Valkey")]
+    Web -->|"JWKS"| Keycloak
     Server -->|"JWKS"| Keycloak
     Server --> SQLite[("SQLite")]
     Keycloak --> PostgreSQL[("PostgreSQL")]
 ```
 
-Authentication is a Backend For Frontend. The **web** is the OIDC relying party
-(`@kanzo-tech/auth/next`, mounted at `/api/auth`): it holds the confidential
-client, keeps the tokens in Valkey (`KEASY_SESSION_STORE_URL`), and gives the
-browser a sealed cookie carrying only the ticket to them. Its proxy is the session's
-authority on every page: it renews the tokens in place before they lapse, ends a session
-Keycloak refused, and sends a navigation without one to sign in and back to the page it
-asked for. **One web serves every organization** — Keycloak's Organizations model, one
-`keasy` client for all of them: the organization is the host's subdomain
-(`<alias>.<KEASY_BASE_DOMAIN>`), the session carries every membership (which is what the
-workspace switcher lists), and a sign-out at Keycloak reaches the web through one
-back-channel logout URL. The **server** is per organization, and so is its data: it is a
-resource server that validates the bearer token against the realm's JWKS (`iss`, `aud`,
-`exp`, `azp`, signature) and holds no client secret, no session and no cookie. The web
-forwards `/api/v1` to the server of the organization the request addresses
-(`KEASY_API_URL`, with `{tenant}` standing for its alias).
+The session is the platform's edge. **auth-proxy** (kanzo-ui's oauth2-proxy, on :3000) is the
+OIDC relying party in front of the web: it holds keasy's confidential client, signs the person in,
+keeps the session in its own Valkey, renews it, and signs out under `/api/auth`, forwarding the
+access token on every request. The **web** holds no secret and no session: it verifies that token
+(`@kanzo-tech/auth/next`) and hands the person to the page. **One web serves every organization** —
+Keycloak's Organizations model, one `keasy` client for all of them: the organization is the host's
+subdomain (`<alias>.<KEASY_BASE_DOMAIN>`), and the token carries every membership (which is what the
+workspace switcher lists) and names `keasy-api` in `aud`. The **server** is per organization, and so
+is its data: it is a resource server that validates the bearer token against the realm's JWKS
+(`iss`, `aud`, `exp`, `azp`, signature), reads the roles its own organization grants, and holds no
+client secret, no session and no cookie. The web forwards `/api/v1` with the same token to the
+server of the organization the request addresses (`KEASY_API_URL`, with `{tenant}` standing for its
+alias), and refuses one the token does not name.
 
 Mappings run in the browser (DuckDB-WASM + `@fossil-lang/*`), and so does source
 introspection; the server hosts connections, vends credentials scoped to one prefix, graphs and the catalog,
@@ -294,5 +294,5 @@ server/             Rust API (Dockerfile = release, Dockerfile.dev = cargo-watch
   src/domain/       the records and parse-don't-validate types
   src/{credentials,connections,graphs}/  persistence and shared behaviour
   tests/api/        black-box HTTP tests through spawn_app, and the spec golden
-web/                Next.js app and BFF (Dockerfile = release, Dockerfile.dev = HMR)
+web/                Next.js app and the API forward (Dockerfile = release, Dockerfile.dev = HMR)
 ```

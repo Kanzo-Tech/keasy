@@ -183,7 +183,7 @@ Each is TanStack Query's own pattern, already a dependency.
 ## e2e
 
 - **A typed API client.** `support/stack/api.ts` is `@keasy/api`'s `createApiClient`, which shares
-  the context's cookies and goes through the BFF. Requests malformed on purpose (scenario 23) keep a
+  the context's cookies and goes through the edge and the web. Requests malformed on purpose (scenario 23) keep a
   raw call.
 - **`page.clock` for windows of time.** `graphs.spec.ts`'s 7 s and 3 s waits assert that nothing
   happens over a window; `page.clock.install()` and `fastForward()` assert the same in milliseconds,

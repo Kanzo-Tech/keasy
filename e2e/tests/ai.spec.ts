@@ -92,7 +92,7 @@ test("13 a model that stops writing mid-answer can be stopped, and the next ques
   await scriptModel(page, {
     turns: [
       { when: question(words), reply: { hang: true }, once: true },
-      { when: question(words), reply: { text: JSON.stringify({ of: "Person", show: { kind: "stat", measure: { op: "count" } } }) } },
+      { when: question(words), reply: { text: JSON.stringify({ spec: { of: "Person", show: { kind: "stat", measure: { op: "count" } } } }) } },
     ],
   });
   const panel = await askPanel(page, env, corpusGraph);
@@ -139,7 +139,7 @@ test("16 an answer the spec does not admit is refused in the reply, and the mode
   // anything runs, sent back with the check's own words, and refused once the attempts are spent.
   const words = "How many people wear a 42?";
   const spec = { of: "Person", where: [{ field: "Person.shoeSize", in: ["42"] }], show: { kind: "stat", measure: { op: "count" } } };
-  await scriptModel(page, { turns: [{ when: question(words), reply: { text: JSON.stringify(spec) } }] });
+  await scriptModel(page, { turns: [{ when: question(words), reply: { text: JSON.stringify({ spec }) } }] });
   await (await askPanel(page, env, corpusGraph)).send(words);
   await expect(page.getByText(/I could not answer that over this data: .*Person\.shoeSize is not a field of Person/)).toBeVisible({
     timeout: 15_000,
@@ -163,7 +163,7 @@ test("an answer added to the dashboard is saved as a tile of its relation", asyn
   const title = `Asked ${Date.now()}`;
   const words = "How many people are there?";
   await scriptModel(page, {
-    turns: [{ when: question(words), reply: { text: JSON.stringify({ of: "Person", show: { kind: "stat", measure: { op: "count" }, title } }) } }],
+    turns: [{ when: question(words), reply: { text: JSON.stringify({ spec: { of: "Person", show: { kind: "stat", measure: { op: "count" }, title } } }) } }],
   });
   const answers = await (await askPanel(page, env, corpusGraph)).composer();
   await answers.ask(words);
@@ -182,7 +182,7 @@ test("an answer added to the dashboard is saved as a tile of its relation", asyn
 test("the assistant's question reaches Ask once: asked as Discover opens, not again on a refresh", async ({ page, env, corpusGraph }) => {
   const words = "How many people are there?";
   await scriptModel(page, {
-    turns: [{ when: question(words), reply: { text: JSON.stringify({ of: "Person", show: { kind: "stat", measure: { op: "count" } } }) } }],
+    turns: [{ when: question(words), reply: { text: JSON.stringify({ spec: { of: "Person", show: { kind: "stat", measure: { op: "count" } } } }) } }],
   });
   // What the assistant's last turn links to: Ask docked, the person's question handed over.
   await page.goto(`/graphs/${corpusGraph}/discover?panel=ask&q=${encodeURIComponent(words)}`);

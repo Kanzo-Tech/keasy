@@ -87,7 +87,7 @@ The thread, for the Nobel files:
    *what is it about?* (or nothing), and sends both as their first message.
 2. **Steps** — *Read the files*, *Propose the types*, and what comes after them, still to do.
 3. ***Here's what's in your data*** — the things with real counts and what each holds, and how they
-   hang together as sentences with one real row: *each award has a laureate, a category and a year;
+   hang together as lines with one real row: *award: laureate, category and year;
    e.g. Marie Curie · Physics · 1903*. Never shape, IRI, predicate or cardinality. Under it, what was
    assumed, each as *I assumed: id · Change* — the option taken, and its options behind *Change*. They
    come before the decision that blocks, so the first thing the person is asked is the last thing said.
@@ -156,7 +156,7 @@ composer's toolbar, as Ask's does.
 ### Steps while it works
 
 Each piece of work is **a step with its state**, in a list headed *What I am doing*: *Read 6 files ·
-1,026 awards, 1,012 laureates*, *Proposed the types*, *Waiting for you: one decision has no safe
+1,026 awards, 1,012 laureates*, *Proposed the types*, *Waiting for you: 1 left to decide, with no safe
 answer*, *Write the program*, *Run the preview*. A step is done, under way (or waiting on the person)
 or still to come, and **the steps still to come are on the list from the start**, so the person reads
 what is left as well as what is done. A step's state is derived each time from what the conversation
@@ -298,11 +298,11 @@ the rest in the background, the way fossil's profile already splits.
   lands on), asks which identifies the thing, and assumes the profile's first (`key/<source>`, a safe
   default: any candidate identifies); an edge through a source no type stands on — a
   many-to-many inclusion pair, *affiliations* between laureates and institutions — asks whether each
-  row is a link, or a thing counted on its own (`count/<edge>`: *when two laureates share an
-  institution, one or two?*), and blocks, because each answer counts differently and neither is
+  row is a link, or a thing counted on its own (`count/<edge>`: *is a row only that link, or a thing
+  counted on its own?*), and blocks, because each answer counts differently and neither is
   safe.
-- **What it fills**: `understanding.relations` — one sentence per type, *each award has a laureate,
-  a category and a year*, with a real example from the sample rows, the edge's end looked up across
+- **What it fills**: `understanding.relations` — one line per type, *award: laureate,
+  category and year*, with a real example from the sample rows, the edge's end looked up across
   sources through its inclusion — and `decisions`. IRIs are keasy's: a type is
   `<origin>/vocab/<Type>`, a field `<origin>/vocab/<field>`, a subject
   `<origin>/id/<type>/{<source>.<key>}`, computed from the workspace's origin and the names, never
@@ -348,29 +348,39 @@ the rest in the background, the way fossil's profile already splits.
 - *What would reverse it:* questions marked answerable here that Ask, over the built graph, cannot
   answer — then marking waits for the preview and runs Ask on it.
 
-**What leaves for the libraries** (direction, 2026-10-13; [cleanup](cleanup.md)). Three of the
-Tasks' pieces re-derive what a library will know exactly, and go once it releases:
+**What left for the libraries, and what did not** (2026-10-15, with kanzo-ui 0.47 and fossil's GraphAr
+graph; [cleanup](cleanup.md)). Three of the Tasks' pieces re-derived what a library knows:
 
-- **`requirements`** (`tasks/requirements.ts`, 139 lines with its hand-made `joinGraphOf`) — its
-  oracle is a second resolver over a join graph keasy builds by hand, hard-coding `id`, `src` and
-  `dst`. Under kanzo-ui's paths design (`JoinResolver` the one door to the joins, Ask writing
-  Malloy-style dotted paths), a question is answerable exactly when `JoinResolver.relation(root,
-  shown)` validates its paths, and the fields offered are `JoinResolver.paths(root)`. The chips are
-  then Ask's own offers over the accepted model's `JoinGraph`, and keasy's Task is deleted.
-- **`words`** (`tasks/words.ts`, 67) — `spoken`, `plural`, `singular`, `withArticle`, an English
-  heuristic. Words come from the data: an `rdfs:label` or `sh:name` annotation in the page's
-  language (fossil's annotations design), else the identifier split as a last resort, with
-  `Intl.ListFormat` and `Intl.PluralRules`; titles avoid plurals (*Award count by university*). What
-  keasy still needs, `pascal` and `camel` for the names the `model` Task proposes, stays.
-- **`profile`'s and `model`'s facts** (~60 of `profile.ts`, ~150 of `model.ts`) — candidate keys,
-  identifier-ness and a column's datatype guessed from names and a sample, which fossil's corpus
-  will carry (term type, datatype, label, endpoint keys, the profile stored in the corpus) and
-  `@kanzo-tech/graph`'s `JoinGraph` will carry to Ask.
-
-About 415 lines and their tests. *What would reverse it:* a library that cannot answer for an
-unbuilt model — `JoinResolver` needing a corpus where the assistant has only an accepted artefact.
-Then keasy keeps a `JoinGraph` built from the artefact, through the library's one constructor, never
-a second resolver.
+- **`words`** (`tasks/words.ts`) — `spoken`, the identifier split into words, is gone: it is
+  `@kanzo-tech/mosaic`'s `splitWords` (it keeps an acronym's case, `ID`, where `spoken` lowered it),
+  the one split that `RelationPicker`, Ask's chips and a column's label read. A type's or an edge's words
+  in the page's language are `typeWords` and `edgeWords`, which Discover gets with no code of keasy's:
+  the graph is described by its mapping (`withMapping`, [the graph](graph.md#the-mapping-describes-the-graph-after-its-first-paint)).
+  **The assistant's own sentences need no plural, singular or article.** A name is said as given
+  (`splitWords`), never inflected: *Only a link: award → institution* and *A thing of its own:
+  affiliations*, not *One: an award has institutions*; *award: laureate, year and category*, not *each
+  award has a laureate, a year and a category*; counts are digits after a label (*Kinds of thing: 6*,
+  *Decisions with no safe answer: 2*), so no noun is counted into its plural. English morphology is
+  what no library offers and a heuristic for it is wrong at the first irregular noun, so there is none:
+  `plural`, `withArticle`, `inWords` and `words.ts` are deleted. What remains makes identifiers or
+  lists, beside its only caller: `pascal`, `camel` and `singular` (a link file's name as the type it
+  becomes, `affiliations` → `Affiliation`) in `tasks/model.ts`, `holdsLine` in `turns.tsx`, `thingName`
+  in `tasks/profile.ts`. A mapping's binding in the plan the `mapping` Task is given is `<Type>Rows`,
+  not the type's plural. *What would reverse it:* a library offering inflection by language (then a
+  sentence may count and article again, and says it in the page's language), or a reader who finds
+  *Kinds of thing: 6* colder than *six kinds of things* enough to be worth a heuristic.
+- **`requirements`** (`tasks/requirements.ts`) — its oracle is `JoinResolver`, Ask's own, over a
+  `JoinGraph` that `joinGraphOf` writes from the accepted model. It **stays**: the questions are
+  offered before any program has run, so there is no attached graph to read a `JoinGraph` from, and
+  kanzo-ui's one constructor of one (`readJoinGraph`) reads an attached GraphAr graph and nothing
+  else. It is data in the library's shape, not a second resolver. *What would reverse it:* kanzo-ui
+  exporting a constructor of a `JoinGraph` from a declared model — then `joinGraphOf` is that call;
+  or the questions waiting for the preview, and Ask offering them over it.
+- **`profile`'s facts** — `profiledOf` is the one transform of fossil's `profile()` answer into the
+  shape the Tasks read, and nothing else reads the profile twice: the studio's checker describes at
+  `depth: "types"` (`use-source-descriptors.ts`), which is a different question. The
+  `Primitive` → DuckDB table in `requirements.ts` is the one fact still written here that fossil's
+  catalogue states; it goes when `@fossil-lang/types` exports the table.
 
 **Failure is said, not swallowed.** A Task that throws, or whose oracles still refuse after its
 attempts, fails its step with its problem (`llm/failed` when it has no code of its own) and **Retry**
@@ -381,10 +391,12 @@ on it; nothing downstream runs on a refused artefact.
 **Built 2026-10-13.** Once there is a program, it runs over the first 200 rows
 of each source **into memory** — fossil's `run(program, { host, into: "memory", limit: 200 })`, in
 fossil's run worker, which answers the corpus's files as bytes and writes nothing — and the files are
-attached to the assistant page's engine from those bytes with `@fossil-lang/corpus`'s
-`attach(name, { engine, files })` (fossil 0.3.0-alpha.32), which registers the buffers under a prefix
-of their own and gives them back on detach: fossil reads what fossil wrote. *What would reverse it:*
-fossil dropping that `attach` form — then keasy registers the buffers itself again. `usePreview(program, profiled)`
+attached to the assistant page's engine from those bytes (`attachFiles`, `lib/fossil/attach.ts`): the
+buffers are registered under a prefix of their own, `@kanzo-tech/graphar-duckdb`'s `attachGraph` reads
+the GraphAr graph from them, and detaching gives them back — the same graph a build writes, read the
+same way ([the graph](graph.md)). *What would reverse it:* fossil or `graphar-duckdb` offering the
+in-memory form themselves — then keasy's registration of the buffers goes, as `@fossil-lang/corpus`'s
+`attach({ files })` once promised it would. `usePreview(program, profiled)`
 (`lib/fossil/preview.ts`) is the hook: `idle`, `running` — the last corpus kept on screen —, `ready`
 or `failed`, each corpus named by its program and cached as a graph's is, so a decision changed is a
 preview of its own and the one it replaces is given back once nothing reads it. Inside `CorpusScope`

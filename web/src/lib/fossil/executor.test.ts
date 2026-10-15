@@ -8,7 +8,7 @@ vi.mock("@fossil-lang/executor", () => ({ run }));
 const { PREVIEW_ROWS, runInto } = await import("./executor");
 
 const host = {} as Host;
-const report = { location: "memory://corpus/", dropped: [] } as unknown as RunReport;
+const report = { location: "memory://graph/", dropped: [] } as unknown as RunReport;
 
 describe("the one door to fossil's run", () => {
   beforeEach(() => run.mockReset());
@@ -21,7 +21,7 @@ describe("the one door to fossil's run", () => {
   });
 
   it("runs a preview into memory over the first rows of each source, and answers its files", async () => {
-    const files = [{ path: "fossil.json", bytes: new Uint8Array([123, 125]) }];
+    const files = [{ path: "fossil.graph.yml", bytes: new Uint8Array([110]) }];
     run.mockResolvedValue({ report, files });
     const profiled = { descriptors: [], undescribed: [] };
     await expect(runInto("program", { host, into: "memory", profiled: profiled as never })).resolves.toEqual({ report, files });

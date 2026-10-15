@@ -1,8 +1,8 @@
 "use client";
 
-import { Suspense, useCallback } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 // eslint-disable-next-line no-restricted-imports -- suggested questions: a failure leaves no pills, and the chat works the same
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Sparkles } from "lucide-react";
 import type { JoinGraph } from "@kanzo-tech/mosaic";
 import { useClauses, useMosaic } from "@kanzo-tech/ui/analytics";
@@ -16,7 +16,7 @@ import { useModel, useModelLoad } from "@/lib/ai";
 import { coded } from "@/lib/errors";
 import { useCorpusAsk } from "@/lib/fossil/ask";
 import { corpusKey, useCorpus } from "@/lib/fossil/corpus";
-import { useHandedQuestion } from "./ask-handoff";
+import { hasAsked, isHanded, useHandedQuestion } from "./ask-handoff";
 import { useDashboardStore } from "./dashboard-store";
 
 /**
@@ -56,22 +56,32 @@ function AskEmpty() {
  * Questions to start from, cached per graph and per filter: a filter changed is a different question
  * to ask. Ask's own offers, each checked before it is shown, so every pill is one the chat answers. A
  * failure is drawn in their place, with a retry, and the chat works the same.
+ *
+ * **They yield to the person's question.** The model takes its calls in turn, so an offer being
+ * generated is a wait in front of whatever the person asks: once a question is theirs — typed and sent,
+ * or handed over by the assistant — none starts and the one in flight is stopped (`hasAsked`).
  */
-function useStarters(graph: JoinGraph) {
+function useStarters(graph: JoinGraph, asked: boolean) {
   const { name: corpus } = useCorpus();
   const { selection } = useMosaic();
   const model = useModel();
+  const queryClient = useQueryClient();
   // Asked once the model is ready: offers are not worth waiting on its download for.
   const ready = useModelLoad().state === "ready";
   // Re-rendered on every clause, so the key below is the filter as it is now.
   useClauses(selection);
+  const queryKey = [...corpusKey(corpus), "starters", String(selection.predicate(null) ?? "")];
   const starters = useQuery({
-    queryKey: [...corpusKey(corpus), "starters", String(selection.predicate(null) ?? "")],
+    queryKey,
     queryFn: ({ signal }) => askOffers({ model, graph, selection, signal }),
     staleTime: Infinity,
     retry: false,
-    enabled: ready,
+    enabled: ready && !asked,
   });
+  // Disabling a query leaves its fetch running; stopping it is what hands the model to the question.
+  useEffect(() => {
+    if (asked) void queryClient.cancelQueries({ queryKey: [...corpusKey(corpus), "starters"] });
+  }, [asked, corpus, queryClient]);
   return {
     proposing: starters.fetchStatus === "fetching",
     proposals: starters.isError ? [] : (starters.data ?? []),
@@ -115,7 +125,10 @@ function AskChat() {
   // The question the assistant handed over (`?q=`), asked once the model is ready.
   const { sendMessage } = chat;
   useHandedQuestion(useCallback((text: string) => void sendMessage({ text }), [sendMessage]), load.state === "ready");
-  const starters = useStarters(graph);
+  // Read before `useHandedQuestion` takes it off the URL: a question handed over is the person's.
+  const [handed] = useState(isHanded);
+  const asked = hasAsked({ handed, messages: chat.messages.length, status: chat.status });
+  const starters = useStarters(graph, asked);
   const adding = useAdding();
 
   return (

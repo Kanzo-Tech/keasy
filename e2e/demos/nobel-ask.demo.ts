@@ -25,8 +25,8 @@ const GERMANY = "Which ones were won in Germany?";
  */
 const BY_UNIVERSITY = { of: "LaureateAward", show: { kind: "chart", type: "bar", x: "University.name", y: { op: "count" } }, top: 8 };
 const TURNS: ModelTurn[] = [
-  { when: `Question: ${GERMANY}`, reply: { text: JSON.stringify({ ...BY_UNIVERSITY, where: [{ field: "Country.name", in: ["Germany"] }] }) } },
-  { when: `Question: ${UNIVERSITIES}`, reply: { text: JSON.stringify(BY_UNIVERSITY) } },
+  { when: `Question: ${GERMANY}`, reply: { text: JSON.stringify({ spec: { ...BY_UNIVERSITY, where: [{ field: "Country.name", in: ["Germany"] }] } }) } },
+  { when: `Question: ${UNIVERSITIES}`, reply: { text: JSON.stringify({ spec: BY_UNIVERSITY }) } },
 ];
 
 /** Whether `rows` — an answer's data table — holds a row reading `value` and `n` (thousands separators aside). */

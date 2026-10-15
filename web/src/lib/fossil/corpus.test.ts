@@ -12,8 +12,8 @@ vi.mock("@/lib/api/query-client", async () => {
   return { queryClient: new QueryClient() };
 });
 vi.mock("@/lib/fossil/host", () => ({ host: {} }));
-vi.mock("@fossil-lang/corpus", () => ({
-  attach: async () => {
+vi.mock("@/lib/fossil/attach", () => ({
+  attachJob: async () => {
     throw notFound;
   },
 }));

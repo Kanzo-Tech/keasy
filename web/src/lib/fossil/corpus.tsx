@@ -1,16 +1,17 @@
 "use client";
 
-import { createContext, use, type ReactNode } from "react";
-import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
-import { TableRefNode, column, eq, literal } from "@uwdata/mosaic-sql";
-import { attach, type Attachment } from "@fossil-lang/corpus";
+import { createContext, use, useEffect, useMemo, type ReactNode } from "react";
+// eslint-disable-next-line no-restricted-imports -- the mapping describes the graph after its first paint; a mapping that cannot be read leaves the graph in the names its tables have
+import { queryOptions, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { readJoinGraph } from "@kanzo-tech/graph";
-import { Query, engine, type Engine, type JoinGraph, type TableExpr } from "@kanzo-tech/mosaic";
-import { MosaicProvider, useMosaic, useQueryRows } from "@kanzo-tech/ui/analytics";
+import { engine, withMapping, type Engine, type JoinGraph, type TableExpr } from "@kanzo-tech/mosaic";
+import { MosaicProvider, useMosaic } from "@kanzo-tech/ui/analytics";
 import { settled } from "@/lib/api/settled";
 import { toastError } from "@/lib/errors";
+import { type Attachment, attachJob } from "@/lib/fossil/attach";
 import { corpusKey, RELEASE_FAILED } from "@/lib/fossil/corpus-cache";
 import { host } from "@/lib/fossil/host";
+import { parseMapping } from "@/lib/fossil/rudof";
 
 /** Everything read off a corpus is read once, and dropped with the page. */
 export const ONCE = { staleTime: Infinity, gcTime: 0, retry: false } as const;
@@ -25,11 +26,12 @@ export { corpusKey };
 export const CORPUS_GC_MS = 5 * 60_000;
 
 /**
- * A corpus attached under {@link Corpus.name} to the page's one engine: a graph's output, by fossil's
- * `attach`, which asks {@link host} for the read credential — or the assistant's preview, answered in
- * memory (`lib/fossil/preview.ts`). SQL names it `"<name>"."<Table>"`, and what it holds is its
- * `fossil_tables`, `fossil_columns` and `triples`, asked through the coordinator by whoever needs to
- * know. Everything read off a corpus is keyed and named by `name`.
+ * A graph attached under {@link Corpus.name} to the page's one engine: a graph's output, GraphAr's
+ * `attachGraph` over the credential {@link host} vends for it (`lib/fossil/attach.ts`) — or the
+ * assistant's preview, answered in memory (`lib/fossil/preview.ts`). SQL names it
+ * `"<name>"."<Type>"`, and what it holds is its `graphar_*` relations, asked through the coordinator
+ * by whoever needs to know; what its tables mean is `mapping.ttl` beside it (`mappingQuery`).
+ * Everything read off a corpus is keyed and named by `name`.
  */
 export interface Corpus {
   /** What SQL calls it, and what its cached reads are keyed under ({@link corpusKey}). */
@@ -55,7 +57,7 @@ export interface Corpus {
  * committed in five has failed already, so the window no longer needs closing by never collecting.
  */
 export function corpusQuery(graphId: string) {
-  return corpusOf(graphId, (attachedTo, signal) => attach(graphId, { engine: attachedTo, host, signal }));
+  return corpusOf(graphId, (attachedTo, signal) => attachJob(graphId, { engine: attachedTo, host, signal }));
 }
 
 /**
@@ -70,7 +72,7 @@ export function corpusOf(name: string, attachTo: (engine: Engine, signal: AbortS
       const attachment = await attachTo(attachedTo, signal);
       // The cache gave up on this attach while it was out — the entry removed, reset, or its last
       // reader gone — and drops what it resolves to, so no `removed` event will ever carry it.
-      // `attach` rejects on an abort only when a step fails, so one that ran to the end lands here:
+      // `attachGraph` rejects on an abort only when a step fails, so one that ran to the end lands here:
       // it is given back now, or nothing ever would.
       // Nothing waits on this query any more, so a detach that fails is said here, by the failure path.
       if (signal.aborted) {
@@ -106,18 +108,40 @@ export function CorpusProvider({ graphId, children }: { graphId: string; childre
 }
 
 /**
+ * The graph's mapping, parsed (`mapping.ttl` beside it, by rudof's `Mapping`): what its tables mean
+ * as RDF — classes, predicates, datatypes, labels — and the relation of triples the rules validate.
+ * Read after the graph's first paint and not before: nothing on the graph page waits for rudof.
+ */
+export function mappingQuery(corpus: Corpus) {
+  return queryOptions({
+    queryKey: [...corpusKey(corpus.name), "mapping"],
+    queryFn: async ({ signal }) => parseMapping(await corpus.attachment.mapping({ signal })),
+    ...ONCE,
+  });
+}
+
+/**
  * An attached corpus to everything under it — a graph's, or a preview's. The corpus's join graph is
  * read before the scope's `MosaicProvider`, which builds its one selection over it: a clause on one
- * relation reaches a part reading another. Suspends while the join graph is read.
+ * relation reaches a part reading another. Suspends while the join graph is read; the graph is then
+ * described by the mapping (`withMapping`) as soon as it is read, so the types, the relations and
+ * the columns are called by their labels and a year is a time, and until then, or if it cannot be
+ * read, by their names.
  */
 export function CorpusScope({ corpus, children }: { corpus: Corpus; children: ReactNode }) {
-  const joins = settled(
+  const plain = settled(
     useSuspenseQuery({
       queryKey: [...corpusKey(corpus.name), "join-graph"],
       queryFn: () => readJoinGraph(corpus.engine.coordinator, corpus.name),
       ...ONCE,
     }),
   );
+  const mapping = useQuery(mappingQuery(corpus));
+  const failure = mapping.error;
+  useEffect(() => {
+    if (failure) toastError(failure, "The graph's labels could not be read");
+  }, [failure]);
+  const joins = useMemo(() => (mapping.data ? withMapping(plain, mapping.data.model()) : plain), [plain, mapping.data]);
   return (
     <CorpusContext value={corpus}>
       <MosaicProvider coordinator={corpus.engine.coordinator} joins={joins} onFailure={chartFailed}>
@@ -133,17 +157,9 @@ export function useCorpus(): Corpus {
   return corpus;
 }
 
-/** Each table's columns the writer gave `role`: fossil's bookkeeping, not the program's. */
-const roleColumns = (name: string, role: "address" | "identity") =>
-  Query.from(new TableRefNode([name, "fossil_columns"]))
-    .select("table_name", "column_name")
-    .where(eq(column("role"), literal(role)));
-
-/** The column the graph keys a vertex by — the `address` column, the same in every vertex table of one corpus. */
+/** The column the graph keys a vertex by — GraphAr numbers vertices within a type, and the graph's own global id is the same in every vertex type. */
 export function useGraphKey(): string {
-  const [address] = useQueryRows<{ column_name: string }>(roleColumns(useCorpus().name, "address"));
-  if (!address) throw new Error("The corpus declares no vertex table, so nothing has a key");
-  return address.column_name;
+  return useVerticesType().key;
 }
 
 /** The corpus's join graph — its types and the edges between them — the one the page's `MosaicProvider` holds. */
@@ -155,11 +171,16 @@ export function useJoinGraph(): JoinGraph {
 
 /**
  * Every vertex of the corpus as one relation — the join graph's `vertices`, kanzo-ui's union of every
- * vertex table: its key, its `subject` (the `identity` column, the IRI the corpus's RDF mapping makes
- * of it) and every column the tables share. It is what a selection on the graph filters whatever the
- * type, so it is the relation a panel scopes by: the Ask panel's subset count, and the rules' focus
- * nodes read back as vertices.
+ * vertex type: its key, its `subject` (the primary key, the IRI the mapping makes of it) and every
+ * column the types share. It is what a selection on the graph filters whatever the type, so it is the
+ * relation a panel scopes by: the Ask panel's subset count, and the rules' focus nodes read back as
+ * vertices.
  */
+function useVerticesType() {
+  return useJoinGraph().types.find((t) => t.name === "vertices")!;
+}
+
+/** {@link useVerticesType}'s relation. */
 export function useVertices(): TableExpr {
-  return useJoinGraph().types.find((t) => t.name === "vertices")!.table;
+  return useVerticesType().table;
 }

@@ -43,7 +43,7 @@ describe("the steps of reading", () => {
   });
 
   it("wait for the person, in words, while a decision has no safe answer", () => {
-    expect(row(stepsOf("read", { ...facts, decisions: [open] }, 200))[2]).toBe("active:Waiting for you: one decision has no safe answer");
+    expect(row(stepsOf("read", { ...facts, decisions: [open] }, 200))[2]).toBe("active:Waiting for you: 1 left to decide, with no safe answer");
     expect(row(stepsOf("read", { ...facts, decisions: [{ ...open, chosen: "one" }] }, 200))).not.toContain(expect.stringContaining("Waiting"));
   });
 

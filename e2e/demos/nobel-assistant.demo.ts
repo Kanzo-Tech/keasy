@@ -13,8 +13,8 @@ const FILES = ["laureates", "awards", "categories", "institutions", "affiliation
 const ABOUT = "Nobel prizes: who won them, in what, and where they worked";
 
 /** The decision with no safe default, and the answer the demo gives it. */
-const LINK = "Each row of affiliations links an award to an institution. When two awards share an institution, is that one thing or two?";
-const ONE = "One: an award has institutions";
+const LINK = "Each row of affiliations links award to institution. Is a row only that link, or a thing counted on its own?";
+const ONE = "Only a link: award → institution";
 /** The decision a safe default settled — a country by its id — and the one the demo changes it to. */
 const COUNTRY = "Which column tells one country from another?";
 
@@ -108,11 +108,11 @@ function script(origin: string): ModelTurn[] {
     { when: "You write the mappings of a Fossil program", reply: { text: mappings(origin, "id") } },
     {
       when: `Question: ${BY_INSTITUTION}`,
-      reply: json({ of: "Award", show: { kind: "chart", type: "bar", x: "Institution.name", y: { op: "count" } } }),
+      reply: json({ spec: { of: "Award", show: { kind: "chart", type: "bar", x: "Institution.name", y: { op: "count" } } } }),
     },
     {
       when: `Question: ${BY_CATEGORY}`,
-      reply: json({ of: "Award", show: { kind: "chart", type: "bar", x: "Category.name", y: { op: "count" } } }),
+      reply: json({ spec: { of: "Award", show: { kind: "chart", type: "bar", x: "Category.name", y: { op: "count" } } } }),
     },
   ];
 }

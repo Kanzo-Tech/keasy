@@ -11,10 +11,11 @@ import { lower, WORDS } from "@/lib/vocabulary";
 
 /**
  * Failures the browser names itself, in the same `area/kind` grammar as fossil's and the server's: a
- * query the engine refused, a model call that failed uncoded, and anything uncoded. A failure the server
- * names too keeps the server's code (`rules/refused`, rudof refusing a rules document).
+ * query the engine refused, a model call that failed uncoded, a graph whose files do not read as
+ * Apache GraphAr, and anything uncoded. A failure the server names too keeps the server's code
+ * (`rules/refused`, rudof refusing a rules document).
  */
-export type ClientCode = "query/failed" | "llm/failed" | "web/unknown";
+export type ClientCode = "query/failed" | "llm/failed" | "graph/unreadable" | "web/unknown";
 
 /** A failure the browser raises itself, coded so it reaches the screen by the same path as the others. */
 export class ClientError extends Error {
@@ -94,6 +95,21 @@ const registry: Partial<Record<ErrorCode | ClientCode | Code | KanzoCode, Copy>>
         : "Ask and the assistant run their model on this device, through WebGPU, which this browser does not offer. The rest of keasy works the same.",
   },
   "llm/failed": { title: "The model call failed. Please try again." },
+  // The model answered and its context cut it off: what it wrote is not an answer, and a shorter ask
+  // can be one (`data.reason` `context`, @kanzo-tech/llm).
+  "llm/truncated": {
+    title: "The answer was cut off.",
+    detail: (data) =>
+      reasonOf(data) === "context"
+        ? "The model ran out of room before it finished answering, so nothing was kept. Ask about less at once, or clear the filters and ask again."
+        : "The model stopped before it finished answering, so nothing was kept. Ask again.",
+  },
+  // `attachGraph` refused the files: the graph was built before keasy wrote Apache GraphAr, or they are damaged.
+  "graph/unreadable": {
+    title: "This graph's files cannot be read.",
+    detail:
+      "It was built before graphs were written as Apache GraphAr, or its files are damaged. A graph is read as it was built: build it again to open it.",
+  },
   "query/failed": {
     title: "Query execution failed. The AI may have generated invalid SQL. Try rephrasing your question.",
   },

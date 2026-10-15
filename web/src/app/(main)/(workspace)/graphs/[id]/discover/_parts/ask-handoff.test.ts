@@ -4,9 +4,22 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useChat } from "@ai-sdk/react";
 
-import { askHref, takeQuestion, useHandedQuestion } from "./ask-handoff";
+import { askHref, hasAsked, takeQuestion, useHandedQuestion } from "./ask-handoff";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+
+describe("the offers Ask proposes", () => {
+  it("are for an empty conversation: a question handed over, sent, or on its way is the person's", () => {
+    const idle = { handed: false, messages: 0, status: "ready" };
+    expect(hasAsked(idle)).toBe(false);
+    expect(hasAsked({ ...idle, handed: true })).toBe(true);
+    expect(hasAsked({ ...idle, messages: 1 })).toBe(true);
+    expect(hasAsked({ ...idle, status: "submitted" })).toBe(true);
+    expect(hasAsked({ ...idle, status: "streaming" })).toBe(true);
+    // A failed answer is still the conversation's: the offers do not come back over it.
+    expect(hasAsked({ ...idle, messages: 1, status: "error" })).toBe(true);
+  });
+});
 
 describe("the question handed to Ask", () => {
   it("is read off the URL, which keeps everything else", () => {

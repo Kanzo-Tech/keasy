@@ -1,4 +1,5 @@
 import { FossilError, isFossilError } from "@fossil-lang/types";
+import { LlmError } from "@kanzo-tech/llm";
 import { describe, expect, it } from "vitest";
 import { ApiError } from "@/lib/api/client";
 import { coded, descriptionOf, fieldProblem, pageOf, wireOf } from "./errors";
@@ -36,7 +37,26 @@ describe("a failure, kept as JSON", () => {
   });
 
   it("leaves a fossil code with no entry in fossil's own words", () => {
-    expect(descriptionOf("corpus/unreadable")).toBeUndefined();
+    expect(descriptionOf("write/duplicate-value")).toBeUndefined();
+  });
+
+  it("says a cut-off answer is cut off, not that the call failed, and what to do about it", () => {
+    expect(descriptionOf("llm/truncated")).toMatchObject({ title: "The answer was cut off." });
+    expect(descriptionOf("llm/truncated", { reason: "context" })?.detail).toContain("ran out of room");
+    expect(descriptionOf("llm/truncated")?.detail).not.toContain("ran out of room");
+    expect(descriptionOf("llm/truncated")).not.toEqual(descriptionOf("llm/failed"));
+  });
+
+  it("keeps a cut-off answer's code through the path every chat failure takes, uncoded or not", () => {
+    const cut = new LlmError("llm/truncated", "The answer did not fit the model's context", { reason: "context" });
+    expect(coded(cut, "llm/failed")).toBe(cut);
+    expect(descriptionOf(coded(cut, "llm/failed").code, cut.data)?.detail).toContain("ran out of room");
+    expect(coded(new Error("boom"), "llm/failed").code).toBe("llm/failed");
+  });
+
+  it("says a graph whose files do not read as GraphAr was built before them, and to build it again", () => {
+    expect(descriptionOf("graph/unreadable")).toMatchObject({ title: "This graph's files cannot be read." });
+    expect(descriptionOf("graph/unreadable")?.detail).toContain("build it again");
   });
 
   it("is the server's body for a refusal, and has no page", () => {

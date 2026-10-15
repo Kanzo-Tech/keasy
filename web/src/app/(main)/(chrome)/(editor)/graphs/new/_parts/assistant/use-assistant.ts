@@ -25,7 +25,7 @@ import { useTask } from "@kanzo-tech/ai";
 import { type Proposal, runTask } from "@kanzo-tech/ai/task";
 import type { Format, Profiled as Described } from "@fossil-lang/types";
 import { inputs, profile } from "@fossil-lang/wasm";
-import { engine } from "@kanzo-tech/mosaic";
+import { engine, splitWords } from "@kanzo-tech/mosaic";
 import type { FileReference } from "@/lib/assistant-conversation";
 import type { StorageConnection } from "@/lib/connections";
 import { ClientError } from "@/lib/errors";
@@ -36,9 +36,8 @@ import { useModel } from "@/lib/ai";
 import { type AssistantData, type DecisionItem, optionOf, type Question, type QuestionOffer, type TaskFailure, type Thing } from "./model";
 import { fossilCheck, mapping, mappingInput, programOf } from "./tasks/mapping";
 import { accept, type Accepted, decisionsOf, defaultsOf, type Draft, modelTask, relationsOf } from "./tasks/model";
-import { type Profiled, profiledOf } from "./tasks/profile";
+import { type Profiled, profiledOf, thingName } from "./tasks/profile";
 import { isAnswerable, requirements } from "./tasks/requirements";
-import { spoken, thingName } from "./tasks/words";
 
 /** The rows the profile keeps of each file: enough for one row of each relation to be found across files. */
 const SHOWN = 50;
@@ -278,7 +277,7 @@ export function useAssistant({
   }, [acceptedKey]);
   const offers: QuestionOffer[] | null =
     accepted && offered.state === "ready"
-      ? offered.proposals.map((p) => ({ id: p.id, text: p.value.text, rationale: `Reads ${p.value.fields.map(spoken).join(", ")}` }))
+      ? offered.proposals.map((p) => ({ id: p.id, text: p.value.text, rationale: `Reads ${p.value.fields.map(splitWords).join(", ")}` }))
       : null;
   // A chip is answerable by construction: the resolver reached it before it was offered.
   const offeredTexts = new Set((offers ?? []).map((o) => o.text));

@@ -1,10 +1,9 @@
 # The assistant, and time to smile
 
-Status: a direction. Built: the model in the page, in place of the gateway, served from keasy's own
-origin and preloaded with intent (2026-10-13); the guided chat (2026-10-13); and its three Tasks,
-`model`, `mapping` and `requirements`, over fossil's profile (2026-10-13, below); the conversation
-kept, and the preview run in memory and shown in the chat, the chat wired to both and to the build
-(2026-10-13). **The chat as one thread, built 2026-10-14** ([below](#one-thread-top-to-bottom)): the
+Status: a direction. Built: the model in the page, served from keasy's own origin and preloaded with
+intent; the guided chat and its three Tasks, `model`, `mapping` and `requirements`, over fossil's
+profile (below); the conversation kept, and the preview run in memory and shown in the chat, the chat
+wired to both and to the build; and the chat as one thread ([below](#one-thread-top-to-bottom)): the
 sources picked on pills above the composer and sent with what they are about as the first message, the
 Tasks drawn as steps, the details pinned above the thread, the model badge in the app's header, and the
 conversation closed by its build. **Decided, not built:** every result a new message at the end with a
@@ -16,18 +15,16 @@ it or asks the person — and its API, its model and its decisions are kanzo-ui'
 of introspect, and a mapping spec from which Fossil is emitted — is on
 [Profile, and the mapping a model proposes](https://kanzo-tech.github.io/fossil-lang/docs/design/profile).
 This page is keasy's part: the assistant's conversation, the metric they are built for, and what changes
-in keasy's own configuration and runtime. What of it moves into kanzo-ui and fossil once they release it — the run
-worker, the in-memory corpus, the model double, the conversation's keeping, the Tasks' guesses and the
-evaluation set — is said in each section below, and the order is on [cleanup](cleanup.md).
+in keasy's own configuration and runtime. What of it moves into kanzo-ui and fossil once they release it — the
+conversation's keeping, the Tasks' guesses and the evaluation set — is said in each section below, and the order is on [cleanup](cleanup.md).
 
 ## The problem
 
 One call writing a whole program from a prose description of Fossil does not work with a small
 model: it does not see the shapes, it guesses keys and edges, the studio's checker reports after the
 fact, and nothing repairs. "Done"
-means "it compiles". And every call went through the BFF's `/api/ai` forward to the gateway, so the
-question left the browser and the AI was down whenever the gateway was — until 2026-10-13, when the
-model moved into the page (below).
+means "it compiles". A call through a gateway would send the question out of the
+browser, and the AI would be down whenever the gateway is: the model runs in the page (below).
 
 ## Time to smile
 
@@ -431,13 +428,11 @@ the graph holds.
 
 **Build the graph** builds the current checkpoint's program, and saves the conversation first and
 builds under the id that save answers, so a graph always names the conversation as it stood when it
-was asked for. Its step reads `building` (with its percent once the run reports one), `failed` with
+was asked for. Its step reads `building`, `failed` with
 its problem and **Retry**, and `done`, after which *Your graph is ready* carries **Ask your data**,
 **Open the graph** and a link per question, `askHref(graphId, question)`. Nothing is changed after a
 build in the conversation it closed: a decision changed is a new conversation started from the
-checkpoint, and building there makes a new graph. The earlier shape — the preview built with the graph and opened in Discover under
-`<id>~preview` until the whole landed — waited on a decision taken blind and put a sample where a
-graph was expected.
+checkpoint, and building there makes a new graph.
 
 *What would reverse it:* people who never look at the preview and go straight to building — then the
 preview runs behind the build, and the chat goes to Discover as soon as the graph is made. Or a

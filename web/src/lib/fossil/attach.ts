@@ -9,7 +9,7 @@ import { ClientError } from "@/lib/errors";
  * How keasy attaches what a run wrote: a GraphAr graph and the RML-Core mapping beside it
  * (`/docs/format` on fossil's site). fossil keeps no reader of its own: the host composes `mount`
  * (the credential), `attachGraph` (the views and the five `graphar_*` relations) and, for the
- * meaning, rudof's `Mapping` (`lib/fossil/mapping.ts`). The names are fixed by fossil's writer and
+ * meaning, rudof's `Mapping` (`lib/fossil/rudof.ts`). The names are fixed by fossil's writer and
  * joined by no pointer: the graph document, and the mapping beside it.
  */
 export const GRAPH_ENTRY = "fossil.graph.yml";

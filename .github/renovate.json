@@ -11,7 +11,7 @@
   "rangeStrategy": "bump",
   "packageRules": [
     {
-      "description": "One rmlext release publishes every @fossil-lang/* package at the same version; bump them in one PR so keasy never lands a mismatched set.",
+      "description": "One fossil release publishes every @fossil-lang/* package at the same version; bump them in one PR so keasy never lands a mismatched set.",
       "groupName": "fossil release",
       "matchPackageNames": [
         "/^@fossil-lang//"

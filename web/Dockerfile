@@ -1,6 +1,6 @@
 FROM node:22-alpine AS builder
 
-# pnpm (pnpm-lock.yaml is v9). @fossil-lang/* come from npm (the `alpha` dist-tag)
+# pnpm (pnpm-lock.yaml is v9). @fossil-lang/* come from npm
 # — no vendoring. Build context: the repo root, since the web depends on the
 # workspace package `api/` (@keasy/api).
 RUN npm install -g pnpm@9

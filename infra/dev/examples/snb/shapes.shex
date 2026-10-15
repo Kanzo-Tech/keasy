@@ -1,7 +1,7 @@
 # The LDBC Social Network Benchmark schema (Interactive v1), as shapes.
 #
 # Predicate names follow the LDBC SNB specification's own vocabulary
-# (http://www.ldbc.eu/ldbc_socialnet/1.0/vocabulary/), so a corpus written from
+# (http://www.ldbc.eu/ldbc_socialnet/1.0/vocabulary/), so a graph written from
 # these shapes speaks the benchmark's terms. Where the spec names one edge with
 # two possible targets (`likes`, `replyOf` → Post or Comment), there are two
 # predicates, one per target.

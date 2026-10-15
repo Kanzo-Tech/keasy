@@ -64,7 +64,7 @@ pub async fn transition(
     Err(Refusal::internal())
 }
 
-/// Where `graph`'s corpus lives, `{sink}/{folder}/`, as the sink's secret
+/// Where `graph`'s output lives, `{sink}/{folder}/`, as the sink's secret
 /// reaches it, and that secret.
 pub fn output(
     conn: &Connection,

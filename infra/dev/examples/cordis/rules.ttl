@@ -1,6 +1,6 @@
 # Data-quality rules for the CORDIS graph mapping.fossil writes: a SHACL Core
-# shapes graph to drop on its rules badge. The terms are shapes.shex's, as the
-# corpus's `triples` view states them — EURIO's for projects, organisations and
+# shapes graph to drop on its rules badge. The terms are shapes.shex's, as
+# `Mapping.triples` states them — EURIO's for projects, organisations and
 # their roles, WGS 84 for a position, `cordis:` for CORDIS's own.
 #
 # The shapes say what a funding record should carry, not what shapes.shex

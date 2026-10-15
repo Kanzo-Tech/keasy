@@ -242,7 +242,8 @@ web CI pass.
 
 Everything else is `docker compose`, which reads `compose.yaml` and `compose.override.yaml` on its
 own. The platform's release is `KANZO_UI_REF`, in the `include:` of `compose.override.yaml` and
-`compose.prod.yaml`, and moves with `@kanzo-tech/*` in `web/package.json`; the Rust toolchain is
+`compose.prod.yaml`, a literal default set by hand to the `@kanzo-tech/ui` release that
+`web/package.json` names, and derived from nothing; the Rust toolchain is
 pinned once, in `server/rust-toolchain.toml`.
 
 ## Demos

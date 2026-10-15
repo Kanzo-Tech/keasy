@@ -1,59 +1,37 @@
 # keasy on its libraries, and what it stops carrying
 
-Status: steps 1–6 and the account-key half of 11 landed (2026-10-13), each with what did not
-land and why said in its section; 7–10 wait on a library release. It is keasy's side of the cross-cutting
-review of kanzo-ui, fossil and keasy, whose decisions are final, and of the keasy audit at
-`1a05285` (PR #154). Line figures are estimates from that code, net of what replaces them, and are
-measured again when each step lands.
+keasy's side of the cross-cutting review of kanzo-ui, fossil and keasy, whose decisions are final.
+Each decision is written on the page that owns it; this page holds the ones no other page owns and
+what is still to land. What has landed is the tree, and git holds how.
 
-Each decision is written on the page that owns it, and this page is the order they land in and the
-ones no other page owns. Where a decision lives elsewhere, the row links to it.
+## Open
 
-## Order
+A step marked ⇧ waits for a library release, and keasy deletes in the same change that bumps the version.
 
-Each step ships alone and leaves keasy smaller than before. A step marked ⇧ waits for a library
-release, and keasy deletes in the same change that bumps the version.
-
-| Step | What | Lines | Waits on |
-|---|---|---|---|
-| 0 | **No schema migrations**: a database of another schema is dropped and created again ([permissions](permissions.md#the-schema)) | — | done in #154 |
-| 1 | **Decisions that only delete**: grants, sharing and transfer ([permissions](permissions.md#sharing-waits-for-its-dialog)); the schema diagram ([below](#the-schema-diagram-goes)) | ~1,125, 2 web deps | done |
-| 2 | **Dead code, stale configuration, unused dependencies** ([below](#dead-code-and-configuration)) | ~240, 1–2 crates, 3 web deps | done; the console URL waits on `@kanzo-tech/auth` (step 8) |
-| 3 | **Guards to lint rules** ([below](#guards-become-lint-rules)) | ~130 | done |
-| 4 | **The web's own duplicates onto TanStack** ([below](#one-way-to-read-and-write-tanstack)) | ~360 | done, but the two module stores |
-| 5 | **Facts in place of guesses**: formatting, error titles, names, formats ([below](#facts-in-place-of-guesses)) | ~170 | done, but field labels and file icons |
-| 6 | **e2e** ([below](#e2e)) | ~65 | the typed client and the s3-init loop done; `page.clock` and the smoke fixture not |
-| 7 | ⇧ **The Ask evaluation set to kanzo-ui** ([assistant](assistant.md#order)) | ~560 moved | kanzo-ui taking the set |
-| 8 | ⇧ **kanzo-ui**: `Structure`, one model double, the conversation's keeping, library hooks on keasy's `QueryClient`, the organization's admin console URL from `@kanzo-tech/auth` ([below](#what-the-libraries-take)) | ~490 | a kanzo-ui release |
-| 9 | ⇧ **fossil**: `run` in its own worker, `attach({ files })` | ~435 | done with alpha.32 (`run`); `attach({ files })` went with `@fossil-lang/corpus`, and keasy attaches the files' GraphAr graph itself ([the graph](graph.md)) |
-| 10 | **kanzo-ui and fossil together**: the `requirements`, `words` and `profile` Tasks' guesses ([assistant](assistant.md#the-three-tasks)) | ~415 | landed in part with kanzo-ui 0.47 and fossil's GraphAr graph: `spoken` is `splitWords`; `plural`, `singular` and `withArticle` are gone with `words.ts` (the sentences need none); `joinGraphOf` stays, with why and what would reverse it on the assistant page |
-| 11 | **Azure: one credential, through the Azure SDK** ([below](#azure-has-one-credential-a-user-delegation-sas-through-the-azure-sdk)) | ~250 now, ~60 more later | done but the signer, which waits on the SDK's SAS builder |
-
-About **4,300 lines** in all, ~560 of them moved rather than deleted, of keasy's ~41.6k, and 5 web dependencies and 3–5 Rust crates. Steps
-1–6 are keasy's alone and can start today; 2–6 change no behaviour a person sees, except the words
-of a few errors and breadcrumbs, which become the right ones.
+| What | Waits on |
+|---|---|
+| ⇧ **The Ask evaluation set to kanzo-ui** ([assistant](assistant.md#order)) | kanzo-ui taking the set |
+| ⇧ **kanzo-ui**: `Structure`, the conversation's keeping, library hooks on keasy's `QueryClient` ([below](#what-the-libraries-take)) | a kanzo-ui release |
+| **`joinGraphOf` stays**, with why and what would reverse it on [the assistant page](assistant.md#the-three-tasks) | `@fossil-lang/types` exporting the `Primitive` table |
+| **Azure's signer**: keasy's minimal user-delegation SAS signer ([below](#azure-has-one-credential-a-user-delegation-sas-through-the-azure-sdk)) | the Azure SDK's SAS builder |
+| **The two module stores** (`lib/fossil/build.ts`, `use-browser-graph-runner.ts`) stay `useSyncExternalStore`: a build's state names its graph before it ends, and a live run holds its Stop and its ending, neither of which a mutation's state carries | nothing; a state a mutation can carry reopens it |
+| **Field labels and file icons**: credential field labels are still the property names (utoipa 5 has no `title` on a field, only on a type); the source picker picks an icon by extension (the file's `reader` names a format, not whether it is a table) | utoipa; fossil |
+| **e2e**: `page.clock` for windows of time, and one `seeded(example)` fixture | see [e2e](#e2e) |
 
 ## What the libraries take
 
 Each goes from keasy once its library releases it; until then keasy's copy stays and is not
 improved.
 
-| What keasy carries | Where | Goes to | Lines | Owned on |
-|---|---|---|---|---|
-| The run worker: protocol, `Host` over a port, abort, errors across `structuredClone` | `lib/fossil/run-worker.ts`, `run.worker.ts`, test | fossil: `run` runs in a worker of its own | ~310 | [assistant](assistant.md#the-executor-leaves-the-pages-main-thread) |
-| An in-memory graph attached through buffers under a prefix | `lib/fossil/attach.ts` (`attachFiles`), test | `@fossil-lang/corpus`'s `attach({ files })` was this; it is deleted with the package, so keasy keeps ~40 lines of it | ~125 → ~40 | [assistant](assistant.md#the-preview-is-in-the-chat) |
-| The corpus's structure read three ways: raw SQL over `fossil_tables` and `fossil_columns` in `overview.tsx`, `useGraphKey`, `readJoinGraph` | `graphs/[id]/_parts/overview.tsx`, `lib/fossil/corpus.tsx` | `@kanzo-tech/graph`'s `readJoinGraph`, read once per corpus | ~60 | done 2026-10-15, [below](#the-catalogue-is-read-once) |
-| Three model doubles | `e2e/support/model.ts`, `lib/ai.ts` + `model-double.test.ts`, `nobel.fixture.ts` | one in `@kanzo-tech/llm`, through `__KANZO_TESTING__` | ~180 | [assistant](assistant.md#what-left-keasys-configuration) |
-| The conversation's keeping: whole saves after each reply, one at a time, the sealed record carried on in a new id | `lib/assistant-conversation.ts`, its hook test | `@kanzo-tech/ai`, on the AI SDK's `UIMessage[]` per id and `validateUIMessages`; keasy gives `load`/`save` against `/v1/conversations` and the privacy `keep` | ~200 | [assistant](assistant.md#the-conversation-is-kept) |
-| `requirements`, `words`, and the guessed half of `profile` and `model` | `graphs/new/_parts/assistant/tasks/` | `JoinResolver` and Ask's paths; labels from annotations with `Intl`; the corpus's facts on `JoinGraph` | ~415 | [assistant](assistant.md#the-three-tasks) |
-| The organization's admin console as a URL template in `KEASY_ORG_ADMIN_URL` | `settings/(admin)/members/page.tsx` | `@kanzo-tech/auth`, which knows the Keycloak realm and organization and provides their admin console URL | ~12 | [below](#dead-code-and-configuration) |
-| The model's load as a store of keasy's | — | already `@kanzo-tech/llm/local`'s `localModelLoad`, drawn as `ModelBadge` | 0 (gone) | [assistant](assistant.md#what-left-keasys-configuration) |
-| Library reads wrapped in keasy's own `useQuery` | `use-assistant.ts`, `use-source-descriptors.ts`, `overview.tsx`'s `useQueryRows` | the library's own hook, using TanStack Query inside on keasy's `QueryClient` from `QueryClientProvider` (a peer dependency) | ~40 | here |
+| What keasy carries | Where | Goes to | Owned on |
+|---|---|---|---|
+| The conversation's keeping: whole saves after each reply, one at a time, the sealed record carried on in a new id | `lib/assistant-conversation.ts`, its hook test | `@kanzo-tech/ai`, on the AI SDK's `UIMessage[]` per id and `validateUIMessages`; keasy gives `load`/`save` against `/v1/conversations` and the privacy `keep` | [assistant](assistant.md#the-conversation-is-kept) |
+| `requirements`, and the guessed half of `profile` and `model` | `graphs/new/_parts/assistant/tasks/` | `JoinResolver` and Ask's paths; labels from annotations with `Intl`; the graph's facts on `JoinGraph` | [assistant](assistant.md#the-three-tasks) |
+| Library reads wrapped in keasy's own `useQuery` | `use-assistant.ts`, `use-source-descriptors.ts`, `overview.tsx`'s `useQueryRows` | the library's own hook, using TanStack Query inside on keasy's `QueryClient` from `QueryClientProvider` (a peer dependency) | here |
 
 **The catalogue is read once.** `@kanzo-tech/graph` reads a graph's catalogue (`graphar_vertex_types`,
 `graphar_edge_types`, `graphar_properties`) into the `JoinGraph` — its types with rows and columns, its
-edges with their ends and rows — and `CorpusScope` holds it, cached under the corpus. Done 2026-10-15:
-the overview's types-and-edges tables, the graph key and Ask's graph are that one read, and keasy holds
+edges with their ends and rows — and `CorpusScope` holds it, cached under the corpus: the overview's types-and-edges tables, the graph key and Ask's graph are that one read, and keasy holds
 no SQL over the catalogue. *What would reverse it:* something the overview shows that the `JoinGraph`
 does not carry — then it goes into the library's read, not back into a query here.
 
@@ -73,94 +51,60 @@ the libraries then say they need rather than make a client of their own.
 
 ## The schema diagram goes
 
-**Decided 2026-10-13: the schema diagram is removed, and with it `@xyflow/react` and `elkjs`.** It
+**The schema diagram is removed, and with it `@xyflow/react` and `elkjs`.** It
 draws the types and edges that the Vertices and Edges tables right under it list, on a graph stack
 of its own: a layered ELK layout and a label width guessed from `text.length * 6.5`. keasy already
 has one view layer for graphs, `@kanzo-tech/graph`, and two heavy dependencies for a picture of two
-tables is the wrong trade. Goes: `graphs/[id]/_parts/schema-diagram.tsx` (128), `schema-layout.ts`
-(75), its test (24), its slot in the overview, and the two dependencies — ~225 lines. *What would
+tables is the wrong trade. *What would
 reverse it:* people who need the shape at a glance and do not get it from the tables, schemas too
 large to read as two lists — and then it is drawn with `@kanzo-tech/graph`'s canvas over the same
 `Structure`, never a second graph stack.
 
 ## Azure has one credential: a user-delegation SAS through the Azure SDK
 
-**Decided 2026-10-13: keasy vends Azure storage one way.** A service principal gets an Entra token,
+**keasy vends Azure storage one way.** A service principal gets an Entra token,
 the token gets a user-delegation key, and the key signs a directory-scoped user-delegation SAS
 (`sr=d`, `sdd`). This is how Apache Polaris and Unity Catalog vend Azure credentials, and it is what
 Microsoft recommends over account keys. The SAS is tied to an Entra identity, can be revoked with
 the key, and never carries the account key.
 
-**`AzureAccountKey` is removed entirely**: the `azure_account_key` secret kind
-(`domain/credential.rs`, its view, `storage_location.rs`'s arms), its sealing (`credentials/sealing.rs`),
-its store (`storage_client/mod.rs`), its validation, the account-key service SAS (`service_sas` in
-`vend.rs`), its schema in `api/openapi.json`, its entry in `web/src/lib/connections.ts`'s `CLOUDS` and
-the credential form, and its tests. Azure has one secret kind, `AzureServicePrincipal`.
+**There is no account-key kind**: Azure has one secret kind, `AzureServicePrincipal`.
 
-`storage_client/vend.rs` (~250 lines of Azure) today gets the Entra token and the key by hand and
-writes the string-to-sign and its HMAC. By reference, it moves to the Azure SDK for Rust:
+`storage_client/vend.rs` gets the Entra token and the key through the Azure SDK for Rust, and signs the SAS itself:
 
 - **The token**: `azure_identity`'s `ClientSecretCredential`, scope
-  `https://storage.azure.com/.default`, replacing `entra_token`.
-- **The key**: `azure_storage_blob` (1.1)'s `BlobServiceClient::get_user_delegation_key`, replacing
-  `user_delegation_key` and its XML parsing, so `quick-xml` goes.
+  `https://storage.azure.com/.default`.
+- **The key**: `azure_storage_blob` (1.1)'s `BlobServiceClient::get_user_delegation_key`.
 - **The signature**: the maintained `azure_storage_blob` 1.1 has no SAS builder. The retired
   `azure_storage` 0.21 has one (`BlobSharedAccessSignature`), and it is **rejected**: it is the SDK
   keasy would be leaving, it pins `azure_core` 0.21 beside 1.x, and it brings in the `time` crate as a
   third clock. keasy keeps a minimal user-delegation SAS signer (`user_delegation_sas`, ~60 lines with
   `hmac` and `sha2`) until `azure_storage_blob` can build the SAS, and then deletes it.
 
-The timestamps move from `chrono` to `jiff`, so the server has one time crate. The tests at the end
-of `vend.rs` stay: the SAS names the directory it opens, and a silent Entra or blob endpoint is named
-`silent` within keasy's deadline. The SDK's client options (retries, timeouts) are set so those tests
-keep passing; the service-SAS test goes with the account key. About 250 lines go now (the account-key
-kind across the server, API, web and tests, plus the token and key by hand), and about 60 more once
-the signer moves. *What would reverse it:* a customer whose storage account cannot use Entra. Then
+The timestamps are `jiff`'s, so the server has one time crate. The tests at the end of `vend.rs` stay: the SAS names the directory it opens, and a silent Entra or blob endpoint is named `silent` within keasy's deadline. The SDK's client options (retries, timeouts) are set so those tests keep passing. *What would reverse it:* a customer whose storage account cannot use Entra. Then
 an account key comes back as a second kind, signed by the SDK, never by hand.
 
-**Landed (2026-10-13), and decided: the token and the key are the Azure SDK's.** The account key and
-`chrono` are gone; `ClientSecretCredential` gets the token, `BlobServiceClient::get_user_delegation_key`
-the key, and `entra_token`, `user_delegation_key`, its XML and `quick-xml` went with them. The SDK sends
-through keasy's own `reqwest` client (`Bounded`, an `HttpClient`), with no retries, so the silent
-tests name Entra and Azure Blob within keasy's deadline as before; they reach a silent `https`
-listener, because the SDK reaches Entra over `https` only, and Azure Blob with a credential that has
-its token already. The signer stays: no 1.x crate builds a SAS.
+**The token and the key are the Azure SDK's.** The SDK sends through keasy's own `reqwest` client (`Bounded`, an `HttpClient`), with no retries, so the silent tests name Entra and Azure Blob within keasy's deadline; they reach a silent `https` listener, because the SDK reaches Entra over `https` only, and Azure Blob with a credential that has its token already. The signer stays: no 1.x crate builds a SAS.
 
 The SDK brings what rejecting `azure_storage` 0.21 was partly about: `time` 0.3 beside `jiff`, and
-`azure_core` 1.1's `hmac` 0.12 and `sha2` 0.10 beside keasy's 0.13 and 0.11. The owner took that price for less of keasy's own
-code between it and Entra (2026-10-13). *What would reverse it:* an SDK version, or a dependency it
+`azure_core` 1.1's `hmac` 0.12 and `sha2` 0.10 beside keasy's 0.13 and 0.11. The price is taken for less of keasy's own
+code between it and Entra. *What would reverse it:* an SDK version, or a dependency it
 brings, that breaks the build or an advisory check; or the `https`-only authority host blocking a real
-deployment's Entra — then the token and the key are fetched by hand again, as they were.
+deployment's Entra — then the token and the key are fetched by hand.
 
-## Dead code and configuration
+## Configuration is what a deployment sets
 
-Removed outright; a dev stack that needs it says `make clean` once in the release note.
-
-| What | Where | Lines |
-|---|---|---|
-| `NEXT_PUBLIC_KEASY_DEMO`, which nothing sets since the recorder hides the dev furniture itself | `compose.override.yaml`, `next.config.ts`, `providers.tsx`, the `Makefile` comment | ~18 |
-| `KEASY_ORG_ADMIN_URL`, set in no environment, so the Members page always says *Ask your platform administrator*. `@kanzo-tech/auth` provides the organization's admin console URL (it knows the Keycloak realm and organization), and the Members page links that (⇧ kanzo-ui, step 8) | `settings/(admin)/members/page.tsx` | ~12 |
-| `KEASY_OIDC_AUDIENCE` and `KEASY_BIND_ADDR`, read with defaults and set by no deployment: removed, and their values (`keasy-api`, `0.0.0.0:8080`) fixed in code | `server/src/configuration.rs` | ~10 |
-| `realm-migrate`, the shim for dev stacks provisioned before keasy declared itself in `compose.yaml` | `infra/dev/platform.yaml`, `realm-migrate.test.sh`, `infra-ci.yml` | ~90 |
-| README: the *stack seeded before the examples moved* paragraph, `infra/dev/roles.yaml` (gone; the roles are `configs.keasy-roles`); `make seed`'s help without CORDIS; `.env.example`'s `KANZO_UI_REF=v0.44.0` | `README.md`, `Makefile`, `.env.example` | ~10 |
-| `STORYBOARD.md`'s page objects (all built), another repo's to-do, and a settled question | `e2e/demos/STORYBOARD.md` | ~55 |
-| `/graphs/[id]/recipe`, a route with no page; `selectColumn` on two list pages with no bulk action; `build`'s `percent`, which nothing feeds | `route-config.ts`, list pages, `lib/fossil/build.ts` | ~15 |
-| `demo({ skip })`, which no demo passes, and the README's word for it | `demos/record/recorder.ts`, `README.md` | ~10 |
-| `test.fixme("26 …")`, kept only for `coverage.spec.ts`: scenario 26 maps to `server/tests/api/failures.rs`; the history in `scenarios.ts` rewritten as what 11–15 force today | `e2e/tests/api.spec.ts`, `support/stack/scenarios.ts` | ~15 |
-| `export` on thirteen names used only in their own file (`irisOf`, `inclusionId`, `backing`, `thingsOf`, `decisionItems`, `roleOf`, `sinkBase`, `sourceDescriptorsKey`, `serverSilent`, `getBranding`, `useAnswerRelations`, `GRAPH_POLL_MS`, `DEADLINE_MS`) | `web/src` | 0 |
-| **Dependencies**: web `openapi-fetch` (only `@keasy/api` uses it), `streamdown` (`@kanzo-tech/ai`'s dependency, not a peer), `@fossil-lang/storage` (the executor's); server `tokio-stream` (no use), `chrono` beside `jiff` (with the Azure step) | `web/package.json`, `server/Cargo.toml` | 5 |
-
-*What would reverse it:* for each variable, a deployment that sets it — then it is set in
-`compose*.yaml` and `prod.env` and documented in the README, not left as a default nobody turns. That
-includes the audience and the bind address, which come back when a deployment needs them. For the
-console URL, an organization whose console is not the Keycloak one `@kanzo-tech/auth` knows. For the
-dependencies, an import of them.
+keasy reads no variable that no deployment sets, and ships no flag for a state nothing turns on: a
+value nothing varies is fixed in code. *What would reverse it:* for each variable, a deployment that
+sets it — then it is set in `compose*.yaml` and `prod.env` and documented in the README, not left as
+a default nobody turns. That includes the OIDC audience and the bind address. For the Members page's
+console link, an organization whose console is not the Keycloak one `@kanzo-tech/auth` knows. For a
+dependency, an import of it.
 
 ## Guards become lint rules
 
-`web/src/failure-guards.test.ts` (131) and `server/src/guards.rs` (61) are regex scanners over the
-source for rules ESLint and Clippy state exactly, with the per-site reason as the tools' own
-suppression comment:
+The rules ESLint and Clippy state exactly are lint rules, with the per-site reason as the tools' own
+suppression comment, not regex scanners over the source:
 
 | Guard | Rule |
 |---|---|
@@ -170,9 +114,7 @@ suppression comment:
 | read with `useSuspenseQuery` but for named exceptions | ESLint `no-restricted-imports`, `importNames: ["useQuery"]` from `@tanstack/react-query`; an exception is `// eslint-disable-next-line … -- <reason>` at the site |
 | `let _ = … .await` without a reason | Clippy `let_underscore_must_use` and `let_underscore_future` in `[lints.clippy]`, and `#[expect(clippy::let_underscore_must_use, reason = "…")]` at the site; `unused_result_ok` also catches the `.ok();` the guard says it cannot |
 
-The error-boundary-per-route-group check stays a test: no lint rule reads the file tree. The
-`notFound()` guard and the exception naming `use-folder-availability.ts` guard nothing any more and
-go. ~130 lines. ESLint already runs in `web-ci.yml` and Clippy with `-D warnings` in `server-ci.yml`,
+The error-boundary-per-route-group check is a test: no lint rule reads the file tree. ESLint already runs in `web-ci.yml` and Clippy with `-D warnings` in `server-ci.yml`,
 so the rules are enforced where the tests were. *What would reverse it:* a rule a linter cannot
 state — one that reads two files at once, as the boundary check does — which stays a test, with what
 it cannot prove.
@@ -204,9 +146,9 @@ Each is TanStack Query's own pattern, already a dependency.
   `use-browser-graph-runner.ts`) become `useMutation({ mutationKey })` read with `useMutationState`.
   ~70. If the conversation's keeping moves to `@kanzo-tech/ai` first, its queue goes with it. *What
   would reverse it:* a write that must merge with the one before it rather than wait for it.
-  **Landed (2026-10-13)** but the two module stores: a build's state names its graph before it ends,
-  and a live run holds its Stop and its ending, neither of which a mutation's state carries; they
-  stay `useSyncExternalStore` until fossil's worker (step 9) takes the run.
+  The two module stores are the exception: a build's state names its graph before it ends, and a
+  live run holds its Stop and its ending, neither of which a mutation's state carries; they stay
+  `useSyncExternalStore`.
 
 ## Facts in place of guesses
 
@@ -234,38 +176,28 @@ Each is TanStack Query's own pattern, already a dependency.
 - **Formats are fossil's.** `connections/new/page.tsx` hard-codes *CSV, Parquet, JSON* and *ShEx,
   SHACL, RDF* while the connection page reads fossil's `formats()`; the source picker picks an icon
   from the extension while each file carries its `reader`. Both read `formats()` (`formatsQuery`).
-  `bindingName` re-derives `grammar.bnf`'s `IDENT`. fossil 0.3.0-alpha.32 exports the identifier rule
-  as `bindingName(file, { signal })` from `@fossil-lang/wasm`, derived from the lexer: when keasy moves
-  to alpha.32, its own `bindingName` (`sources.ts`) is deleted and both call sites (`sources.ts`,
-  `assistant/tasks/profile.ts`) call fossil's. keasy passes a bare file name, so names are unchanged,
-  but fossil's also prefixes `_` to a reserved word, which keasy's copy misses. ~15. *What would reverse it:* nothing keasy can see — the formats
+  `bindingName` is fossil's, derived from the lexer, and both call sites (`sources.ts`,
+  `assistant/tasks/profile.ts`) call it. *What would reverse it:* nothing keasy can see — the formats
   and the grammar are fossil's to say.
-
-**Landed (2026-10-13)** but two. Credential field labels are still the property names: utoipa 5 has
-no `title` on a field, only on a type, so the contract cannot say them yet. The source picker still
-picks an icon by extension; the file's `reader` names a format, not whether it is a table.
 
 ## e2e
 
-- **A typed API client.** `support/stack/api.ts`'s `api(page, method, path, body)` — `fetch` in
-  `page.evaluate`, every path a string, every body `unknown`, ~40 call sites casting `.body as {…}` —
-  becomes `@keasy/api`'s `createApiClient({ baseUrl, fetch: (r) => page.request.fetch(r) })`, which
-  shares the context's cookies and goes through the BFF as now. Requests malformed on purpose
-  (scenario 23) keep a raw call. ~30.
+- **A typed API client.** `support/stack/api.ts` is `@keasy/api`'s `createApiClient`, which shares
+  the context's cookies and goes through the BFF. Requests malformed on purpose (scenario 23) keep a
+  raw call.
 - **`page.clock` for windows of time.** `graphs.spec.ts`'s 7 s and 3 s waits assert that nothing
   happens over a window; `page.clock.install()` and `fastForward()` assert the same in milliseconds,
   and so do the poll's and the autosave's timers. ~10.
 - **One smoke fixture.** `geoGraph`, `snbGraph`, `cordisGraph` and `nobelGraph` differ by name and
-  budget: one `seeded(example)` worker fixture keyed by `EXAMPLES`, and `s3-init`'s four seed blocks
-  one `for ex in /examples/*/` loop, as the README already says an example is one folder. ~25.
+  budget: one `seeded(example)` worker fixture keyed by `EXAMPLES`. ~25.
 
 *What would reverse it:* a call the typed client cannot express — a body that must be wrong on
 purpose — which stays a raw call, and only that one.
 
-**Landed (2026-10-13): the typed client and the s3-init loop.** Not landed: `page.clock` — asserting
-that nothing happened after a `fastForward` needs a point where the page's requests have settled,
-which the clock does not give, so the windows stay real; and one `seeded(example)` fixture — seeding
-inside a test puts SNB's 15 minutes under the test's timeout instead of the worker fixture's.
+The windows stay real where `page.clock` cannot help: asserting that nothing happened after a
+`fastForward` needs a point where the page's requests have settled, which the clock does not give.
+One `seeded(example)` fixture is not taken: seeding inside a test puts SNB's 15 minutes under the
+test's timeout instead of the worker fixture's.
 
 ## Not decided here
 

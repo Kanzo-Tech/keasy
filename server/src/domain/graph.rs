@@ -100,11 +100,9 @@ pub struct Graph {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub script: Option<String>,
     /// What the last run reported, verbatim and **opaque**: fossil's run report
-    /// (`RunReport`, `{dest, dropped}`). keasy stores it, hands it back and
-    /// never reads a field of it — the last time a host re-typed this struct,
-    /// it ended up asking for `vertex/<Type>.parquet`, a file the layout pass
-    /// deletes. What the corpus holds is the corpus's to say: a reader opens
-    /// it and asks its `fossil_tables` and `fossil_columns`.
+    /// (`RunReport`, `{ location, dropped }`). keasy stores it, hands it back
+    /// and never reads a field of it. What the graph holds is the graph's to
+    /// say: a reader opens it and asks its GraphAr catalogue.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[schema(value_type = Option<Value>)]
     pub report: Option<serde_json::Value>,
@@ -286,7 +284,7 @@ impl Graph {
     /// `None` for a draft that has none yet. **This is the one place keasy
     /// composes an output path**, and it is keasy's to compose — a graph's home
     /// is the host's decision, not the language's. Everything below it
-    /// (table names, file names) belongs to fossil, and the corpus says it.
+    /// (table names, file names) belongs to fossil, and the graph says it.
     pub fn output_under(&self, sink: &StorageLocation) -> Option<StorageLocation> {
         self.folder.as_deref().map(|folder| sink.child(folder))
     }

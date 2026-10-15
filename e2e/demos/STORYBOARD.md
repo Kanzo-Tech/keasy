@@ -17,14 +17,14 @@ step the subtitle goes and the page is held for `TAIL` (3 s, `record/pace.ts`) b
 | what `chapter()` shows, before the action | the exact harness / page-object call; brushes and lassos in data | what must be true after, asserted with `expect.poll` over a harness method |
 
 `env` is `await playwright(page)`, made **before** the first `page.goto` (the hook registers charts
-and canvases as they mount). `bar` is `await env.harness(FilterBarHarness)`. `discover`, `settings`,
+and canvases as they mount). `bar` is `await env.getHarness(FilterBarHarness)`. `discover`, `settings`,
 `search`, `rules`, `ask` are keasy's page objects (`e2e/support/app/`). What the filters keep is the page's one
 count, the filter bar's readout, read in full by `discover.kept()`: `"778"` of the Dashboard view's
 relation, `"132"` of the Graph view's nodes.
 
 Every number below was computed from the example's CSV/JSON with DuckDB; the query is under each
 demo's **Numbers**. The OpenFlights and SNB queries run in `infra/dev/examples/<name>/data` after
-`sh infra/dev/seed.sh`; Nobel's in PR #119's `infra/dev/examples/nobel/data`.
+`sh infra/dev/seed.sh`; Nobel's in `infra/dev/examples/nobel/data`.
 
 ---
 
@@ -38,7 +38,7 @@ demo's **Numbers**. The OpenFlights and SNB queries run in `infra/dev/examples/<
 
 1. `env = await playwright(page)`; seed.
 2. `page.goto(discoverUrl(id, { view: "dashboard" }))` — never the Graph view: 327K nodes.
-3. `dashboard = await env.harness(DashboardHarness); await dashboard.settled()`.
+3. `dashboard = await env.getHarness(DashboardHarness); await dashboard.settled()`.
 
 **Steps**
 
@@ -82,7 +82,7 @@ depends on which relations the mapping writes as edges); read it off GraphCounts
 **Arrange (off camera)**
 
 1. `env = await playwright(page)`; seed; `discover.open(id)` (Graph view, Info docked).
-2. `graph = await env.harness(GraphCanvasHarness); await graph.ready()`.
+2. `graph = await env.getHarness(GraphCanvasHarness); await graph.ready()`.
 3. `graph.pause()` — the layout is not waited on: spread, the cloud looked as it did before, so the
    wait was a stretch of take where nothing changed.
 4. `settings.marks("Legible"); settings.edges("Hidden"); settings.labels(0)` — the 36,906 routes are fog.
@@ -316,7 +316,7 @@ subjects of rudof's Shape Fragment instead, so step 6's check is what proves the
 2. `discover.open(id)`; `discover.onMap()` (each award at its first affiliation's city, edges hidden);
    `settings.timeline("date")`.
 3. `discover.view("Dashboard")`; `discover.relation("LaureateAward", [">laureate>Laureate", ">birthPlace>Country"])`; back to Graph; `panel("Info")`.
-4. `timeline = env.harness(TimelineHarness.with({ title: /^Timeline: / }))`.
+4. `timeline = env.getHarness(TimelineHarness.with({ title: /^Timeline: / }))`.
 
 **Steps**
 

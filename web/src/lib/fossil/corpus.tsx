@@ -50,11 +50,10 @@ export interface Corpus {
  * withdrawn filter asks for, the pre-aggregator's tables — and those must find the corpus attached.
  *
  * While a page's children suspend on their own reads, React commits nothing of it, so nothing
- * observes the corpus then either and the timer runs. That is why this was once `gcTime: Infinity`:
- * a short `gcTime` is only floored at 1 s by useSuspenseQuery (`ensureSuspenseTimers`), and a corpus
- * whose first draw took longer, as LDBC SNB's 327.6K vertices do on a CI runner, was collected and
- * detached under its own readers. Minutes are not that floor: a page whose first draw has not
- * committed in five has failed already, so the window no longer needs closing by never collecting.
+ * observes the corpus then either and the timer runs. A short `gcTime` is only floored at 1 s by
+ * useSuspenseQuery (`ensureSuspenseTimers`), and a corpus whose first draw took longer, as LDBC SNB's
+ * 327.6K vertices do on a CI runner, would be collected and detached under its own readers. Minutes
+ * are not that floor: a page whose first draw has not committed in five has failed already.
  */
 export function corpusQuery(graphId: string) {
   return corpusOf(graphId, (attachedTo, signal) => attachJob(graphId, { engine: attachedTo, host, signal }));

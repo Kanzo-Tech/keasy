@@ -1,6 +1,6 @@
 # Data-quality rules for the OpenFlights graph mapping.fossil writes: a SHACL
 # Core shapes graph to drop on its rules badge. The terms are shapes.shex's, as
-# the corpus's `triples` view states them — schema.org for the airport and its
+# `Mapping.triples` states them — schema.org for the airport and its
 # codes, WGS 84 for its position, `of:` for the dataset's own.
 #
 # The shapes say what a scheduled-service airport should carry, not what

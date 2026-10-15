@@ -58,7 +58,7 @@ export default defineConfig({
       dependencies: ["setup"],
       use: { storageState: ".auth/editor.json" },
     },
-    // The dev seeds (`make seed`: LDBC SNB SF0.1, OpenFlights) through every view, where a console
+    // The dev seeds (`make seed`) through every view, where a console
     // or page error fails the test (support/smoke.ts). Needs the seeds in the store.
     {
       name: "smoke",

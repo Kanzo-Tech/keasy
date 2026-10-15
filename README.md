@@ -222,8 +222,9 @@ change is the database dropped and created again, so wipe the volume (`make clea
 | `make api` | Regenerate the API contract ([API contract](#api-contract)) |
 
 Everything else is `docker compose`, which reads `compose.yaml` and `compose.override.yaml` on its
-own. The platform's release is `KANZO_UI_REF`, in the `include:` of `compose.override.yaml`, and moves with `@kanzo-tech/*` in `web/package.json`; the Rust toolchain is
-pinned once, in `server/rust-toolchain.toml`. Images are published to GHCR by
+own. The platform's release is `KANZO_UI_REF`, in the `include:` of `compose.override.yaml`, a literal
+default set by hand to the `@kanzo-tech/ui` release that `web/package.json` names, and derived from nothing;
+the Rust toolchain is pinned once, in `server/rust-toolchain.toml`. Images are published to GHCR by
 `.github/workflows/images.yml` on `v*` tags, after the server and web CI pass. There is no deployment yet:
 what one will need to know is in [`docs/design/permissions.md`](docs/design/permissions.md#when-a-deployment-exists)
 and [`docs/design/assistant.md`](docs/design/assistant.md).

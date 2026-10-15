@@ -258,7 +258,7 @@ pub async fn within(deadline: Duration, request: Request<Body>, next: Next) -> R
 }
 
 /// Keyed by who is calling, not from where. Every request reaches this server
-/// from the web's BFF, so the peer address is one address for the whole
+/// through the web's forwarder, so the peer address is one address for the whole
 /// workspace; the verified token's subject is the only per-caller identity at
 /// this layer. Shedding anonymous floods by client address is the ingress's graph,
 /// where that address is still known.

@@ -1,6 +1,5 @@
 "use client";
 
-import { AuthProvider } from "@kanzo-tech/auth";
 import { defaultThemePair, themeIndex, type SectionManifest, type ThemeOption } from "@kanzo-tech/theme";
 import { GRAPH_SECTION } from "@kanzo-tech/graph/section";
 import { KanzoThemeProvider, cookieStorageAdapter, themeScript, LocaleProvider } from "@kanzo-tech/ui";
@@ -9,7 +8,6 @@ import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { useServerInsertedHTML } from "next/navigation";
 import { useMemo } from "react";
 import { queryClient } from "@/lib/api/query-client";
-import { auth } from "@/lib/api/session";
 import type { Branding } from "@/lib/branding";
 import { BrandingProvider } from "@/lib/branding-context";
 import { toastError } from "@/lib/errors";
@@ -75,12 +73,10 @@ export function Providers({
       themes={look.themes}
     >
       <BrandingProvider value={branding}>
-        {/* The page's one query client, above everything that reads through it: the session, and the
+        {/* The page's one query client, above everything that reads through it: the API, and the
             fields and answers kanzo-ui's Dashboard and Ask read once per page. */}
         <QueryClientProvider client={queryClient}>
-          <AuthProvider auth={auth}>
-            <LocaleProvider locale={LOCALE}>{children}</LocaleProvider>
-          </AuthProvider>
+          <LocaleProvider locale={LOCALE}>{children}</LocaleProvider>
           <ReactQueryDevtools initialIsOpen={false} />
         </QueryClientProvider>
       </BrandingProvider>

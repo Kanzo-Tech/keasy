@@ -12,7 +12,7 @@ import { type FossilProgram, grammarFor, openProgram } from "@fossil-lang/wasm";
 import { defineTask, type Finding } from "@kanzo-tech/ai/task";
 import type { Accepted, AcceptedEdge, AcceptedType } from "./model";
 import { delimiterOf, type Profiled } from "./profile";
-import { splitWords } from "@kanzo-tech/mosaic";
+import { splitWords } from "@kanzo-tech/relations";
 
 /** fossil's word on a program: every diagnostic of a check of `program`, the prelude included. */
 export type Check = (program: string, signal?: AbortSignal) => Promise<readonly FossilDiagnostic[]>;

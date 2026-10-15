@@ -1,6 +1,6 @@
-/** Where a failed sign-in, callback or sign-out lands, with `?code=`; `proxy.ts` keeps it public. */
+/** Where a forwarded token that did not verify, or keys that could not be had, land, with `?code=`. */
 export const PROBLEM_PAGE = "/auth/error";
 
-/** The BFF's API proxy: same origin, forwarded to the resource server with the session's token. */
+/** The API forward: same origin, to the organization's server with the token the edge forwarded. */
 export const API = "/api";
 

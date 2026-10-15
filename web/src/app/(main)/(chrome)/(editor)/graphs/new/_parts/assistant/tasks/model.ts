@@ -12,7 +12,7 @@ import { jsonSchema } from "ai";
 import { defineTask, type Decision, type Finding } from "@kanzo-tech/ai/task";
 import type { Relation } from "../model";
 import { type Inclusion, type Profiled, rowsOf, type Source, sourceNamed, valuesOf } from "./profile";
-import { splitWords } from "@kanzo-tech/mosaic";
+import { splitWords } from "@kanzo-tech/relations";
 
 // ── The artefact ────────────────────────────────────────────────────────────
 

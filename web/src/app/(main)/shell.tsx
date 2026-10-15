@@ -22,7 +22,6 @@ import {
   MenuTrigger,
   Separator,
   ShellHeader,
-  ShellMain,
   Show,
   Sidebar,
   SidebarContent,
@@ -48,7 +47,6 @@ import {
 import { Link } from "@kanzo-tech/navigation/next";
 import { useBranding } from "@/lib/branding-context";
 import { displayRole, ROLE_LABEL, switchable, type Role } from "@/lib/auth/roles";
-import { ProblemView } from "@/components/problem-view";
 import { initials } from "@/lib/ui/format";
 import { generateBreadcrumbs, getSidebarRoutes } from "@/app/(main)/_parts/route-config";
 import { HeaderEndContext } from "@/app/(main)/_parts/header-end";
@@ -72,7 +70,7 @@ function workspaceUrl(slug: string, current: string) {
  */
 export function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { session, status, error, signOut } = useSession();
+  const { session, signOutUrl } = useSession();
   const { isMobile, setOpenMobile, state } = useSidebar();
   const [confirmingLogout, setConfirmingLogout] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -183,14 +181,10 @@ export function Shell({ children }: { children: React.ReactNode }) {
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                     <AlertDialogAction
                       disabled={loggingOut}
-                      onClick={async () => {
+                      onClick={() => {
+                        // The edge signs out, here and at the identity provider, and comes back to sign in.
                         setLoggingOut(true);
-                        try {
-                          await signOut({ returnTo: "/" });
-                        } finally {
-                          // Signing out navigates away; if it fails instead, the button comes back.
-                          setLoggingOut(false);
-                        }
+                        window.location.assign(signOutUrl("/"));
                       }}
                       variant="destructive"
                     >
@@ -214,16 +208,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           </Suspense>
           <div className="ms-auto flex items-center gap-2 empty:hidden" ref={setHeaderEnd} />
         </ShellHeader>
-        <HeaderEndContext value={headerEnd}>
-          {/* A session that could not be read is an outage, not a sign-out: say it, by its code. */}
-          {status === "failed" ? (
-            <ShellMain className="items-center justify-center p-4">
-              <ProblemView className="w-full max-w-xl" error={error} />
-            </ShellMain>
-          ) : (
-            children
-          )}
-        </HeaderEndContext>
+        <HeaderEndContext value={headerEnd}>{children}</HeaderEndContext>
       </SidebarInset>
     </>
   );
@@ -295,7 +280,7 @@ function WorkspaceSwitcher({ role, collapsed, isMobile }: { role: Role | null; c
     if (slug === current) return;
     setSwitching(titleCase(slug));
     await queryClient.resetQueries();
-    // The other instance has its own BFF, which signs the person in on arrival.
+    // The edge signs the person in on the other organization's host, without a form while the identity provider's session lasts.
     window.location.assign(`${workspaceUrl(slug, current)}/`);
   }
 

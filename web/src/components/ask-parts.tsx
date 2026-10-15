@@ -3,7 +3,7 @@
 import type { ComponentProps } from "react";
 import type { ChatDataRenderers } from "@kanzo-tech/ai";
 import { AnswerCard, askEdit, AskChips, type AskMessage, type AskOutput, type AskTurn } from "@kanzo-tech/ai/data";
-import type { JoinGraph } from "@kanzo-tech/mosaic";
+import type { JoinGraph } from "@kanzo-tech/relations";
 import { Question, QuestionChoice, QuestionChoices, QuestionPrompt } from "@kanzo-tech/ui";
 import { describeProblem } from "@/components/problem-view";
 

@@ -5,8 +5,8 @@ import { describe, expect, it, vi } from "vitest";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const ENGINE = { coordinator: {} };
-vi.mock("@kanzo-tech/mosaic", () => ({ engine: async () => ENGINE }));
+const ENGINE = {};
+vi.mock("@kanzo-tech/mosaic/engine", () => ({ engine: async () => ENGINE }));
 vi.mock("@/lib/fossil/host", () => ({ host: { name: "keasy" } }));
 vi.mock("@/lib/errors", () => ({ toastError: vi.fn() }));
 const FILES = [{ path: "fossil.graph.yml", bytes: new Uint8Array([110]) }];

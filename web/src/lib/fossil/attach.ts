@@ -1,7 +1,7 @@
 import { mount } from "@fossil-lang/storage";
 import { FossilError, type GraphFile, type Host } from "@fossil-lang/types";
 import { attachGraph, GraphArError, type GraphAttachment } from "@kanzo-tech/graphar-duckdb";
-import type { Engine } from "@kanzo-tech/mosaic";
+import type { Engine } from "@kanzo-tech/mosaic/engine";
 
 import { ClientError } from "@/lib/errors";
 

@@ -4,7 +4,7 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 // eslint-disable-next-line no-restricted-imports -- suggested questions: a failure leaves no pills, and the chat works the same
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Sparkles } from "lucide-react";
-import type { JoinGraph } from "@kanzo-tech/mosaic";
+import type { JoinGraph } from "@kanzo-tech/relations";
 import { useClauses, useMosaic } from "@kanzo-tech/ui/analytics";
 import { Badge, EmptyDescription, EmptyHeader, EmptyIndicator, EmptyRoot } from "@kanzo-tech/ui";
 import { Chat, ChatSkeleton } from "@kanzo-tech/ai";

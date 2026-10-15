@@ -3,8 +3,9 @@
 import { createContext, use, useEffect, useMemo, type ReactNode } from "react";
 // eslint-disable-next-line no-restricted-imports -- the mapping describes the graph after its first paint; a mapping that cannot be read leaves the graph in the names its tables have
 import { queryOptions, useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { readJoinGraph } from "@kanzo-tech/graph";
-import { engine, withMapping, type Engine, type JoinGraph, type TableExpr } from "@kanzo-tech/mosaic";
+import { engine, type Engine } from "@kanzo-tech/mosaic/engine";
+import type { TableExpr } from "@kanzo-tech/mosaic";
+import { readJoinGraph, withMapping, type JoinGraph } from "@kanzo-tech/relations";
 import { MosaicProvider, useMosaic } from "@kanzo-tech/ui/analytics";
 import { settled } from "@/lib/api/settled";
 import { toastError } from "@/lib/errors";
@@ -29,7 +30,7 @@ export const GRAPH_GC_MS = 5 * 60_000;
  * A graph attached under {@link AttachedGraph.name} to the page's one engine: a graph's output, GraphAr's
  * `attachGraph` over the credential {@link host} vends for it (`lib/fossil/attach.ts`) — or the
  * assistant's preview, answered in memory (`lib/fossil/preview.ts`). SQL names it
- * `"<name>"."<Type>"`, and what it holds is its `graphar_*` relations, asked through the coordinator
+ * `"<name>"."<Type>"`, and what it holds is its `graphar_*` relations, asked through the engine
  * by whoever needs to know; what its tables mean is `mapping.ttl` beside it (`mappingQuery`).
  * Everything read off a graph is keyed and named by `name`.
  */
@@ -37,7 +38,7 @@ export interface AttachedGraph {
   /** What SQL calls it, and what its cached reads are keyed under ({@link graphKey}). */
   name: string;
   attachment: Attachment;
-  /** The page's one engine, the graph attached to it: what reads outside the coordinator's queue, as the Ask agent does. */
+  /** The page's one engine, the graph attached to it: what the charts, the graph and the Ask agent read through. */
   engine: Engine;
 }
 
@@ -131,7 +132,7 @@ export function GraphScope({ graph, children }: { graph: AttachedGraph; children
   const plain = settled(
     useSuspenseQuery({
       queryKey: [...graphKey(graph.name), "join-graph"],
-      queryFn: () => readJoinGraph(graph.engine.coordinator, graph.name),
+      queryFn: ({ signal }) => readJoinGraph(graph.engine, graph.name, { signal }),
       ...ONCE,
     }),
   );
@@ -143,7 +144,7 @@ export function GraphScope({ graph, children }: { graph: AttachedGraph; children
   const joins = useMemo(() => (mapping.data ? withMapping(plain, mapping.data.model()) : plain), [plain, mapping.data]);
   return (
     <GraphContext value={graph}>
-      <MosaicProvider coordinator={graph.engine.coordinator} joins={joins} onFailure={chartFailed}>
+      <MosaicProvider engine={graph.engine} joins={joins} onFailure={chartFailed}>
         {children}
       </MosaicProvider>
     </GraphContext>

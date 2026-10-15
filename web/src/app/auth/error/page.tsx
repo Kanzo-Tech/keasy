@@ -1,9 +1,9 @@
 import { AuthProblem } from "./auth-problem";
 
 /**
- * Where a sign-in that failed lands: the auth callback redirects here with the `AuthError`'s code
- * in `?code=` (its `problemPage`), and `(main)/layout.tsx` does with `session/unavailable`. Outside `(main)`, so it
- * needs no session, and public in `proxy.ts`, so an anonymous browser is not sent round again.
+ * Where a session that could not be read lands: `auth.session({ required: true })` redirects here
+ * with the problem's code in `?code=` (`problemPage`) — a forwarded token that did not verify, or the
+ * realm's keys not answering. Outside `(main)`, so it reads no session.
  */
 export default async function AuthErrorPage({
   searchParams,

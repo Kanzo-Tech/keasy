@@ -408,7 +408,7 @@ from awards aw where aw.lat is not null;
 | 2 | Say what it is about, and send | type the sentence in *What is this data about?*, Enter | the details pinned above the thread hold the sentence |
 | 3 | What I am doing, step by step | scroll to the *What I am doing* steps | *Proposed the types* |
 | 4 | What is in your data | *Here's what's in your data* | six things, one per file |
-| 5 | What has no safe answer is yours to decide | `chooseRadio(…, LINK, "One: an award has institutions")` | that option is checked |
+| 5 | What has no safe answer is yours to decide | `chooseRadio(…, LINK, "Only a link: award → institution")` | that option is checked |
 | 6 | What has a safe default is taken, and said | scroll to the assumption | *I assumed: id* (a country by its id) |
 | 7 | Take the questions it suggests | the chips *How many prizes were awarded in each category?* and *Which institutions are behind the most prizes?* | two questions kept |
 | 8 | That's all: show me a preview | *That's all, show me a preview* | *Here is your data over its first 200 rows* |

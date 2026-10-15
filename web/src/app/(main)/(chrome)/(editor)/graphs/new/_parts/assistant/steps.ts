@@ -8,7 +8,6 @@
 
 import type { StepsGroup } from "./conversation";
 import { type BuildProgress, type DecisionItem, optionOf, type ReadingProgress, type TaskFailure, type Thing } from "./model";
-import { inWords } from "./tasks/words";
 
 /** The rows of the preview run, as far as a step needs to tell them. */
 export type RunState = "idle" | "running" | "ready" | "failed";
@@ -69,7 +68,7 @@ function readSteps(f: StepFacts): Step[] {
     steps.push({
       id: "decide",
       status: "active",
-      label: `Waiting for you: ${open === 1 ? "one decision has" : `${inWords(open, "decision")} have`} no safe answer`,
+      label: `Waiting for you: ${open} left to decide, with no safe answer`,
     });
   }
   // The work to come is on the list from the start; once the questions are asked it moves to its own.

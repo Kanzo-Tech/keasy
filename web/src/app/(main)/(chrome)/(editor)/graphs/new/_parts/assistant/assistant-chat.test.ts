@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { type AssistantMessage, toStored } from "@/lib/assistant-conversation";
 import { AssistantChat, type AssistantChatProps } from "./assistant-chat";
+import { holdsLine } from "./turns";
 import type { DecisionItem, Question } from "./model";
 import type { Seed } from "./use-assistant";
 import type { SourceFile } from "../sources";
@@ -224,14 +225,14 @@ describe("the assistant, as a conversation", () => {
     expect(field.disabled).toBe(true);
     expect(field.placeholder).toBe("Answer above, or ask your own question…");
     expect(send(host).disabled).toBe(true);
-    expect(host.querySelector('[aria-label="What I am doing"]')?.textContent).toContain("Waiting for you: one decision has no safe answer");
+    expect(host.querySelector('[aria-label="What I am doing"]')?.textContent).toContain("Waiting for you: 1 left to decide, with no safe answer");
   });
 
   it("each decision is a turn of its own, counted, and picking an option emits its id", async () => {
     const onChoose = vi.fn();
     const { host } = mount({ selected: new Set(["nobel:laureates.csv"]), decisions: [award, country], onChoose });
     await through(host);
-    expect(host.textContent).toContain("two things have no safe answer");
+    expect(host.textContent).toContain("Decisions with no safe answer: 2. They are yours to decide.");
     expect(host.textContent).toContain("Decision 1 of 2");
     expect(host.textContent).not.toContain(country.decision.question);
     const radios = [...host.querySelectorAll<HTMLInputElement>('input[type="radio"]')];
@@ -602,5 +603,14 @@ describe("the assistant, wired", () => {
     const note = host.querySelector("[data-built]")!;
     expect(note.nextElementSibling?.getAttribute("data-decision")).toBe("award-key");
     expect(scrolled).toHaveBeenCalledWith(note);
+  });
+});
+
+describe("what each one holds", () => {
+  it("is said in the data's own words, made readable", () => {
+    expect(holdsLine([])).toBeNull();
+    expect(holdsLine(["name", "gender"])).toBe("name and gender");
+    expect(holdsLine(["name", "gender", "birth_date", "birth_country", "died"])).toBe("name, gender, birth date, birth country and died");
+    expect(holdsLine(["id", "name", "gender", "birth_date", "birth_country", "died"])).toBe("id, name, gender, birth date and 2 more");
   });
 });

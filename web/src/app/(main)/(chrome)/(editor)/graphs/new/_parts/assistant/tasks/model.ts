@@ -13,7 +13,6 @@ import { defineTask, type Decision, type Finding } from "@kanzo-tech/ai/task";
 import type { Relation } from "../model";
 import { type Inclusion, type Profiled, rowsOf, type Source, sourceNamed, valuesOf } from "./profile";
 import { splitWords } from "@kanzo-tech/mosaic";
-import { camel, listed, pascal, plural, singular, withArticle } from "./words";
 
 // ── The artefact ────────────────────────────────────────────────────────────
 
@@ -105,10 +104,10 @@ export function decisionsOf(draft: Draft, profiled: Profiled): Decision[] {
     const [from, to] = [splitWords(edge.from), splitWords(edge.to)];
     decisions.push({
       id: countDecision(link),
-      question: `Each row of ${link} links ${withArticle(from)} to ${withArticle(to)}. When two ${plural(from)} share ${withArticle(to)}, is that one thing or two?`,
+      question: `Each row of ${link} links ${from} to ${to}. Is a row only that link, or a thing counted on its own?`,
       options: [
-        { id: "link", label: `One: ${withArticle(from)} has ${plural(to)}`, detail: `${link} only links them` },
-        { id: "thing", label: `Two: each row is ${withArticle(splitWords(singular(link)))}`, detail: `counted on its own` },
+        { id: "link", label: `Only a link: ${from} → ${to}`, detail: `${link} only links them` },
+        { id: "thing", label: `A thing of its own: ${splitWords(link)}`, detail: `counted on its own` },
       ],
     });
   }
@@ -382,6 +381,33 @@ export function accept(draft: Draft, profiled: Profiled, option: (decision: stri
   return { types, edges };
 }
 
+// ── Identifiers ─────────────────────────────────────────────────────────────
+
+/** A file's name as a type's: `affiliations` → `affiliation`. */
+function singular(noun: string): string {
+  if (/ies$/i.test(noun)) return `${noun.slice(0, -3)}y`;
+  if (/(ss|us|is)$/i.test(noun)) return noun;
+  if (/(xes|ches|shes|sses)$/i.test(noun)) return noun.slice(0, -2);
+  return noun.replace(/s$/i, "");
+}
+
+/** `nobel affiliations` → `NobelAffiliations`. */
+function pascal(words: string): string {
+  return words
+    .split(/[^A-Za-z0-9]+/)
+    .filter(Boolean)
+    .map((w) => w[0]!.toUpperCase() + w.slice(1))
+    .join("");
+}
+
+/** `Laureate` → `laureate`. */
+const camel = (name: string) => (name ? name[0]!.toLowerCase() + name.slice(1) : name);
+
+const list = new Intl.ListFormat("en-GB", { type: "conjunction" });
+
+/** "a, b and c". */
+export const listed = (items: readonly string[]) => list.format(items);
+
 // ── What the person reads ───────────────────────────────────────────────────
 
 /**
@@ -410,7 +436,7 @@ export function relationsOf(accepted: Accepted, profiled: Profiled): Relation[] 
     const fields = type.fields.filter((f) => !type.identity.includes(f.column) && !out.some((e) => e.column === f.column));
     const parts = [...out.map((e) => ({ edge: e })), ...fields.map((f) => ({ field: f }))].slice(0, 4);
     if (parts.length === 0) return [];
-    const said = parts.map((p) => ("edge" in p ? (p.edge.many ? plural(splitWords(p.edge.name)) : withArticle(splitWords(p.edge.name))) : withArticle(splitWords(p.field.name))));
+    const said = parts.map((p) => splitWords("edge" in p ? p.edge.name : p.field.name));
 
     const valueOf = (row: Record<string, string | null>, part: (typeof parts)[number]): string | null => {
       if ("field" in part) return row[part.field.column] ?? null;
@@ -432,7 +458,7 @@ export function relationsOf(accepted: Accepted, profiled: Profiled): Relation[] 
     return [
       {
         id: `relation/${type.name}`,
-        sentence: `Each ${splitWords(type.name)} has ${listed(said)}`,
+        sentence: `${splitWords(type.name)}: ${listed(said)}`,
         example: full ? (full as string[]) : null,
       },
     ];

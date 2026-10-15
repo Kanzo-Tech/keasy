@@ -13,7 +13,6 @@ import { defineTask, type Finding } from "@kanzo-tech/ai/task";
 import type { Accepted, AcceptedEdge, AcceptedType } from "./model";
 import { delimiterOf, type Profiled } from "./profile";
 import { splitWords } from "@kanzo-tech/mosaic";
-import { plural } from "./words";
 
 /** fossil's word on a program: every diagnostic of a check of `program`, the prelude included. */
 export type Check = (program: string, signal?: AbortSignal) => Promise<readonly FossilDiagnostic[]>;
@@ -189,7 +188,7 @@ function planOf(type: AcceptedType, input: MappingInput): string {
   const edges = input.accepted.edges.filter((e) => e.from === type.name);
   const required = type.fields.filter((f) => !f.optional).map((f) => `${f.name} = ${type.source}.${f.column}`);
   const lines = [
-    `${plural(type.name)} : ${type.name} from ${type.source}`,
+    `${type.name}Rows : ${type.name} from ${type.source}`,
     `  @subject = "${input.subjects[type.name]}"`,
     ...type.fields.map((f) => `  ${f.name} from ${type.source}.${f.column}`),
     ...edges.filter((e) => !e.join).map((e) => `  ${e.name} = ${e.to}(${e.on}.${e.column})`),

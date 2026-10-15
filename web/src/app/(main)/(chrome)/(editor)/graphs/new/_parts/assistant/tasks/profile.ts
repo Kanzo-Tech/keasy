@@ -6,6 +6,7 @@
  */
 
 import type { Input, Primitive, Profile } from "@fossil-lang/types";
+import { splitWords } from "@kanzo-tech/mosaic";
 
 /** One column of a source, with what the profile counted of it. */
 export interface Column {
@@ -119,3 +120,9 @@ export const valuesOf = (source: Source, column: string) =>
 
 /** The source named `name`. */
 export const sourceNamed = (profiled: Profiled, name: string) => profiled.sources.find((s) => s.name === name);
+
+/** "nobel_laureates.csv" → "Nobel laureates": a file's name as a thing's, until `model` names it. */
+export function thingName(file: string): string {
+  const words = splitWords(file.replace(/\.[^.]*$/, ""));
+  return words ? words[0]!.toUpperCase() + words.slice(1) : file;
+}

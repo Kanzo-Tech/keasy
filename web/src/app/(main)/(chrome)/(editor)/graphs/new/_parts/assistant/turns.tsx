@@ -4,6 +4,7 @@ import { ArrowRight, Check, CircleHelp, CircleX, ExternalLink, Lightbulb, Messag
 import { useId, useState } from "react";
 import { Link } from "@kanzo-tech/navigation/next";
 import { Message, MessageContent } from "@kanzo-tech/ai";
+import { splitWords } from "@kanzo-tech/mosaic";
 import {
   Badge,
   Button,
@@ -24,7 +25,7 @@ import { ProblemView } from "@/components/problem-view";
 import { askHref } from "@/app/(main)/(workspace)/graphs/[id]/discover/_parts/ask-handoff";
 import { type SentSource, takenLabel } from "./conversation";
 import type { Step } from "./steps";
-import { holdsLine, inWords } from "./tasks/words";
+import { listed } from "./tasks/model";
 import {
   type BuildProgress,
   type DecisionItem,
@@ -141,6 +142,17 @@ export function StepsTurn({
 
 // ── What is in it ───────────────────────────────────────────────────────────
 
+/**
+ * What each one of a thing holds, from its columns: "name, gender, birth date and 4 more". Column
+ * names are the data's own words, so they are said (`birth_date` → "birth date", by mosaic's `splitWords`) and not renamed.
+ */
+export function holdsLine(holds: readonly string[], shown = 4): string | null {
+  if (holds.length === 0) return null;
+  const words = holds.map(splitWords);
+  if (words.length <= shown + 1) return listed(words);
+  return `${words.slice(0, shown).join(", ")} and ${words.length - shown} more`;
+}
+
 /** One thing as a stat: its name, how many, and what each one holds. */
 function ThingCard({ thing }: { thing: Thing }) {
   const holds = holdsLine(thing.holds);
@@ -184,7 +196,7 @@ export function UnderstoodTurn({ things, relations }: { things: readonly Thing[]
   return (
     <Said>
       <p>
-        Here&rsquo;s what&rsquo;s in your data: <span className="font-medium">{inWords(things.length, "kind of thing", "kinds of things")}</span>.
+        Here&rsquo;s what&rsquo;s in your data. Kinds of thing: <span className="font-medium">{things.length}</span>.
       </p>
       {/* Rows that fill: three to a row in the column, the last row's cards widened to close it, and one
           to a row on a phone — never a card alone beside a hole. */}
@@ -261,7 +273,7 @@ export function DecideTurn({
     <Said decision={item.decision.id} label={item.decision.question}>
       {index === 0 && (
         <p className="text-muted-foreground">
-          {of === 1 ? "One thing has no safe answer, so it is yours to decide." : `${inWords(of, "thing")} have no safe answer, so they are yours to decide.`}
+          Decisions with no safe answer: {of}. They are yours to decide.
         </p>
       )}
       <DecisionChoice description={of > 1 ? `Decision ${index + 1} of ${of}` : undefined} item={item} onChoose={onChoose} />

@@ -87,7 +87,7 @@ The thread, for the Nobel files:
    *what is it about?* (or nothing), and sends both as their first message.
 2. **Steps** — *Read the files*, *Propose the types*, and what comes after them, still to do.
 3. ***Here's what's in your data*** — the things with real counts and what each holds, and how they
-   hang together as sentences with one real row: *each award has a laureate, a category and a year;
+   hang together as lines with one real row: *award: laureate, category and year;
    e.g. Marie Curie · Physics · 1903*. Never shape, IRI, predicate or cardinality. Under it, what was
    assumed, each as *I assumed: id · Change* — the option taken, and its options behind *Change*. They
    come before the decision that blocks, so the first thing the person is asked is the last thing said.
@@ -156,7 +156,7 @@ composer's toolbar, as Ask's does.
 ### Steps while it works
 
 Each piece of work is **a step with its state**, in a list headed *What I am doing*: *Read 6 files ·
-1,026 awards, 1,012 laureates*, *Proposed the types*, *Waiting for you: one decision has no safe
+1,026 awards, 1,012 laureates*, *Proposed the types*, *Waiting for you: 1 left to decide, with no safe
 answer*, *Write the program*, *Run the preview*. A step is done, under way (or waiting on the person)
 or still to come, and **the steps still to come are on the list from the start**, so the person reads
 what is left as well as what is done. A step's state is derived each time from what the conversation
@@ -298,11 +298,11 @@ the rest in the background, the way fossil's profile already splits.
   lands on), asks which identifies the thing, and assumes the profile's first (`key/<source>`, a safe
   default: any candidate identifies); an edge through a source no type stands on — a
   many-to-many inclusion pair, *affiliations* between laureates and institutions — asks whether each
-  row is a link, or a thing counted on its own (`count/<edge>`: *when two laureates share an
-  institution, one or two?*), and blocks, because each answer counts differently and neither is
+  row is a link, or a thing counted on its own (`count/<edge>`: *is a row only that link, or a thing
+  counted on its own?*), and blocks, because each answer counts differently and neither is
   safe.
-- **What it fills**: `understanding.relations` — one sentence per type, *each award has a laureate,
-  a category and a year*, with a real example from the sample rows, the edge's end looked up across
+- **What it fills**: `understanding.relations` — one line per type, *award: laureate,
+  category and year*, with a real example from the sample rows, the edge's end looked up across
   sources through its inclusion — and `decisions`. IRIs are keasy's: a type is
   `<origin>/vocab/<Type>`, a field `<origin>/vocab/<field>`, a subject
   `<origin>/id/<type>/{<source>.<key>}`, computed from the workspace's origin and the names, never
@@ -356,12 +356,19 @@ graph; [cleanup](cleanup.md)). Three of the Tasks' pieces re-derived what a libr
   the one split that `RelationPicker`, Ask's chips and a column's label read. A type's or an edge's words
   in the page's language are `typeWords` and `edgeWords`, which Discover gets with no code of keasy's:
   the graph is described by its mapping (`withMapping`, [the graph](graph.md#the-mapping-describes-the-graph-after-its-first-paint)).
-  **What stays** is what no library offers: `plural`, `singular` and `withArticle`, an English
-  heuristic for the assistant's own sentences (*One: an award has institutions*), and `pascal` and
-  `camel`, which make the identifiers the `model` Task proposes. *What would reverse it:* the
-  sentences rewritten so they need no plural — titles that avoid plurals (*Award count by university*),
-  as this section said before — which also lets `plural`, `singular` and `withArticle` go, and the
-  file with them.
+  **The assistant's own sentences need no plural, singular or article.** A name is said as given
+  (`splitWords`), never inflected: *Only a link: award → institution* and *A thing of its own:
+  affiliations*, not *One: an award has institutions*; *award: laureate, year and category*, not *each
+  award has a laureate, a year and a category*; counts are digits after a label (*Kinds of thing: 6*,
+  *Decisions with no safe answer: 2*), so no noun is counted into its plural. English morphology is
+  what no library offers and a heuristic for it is wrong at the first irregular noun, so there is none:
+  `plural`, `withArticle`, `inWords` and `words.ts` are deleted. What remains makes identifiers or
+  lists, beside its only caller: `pascal`, `camel` and `singular` (a link file's name as the type it
+  becomes, `affiliations` → `Affiliation`) in `tasks/model.ts`, `holdsLine` in `turns.tsx`, `thingName`
+  in `tasks/profile.ts`. A mapping's binding in the plan the `mapping` Task is given is `<Type>Rows`,
+  not the type's plural. *What would reverse it:* a library offering inflection by language (then a
+  sentence may count and article again, and says it in the page's language), or a reader who finds
+  *Kinds of thing: 6* colder than *six kinds of things* enough to be worth a heuristic.
 - **`requirements`** (`tasks/requirements.ts`) — its oracle is `JoinResolver`, Ask's own, over a
   `JoinGraph` that `joinGraphOf` writes from the accepted model. It **stays**: the questions are
   offered before any program has run, so there is no attached graph to read a `JoinGraph` from, and

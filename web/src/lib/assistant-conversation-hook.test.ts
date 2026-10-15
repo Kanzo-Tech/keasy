@@ -65,34 +65,18 @@ describe("the assistant's conversation, as the chat holds it", () => {
     act(() => root.unmount());
   });
 
-  it("resumes a conversation by id, and carries on in a new one when a graph was built from it", async () => {
+  it("opens a conversation a graph was built from as it was built: its own id, read, and never forked", async () => {
     rows.set("built", { id: "built", messages: [question("1")], built: true });
     const { last, render, root } = mount("built");
     await act(async () => render());
     await vi.waitFor(() => expect(last().messages).toEqual([question("1")]));
-    expect(last().id).not.toBe("built");
+    expect(last()).toMatchObject({ id: "built", built: true });
 
-    let id!: string;
-    await act(async () => void (id = await last().save([question("1"), question("2")])));
-    expect(id).toBe(last().id);
+    // A save meeting the record is refused, not carried on in a conversation of its own.
+    const rowCount = rows.size;
+    await act(async () => void (await expect(last().save([question("1"), question("2")])).rejects.toMatchObject({ code: "conversation/built" })));
+    expect(rows.size).toBe(rowCount);
     expect(rows.get("built")!.messages).toEqual([question("1")]);
-    expect(rows.get(id)!.messages).toEqual([question("1"), question("2")]);
-    act(() => root.unmount());
-  });
-
-  it("carries on in a new one when a graph is built from it meanwhile", async () => {
-    rows.set("mine", { id: "mine", messages: [question("1")], built: false });
-    const { last, render, root } = mount("mine");
-    await act(async () => render());
-    await vi.waitFor(() => expect(last().messages).toEqual([question("1")]));
-    expect(last().id).toBe("mine");
-
-    rows.get("mine")!.built = true;
-    let id!: string;
-    await act(async () => void (id = await last().save([question("1"), question("2")])));
-    expect(id).not.toBe("mine");
-    expect(rows.get(id)!.messages).toEqual([question("1"), question("2")]);
-    await vi.waitFor(() => expect(last().id).toBe(id));
     act(() => root.unmount());
   });
 });

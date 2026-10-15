@@ -53,10 +53,9 @@ async function askForRequirements(page: Page) {
   await page.addStyleTag({ content: ".tsqd-parent-container { display: none !important; }" });
   // The connection is a pill above the composer; its menu lists the files, each a checkable item.
   await page.getByRole("button", { name: `@${SOURCE}`, exact: true }).click();
-  const file = page.getByRole("menuitemcheckbox", { name: /^people\.csv/ });
-  await file.click();
-  await expect(file).toBeChecked();
-  await page.keyboard.press("Escape");
+  await page.getByRole("menuitemcheckbox", { name: /^people\.csv/ }).click();
+  // The pick closes the menu, and the pill counts what is picked.
+  await expect(page.getByRole("button", { name: `@${SOURCE} · 1 file`, exact: true })).toBeVisible();
   // Nothing said about what the files are: the send goes with the sources alone.
   await page.getByRole("button", { name: "Send" }).click();
   // The profile is read on the page's engine, then the double's types are accepted.

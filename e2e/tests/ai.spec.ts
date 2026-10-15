@@ -41,8 +41,8 @@ const PERSON = {
 };
 
 /**
- * The guided chat's questions turn, over the suite's source: the people file picked in the tree and
- * read, *what is it about?* skipped, and the types the double proposes accepted — where the
+ * The guided chat's questions turn, over the suite's source: the people file picked from its pill and
+ * sent with nothing said about it, and the types the double proposes accepted — where the
  * `requirements` Task is asked for its chips.
  */
 async function askForRequirements(page: Page) {
@@ -51,14 +51,14 @@ async function askForRequirements(page: Page) {
   await expect(page).toHaveURL(/\/graphs\/new\/assistant(\?conversation=[\w-]+)?$/);
   // In the dev stack TanStack's devtools button floats over the chat's corner.
   await page.addStyleTag({ content: ".tsqd-parent-container { display: none !important; }" });
-  // The connection is listed when it is opened; its files have a box only then.
-  await page.getByRole("tree", { name: "Files" }).getByText(`@${SOURCE}`, { exact: true }).click();
-  // The tree's own box: Space on a row selects it, so the box is pressed.
-  const file = page.getByRole("checkbox", { name: "Pick people.csv" });
+  // The connection is a pill above the composer; its menu lists the files, each a checkable item.
+  await page.getByRole("button", { name: `@${SOURCE}`, exact: true }).click();
+  const file = page.getByRole("menuitemcheckbox", { name: /^people\.csv/ });
   await file.click();
   await expect(file).toBeChecked();
-  await page.getByRole("button", { name: "Read this file" }).click();
-  await page.getByRole("button", { name: "Skip" }).click();
+  await page.keyboard.press("Escape");
+  // Nothing said about what the files are: the send goes with the sources alone.
+  await page.getByRole("button", { name: "Send" }).click();
   // The profile is read on the page's engine, then the double's types are accepted.
   await expect(page.getByText("What would you like to know?")).toBeVisible({ timeout: 60_000 });
 }

@@ -99,7 +99,7 @@ test("25 signing out with Keycloak down ends the session and answers, never a st
       // eslint-disable-next-line playwright/no-conditional-expect -- the sign-out lands on either answer, as the BFF reaches the IdP or not; each is checked
       expect(location).toMatch(/localhost:8080/);
     }
-    expect((await page.request.get("/api/auth/session")).status()).toBe(401);
+    expect((await page.request.get("/api/auth/session", { headers: { "sec-fetch-site": "same-origin" } })).status()).toBe(401);
   });
   await context.close();
 });

@@ -286,17 +286,8 @@ export function DecideTurn({
  * A fraction of the prize · Change* — with its options behind **Change**, the one door to them:
  * picking another is how it changes. It blocks nothing.
  */
-export function AssumedTurn({
-  item,
-  onChoose,
-  open: opened = false,
-}: {
-  item: DecisionItem;
-  onChoose: (option: string) => void;
-  /** Its options already showing: the decision Discover's **Change** named. */
-  open?: boolean;
-}) {
-  const [open, setOpen] = useState(opened);
+export function AssumedTurn({ item, onChoose }: { item: DecisionItem; onChoose: (option: string) => void }) {
+  const [open, setOpen] = useState(false);
   const options = useId();
   return (
     <Said decision={item.decision.id} label={item.decision.question}>

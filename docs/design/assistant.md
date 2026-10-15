@@ -8,8 +8,7 @@ sources picked on pills above the composer and sent with what they are about as 
 Tasks drawn as steps, the details pinned above the thread, the model badge in the app's header, and the
 conversation closed by its build. **Decided, not built:** every result a new message at the end with a
 checkpoint per preview that restores and cuts the thread, node and edge counts in the build's step, a
-composer under the preview, and Discover showing decisions without *Change*; each says so where it is
-described. The pattern this rests on — a *Task*: a small model in the browser fills a small artefact under a JSON Schema, a deterministic oracle checks it, a bounded loop repairs
+composer under the preview; each says so where it is described. The pattern this rests on — a *Task*: a small model in the browser fills a small artefact under a JSON Schema, a deterministic oracle checks it, a bounded loop repairs
 it or asks the person — and its API, its model and its decisions are kanzo-ui's, on
 [Tasks](https://kanzo-tech.github.io/ui/docs/design/tasks). fossil's half — `fossil-profile` in place
 of introspect, and a mapping spec from which Fossil is emitted — is on
@@ -215,9 +214,8 @@ and the person's questions as links to Discover. The graph is named after the co
 read through (*Nobel laureates*), since the conversation has no other name to give it. The composer is
 replaced by *This conversation built <graph> and stays as it was built · Start a new one from here*,
 which opens a new assistant, clean — *from the current checkpoint* waits on the checkpoints, and until
-then a new conversation does not carry this one's. A conversation reopened after its build is the old
-rule still: it carries on in a new conversation under a note at its top, because the close is drawn
-only in the visit that built it and the graph's name is not read back. The build's step says *Built the
+then a new conversation does not carry this one's. A conversation opened after its build, by its id, is
+the same thread read to its end under the same bar, with nothing to answer, choose or save. The build's step says *Built the
 graph from every row* and no count: the run does not return one, and node and edge counts wait for it. This is the storage rule already — a conversation a graph was
 built from is that graph's record ([below](#the-conversation-is-kept)) — now said in the UI where it
 applies, instead of as a note above the first message when a built one is opened and a save that
@@ -447,13 +445,17 @@ OpenAI's Threads: a `conversations` table (`GET` and `PUT /v1/conversations/{id}
 the client makes, as the AI SDK's chat ids are, and the first save starting it), its messages a JSON
 array keasy never reads, under a 256 KiB cap; and a `conversation` on each graph, set when it is created from its creator's own. The decisions
 are data parts of those messages (`data-decision`: the options offered, the one taken, whether it was
-assumed), so Discover's *What I decided* reads them from the graph's conversation and shows them, with
-a link to the conversation. **Discover changes nothing**: it has no *Change*. A decision is changed
-from the conversation — opened, closed by its build, and *Start a new one from here* from its
-checkpoint — so there is one door to a decision, the thread it was taken in, and no second route
-(`?decision=`) that opens the assistant at one. *What would reverse it:* people who look for the
-decision in Discover and give up before finding the conversation — then *What I decided* links each
-decision to its message in the conversation, still read-only. `useAssistantConversation(id?)`
+assumed), so Discover's *What I decided* reads them from the graph's conversation and shows each decision and
+what was chosen, as a record.
+
+**A built graph is written once and read many times. Discover shows the decisions without *Change***,
+and a built conversation is not reopened for editing: there is one door to a decision, in the thread,
+while the person is still preparing and previewing (*I assumed: id · Change*), and Build shuts it. A
+different decision is a new build, from *Start a new one from here*, with a graph of its own; the
+first graph keeps what it was built with. There is no `?decision=` route that opens the assistant at a
+decision. *What would reverse it:* evidence that people need to amend a built graph in place, for
+whom a new build per change is a wall — and even then it is a build of the graph again, not an edit
+of the conversation it came from. `useAssistantConversation(id?)`
 (`lib/assistant-conversation.ts`) is the web's side: `{ id, messages, save, decisions }`, over
 `@kanzo-tech/ai`'s `useKeptChat`.
 
@@ -493,8 +495,9 @@ them are not said yet and a save would drop them. The id saved under goes on the
 applies: building closes it, and its composer gives way to *This conversation built <graph> and stays
 as it was built · Start a new one from here* — a new conversation from the current checkpoint, so a
 change rebuilds as a new graph with a conversation of its own, and the first graph still lists what it
-was built with. The note above the first message of a built conversation, and the save that quietly
-carried on in a new one, go with it.
+was built with. Opened by its id, a built conversation is that same closed thread, read-only: it
+answers nothing, takes no choice and is never saved, so it does not fork. The note above the first
+message of a built conversation, and the save that quietly carried on in a new one, are gone.
 
 **What is stored, and what is not.** The premise is that the person's data never leaves the browser,
 and a saved conversation is no exception. Stored: the messages' kinds and ids, the options offered in
@@ -516,8 +519,8 @@ storage, under their own credential, never in keasy's database.
 keasy hands it `load(id)` and `save(id, messages)` against `GET` and `PUT /v1/conversations/{id}`,
 and `keep` — `keptPart`, the allow-list `toStored` is made of, part by part. A message the filter
 leaves no part of is not stored. What stays keasy's is the rule of its record: a conversation a graph
-was built from is not saved over — opened, the chat carries on from its messages under a new id; built
-from meanwhile, in another tab, the save that meets `conversation/built` writes the new id instead.
+was built from is not saved over — opened, the chat shows it closed and saves nothing; built from
+meanwhile, in another tab, the save that meets `conversation/built` fails and says so.
 *What would reverse it:* a second guided chat in the library that needs a different saving rule —
 appended, not whole — and then the library's piece is the narrower one and keasy keeps its own rule;
 or the library's `keep` running anywhere but on keasy's side of the save, which would put the privacy
@@ -556,6 +559,13 @@ enumerated hosts would add exactly those. Privacy is unchanged: inference stays 
 nothing about a question is sent; what the three hosts see is a download of public files, with the
 person's IP address and user agent.
 
+To point keasy at another model or host, edit that record: `model` takes the base URL of any host that
+serves the same files, `model_lib` the library for the WebLLM release the web installs (`v0_2_86` in
+its path today), and `integrity` the SRI of the three files whose bytes are pinned — `openssl dgst
+-sha256 -binary <file> | base64`, prefixed `sha256-`. A host of your own must answer cross-origin
+requests (`Access-Control-Allow-Origin`), range requests included, and its hostname joins the egress
+list above.
+
 What this does not cover, and nothing here has verified: the weight shards. WebLLM checks no hash on
 them, so the commit in the URL is the only pin — a commit's files do not change, and Hugging Face
 could still withdraw them. Hugging Face's terms have not been read for this use. Its anonymous
@@ -567,7 +577,7 @@ only the first load pays any of this.
 
 *What would reverse it:* an organization that cannot open egress to Hugging Face and GitHub, or many
 first loads behind one IP address meeting the limit — then the operator mirrors the files to a host
-of its own and edits `app-config.json` to name it (`infra/prod/README.md`); and Hugging Face's terms,
+of its own and edits `app-config.json` to name it (above); and Hugging Face's terms,
 once read, forbidding this use.
 
 **The download starts with intent** — when a graph opens, or the assistant — not when
@@ -649,7 +659,7 @@ BFF's `/api/ai` forward and their configuration went the same day. The phases ar
 
 The thread is built (2026-10-14) on kanzo-ui 0.46's slot above `PromptInput`'s field and checkable
 `Menu` items; what is left of it is the append-only thread with `Checkpoint` and its restore, the build's
-counts, a composer under the preview, and Discover without *Change*. The `nobel-assistant` demo (`e2e/demos/nobel-assistant.demo.ts`) keeps what it
+counts, and a composer under the preview. The `nobel-assistant` demo (`e2e/demos/nobel-assistant.demo.ts`) keeps what it
 has — its subtitles at the top, and the model double answering at a model's pace — and is rewritten to
 the thread's flow with it: the files picked on *@Nobel laureates*' pill and sent with *what is it
 about?*, the steps, each result below the last, a decision changed and a checkpoint restored, and the

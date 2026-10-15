@@ -35,6 +35,3 @@ scratch/
 
 # The archive `make seed` downloads. Never committed.
 infra/dev/.cache/
-
-# a deployment's secrets, mid-write (infra/prod/secrets.sh)
-infra/prod/*.tmp

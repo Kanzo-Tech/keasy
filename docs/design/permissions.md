@@ -139,6 +139,24 @@ holds data that must outlive a schema change, and an upgrade written for each ch
 for a database nobody has. *What would reverse it:* a deployment whose data must survive a schema
 change — then each change carries its migration, tested against a database of the schema before.
 
+### When a deployment exists
+
+There is none yet, so nothing here is run. The day there is one, two things were learned first and
+are owed to it. Every dashboard saved before kanzo-ui 0.46 names fields `Type.column`, and 0.46 names
+a field by its path from the relation's root (`country`, `affiliation.name`), so a saved tile would
+read columns that are not there: delete each organization's saved dashboards once, before its first
+page opens. The schema is unchanged; only the rows go, and each graph then draws its automatic
+dashboard until someone saves another:
+
+```sh
+docker run --rm -v keasy_<alias>-data:/var/lib/keasy alpine:3.22 \
+  sh -c 'apk add -q sqlite && sqlite3 /var/lib/keasy/keasy.db "DELETE FROM dashboards;"'
+```
+
+Second, a release whose schema differs is not migrated (above): the volume is deleted for the server
+to create it again. *What would reverse it:* a deployment that started after 0.46 has no such
+dashboards — then this step is deleted, not kept.
+
 ## Sharing waits for its dialog
 
 **Decided 2026-10-13: grants, sharing and transfer are removed until a Share dialog exists.** Phase B's

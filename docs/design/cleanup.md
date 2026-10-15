@@ -96,7 +96,7 @@ deployment's Entra — then the token and the key are fetched by hand.
 
 keasy reads no variable that no deployment sets, and ships no flag for a state nothing turns on: a
 value nothing varies is fixed in code. *What would reverse it:* for each variable, a deployment that
-sets it — then it is set in `compose*.yaml` and `prod.env` and documented in the README, not left as
+sets it — then it is set in `compose*.yaml` and documented in the README, not left as
 a default nobody turns. That includes the OIDC audience and the bind address. For the Members page's
 console link, an organization whose console is not the Keycloak one `@kanzo-tech/auth` knows. For a
 dependency, an import of it.

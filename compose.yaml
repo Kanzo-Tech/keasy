@@ -2,11 +2,10 @@
 # keasy's registration with the platform realm. The platform itself — identity — is kanzo-ui's, included by the environment's overlay at the release keasy is built against:
 #
 #   docker compose up                                  development: compose.override.yaml, read on its own
-#   make deploy                                        a deployment: compose.prod.yaml + infra/prod/
 #
 # Each organization runs its own server (compose.server.yaml), one compose file per organization.
 # The variables below are the same in every environment; development's values are the defaults,
-# a deployment's are in infra/prod/prod.env.
+# a deployment, when there is one, sets its own.
 
 name: keasy
 

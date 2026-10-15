@@ -1,7 +1,6 @@
 "use client";
 
 import { type ReactNode, useEffect, useRef, useState } from "react";
-import { History } from "lucide-react";
 import { Link } from "@kanzo-tech/navigation/next";
 import {
   Conversation,
@@ -13,7 +12,7 @@ import {
   PromptInputTextarea,
   PromptInputToolbar,
 } from "@kanzo-tech/ai";
-import { Alert, AlertDescription, AlertTitle, Button } from "@kanzo-tech/ui";
+import { Button } from "@kanzo-tech/ui";
 import { HeaderEnd } from "@/app/(main)/_parts/header-end";
 import type { AssistantMessage, FileReference } from "@/lib/assistant-conversation";
 import { converse, graphName, messagesOf, NO_REPLIES, type Replies, type Turn, waitingFor, type Waiting } from "./conversation";
@@ -66,9 +65,7 @@ export interface AssistantChatProps extends AssistantData {
   onSave?: (messages: AssistantMessage[]) => void;
   /** Where a kept conversation stood: the chat starts there. */
   initial?: Replies;
-  /** A decision to open at its options — Discover's **Change** — once the conversation reaches it. */
-  reopen?: string | null;
-  /** A graph was built from this conversation: what is changed here is kept as a new one. */
+  /** A graph was built from this conversation: it is read as it was built, closed, and never saved. */
   built?: boolean;
 }
 
@@ -83,25 +80,30 @@ let written = 0;
  * chat where it stood (`initial`); its last turns are the preview and the build, on request.
  */
 export function AssistantChat(props: AssistantChatProps) {
-  const { onAdvanced, questions, onReplies, onSave, reopen = null } = props;
+  const { onAdvanced, questions, onReplies, onSave } = props;
   const [replies, setReplies] = useState<Replies>(props.initial ?? NO_REPLIES);
   useEffect(() => onReplies?.(replies), [replies, onReplies]);
   // Saving starts with the person's first reply here: a conversation opened and only read is not
-  // saved again — over a built one, that would start a new conversation nobody asked for.
+  // saved again. One a graph was built from takes no reply at all: it stays as it was built.
   const [replied, setReplied] = useState(false);
   const reply = (next: Partial<Replies>) => {
+    if (props.built) return;
     setReplied(true);
     setReplies((prev) => ({ ...prev, ...next }));
   };
   const onChoose = (decision: string, option: string) => {
+    if (props.built) return;
     setReplied(true);
     props.onChoose(decision, option);
   };
   const onQuestionsChange = (next: Question[]) => {
+    if (props.built) return;
     setReplied(true);
     props.onQuestionsChange(next);
   };
-  const { turns, waiting, closed } = converse(props, replies);
+  const conversation = converse(props, replies);
+  const { turns, waiting } = conversation;
+  const closed = conversation.closed || props.built === true;
 
   // The transcript as it is kept, saved whenever it changes after a reply — but not while the files
   // are read or the `model` Task answers, when the turns after them are not said yet and a save
@@ -117,27 +119,6 @@ export function AssistantChat(props: AssistantChatProps) {
     last.current = transcript;
     onSave?.(JSON.parse(transcript) as AssistantMessage[]);
   }, [replied, settling, transcript, onSave]);
-
-  // Discover's **Change**: the decision's turn brought into view once the conversation says it — and,
-  // over a built conversation, the note saying so drawn just above it, where the page lands.
-  const reopens = (t: Turn) => (t.kind === "decide" || t.kind === "assumed") && t.item.decision.id === reopen;
-  const reached = reopen !== null && turns.some(reopens);
-  const reopened = useRef(false);
-  useEffect(() => {
-    if (!reached || reopened.current) return;
-    reopened.current = true;
-    const at = props.built ? document.querySelector("[data-built]") : document.querySelector(`[data-decision="${CSS.escape(reopen!)}"]`);
-    at?.scrollIntoView?.({ block: props.built ? "start" : "center" });
-  }, [reached, reopen, props.built]);
-  const built = props.built && (
-    <Alert data-built="" key="built" variant="info">
-      <History aria-hidden />
-      <AlertTitle>A graph was built from this conversation</AlertTitle>
-      <AlertDescription>
-        It stays as it was built. What you change here is kept as a new conversation, and building again makes a new graph.
-      </AlertDescription>
-    </Alert>
-  );
 
   const ask = (id: string, text: string) => {
     const t = text.trim();
@@ -202,7 +183,6 @@ export function AssistantChat(props: AssistantChatProps) {
             item={turn.item}
             key={turn.item.decision.id}
             onChoose={(option) => onChoose(turn.item.decision.id, option)}
-            open={turn.item.decision.id === reopen}
           />
         );
       case "ask":
@@ -228,6 +208,8 @@ export function AssistantChat(props: AssistantChatProps) {
       case "build-reply":
         return <Reply key={key}>Build the graph</Reply>;
       case "build":
+        // Closed, there is nothing to ask for: the bar below says what the conversation built.
+        if (props.built) return null;
         return (
           <BuildTurn build={props.build} key={key} onBuild={buildNow} questions={questions} ready={props.program !== null} />
         );
@@ -269,8 +251,7 @@ export function AssistantChat(props: AssistantChatProps) {
                 </p>
               </div>
             )}
-            {!reached && built}
-            {turns.flatMap((turn, index) => (reached && reopens(turn) ? [built, draw(turn, index)] : [draw(turn, index)]))}
+            {turns.map((turn, index) => draw(turn, index))}
             {props.failures.map((f) => (
               <TaskFailed failure={f} key={f.task} />
             ))}

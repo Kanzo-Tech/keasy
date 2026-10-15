@@ -3,17 +3,15 @@
 import { useParams } from "next/navigation";
 // eslint-disable-next-line no-restricted-imports -- a footnote: a failed read of the graph's conversation leaves the Info panel as it was
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "@kanzo-tech/navigation/next";
-import { Badge, Button } from "@kanzo-tech/ui";
+import { Badge } from "@kanzo-tech/ui";
 import { $api } from "@/lib/api/client";
 import { settled } from "@/lib/api/settled";
-import { changeHref, conversationQuery, decisionsOf, labelOf, toStored } from "@/lib/assistant-conversation";
+import { conversationQuery, decisionsOf, labelOf, toStored } from "@/lib/assistant-conversation";
 
 /**
  * What the assistant decided about this graph, as a short list: each question, the option taken —
- * *Assumed* when it was a safe default nobody was asked about — and **Change**, which opens the
- * conversation the graph was built from at that decision (docs/design/assistant.md, *assumptions
- * instead of blocks*). The decisions are data parts of that conversation's messages
+ * *Assumed* when it was a safe default nobody was asked about. A record, with no way to change it: a
+ * built graph is written once (docs/design/assistant.md, *a built graph is written once*). The decisions are data parts of that conversation's messages
  * (`lib/assistant-conversation.ts`). Nothing for a graph the assistant did not build, nor while the
  * conversation is read: the list is a footnote, never a wait.
  */
@@ -29,21 +27,16 @@ export function GraphAssumptions() {
       <h3 className="font-medium text-muted-foreground text-xs">What I decided</h3>
       <ul className="flex flex-col gap-1">
         {decisions.map((taken) => (
-          <li className="flex items-start gap-2 text-sm" key={taken.decision.id}>
-            <span className="flex min-w-0 flex-1 flex-col">
-              <span className="text-muted-foreground text-xs">{taken.decision.question}</span>
-              <span className="flex items-center gap-1.5">
-                {labelOf(taken)}
-                {taken.assumed && (
-                  <Badge pill variant="outline">
-                    Assumed
-                  </Badge>
-                )}
-              </span>
+          <li className="flex min-w-0 flex-col text-sm" key={taken.decision.id}>
+            <span className="text-muted-foreground text-xs">{taken.decision.question}</span>
+            <span className="flex items-center gap-1.5">
+              {labelOf(taken)}
+              {taken.assumed && (
+                <Badge pill variant="outline">
+                  Assumed
+                </Badge>
+              )}
             </span>
-            <Button asChild size="sm" variant="ghost">
-              <Link href={changeHref(conversation, taken.decision.id)}>Change</Link>
-            </Button>
           </li>
         ))}
       </ul>

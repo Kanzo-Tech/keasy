@@ -1,7 +1,6 @@
 # keasy is one set of compose files (compose.yaml, the system): `make dev` runs it with
-# compose.override.yaml, `make deploy` with compose.prod.yaml and infra/prod/. Anything else is plain
-# `docker compose` — `docker compose logs -f web`, `docker compose restart acme-server` — which reads
-# the development files on its own.
+# compose.override.yaml. Anything else is plain `docker compose` — `docker compose logs -f web`,
+# `docker compose restart acme-server` — which reads the development files on its own.
 #
 # The dev image is deps-only: `server/src` and `web/src` are mounted and hot-reloaded (cargo-watch,
 # Next HMR), so editing code needs nothing. `make dev` again after changing dependencies or a
@@ -9,7 +8,7 @@
 # a cold compile.
 
 SHELL := bash
-.PHONY: help dev seed clean api e2e demo deploy secrets secret key
+.PHONY: help dev seed clean api e2e demo
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_%-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
@@ -61,37 +60,3 @@ else
 	pnpm --filter @keasy/e2e exec playwright install chromium
 	DEMO_THEME=$(THEME) pnpm --filter @keasy/e2e demo $(if $(filter all,$(DEMO)),,--grep " $(DEMO): ")
 endif
-
-# ── A deployment (infra/prod/README.md) ────────────────────────────────────
-# Run on the server, from a checkout. The secrets are decrypted into the environment of the one
-# command that needs them — never onto the disk — with the age key in SOPS_AGE_KEY_FILE.
-export SOPS_AGE_KEY_FILE ?= $(HOME)/.config/sops/age/keys.txt
-SOPS := infra/prod/sops
-PROD := -f compose.yaml -f compose.prod.yaml $(addprefix -f ,$(wildcard infra/prod/orgs/*.yaml)) --env-file infra/prod/prod.env
-# A decryption that fails stops the deploy, and so does a missing password, before Compose is
-# reached (the platform's compose files have no default for either and refuse too).
-SECRETS := secrets=$$($(SOPS) -d --input-type dotenv --output-type dotenv /dev/stdin < infra/prod/secrets.sops.env) || exit 1; \
-	while IFS= read -r line; do [ -n "$$line" ] && export "$$line"; done <<<"$$secrets"; \
-	: "$${KC_ADMIN_PASSWORD:?}" "$${KC_DB_PASSWORD:?}";
-
-# With the docker-rollout plugin, the web is replaced first with no gap — the new one beside the old
-# behind Traefik until it is healthy — and `up` then finds it current. Without it, `up` restarts it.
-# A server is always stopped before its replacement starts: SQLite takes one writer.
-deploy: secrets ## Bring the deployment to what infra/prod/ says: organizations, version
-	@$(SECRETS) \
-	if docker rollout --help >/dev/null 2>&1 && [ -n "$$(docker compose $(PROD) ps -q web)" ]; then docker rollout $(PROD) web; fi; \
-	docker compose $(PROD) up -d --wait --remove-orphans
-
-secrets: ## Generate the deployment's secrets that do not exist yet (a new organization's key among them)
-	infra/prod/secrets.sh
-
-secret: ## Set one of the deployment's secrets, e.g. `make secret NAME=KC_ADMIN_PASSWORD` (asks for its value)
-	@infra/prod/secrets.sh set $(NAME)
-
-key: ## Create your age key, if you have none, and print the public half to add to infra/prod/.sops.yaml
-	@if [ ! -f "$(SOPS_AGE_KEY_FILE)" ]; then \
-	  mkdir -p "$$(dirname "$(SOPS_AGE_KEY_FILE)")"; \
-	  docker run --rm alpine:3.22 sh -c 'apk add -q age >/dev/null && age-keygen 2>/dev/null' > "$(SOPS_AGE_KEY_FILE)"; \
-	  chmod 600 "$(SOPS_AGE_KEY_FILE)"; \
-	fi
-	@sed -n 's/^# public key: //p' "$(SOPS_AGE_KEY_FILE)"

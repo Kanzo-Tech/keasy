@@ -27,7 +27,7 @@ import { useAssistant } from "./use-assistant";
 
 /**
  * The assistant's page: the workspace's connections and readers, then the conversation —
- * `?conversation=<id>` resumes a kept one, and `&decision=<id>` opens that decision's turn.
+ * `?conversation=<id>` resumes a kept one — or, one a graph was built from, shows it as it was built.
  */
 export function AssistantPage() {
   return (
@@ -57,24 +57,22 @@ function Loaded() {
 
 function Opened({ connections, formats }: { connections: readonly StorageConnection[]; formats: readonly Format[] }) {
   const params = useSearchParams();
-  const [opened] = useState(() => ({ conversation: params.get("conversation"), decision: params.get("decision") }));
-  return <AssistantFlow connections={connections} formats={formats} {...opened} />;
+  const [conversation] = useState(() => params.get("conversation"));
+  return <AssistantFlow connections={connections} formats={formats} conversation={conversation} />;
 }
 
 /**
  * The conversation `conversation` — or a new one — read, then resumed: the chat starts where it
- * stood, and `decision` is opened at its options (Discover's **Change**).
+ * stood.
  */
 export function AssistantFlow({
   connections,
   formats,
   conversation = null,
-  decision = null,
 }: {
   connections: readonly StorageConnection[];
   formats: readonly Format[];
   conversation?: string | null;
-  decision?: string | null;
 }) {
   // The model the Tasks behind these turns ask starts downloading as the assistant opens.
   usePreloadModel();
@@ -85,7 +83,6 @@ export function AssistantFlow({
     if (url.searchParams.get("conversation") === kept.id) return;
     // Whatever else the URL carries — the page's `new`, the graph built — stays.
     url.searchParams.set("conversation", kept.id);
-    url.searchParams.delete("decision");
     window.history.replaceState(null, "", url);
   }, [kept.id]);
   if (kept.problem !== undefined) return <ProblemView className="m-auto" error={kept.problem} />;
@@ -96,7 +93,7 @@ export function AssistantFlow({
       </Loading>
     );
   }
-  return <Resumed connections={connections} formats={formats} kept={kept} reopen={decision} seed={restore(kept.messages)} />;
+  return <Resumed connections={connections} formats={formats} kept={kept} seed={restore(kept.messages)} />;
 }
 
 /**
@@ -109,14 +106,12 @@ function Resumed({
   formats,
   kept,
   seed,
-  reopen,
 }: {
   connections: readonly StorageConnection[];
   formats: readonly Format[];
   kept: AssistantConversation;
   /** Where the conversation stood when it was opened; read once. */
   seed: Restored;
-  reopen: string | null;
 }) {
   const router = useRouter();
   // What the person has replied, which the Tasks wait on; the chat keeps it and says each change.
@@ -131,8 +126,7 @@ function Resumed({
   const preview: Preview =
     assistant.writing && ran.state !== "idle" ? { state: "running", corpus: ran.corpus, rerun: ran.rerun } : ran;
 
-  // The whole graph, once asked for, from the conversation saved first: a save over a built
-  // conversation starts a new one, so the build waits for the id the save answered.
+  // The whole graph, once asked for, from the conversation saved first: the build waits for the id the save answered.
   const { progress, build } = useBuild(assistant.mapped, assistant.described, { conversation: kept.id, name: graphName(assistant.files) });
   const [asked, setAsked] = useState<{ conversation: string; program: string } | null>(null);
   useEffect(() => {
@@ -185,7 +179,6 @@ function Resumed({
       preview={preview}
       program={assistant.mapped}
       questions={assistant.questions}
-      reopen={reopen}
       status={<ModelStatus />}
     />
   );

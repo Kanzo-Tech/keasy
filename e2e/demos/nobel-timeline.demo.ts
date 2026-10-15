@@ -16,8 +16,8 @@ const HOPS = [">laureate>Laureate", ">birthPlace>Country"];
 const DASHBOARD = {
   filters: [],
   tiles: [
-    { id: "gender", kind: "chart", span: 1, type: "bar", title: "Count by Laureate.gender", x: "Laureate.gender", y: { op: "count" } },
-    { id: "country", kind: "chart", span: 1, type: "bar", title: "Count by Country.name", x: "Country.name", y: { op: "count" } },
+    { id: "gender", kind: "chart", span: 1, type: "bar", title: "Count by Laureate.gender", x: "laureate.gender", y: { op: "count" } },
+    { id: "country", kind: "chart", span: 1, type: "bar", title: "Count by Country.name", x: "laureate.birthPlace.name", y: { op: "count" } },
   ],
 };
 

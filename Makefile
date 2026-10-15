@@ -14,7 +14,7 @@ help: ## Show this help
 	@grep -E '^[a-zA-Z_%-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
 
 # ── Development ────────────────────────────────────────────────────────────
-dev: ## Start or rebuild the dev stack, and wait until the web answers
+dev: ## Start or rebuild the dev stack, and wait until the web answers behind the edge
 	docker compose up -d --build --wait --wait-timeout 1800
 	@echo "keasy: http://acme.localhost:3000"
 
@@ -36,7 +36,7 @@ api: ## Regenerate api/openapi.json and api/src/schema.d.ts from the server's ro
 # admits, so it runs from the main checkout, not a worktree. Scenarios stop and start services
 # themselves, and leave them running.
 e2e: seed ## Run the e2e suite against the compose stack (main checkout only: Keycloak admits :3000)
-	docker compose up -d --wait --wait-timeout 1800 web
+	docker compose up -d --wait --wait-timeout 1800 auth-proxy
 	pnpm --filter @keasy/e2e exec playwright install chromium
 	pnpm --filter @keasy/e2e test
 

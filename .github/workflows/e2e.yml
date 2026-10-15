@@ -57,7 +57,7 @@ jobs:
       # browser, and the runners have no WebGPU: the scenarios put a model double in the page
       # (e2e/support/model.ts), or force a browser without WebGPU, so no model is fetched here.
       - name: Bring up the stack
-        run: docker compose up -d --build --wait --wait-timeout 3600 web
+        run: docker compose up -d --build --wait --wait-timeout 3600 auth-proxy
 
       - run: pnpm --filter @keasy/e2e exec playwright install --with-deps chromium
 

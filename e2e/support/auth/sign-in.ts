@@ -1,8 +1,8 @@
 import { expect, type Page } from "@playwright/test";
 
 /**
- * Sign in through the real flow — the app, the BFF, Keycloak's form — as one of the platform seed's
- * accounts (kanzo-ui services/auth/seed: dev literals, never a real credential).
+ * Sign in through the real flow — the edge (auth-proxy), Keycloak's form, the app — as one of the
+ * platform seed's accounts (kanzo-ui services/auth/seed: dev literals, never a real credential).
  */
 export async function signIn(page: Page, username: string) {
   await page.goto("/");

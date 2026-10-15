@@ -1,5 +1,6 @@
-# keasy, as it runs anywhere: the one web that serves every organization, its session store, and
-# keasy's registration with the platform realm. The platform itself — identity — is kanzo-ui's, included by the environment's overlay at the release keasy is built against:
+# keasy, as it runs anywhere: the one web that serves every organization, the platform's edge in
+# front of it, and keasy's registration with the platform realm. The platform itself — identity and
+# the edge — is kanzo-ui's, included by the environment's overlay at the release keasy is built against:
 #
 #   docker compose up                                  development: compose.override.yaml, read on its own
 #
@@ -10,47 +11,53 @@
 name: keasy
 
 services:
-  # The relying party for every organization: it holds the client secret, seals the session cookie,
-  # reads the organization from the host (<alias>.<KEASY_DOMAIN>), and forwards /api/v1 to that
-  # organization's server with a token exchanged for it and that organization.
+  # The edge every browser reaches (kanzo-ui's `auth-proxy`, oauth2-proxy): it signs the person in as
+  # keasy's client, keeps the session, and forwards the access token to the web. The redirect is
+  # derived from the host, so one proxy serves every organization at <alias>.<KEASY_DOMAIN>; the
+  # token names keasy-api in `aud` and every organization the person belongs to.
+  auth-proxy:
+    environment:
+      OAUTH2_PROXY_CLIENT_ID: keasy
+      OAUTH2_PROXY_SCOPE: openid email profile organization:* keasy-api
+      OAUTH2_PROXY_UPSTREAMS: http://web:3000
+      OAUTH2_PROXY_PROXY_PREFIX: /api/auth
+      OAUTH2_PROXY_WHITELIST_DOMAINS: ${KEASY_WHITELIST_DOMAINS:-.localhost:3000}
+      # A call to the API whose session ended answers 401, which the page turns into a sign-in.
+      OAUTH2_PROXY_API_ROUTES: ^/api/v1/
+    secrets:
+      - source: keasy-oidc
+        target: auth-proxy-client
+      - source: keasy-cookie
+        target: auth-proxy-cookie
+    ports:
+      - "3000:4180"
+    depends_on:
+      web:
+        condition: service_healthy
+
+  # The web for every organization: it reads the organization from the host, the person from the
+  # token the edge forwards, and forwards /api/v1 to that organization's server with the same token.
+  # It holds no secret and no session.
   web:
     image: ghcr.io/kanzo-tech/keasy-web:${KEASY_VERSION:-dev}
     environment:
       KEASY_BASE_DOMAIN: ${KEASY_DOMAIN:-localhost}
       KEASY_OIDC_ISSUER_URL: ${KC_HOSTNAME:-http://localhost:8080}/realms/${KC_REALM:-kanzo}
-      KEASY_OIDC_INTERNAL_BASE_URL: http://keycloak:8080
+      KEASY_OIDC_JWKS_URL: http://keycloak:8080/realms/${KC_REALM:-kanzo}/protocol/openid-connect/certs
       KEASY_OIDC_CLIENT_ID: keasy
-      KEASY_OIDC_CLIENT_SECRET_FILE: /run/secrets/keasy-oidc
-      # Seals the session cookie, which carries only a ticket into Valkey.
-      KEASY_SESSION_SECRET_FILE: /run/secrets/keasy-session
-      KEASY_SESSION_STORE_URL: redis://valkey:6379
       # The server of the organization a request addresses: each answers as <alias>-server.
       KEASY_API_URL: http://{tenant}-server:8080
-    secrets: [keasy-oidc, keasy-session]
-    # Healthy once the sign-in route answers: what a rolling update waits for before it lets the old
-    # web go, and what `make dev` waits for.
+    # Healthy once Next answers (the forward refuses a request that says nothing of its origin): what
+    # a rolling update waits for before it lets the old web go, and what the edge waits for.
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/api/auth/signin',{redirect:'manual'}).then(r=>process.exit(r.status<500?0:1),()=>process.exit(1))"]
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/api/v1/healthz/ready').then(r=>process.exit(r.status<500?0:1),()=>process.exit(1))"]
       interval: 10s
       timeout: 10s
       retries: 6
       start_period: 30s
     depends_on:
-      valkey:
-        condition: service_healthy
       auth-realm:
         condition: service_completed_successfully
-    restart: unless-stopped
-
-  # The web's session store: tokens behind the cookie's ticket. No volume — losing it signs people
-  # out, nothing more.
-  valkey:
-    image: valkey/valkey:8.1-alpine
-    healthcheck:
-      test: ["CMD", "valkey-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
     restart: unless-stopped
 
   # keasy, registered with the platform realm (kanzo-ui services/auth/realm/declarations.tf): its
@@ -68,14 +75,13 @@ configs:
     content: |
       x-application:
         client_id: keasy
-        description: keasy — a Backend-For-Frontend for every organization. The browser never holds a token.
+        description: keasy — one web for every organization, behind the platform's edge. The browser never holds a token.
         # The API every organization's server validates `aud` against.
         api: keasy-api
         # One web for every organization, at <alias>.<domain>.
         origin: ${KEASY_ORIGIN:-http://{organization}.localhost:3000}
+        # The edge's callback (auth-proxy's OAUTH2_PROXY_PROXY_PREFIX, then /callback).
         callback: /api/auth/callback
-        # A sign-out at Keycloak ends the web's sessions too, whichever organization they were opened in.
-        backchannel_logout: http://web:3000/api/auth/backchannel-logout
         client_secret_file: /run/secrets/keasy-oidc
         # The hierarchy, declared once. Tokens carry it expanded, and the server and the web ask
         # only whether a role is present (server/src/authentication/role.rs).

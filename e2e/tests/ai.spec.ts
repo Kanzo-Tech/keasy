@@ -48,7 +48,7 @@ const PERSON = {
 async function askForRequirements(page: Page) {
   await page.goto("/graphs/new");
   await page.getByText("Assistant", { exact: true }).click();
-  await expect(page).toHaveURL(/\/graphs\/new\/assistant$/);
+  await expect(page).toHaveURL(/\/graphs\/new\/assistant(\?conversation=[\w-]+)?$/);
   // In the dev stack TanStack's devtools button floats over the chat's corner.
   await page.addStyleTag({ content: ".tsqd-parent-container { display: none !important; }" });
   // The connection is listed when it is opened; its files have a box only then.
@@ -104,7 +104,7 @@ test("13 a model that stops writing mid-answer can be stopped, and the next ques
   await expect(stop).toBeHidden();
   const answers = await panel.composer();
   await answers.ask(words);
-  expect(await answers.rows()).toEqual([{ count: String(PEOPLE) }]);
+  expect(await answers.rows()).toEqual([{ Count: String(PEOPLE) }]);
 });
 
 test("14 a model that fails mid-answer is a failure, not a short answer", async ({ page }) => {
@@ -138,24 +138,24 @@ test("16 an answer the spec does not admit is refused in the reply, and the mode
   // The model names a field Person does not have, every time it is asked: the spec is checked before
   // anything runs, sent back with the check's own words, and refused once the attempts are spent.
   const words = "How many people wear a 42?";
-  const spec = { of: "Person", where: [{ field: "Person.shoeSize", in: ["42"] }], show: { kind: "stat", measure: { op: "count" } } };
+  const spec = { of: "Person", where: [{ field: "shoeSize", in: ["42"] }], show: { kind: "stat", measure: { op: "count" } } };
   await scriptModel(page, { turns: [{ when: question(words), reply: { text: JSON.stringify({ spec }) } }] });
   await (await askPanel(page, env, builtGraph)).send(words);
-  await expect(page.getByText(/I could not answer that over this data: .*Person\.shoeSize is not a field of Person/)).toBeVisible({
+  await expect(page.getByText(/I could not answer that over this data: .*Person has no field shoeSize/)).toBeVisible({
     timeout: 15_000,
   });
   // No card: nothing was read on the engine.
   await expect(page.locator('[data-slot="answer-card"]')).toHaveCount(0);
   const asked = (await promptsOf(page)).filter((prompt) => prompt.includes(question(words)));
   expect(asked.length).toBeGreaterThan(1);
-  expect(asked[1]).toMatch(/It does not hold:[\s\S]*Person\.shoeSize is not a field of Person/);
+  expect(asked[1]).toMatch(/It does not hold:[\s\S]*Person has no field shoeSize/);
 });
 
 test("the assistant on a browser without WebGPU says so as llm/unavailable, not as no suggestions", async ({ page }) => {
   await withoutWebGPU(page);
   await page.goto("/graphs/new");
   await page.getByText("Assistant", { exact: true }).click();
-  await expect(page).toHaveURL(/\/graphs\/new\/assistant$/);
+  await expect(page).toHaveURL(/\/graphs\/new\/assistant(\?conversation=[\w-]+)?$/);
   await expectModelProblem(page, "llm/unavailable", { within: 20_000 });
 });
 
@@ -168,7 +168,7 @@ test("an answer added to the dashboard is saved as a tile of its relation", asyn
   const answers = await (await askPanel(page, env, builtGraph)).composer();
   await answers.ask(words);
   // The figure is proven from the engine's result, against the fixture it was read from.
-  expect(await answers.rows()).toEqual([{ count: String(PEOPLE) }]);
+  expect(await answers.rows()).toEqual([{ Count: String(PEOPLE) }]);
   // Resolves on the card's own *Open on the dashboard*, read from the dashboards the page handed back.
   await answers.addToDashboard();
   // Written at once, not after the editor's pause: an addition is a decision, not typing.
@@ -189,7 +189,7 @@ test("the assistant's question reaches Ask once: asked as Discover opens, not ag
   const ask = await env.getHarness(AskPanel);
   await ask.warmUp();
   const answers = await ask.composer();
-  expect(await answers.rows()).toEqual([{ count: String(PEOPLE) }]);
+  expect(await answers.rows()).toEqual([{ Count: String(PEOPLE) }]);
   await expect.poll(() => new URL(page.url()).searchParams.get("q")).toBeNull();
   expect((await promptsOf(page)).filter((prompt) => prompt.includes(question(words)))).toHaveLength(1);
 

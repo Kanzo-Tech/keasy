@@ -23,9 +23,9 @@ const GERMANY = "Which ones were won in Germany?";
  * prizes counted by university, the eight on top; then the same, narrowed to a university in Germany.
  * The relation each needs is the page's to find, and the rows are DuckDB's, under the page's filter.
  */
-const BY_UNIVERSITY = { of: "LaureateAward", show: { kind: "chart", type: "bar", x: "University.name", y: { op: "count" } }, top: 8 };
+const BY_UNIVERSITY = { of: "LaureateAward", show: { kind: "chart", type: "bar", x: "university.name", y: { op: "count" } }, top: 8 };
 const TURNS: ModelTurn[] = [
-  { when: `Question: ${GERMANY}`, reply: { text: JSON.stringify({ spec: { ...BY_UNIVERSITY, where: [{ field: "Country.name", in: ["Germany"] }] } }) } },
+  { when: `Question: ${GERMANY}`, reply: { text: JSON.stringify({ spec: { ...BY_UNIVERSITY, where: [{ field: "university.addressCountry.name", in: ["Germany"] }] } }) } },
   { when: `Question: ${UNIVERSITIES}`, reply: { text: JSON.stringify({ spec: BY_UNIVERSITY }) } },
 ];
 

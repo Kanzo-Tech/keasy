@@ -1,8 +1,6 @@
 "use client";
 
 import { useMemo } from "react";
-import { TableRefNode } from "@uwdata/mosaic-sql";
-import { useQueryRows } from "@kanzo-tech/ui/analytics";
 import {
   Badge,
   Button,
@@ -28,13 +26,14 @@ import {
   TableRow,
 } from "@kanzo-tech/ui";
 import type { Schemas } from "@/lib/api/client";
-import { CorpusProvider, useCorpus } from "@/lib/fossil/corpus";
+import { CorpusProvider, useJoinGraph } from "@/lib/fossil/corpus";
 import { counted, formatDate, formatGraphDuration } from "@/lib/ui/format";
 import { PART_TABLE_HEIGHT } from "@/lib/ui/table-heights";
 
 /**
- * What a completed graph's corpus holds, as the corpus itself says it — opened with a read credential
- * vended for the graph. Suspends while it opens; keasy keeps no copy of it.
+ * What a completed graph holds, as the graph itself says it — opened with a read credential vended
+ * for the graph, and read as the join graph the page's other parts read (`useJoinGraph`), so keasy
+ * asks the catalogue no question of its own. Suspends while it opens; keasy keeps no copy of it.
  */
 export function Overview({ graph }: { graph: Schemas["Graph"] }) {
   return (
@@ -44,29 +43,19 @@ export function Overview({ graph }: { graph: Schemas["Graph"] }) {
   );
 }
 
-interface Row {
-  table_name: string;
-  kind: "vertex" | "edge" | "property";
-  record_count: number;
-  source: string | null;
-  destination: string | null;
-  column_name: string | null;
-  data_type: string | null;
-}
-
 interface Held {
   name: string;
   rows: number;
   columns: { name: string; type: string }[];
 }
 
-/** A vertex type of the corpus: one `fossil_tables` row of kind `vertex`. */
+/** A vertex type of the graph: GraphAr's `graphar_vertex_types` row, as the join graph reads it. */
 interface VertexType {
   name: string;
   rows: number;
 }
 
-/** An edge table of the corpus: its `source` and `destination` are the vertex tables it joins. */
+/** An edge type of the graph: its `source` and `destination` are the vertex types it joins. */
 interface EdgeTable extends VertexType {
   source: string;
   destination: string;
@@ -75,34 +64,21 @@ interface EdgeTable extends VertexType {
 const sum = (tables: { rows: number }[]) => tables.reduce((n, t) => n + t.rows, 0);
 
 function Holds({ graph }: { graph: Schemas["Graph"] }) {
-  const { name: corpus } = useCorpus();
-  const rows = useQueryRows<Row>(
-    `SELECT t.table_name, t.kind, t.record_count::DOUBLE AS record_count, t.source, t.destination, c.column_name, c.data_type
-     FROM ${new TableRefNode([corpus, "fossil_tables"])} t
-     LEFT JOIN ${new TableRefNode([corpus, "fossil_columns"])} c ON c.table_name = t.table_name
-     WHERE t.kind <> 'property'
-     ORDER BY t.table_name, c.ordinal_position`,
-  );
+  const joins = useJoinGraph();
   const { types, edges, held } = useMemo(() => {
-    const tables = [...Map.groupBy(rows, (r) => r.table_name).values()];
+    // `vertices` is every type as one relation, the canvas's; the types are what the graph holds.
+    const vertices = joins.types.filter((t) => t.of === undefined);
     const held = new Map<string, Held>(
-      tables.map(([t, ...rest]) => [
-        t.table_name,
-        {
-          name: t.table_name,
-          rows: t.record_count,
-          columns: [t, ...rest].flatMap((c) => (c.column_name ? [{ name: c.column_name, type: c.data_type ?? "" }] : [])),
-        },
+      vertices.map((t) => [
+        t.name,
+        // The global id is the graph's own arithmetic over GraphAr's per-type index, not a column of the type.
+        { name: t.name, rows: t.rows ?? 0, columns: t.columns.filter((c) => c.role !== "address").map((c) => ({ name: c.name, type: c.type })) },
       ]),
     );
-    const types: VertexType[] = tables
-      .filter(([t]) => t.kind === "vertex")
-      .map(([t]) => ({ name: t.table_name, rows: t.record_count }));
-    const edges: EdgeTable[] = tables
-      .filter(([t]) => t.kind === "edge")
-      .map(([t]) => ({ name: t.table_name, rows: t.record_count, source: t.source ?? "", destination: t.destination ?? "" }));
+    const types: VertexType[] = vertices.map((t) => ({ name: t.name, rows: t.rows ?? 0 }));
+    const edges: EdgeTable[] = joins.edges.map((e) => ({ name: e.name, rows: e.rows ?? 0, source: e.source, destination: e.destination }));
     return { types, edges, held };
-  }, [rows]);
+  }, [joins]);
 
   return (
     <div className="flex flex-col gap-8">

@@ -1,11 +1,4 @@
-/** How a name in the data is said to the person: `birth_date` → "birth date", `LaureateAward` → "laureate award". */
-export function spoken(name: string): string {
-  return name
-    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
-    .replace(/[_\-.]+/g, " ")
-    .trim()
-    .toLowerCase();
-}
+import { splitWords } from "@kanzo-tech/mosaic";
 
 /** "a laureate", "an award". */
 export const withArticle = (words: string) => `${/^[aeiou]/i.test(words) ? "an" : "a"} ${words}`;
@@ -51,17 +44,17 @@ export function inWords(n: number, noun: string, many = plural(noun)): string {
 
 /**
  * What each one of a thing holds, from its columns: "name, gender, birth date and 4 more". Column
- * names are the data's own words, so they are said (`birth_date` → "birth date") and not renamed.
+ * names are the data's own words, so they are said (`birth_date` → "birth date", by mosaic's `splitWords`) and not renamed.
  */
 export function holdsLine(holds: readonly string[], shown = 4): string | null {
   if (holds.length === 0) return null;
-  const words = holds.map(spoken);
+  const words = holds.map(splitWords);
   if (words.length <= shown + 1) return listed(words);
   return `${words.slice(0, shown).join(", ")} and ${words.length - shown} more`;
 }
 
 /** "nobel_laureates.csv" → "Nobel laureates": a file's name as a thing's, until `model` names it. */
 export function thingName(file: string): string {
-  const words = spoken(file.replace(/\.[^.]*$/, ""));
+  const words = splitWords(file.replace(/\.[^.]*$/, ""));
   return words ? words[0]!.toUpperCase() + words.slice(1) : file;
 }

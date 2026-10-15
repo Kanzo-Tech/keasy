@@ -1,4 +1,4 @@
-import type { Attachment } from "@fossil-lang/corpus";
+import type { Attachment } from "./attach";
 import type { Query, QueryCache } from "@tanstack/react-query";
 
 const CORPUS = "corpus";

@@ -348,29 +348,32 @@ the rest in the background, the way fossil's profile already splits.
 - *What would reverse it:* questions marked answerable here that Ask, over the built graph, cannot
   answer — then marking waits for the preview and runs Ask on it.
 
-**What leaves for the libraries** (direction, 2026-10-13; [cleanup](cleanup.md)). Three of the
-Tasks' pieces re-derive what a library will know exactly, and go once it releases:
+**What left for the libraries, and what did not** (2026-10-15, with kanzo-ui 0.47 and fossil's GraphAr
+graph; [cleanup](cleanup.md)). Three of the Tasks' pieces re-derived what a library knows:
 
-- **`requirements`** (`tasks/requirements.ts`, 139 lines with its hand-made `joinGraphOf`) — its
-  oracle is a second resolver over a join graph keasy builds by hand, hard-coding `id`, `src` and
-  `dst`. Under kanzo-ui's paths design (`JoinResolver` the one door to the joins, Ask writing
-  Malloy-style dotted paths), a question is answerable exactly when `JoinResolver.relation(root,
-  shown)` validates its paths, and the fields offered are `JoinResolver.paths(root)`. The chips are
-  then Ask's own offers over the accepted model's `JoinGraph`, and keasy's Task is deleted.
-- **`words`** (`tasks/words.ts`, 67) — `spoken`, `plural`, `singular`, `withArticle`, an English
-  heuristic. Words come from the data: an `rdfs:label` or `sh:name` annotation in the page's
-  language (fossil's annotations design), else the identifier split as a last resort, with
-  `Intl.ListFormat` and `Intl.PluralRules`; titles avoid plurals (*Award count by university*). What
-  keasy still needs, `pascal` and `camel` for the names the `model` Task proposes, stays.
-- **`profile`'s and `model`'s facts** (~60 of `profile.ts`, ~150 of `model.ts`) — candidate keys,
-  identifier-ness and a column's datatype guessed from names and a sample, which fossil's corpus
-  will carry (term type, datatype, label, endpoint keys, the profile stored in the corpus) and
-  `@kanzo-tech/graph`'s `JoinGraph` will carry to Ask.
-
-About 415 lines and their tests. *What would reverse it:* a library that cannot answer for an
-unbuilt model — `JoinResolver` needing a corpus where the assistant has only an accepted artefact.
-Then keasy keeps a `JoinGraph` built from the artefact, through the library's one constructor, never
-a second resolver.
+- **`words`** (`tasks/words.ts`) — `spoken`, the identifier split into words, is gone: it is
+  `@kanzo-tech/mosaic`'s `splitWords` (it keeps an acronym's case, `ID`, where `spoken` lowered it),
+  the one split that `RelationPicker`, Ask's chips and a column's label read. A type's or an edge's words
+  in the page's language are `typeWords` and `edgeWords`, which Discover gets with no code of keasy's:
+  the graph is described by its mapping (`withMapping`, [the graph](graph.md#the-mapping-describes-the-graph-after-its-first-paint)).
+  **What stays** is what no library offers: `plural`, `singular` and `withArticle`, an English
+  heuristic for the assistant's own sentences (*One: an award has institutions*), and `pascal` and
+  `camel`, which make the identifiers the `model` Task proposes. *What would reverse it:* the
+  sentences rewritten so they need no plural — titles that avoid plurals (*Award count by university*),
+  as this section said before — which also lets `plural`, `singular` and `withArticle` go, and the
+  file with them.
+- **`requirements`** (`tasks/requirements.ts`) — its oracle is `JoinResolver`, Ask's own, over a
+  `JoinGraph` that `joinGraphOf` writes from the accepted model. It **stays**: the questions are
+  offered before any program has run, so there is no attached graph to read a `JoinGraph` from, and
+  kanzo-ui's one constructor of one (`readJoinGraph`) reads an attached GraphAr graph and nothing
+  else. It is data in the library's shape, not a second resolver. *What would reverse it:* kanzo-ui
+  exporting a constructor of a `JoinGraph` from a declared model — then `joinGraphOf` is that call;
+  or the questions waiting for the preview, and Ask offering them over it.
+- **`profile`'s facts** — `profiledOf` is the one transform of fossil's `profile()` answer into the
+  shape the Tasks read, and nothing else reads the profile twice: the studio's checker describes at
+  `depth: "types"` (`use-source-descriptors.ts`), which is a different question. The
+  `Primitive` → DuckDB table in `requirements.ts` is the one fact still written here that fossil's
+  catalogue states; it goes when `@fossil-lang/types` exports the table.
 
 **Failure is said, not swallowed.** A Task that throws, or whose oracles still refuse after its
 attempts, fails its step with its problem (`llm/failed` when it has no code of its own) and **Retry**
@@ -381,10 +384,12 @@ on it; nothing downstream runs on a refused artefact.
 **Built 2026-10-13.** Once there is a program, it runs over the first 200 rows
 of each source **into memory** — fossil's `run(program, { host, into: "memory", limit: 200 })`, in
 fossil's run worker, which answers the corpus's files as bytes and writes nothing — and the files are
-attached to the assistant page's engine from those bytes with `@fossil-lang/corpus`'s
-`attach(name, { engine, files })` (fossil 0.3.0-alpha.32), which registers the buffers under a prefix
-of their own and gives them back on detach: fossil reads what fossil wrote. *What would reverse it:*
-fossil dropping that `attach` form — then keasy registers the buffers itself again. `usePreview(program, profiled)`
+attached to the assistant page's engine from those bytes (`attachFiles`, `lib/fossil/attach.ts`): the
+buffers are registered under a prefix of their own, `@kanzo-tech/graphar-duckdb`'s `attachGraph` reads
+the GraphAr graph from them, and detaching gives them back — the same graph a build writes, read the
+same way ([the graph](graph.md)). *What would reverse it:* fossil or `graphar-duckdb` offering the
+in-memory form themselves — then keasy's registration of the buffers goes, as `@fossil-lang/corpus`'s
+`attach({ files })` once promised it would. `usePreview(program, profiled)`
 (`lib/fossil/preview.ts`) is the hook: `idle`, `running` — the last corpus kept on screen —, `ready`
 or `failed`, each corpus named by its program and cached as a graph's is, so a decision changed is a
 preview of its own and the one it replaces is given back once nothing reads it. Inside `CorpusScope`

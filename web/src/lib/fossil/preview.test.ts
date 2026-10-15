@@ -9,12 +9,12 @@ const ENGINE = { coordinator: {} };
 vi.mock("@kanzo-tech/mosaic", () => ({ engine: async () => ENGINE }));
 vi.mock("@/lib/fossil/host", () => ({ host: { name: "keasy" } }));
 vi.mock("@/lib/errors", () => ({ toastError: vi.fn() }));
-const FILES = [{ path: "fossil.json", bytes: new Uint8Array([123, 125]) }];
+const FILES = [{ path: "fossil.graph.yml", bytes: new Uint8Array([110]) }];
 const runInto = vi.fn<(program: string, options: unknown) => Promise<{ report: object; files: typeof FILES }>>(async () => ({ report: {}, files: FILES }));
 vi.mock("./executor", () => ({ runInto }));
 type Attached = { name: string; detach: () => Promise<void> };
-const attach = vi.fn<(name: string, options: unknown) => Promise<Attached>>(async (name) => ({ name, detach: vi.fn(async () => {}) }));
-vi.mock("@fossil-lang/corpus", () => ({ attach }));
+const attachFiles = vi.fn<(name: string, options: unknown) => Promise<Attached>>(async (name) => ({ name, detach: vi.fn(async () => {}) }));
+vi.mock("./attach", () => ({ attachFiles }));
 
 const { QueryClient, QueryClientProvider } = await import("@tanstack/react-query");
 const { corpusKey } = await import("./corpus");
@@ -26,7 +26,7 @@ describe("the assistant's preview", () => {
     const profiled = { descriptors: [], undescribed: [] } as never;
     const corpus = await client.fetchQuery(previewQuery("program", profiled));
     expect(runInto).toHaveBeenCalledWith("program", expect.objectContaining({ host: { name: "keasy" }, into: "memory", profiled }));
-    expect(attach).toHaveBeenCalledWith(previewName("program"), expect.objectContaining({ engine: ENGINE, files: FILES }));
+    expect(attachFiles).toHaveBeenCalledWith(previewName("program"), expect.objectContaining({ engine: ENGINE, files: FILES }));
     expect(corpus).toMatchObject({ name: previewName("program"), engine: ENGINE });
     expect(client.getQueryData(corpusKey(previewName("program")))).toBe(corpus);
   });
@@ -56,7 +56,7 @@ describe("the assistant's preview", () => {
     expect(first.name).toBe(previewName("first"));
 
     let land!: () => void;
-    attach.mockImplementationOnce(
+    attachFiles.mockImplementationOnce(
       (name) => new Promise((resolve) => (land = () => resolve({ name, detach: vi.fn(async () => {}) }))),
     );
     await act(async () => render("second"));

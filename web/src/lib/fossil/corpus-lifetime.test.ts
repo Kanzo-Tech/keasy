@@ -21,7 +21,7 @@ const attached = new Set<string>();
 const attaches = vi.fn((graphId: string) => void attached.add(graphId));
 const detach = vi.fn(async (graphId: string) => void attached.delete(graphId));
 
-vi.mock("@kanzo-tech/mosaic", () => ({ engine: async () => ({ coordinator: {} }) }));
+vi.mock("@kanzo-tech/mosaic", () => ({ engine: async () => ({ coordinator: {} }), withMapping: (graph: unknown) => graph }));
 vi.mock("@kanzo-tech/ui/analytics", () => ({
   MosaicProvider: ({ children }: { children: ReactNode }) => children,
 }));
@@ -38,12 +38,13 @@ vi.mock("@/lib/api/query-client", async () => {
   return { queryClient };
 });
 vi.mock("@/lib/fossil/host", () => ({ host: {} }));
-vi.mock("@fossil-lang/corpus", () => ({
-  attach: async (graphId: string) => {
+vi.mock("@/lib/fossil/attach", () => ({
+  attachJob: async (graphId: string) => {
     attaches(graphId);
-    return { detach: () => detach(graphId) };
+    return { detach: () => detach(graphId), mapping: async () => "" };
   },
 }));
+vi.mock("@/lib/fossil/rudof", () => ({ parseMapping: async () => ({ model: () => ({ tables: [] }) }) }));
 
 const { queryClient } = await import("@/lib/api/query-client");
 const { CORPUS_GC_MS, CorpusProvider, corpusKey, useCorpus } = await import("./corpus");

@@ -12,7 +12,8 @@ import { type FossilProgram, grammarFor, openProgram } from "@fossil-lang/wasm";
 import { defineTask, type Finding } from "@kanzo-tech/ai/task";
 import type { Accepted, AcceptedEdge, AcceptedType } from "./model";
 import { delimiterOf, type Profiled } from "./profile";
-import { plural, spoken } from "./words";
+import { splitWords } from "@kanzo-tech/mosaic";
+import { plural } from "./words";
 
 /** fossil's word on a program: every diagnostic of a check of `program`, the prelude included. */
 export type Check = (program: string, signal?: AbortSignal) => Promise<readonly FossilDiagnostic[]>;
@@ -49,7 +50,7 @@ function irisOf(base: string) {
   return {
     type: (name: string) => `${root}vocab/${name}`,
     field: (name: string) => `${root}vocab/${name}`,
-    thing: (name: string) => `${root}id/${spoken(name).replace(/ /g, "-")}/`,
+    thing: (name: string) => `${root}id/${splitWords(name).replace(/ /g, "-")}/`,
   };
 }
 

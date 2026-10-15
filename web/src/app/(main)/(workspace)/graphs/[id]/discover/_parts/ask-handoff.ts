@@ -57,3 +57,17 @@ export function useHandedQuestion(send: (question: string) => void, ready: boole
     [],
   );
 }
+
+/**
+ * Whether a question is the person's already: one was handed over by the assistant (`handed`, read
+ * from the URL before it is sent), or the conversation holds a message, or an answer is on its way.
+ * The offers Ask proposes are for an empty conversation and for nothing else — one generated while
+ * the model is busy with a person's own question waits that question out (the local model takes calls
+ * in turn), so they yield: they do not start, and one in flight is stopped.
+ */
+export function hasAsked({ handed, messages, status }: { handed: boolean; messages: number; status: string }): boolean {
+  return handed || messages > 0 || status === "submitted" || status === "streaming";
+}
+
+/** Whether the URL carries a question for Ask, before `useHandedQuestion` takes it off. */
+export const isHanded = () => typeof window !== "undefined" && takeQuestion(window.location.href).question !== null;

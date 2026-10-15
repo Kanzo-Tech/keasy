@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
  * **Every attachment the corpus entry held is detached once, when the entry lets it go** — removed,
  * reset to no data, or given a new one — and never while a reader still needs it. An attach the
  * cache gave up on while it was out is never the entry's at all: TanStack aborts the query
- * function's `signal` and drops whatever it resolves to later, and fossil's `attach` rejects on an
+ * function's `signal` and drops whatever it resolves to later, and `attachGraph` rejects on an
  * abort only when a step fails, so the query function detaches what lands after the abort itself.
  */
 
@@ -20,8 +20,8 @@ vi.mock("@kanzo-tech/mosaic", () => ({ engine: async () => ({ coordinator: {} })
 vi.mock("@/lib/fossil/host", () => ({ host: {} }));
 const toastError = vi.fn();
 vi.mock("@/lib/errors", () => ({ toastError }));
-vi.mock("@fossil-lang/corpus", () => ({
-  attach: () =>
+vi.mock("@/lib/fossil/attach", () => ({
+  attachJob: () =>
     new Promise((resolve) => {
       const detach = vi.fn(async () => {});
       out.push({ land: () => resolve({ name: "corpus", detach, [Symbol.asyncDispose]: detach }), detach });

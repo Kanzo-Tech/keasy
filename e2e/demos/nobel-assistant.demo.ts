@@ -108,11 +108,11 @@ function script(origin: string): ModelTurn[] {
     { when: "You write the mappings of a Fossil program", reply: { text: mappings(origin, "id") } },
     {
       when: `Question: ${BY_INSTITUTION}`,
-      reply: json({ of: "Award", show: { kind: "chart", type: "bar", x: "Institution.name", y: { op: "count" } } }),
+      reply: json({ spec: { of: "Award", show: { kind: "chart", type: "bar", x: "Institution.name", y: { op: "count" } } } }),
     },
     {
       when: `Question: ${BY_CATEGORY}`,
-      reply: json({ of: "Award", show: { kind: "chart", type: "bar", x: "Category.name", y: { op: "count" } } }),
+      reply: json({ spec: { of: "Award", show: { kind: "chart", type: "bar", x: "Category.name", y: { op: "count" } } } }),
     },
   ];
 }

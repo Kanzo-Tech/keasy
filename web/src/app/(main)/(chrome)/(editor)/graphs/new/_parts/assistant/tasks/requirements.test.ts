@@ -64,12 +64,12 @@ describe("a question the person typed", () => {
 
   it("is answerable when Ask's spec holds", async () => {
     const spec = { of: "Award", show: { kind: "chart", type: "bar", x: "category", y: { op: "count" } } };
-    expect(await isAnswerable("Prizes by category?", accepted, { model: scripted(spec).model })).toBe(true);
+    expect(await isAnswerable("Prizes by category?", accepted, { model: scripted({ spec }).model })).toBe(true);
   });
 
   it("is not when Ask cannot reach what it reads, after Ask's own repairs", async () => {
     const spec = { of: "Award", show: { kind: "chart", type: "bar", x: "country.name", y: { op: "count" } } };
-    const { model, prompts } = scripted(spec);
+    const { model, prompts } = scripted({ spec });
     expect(await isAnswerable("Prizes by country?", accepted, { model })).toBe(false);
     expect(prompts).toHaveLength(3);
   });

@@ -25,8 +25,8 @@ release, and keasy deletes in the same change that bumps the version.
 | 6 | **e2e** ([below](#e2e)) | ~65 | the typed client and the s3-init loop done; `page.clock` and the smoke fixture not |
 | 7 | ⇧ **The Ask evaluation set to kanzo-ui** ([assistant](assistant.md#order)) | ~560 moved | kanzo-ui taking the set |
 | 8 | ⇧ **kanzo-ui**: `Structure`, one model double, the conversation's keeping, library hooks on keasy's `QueryClient`, the organization's admin console URL from `@kanzo-tech/auth` ([below](#what-the-libraries-take)) | ~490 | a kanzo-ui release |
-| 9 | ⇧ **fossil**: `run` in its own worker, `attach({ files })` | ~435 | a fossil alpha |
-| 10 | ⇧ **kanzo-ui and fossil together**: the `requirements`, `words` and `profile` Tasks' guesses ([assistant](assistant.md#the-three-tasks)) | ~415 | kanzo-ui's paths design (wave 3) and fossil's annotations and corpus facts (wave 4) |
+| 9 | ⇧ **fossil**: `run` in its own worker, `attach({ files })` | ~435 | done with alpha.32 (`run`); `attach({ files })` went with `@fossil-lang/corpus`, and keasy attaches the files' GraphAr graph itself ([the graph](graph.md)) |
+| 10 | **kanzo-ui and fossil together**: the `requirements`, `words` and `profile` Tasks' guesses ([assistant](assistant.md#the-three-tasks)) | ~415 | landed in part with kanzo-ui 0.47 and fossil's GraphAr graph: `spoken` is `splitWords`; `joinGraphOf` and `plural`, `singular`, `withArticle` stay, with why and what would reverse it on the assistant page |
 | 11 | **Azure: one credential, through the Azure SDK** ([below](#azure-has-one-credential-a-user-delegation-sas-through-the-azure-sdk)) | ~250 now, ~60 more later | done but the signer, which waits on the SDK's SAS builder |
 
 About **4,300 lines** in all, ~560 of them moved rather than deleted, of keasy's ~41.6k, and 5 web dependencies and 3–5 Rust crates. Steps
@@ -41,8 +41,8 @@ improved.
 | What keasy carries | Where | Goes to | Lines | Owned on |
 |---|---|---|---|---|
 | The run worker: protocol, `Host` over a port, abort, errors across `structuredClone` | `lib/fossil/run-worker.ts`, `run.worker.ts`, test | fossil: `run` runs in a worker of its own | ~310 | [assistant](assistant.md#the-executor-leaves-the-pages-main-thread) |
-| An in-memory corpus attached through buffers under a prefix | `lib/fossil/memory-corpus.ts`, test | `@fossil-lang/corpus`'s `attach({ files })` | ~125 | [assistant](assistant.md#the-preview-is-in-the-chat) |
-| The corpus's structure read three ways: raw SQL over `fossil_tables` and `fossil_columns` in `overview.tsx`, `useGraphKey`, `readJoinGraph` | `graphs/[id]/_parts/overview.tsx`, `lib/fossil/corpus.tsx` | `@kanzo-tech/graph`'s `Structure`, exported, read once per corpus | ~60 | here |
+| An in-memory graph attached through buffers under a prefix | `lib/fossil/attach.ts` (`attachFiles`), test | `@fossil-lang/corpus`'s `attach({ files })` was this; it is deleted with the package, so keasy keeps ~40 lines of it | ~125 → ~40 | [assistant](assistant.md#the-preview-is-in-the-chat) |
+| The corpus's structure read three ways: raw SQL over `fossil_tables` and `fossil_columns` in `overview.tsx`, `useGraphKey`, `readJoinGraph` | `graphs/[id]/_parts/overview.tsx`, `lib/fossil/corpus.tsx` | `@kanzo-tech/graph`'s `readJoinGraph`, read once per corpus | ~60 | done 2026-10-15, [below](#the-catalogue-is-read-once) |
 | Three model doubles | `e2e/support/model.ts`, `lib/ai.ts` + `model-double.test.ts`, `nobel.fixture.ts` | one in `@kanzo-tech/llm`, through `__KANZO_TESTING__` | ~180 | [assistant](assistant.md#what-left-keasys-configuration) |
 | The conversation's keeping: whole saves after each reply, one at a time, the sealed record carried on in a new id | `lib/assistant-conversation.ts`, its hook test | `@kanzo-tech/ai`, on the AI SDK's `UIMessage[]` per id and `validateUIMessages`; keasy gives `load`/`save` against `/v1/conversations` and the privacy `keep` | ~200 | [assistant](assistant.md#the-conversation-is-kept) |
 | `requirements`, `words`, and the guessed half of `profile` and `model` | `graphs/new/_parts/assistant/tasks/` | `JoinResolver` and Ask's paths; labels from annotations with `Intl`; the corpus's facts on `JoinGraph` | ~415 | [assistant](assistant.md#the-three-tasks) |
@@ -50,12 +50,12 @@ improved.
 | The model's load as a store of keasy's | — | already `@kanzo-tech/llm/local`'s `localModelLoad`, drawn as `ModelBadge` | 0 (gone) | [assistant](assistant.md#what-left-keasys-configuration) |
 | Library reads wrapped in keasy's own `useQuery` | `use-assistant.ts`, `use-source-descriptors.ts`, `overview.tsx`'s `useQueryRows` | the library's own hook, using TanStack Query inside on keasy's `QueryClient` from `QueryClientProvider` (a peer dependency) | ~40 | here |
 
-**`Structure` is read once.** `@kanzo-tech/graph` already reads a corpus into `Structure` — its key,
-its vertices with rows and columns, its edges with their ends and rows — and does not export it.
-Once it does, the overview's types-and-edges tables, the graph key and Ask's `JoinGraph` are one
-cached read of it, and keasy holds no SQL over fossil's catalogue views. *What would reverse it:*
-something the overview shows that `Structure` does not carry — then it goes into `Structure`, not
-back into a query here.
+**The catalogue is read once.** `@kanzo-tech/graph` reads a graph's catalogue (`graphar_vertex_types`,
+`graphar_edge_types`, `graphar_properties`) into the `JoinGraph` — its types with rows and columns, its
+edges with their ends and rows — and `CorpusScope` holds it, cached under the corpus. Done 2026-10-15:
+the overview's types-and-edges tables, the graph key and Ask's graph are that one read, and keasy holds
+no SQL over the catalogue. *What would reverse it:* something the overview shows that the `JoinGraph`
+does not carry — then it goes into the library's read, not back into a query here.
 
 **The library hooks share keasy's `QueryClient`** (the review's decision on TanStack Query). Each
 kanzo-ui hook that reads — a field's statistics, Ask's reads, the session — uses TanStack Query

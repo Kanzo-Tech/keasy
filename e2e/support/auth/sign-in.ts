@@ -19,6 +19,6 @@ export async function enterUsername(page: Page, username: string) {
 
 /** …then, on a page of its own, the password. */
 export async function enterPassword(page: Page) {
-  await page.locator("#password").fill(process.env.KEASY_E2E_PASSWORD ?? "password");
+  await page.locator("#password").fill(process.env.KEASY_E2E_PASSWORD ?? "kanzo-dev-password");
   await page.locator("#kc-login").click();
 }

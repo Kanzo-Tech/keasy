@@ -157,7 +157,7 @@ export class DiscoverPage extends ComponentHarness {
    * The footer's `GraphCounts` sentence, once it has counted. It is there in either view, so it is
    * read here rather than through `GraphCanvasHarness.counts()`, which needs the canvas. Not waited
    * on `aria-busy`: GraphCounts is busy until the canvas has drawn, which the Dashboard view never
-   * does, while its figures are the corpus's from the first count.
+   * does, while its figures are the graph's from the first count.
    */
   async counts(): Promise<string> {
     // By its slot, not its words: a text query walks every node of the page, and with the canvas

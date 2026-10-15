@@ -23,7 +23,7 @@ for (const deviceScaleFactor of [1, 2]) {
     });
     const page = await context.newPage();
     const env = await playwright(page, { timeout: 120_000 });
-    const id = await seedGraph(page, "openflights", { name: "Demo · OpenFlights", reuse: true });
+    const id = await seedGraph(page, "openflights", { name: "Demo · OpenFlights" });
     const discover = await DiscoverPage.open(page, env, id);
     await discover.onMap();
 

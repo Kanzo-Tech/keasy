@@ -35,7 +35,7 @@ async function sinkOf(named: string | undefined): Promise<string> {
 /**
  * keasy's steps of a build (`lib/fossil/build.ts`): the graph made as the studio makes one — a draft,
  * submitted, then run with this tab as its runner — with the conversation it was built from, and run
- * here, in the run's worker, under the graph's lease (`startRun`), its corpus written under its job.
+ * here, in the run's worker, under the graph's lease (`startRun`), its graph written under its job.
  */
 export function keasySteps(output: BuildOutput = {}): BuildSteps<Schemas["Graph"]> {
   return {

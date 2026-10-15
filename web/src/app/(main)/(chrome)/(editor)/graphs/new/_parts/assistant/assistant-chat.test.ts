@@ -18,16 +18,16 @@ vi.mock("@kanzo-tech/navigation/next", () => ({
 }));
 
 // What the chat and the flow read from outside, each a double: the page's model, the preview's
-// corpus and Ask over it, the preview and the build, the kept conversation, and the hook's Tasks.
+// graph and Ask over it, the preview and the build, the kept conversation, and the hook's Tasks.
 const ask = vi.hoisted(() => ({ sendMessage: vi.fn(async () => {}) }));
 vi.mock("@/lib/ai", () => ({ usePreloadModel: () => {}, useModelLoad: () => ({ state: "ready" }) }));
 vi.mock("@/components/model-status", () => ({ ModelStatus: () => null }));
-vi.mock("@/lib/fossil/corpus", () => ({ CorpusScope: ({ children }: { children: unknown }) => children }));
+vi.mock("@/lib/fossil/graph", () => ({ GraphScope: ({ children }: { children: unknown }) => children }));
 vi.mock("@/lib/fossil/ask", () => ({
-  useCorpusAsk: () => ({ chat: { messages: [], status: "ready", sendMessage: ask.sendMessage, error: undefined }, graph: {}, over: {} }),
+  useGraphAsk: () => ({ chat: { messages: [], status: "ready", sendMessage: ask.sendMessage, error: undefined }, graph: {}, over: {} }),
 }));
 const doubles = vi.hoisted(() => ({
-  usePreview: vi.fn((program: string | null) => ({ state: program === null ? "idle" : "running", corpus: null, rerun: () => {} })),
+  usePreview: vi.fn((program: string | null) => ({ state: program === null ? "idle" : "running", graph: null, rerun: () => {} })),
   build: vi.fn(),
   useBuild: vi.fn(),
   save: vi.fn<(messages: unknown) => Promise<string>>(async () => "c1"),
@@ -314,7 +314,7 @@ describe("the assistant, as a conversation", () => {
       selected: new Set(["nobel:laureates.csv"]),
       decisions: [],
       program: "program",
-      preview: { state: "ready", corpus: { name: "preview-1" } as never, rerun: () => {} },
+      preview: { state: "ready", graph: { name: "preview-1" } as never, rerun: () => {} },
     });
     await through(host);
     await act(async () => button(host, "Who has won more than one Nobel?")!.click());
@@ -330,37 +330,37 @@ describe("the assistant, as a conversation", () => {
       selected: new Set(["nobel:laureates.csv"]),
       decisions: [],
       program: "program",
-      preview: { state: "running", corpus: null, rerun },
+      preview: { state: "running", graph: null, rerun },
     });
     await through(host);
     await act(async () => button(host, "Skip, show me a preview")!.click());
     expect(host.textContent).toContain("Running it over the first 200 rows of each file…");
     expect(host.textContent).toContain("Wrote the program");
-    render({ preview: { state: "failed", problem: new Error("The run stopped"), corpus: null, rerun } });
+    render({ preview: { state: "failed", problem: new Error("The run stopped"), graph: null, rerun } });
     await act(async () => button(host, "Try again")!.click());
     expect(rerun).toHaveBeenCalled();
   });
 
   it("dims the answers a rerun replaces, under the heading's Updating…, until the new ones land", async () => {
-    const corpus = { name: "preview-1" } as never;
+    const graph = { name: "preview-1" } as never;
     const { host, render } = mount({
       selected: new Set(["nobel:laureates.csv"]),
       decisions: [],
       program: "program",
-      preview: { state: "ready", corpus, rerun: () => {} },
+      preview: { state: "ready", graph, rerun: () => {} },
     });
     await through(host);
     await act(async () => button(host, "Who has won more than one Nobel?")!.click());
     await act(async () => button(host, "That's all, show me a preview")!.click());
     const answers = () => host.querySelector("[data-preview-answers]")!.parentElement!;
     expect(answers().hasAttribute("data-stale")).toBe(false);
-    render({ program: "program", preview: { state: "running", corpus, rerun: () => {} } });
+    render({ program: "program", preview: { state: "running", graph, rerun: () => {} } });
     expect(answers().hasAttribute("data-stale")).toBe(true);
     expect(answers().getAttribute("aria-busy")).toBe("true");
     const heading = host.querySelector('[aria-label="Preview"] p')!;
     expect(heading.textContent).toContain("Here is your data over its first 200 rows");
     expect(heading.querySelector('[role="status"]')?.textContent).toBe("Updating…");
-    render({ program: "program", preview: { state: "ready", corpus: { name: "preview-2" } as never, rerun: () => {} } });
+    render({ program: "program", preview: { state: "ready", graph: { name: "preview-2" } as never, rerun: () => {} } });
     expect(answers().hasAttribute("data-stale")).toBe(false);
     expect(host.textContent).not.toContain("Updating…");
   });

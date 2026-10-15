@@ -51,7 +51,7 @@ import { counted, figure } from "@/lib/ui/format";
  * and Dashboard alike — and the work in its popover. The rules are one SHACL file the server keeps:
  * dropping a `.ttl` anywhere on the popover, or *Replace rules…* in its menu, replaces it, and a file
  * rudof cannot read is refused with its line and column while the previous one stays. rudof validates
- * the corpus over the page's subset; the popover lists rudof's groups under their rule, and each
+ * the graph over the page's subset; the popover lists rudof's groups under their rule, and each
  * *Show N* — of a rule, of one of its groups — or *Keep what conforms* puts the vertices on the page
  * as the rules' one clause. `/docs/design/findings` in kanzo-ui is the model.
  */

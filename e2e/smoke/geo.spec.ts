@@ -95,7 +95,7 @@ test("the flights dashboard draws every tile kind, and holds under a brush and a
 test("leaving Discover with a dashboard filter in force logs nothing, and the page opens again", async ({ page, env, geoGraph }) => {
   // A frame that comes late, as on a busy machine or in a tab in the background: Mosaic batches its
   // queries behind `requestAnimationFrame`, so what a page queues on its way out runs well after it
-  // unmounts: a corpus detached as the page goes, rather than when the cache collects it, is gone
+  // unmounts: a graph detached as the page goes, rather than when the cache collects it, is gone
   // under those queries.
   await page.addInitScript(() => {
     const frame = window.requestAnimationFrame.bind(window);
@@ -118,7 +118,7 @@ test("leaving Discover with a dashboard filter in force logs nothing, and the pa
 
   // Leaving by a link unmounts the page in the browser: the dashboard withdraws its clause as it
   // goes, and every client still connected asks again. Those queries must not outlive their clients
-  // and run once the corpus is detached (the guard fails the test on the `Catalog Error` they logged).
+  // and run once the graph is detached (the guard fails the test on the `Catalog Error` they logged).
   // A `goto` would reload the page and tear nothing down.
   await page.getByRole("navigation", { name: "breadcrumb" }).getByRole("link", { name: "Graphs" }).click();
   await expect(page.getByPlaceholder("Search graphs...")).toBeVisible();

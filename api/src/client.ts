@@ -1,4 +1,4 @@
-import type { AuthErrorCode } from "@kanzo-tech/auth";
+import type { ProblemCode } from "@kanzo-tech/kernel";
 import createFetchClient, { type Middleware } from "openapi-fetch";
 import type { Readable, Writable, components, paths } from "./schema";
 
@@ -17,7 +17,7 @@ export type ErrorBody = Schemas["ErrorBody"];
  * (`@kanzo-tech/auth`), in a problem under its own code — `api/unreachable` when the server did not
  * answer at all.
  */
-export type RefusalCode = ErrorCode | AuthErrorCode;
+export type RefusalCode = ErrorCode | ProblemCode;
 
 /** A refusal, as the server's `ErrorBody` or the forwarder's problem states it: `message` is its `detail`. */
 export class ApiError extends Error {

@@ -7,7 +7,7 @@ import { JoinResolver, type Relation, relationKey } from "@kanzo-tech/mosaic";
 import { Dashboard, RelationPicker } from "@kanzo-tech/ui/analytics";
 import { SavedBy } from "@/components/provenance";
 import { Boundary, Failed } from "@/components/boundary";
-import { useJoinGraph } from "@/lib/fossil/corpus";
+import { useJoinGraph } from "@/lib/fossil/graph";
 import { useDashboardStore } from "./dashboard-store";
 
 /**

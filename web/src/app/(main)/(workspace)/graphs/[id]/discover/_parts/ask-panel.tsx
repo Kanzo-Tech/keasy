@@ -14,14 +14,14 @@ import { describeProblem, ProblemView } from "@/components/problem-view";
 import { ModelStatus } from "@/components/model-status";
 import { useModel, useModelLoad } from "@/lib/ai";
 import { coded } from "@/lib/errors";
-import { useCorpusAsk } from "@/lib/fossil/ask";
-import { corpusKey, useCorpus } from "@/lib/fossil/corpus";
+import { useGraphAsk } from "@/lib/fossil/ask";
+import { graphKey, useAttachedGraph } from "@/lib/fossil/graph";
 import { hasAsked, isHanded, useHandedQuestion } from "./ask-handoff";
 import { useDashboardStore } from "./dashboard-store";
 
 /**
- * The Ask panel — `@kanzo-tech/ai/data` over the graph (`useCorpusAsk`, which the assistant's chat
- * reads its preview through too): the corpus's join graph and what it holds, each question one run of the `ask` Task on the page's engine under
+ * The Ask panel — `@kanzo-tech/ai/data` over the graph (`useGraphAsk`, which the assistant's chat
+ * reads its preview through too): the catalog's join graph and what it holds, each question one run of the `ask` Task on the page's engine under
  * the page's one selection (`useAskChat`), its own checked offers as the pills (`askOffers`), and each
  * answer an `AnswerCard` — the dashboard tile it is, which *Filter the page to these rows* narrows the
  * page to (when it filters at all), *Add to the dashboard* adds to the Dashboard view's saved
@@ -62,7 +62,7 @@ function AskEmpty() {
  * or handed over by the assistant — none starts and the one in flight is stopped (`hasAsked`).
  */
 function useStarters(graph: JoinGraph, asked: boolean) {
-  const { name: corpus } = useCorpus();
+  const { name: catalog } = useAttachedGraph();
   const { selection } = useMosaic();
   const model = useModel();
   const queryClient = useQueryClient();
@@ -70,7 +70,7 @@ function useStarters(graph: JoinGraph, asked: boolean) {
   const ready = useModelLoad().state === "ready";
   // Re-rendered on every clause, so the key below is the filter as it is now.
   useClauses(selection);
-  const queryKey = [...corpusKey(corpus), "starters", String(selection.predicate(null) ?? "")];
+  const queryKey = [...graphKey(catalog), "starters", String(selection.predicate(null) ?? "")];
   const starters = useQuery({
     queryKey,
     queryFn: ({ signal }) => askOffers({ model, graph, selection, signal }),
@@ -80,8 +80,8 @@ function useStarters(graph: JoinGraph, asked: boolean) {
   });
   // Disabling a query leaves its fetch running; stopping it is what hands the model to the question.
   useEffect(() => {
-    if (asked) void queryClient.cancelQueries({ queryKey: [...corpusKey(corpus), "starters"] });
-  }, [asked, corpus, queryClient]);
+    if (asked) void queryClient.cancelQueries({ queryKey: [...graphKey(catalog), "starters"] });
+  }, [asked, catalog, queryClient]);
   return {
     proposing: starters.fetchStatus === "fetching",
     proposals: starters.isError ? [] : (starters.data ?? []),
@@ -119,7 +119,7 @@ function SubsetPill() {
 }
 
 function AskChat() {
-  const { chat, graph } = useCorpusAsk();
+  const { chat, graph } = useGraphAsk();
   // The download started when the graph opened (`usePreloadModel`); the badge says how it stands.
   const load = useModelLoad();
   // The question the assistant handed over (`?q=`), asked once the model is ready.

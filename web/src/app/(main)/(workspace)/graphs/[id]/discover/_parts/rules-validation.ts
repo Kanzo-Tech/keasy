@@ -10,7 +10,7 @@ import { usePick } from "@kanzo-tech/graph";
 import type { RdfFindingGroup, RdfFindingGroups, RdfPlace, Shapes, ShapeModelJson, TermValue } from "@kanzo-tech/rudof-wasm";
 import { type FindingSeverity, type FindingTally, tallyFindings } from "@kanzo-tech/ui";
 import { queryClient } from "@/lib/api/query-client";
-import { corpusKey, mappingQuery, useCorpus, useGraphKey, useVertices } from "@/lib/fossil/corpus";
+import { graphKey, mappingQuery, useAttachedGraph, useGraphKey, useVertices } from "@/lib/fossil/graph";
 import { rudof } from "@/lib/fossil/rudof";
 
 /**
@@ -32,9 +32,9 @@ export interface ReadRules {
  * `ShapesError` placed by line and column.
  */
 export function useReadRules(text: string | undefined) {
-  const { name: corpus } = useCorpus();
+  const { name: catalog } = useAttachedGraph();
   const read = useQuery({
-    queryKey: [...corpusKey(corpus), "rules", text],
+    queryKey: [...graphKey(catalog), "rules", text],
     queryFn: async (): Promise<ReadRules> => {
       const { Shapes } = await rudof();
       const shapes = Shapes.parse(text!);
@@ -71,7 +71,7 @@ export interface Checked {
   findings: { conforms: boolean; groups: KeptGroup[]; unchecked: RdfFindingGroups["unchecked"] };
   inScope: number;
   total: number;
-  /** The subset's subjects, as SQL — `undefined` for the whole corpus. */
+  /** The subset's subjects, as SQL — `undefined` for the whole catalog. */
   subset: string | undefined;
   /** The rules file checked, as it was. */
   shapes: string;
@@ -93,11 +93,11 @@ export type Stale = "filter" | "rules";
  * queries. `check()` validates what the page holds at that moment — every clause but the rules' own,
  * so showing a finding narrows the graph and never the findings — and a second press, or `stop()`,
  * abandons the first: latest wins. The focus nodes are the subjects of the vertices the subset keeps,
- * each checked against the whole corpus.
+ * each checked against the whole catalog.
  */
 export function useRules(rules: ReadRules | undefined, text: string) {
-  const graph = useCorpus();
-  const { name: corpus } = graph;
+  const graph = useAttachedGraph();
+  const { name: catalog } = graph;
   const { coordinator } = useMosaic();
   const pick = usePick(PICK);
   // Re-rendered on every clause, only so the badge can say the subset moved since the last check.
@@ -105,7 +105,7 @@ export function useRules(rules: ReadRules | undefined, text: string) {
   const vertices = useVertices();
   const key = useGraphKey();
   const predicate = pick.predicate();
-  const triples = String(new TableRefNode([corpus, "triples"]));
+  const triples = String(new TableRefNode([catalog, "triples"]));
   const subset = predicate.length
     ? String(Query.from(vertices).select({ s_type: literal("I"), s_value: column("subject") }).where(predicate))
     : undefined;
@@ -126,11 +126,11 @@ export function useRules(rules: ReadRules | undefined, text: string) {
     await mapping.triples({
       engine: attachedTo,
       into: triples,
-      tables: (table) => String(new TableRefNode([corpus, table])),
+      tables: (table) => String(new TableRefNode([catalog, table])),
       signal,
     });
     if (over === undefined) return { attachedTo, focus: undefined };
-    const focus = new TableRefNode([corpus, name]);
+    const focus = new TableRefNode([catalog, name]);
     await attachedTo.query(String(createTable(focus, over, { view: true, replace: true })), { signal });
     return { attachedTo, focus: String(focus) };
   };
@@ -245,8 +245,8 @@ export function useRules(rules: ReadRules | undefined, text: string) {
      * conforming node's neighbourhood, so a `sh:class` on a route took in every airport it reaches.
      */
     conforming: async (label: string) => {
-      const into = String(new TableRefNode([corpus, "rules_fragment"]));
-      const conforming = String(new TableRefNode([corpus, "rules_conforming"]));
+      const into = String(new TableRefNode([catalog, "rules_fragment"]));
+      const conforming = String(new TableRefNode([catalog, "rules_conforming"]));
       // Asked for by a press, and nothing stops it once asked: a signal that never aborts.
       const { signal } = new AbortController();
       const { attachedTo, focus } = await prepared(subset, "rules_focus", signal);

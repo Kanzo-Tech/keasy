@@ -142,7 +142,7 @@ async function answered(page: Page): Promise<number> {
  * calls and a mapping written to fossil's grammar, and a recording that depended on a small model
  * proposing the same types on every take would be a different film. Everything else is the stack's: the
  * profile is fossil's over the files in the store, the program is checked by fossil, the preview and the
- * build are runs on the page's engine, and every answer is read from the corpus.
+ * build are runs on the page's engine, and every answer is read from the graph.
  *
  * Written against `web/…/assistant/` (`source-bar.tsx`, `turns.tsx`, `steps.ts`) without a browser to
  * run it in: the selectors below are read from those components, not observed.

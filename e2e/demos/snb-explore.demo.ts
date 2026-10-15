@@ -11,7 +11,7 @@ import { demo } from "./record";
  */
 demo("snb-explore", "Dashboard over LDBC SNB: pick a type, click a bar, brush a range", {
   async arrange({ page, env }) {
-    const id = await seedGraph(page, "snb", { name: "Demo · LDBC Social Network", reuse: true });
+    const id = await seedGraph(page, "snb", { name: "Demo · LDBC Social Network" });
     // Opened on the dashboard: the Graph view would lay out 327K nodes first.
     const discover = await DiscoverPage.open(page, env, id, { view: "dashboard" });
     const dashboard = await discover.dashboard();

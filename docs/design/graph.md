@@ -6,7 +6,7 @@ it will run on, and was run against local builds of them.
 
 What a run writes is an Apache GraphAr graph, `fossil.graph.yml` and its Parquet chunks, and beside it
 `mapping.ttl`, an RML-Core mapping that says what the tables mean as RDF. It replaces the `fossil/1`
-corpus (`fossil.json` and a Parquet file per table) that keasy attached with `@fossil-lang/corpus`.
+format (`fossil.json` and a Parquet file per table) that keasy attached with fossil's former `attach`.
 fossil's side of this is its [format](https://kanzo-tech.github.io/fossil-lang/docs/format) and
 [design](https://kanzo-tech.github.io/fossil-lang/docs/design/graphar); this page is keasy's part:
 what it composes, and what it does when a graph is not one.
@@ -25,8 +25,8 @@ modules:
   `Mapping.parse` over that text.
 
 Everything that read `fossil_tables`, `fossil_columns` or `triples` now reads the join graph that
-`@kanzo-tech/graph`'s `readJoinGraph` makes of the catalogue (`CorpusScope` holds it, cached under the
-corpus), or the mapping.
+`@kanzo-tech/graph`'s `readJoinGraph` makes of the catalogue (`GraphScope` holds it, cached under the
+graph), or the mapping.
 
 *What would reverse it:* a second host of the same 80 lines — the graph viewer in another product —
 then `mount` and `attachGraph` become one call in fossil or kanzo-ui, as `attach` was. Until there is
@@ -35,7 +35,7 @@ one, a call that has one caller is not a package.
 ## The mapping describes the graph after its first paint
 
 GraphAr states a graph's tables and column types and has no word for a class, a predicate, a datatype
-or a label. Those are in `mapping.ttl`. `CorpusScope` reads the graph's join graph (suspending, as
+or a label. Those are in `mapping.ttl`. `GraphScope` reads the graph's join graph (suspending, as
 before), draws it, and **then** parses the mapping and gives the page `withMapping(graph,
 mapping.model())`: the picker, Ask's chips (`typeWords`) and a column's label read the `rdfs:label`s
 in the page's language, and a year declared `xsd:gYear` is a time. Until the mapping is read, and if
@@ -47,7 +47,7 @@ first paint, because the graph's tables never need it. rudof's module is the cos
 per tab, after the draw.
 
 *What would reverse it:* a first paint people see change — the names replaced by labels a moment
-later. Then `CorpusScope` suspends on the mapping as it does on the join graph, and the cost of
+later. Then `GraphScope` suspends on the mapping as it does on the join graph, and the cost of
 rudof's module moves before the draw.
 
 **What the mapping does not yet reach.** fossil writes a relation, and a multi-valued or
@@ -63,13 +63,13 @@ pull request that adds the mapping to the graph (kanzo-ui #224) was written agai
 ## The rules read the graph as triples, through the mapping
 
 The rules page validates a SHACL document over `"<graph>".triples`, a seven-column view that used to
-come with the corpus. It is now `Mapping.triples` over the graph's own tables, **made on each check**
+come with the graph. It is now `Mapping.triples` over the graph's own tables, **made on each check**
 (`create or replace`, a query and no data: nothing is materialised, DuckDB unfolds it when it is read),
 by `useRules` before rudof validates. A graph with no mapping, or one that rudof refuses, is a
 check that fails with rudof's own message; the graph page does not need it.
 
 *What would reverse it:* a check slower than the same one over a stored table — measured on a graph of
-the size of LDBC SNB — then the view becomes a table, made once per corpus and dropped with it.
+the size of LDBC SNB — then the view becomes a table, made once per graph and dropped with it.
 
 ## The overview asks no question of its own
 
@@ -87,7 +87,7 @@ are damaged. Build it again to open it.*
 
 What keasy stores about a graph's output is two columns of `graphs`, `folder` (where the output lands
 under the sink) and `report` (fossil's run report, `{ location, dropped }`, opaque), and neither is read
-to open a corpus: the page mounts the job and reads `fossil.graph.yml` under it. So **nothing in the
+to open a graph: the page mounts the job and reads `fossil.graph.yml` under it. So **nothing in the
 database needs rewriting, and every completed graph needs to be run again**: *Run* on the graph writes
 a GraphAr graph under the same folder. The files of the earlier format stay in the folder, unread (a
 GraphAr graph is `vertex/<Type>/…` and `edge/…`, and the earlier one's `vertex/<Type>.parquet` is a

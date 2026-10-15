@@ -4,7 +4,7 @@ import { queryClient } from "@/lib/api/query-client";
 
 /**
  * rudof's wasm module, instantiated once and only when something reads RDF: the graph's mapping
- * (`CorpusScope`, after its first paint) and the rules. A failed instantiation is not kept: the next
+ * (`GraphScope`, after its first paint) and the rules. A failed instantiation is not kept: the next
  * read tries again.
  */
 export function rudof() {

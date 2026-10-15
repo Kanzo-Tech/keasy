@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 /**
- * **Every attachment the corpus entry held is detached once, when the entry lets it go** — removed,
+ * **Every attachment the graph entry held is detached once, when the entry lets it go** — removed,
  * reset to no data, or given a new one — and never while a reader still needs it. An attach the
  * cache gave up on while it was out is never the entry's at all: TanStack aborts the query
  * function's `signal` and drops whatever it resolves to later, and `attachGraph` rejects on an
@@ -24,13 +24,13 @@ vi.mock("@/lib/fossil/attach", () => ({
   attachJob: () =>
     new Promise((resolve) => {
       const detach = vi.fn(async () => {});
-      out.push({ land: () => resolve({ name: "corpus", detach, [Symbol.asyncDispose]: detach }), detach });
+      out.push({ land: () => resolve({ name: "graph", detach, [Symbol.asyncDispose]: detach }), detach });
     }),
 }));
 
 const { CancelledError, QueryClient, QueryObserver } = await import("@tanstack/react-query");
-const { RELEASE_FAILED, releaseCorpora } = await import("./corpus-cache");
-const { corpusKey, corpusQuery } = await import("./corpus");
+const { RELEASE_FAILED, releaseGraphs } = await import("./graph-cache");
+const { graphKey, graphQuery } = await import("./graph");
 
 const GRAPH = "00000000-0000-4000-8000-000000000001";
 type Client = InstanceType<typeof QueryClient>;
@@ -40,7 +40,7 @@ const onFailure = vi.fn();
 
 function cache() {
   const queryClient = new QueryClient();
-  releaseCorpora(queryClient.getQueryCache(), { onFailure });
+  releaseGraphs(queryClient.getQueryCache(), { onFailure });
   return queryClient;
 }
 
@@ -50,13 +50,13 @@ async function attachOut(n: number): Promise<Out> {
   return out[n - 1]!;
 }
 
-/** The attach out, as a page that opens the corpus starts it; what opening it answers, once it does. */
+/** The attach out, as a page that opens the graph starts it; what opening it answers, once it does. */
 async function attaching(queryClient: Client) {
-  const opened = queryClient.fetchQuery(corpusQuery(GRAPH));
+  const opened = queryClient.fetchQuery(graphQuery(GRAPH));
   return { opened, first: await attachOut(1) };
 }
 
-/** The corpus attached, its entry in the cache and nothing reading it. */
+/** The graph attached, its entry in the cache and nothing reading it. */
 async function attached(queryClient: Client) {
   const { opened, first } = await attaching(queryClient);
   first.land();
@@ -66,7 +66,7 @@ async function attached(queryClient: Client) {
 
 /** A reader holding the entry, as a page on screen does. */
 function reader(queryClient: Client) {
-  return new QueryObserver(queryClient, corpusQuery(GRAPH)).subscribe(() => {});
+  return new QueryObserver(queryClient, graphQuery(GRAPH)).subscribe(() => {});
 }
 
 afterEach(() => {
@@ -85,7 +85,7 @@ describe("an attach in flight", () => {
   it("is detached when it lands after the cache removed its entry", async () => {
     const queryClient = cache();
     const { opened, first } = await attaching(queryClient);
-    queryClient.removeQueries({ queryKey: corpusKey(GRAPH) });
+    queryClient.removeQueries({ queryKey: graphKey(GRAPH) });
     await expect(opened).rejects.toBeInstanceOf(CancelledError);
     expect(first.detach).not.toHaveBeenCalled();
     first.land();
@@ -105,7 +105,7 @@ describe("an attach in flight", () => {
     const queryClient = cache();
     const first = await attached(queryClient);
     expect(first.detach).not.toHaveBeenCalled();
-    queryClient.removeQueries({ queryKey: corpusKey(GRAPH) });
+    queryClient.removeQueries({ queryKey: graphKey(GRAPH) });
     expect(first.detach).toHaveBeenCalledTimes(1);
   });
 });
@@ -115,23 +115,23 @@ describe("an attachment the entry holds", () => {
     const queryClient = cache();
     const first = await attached(queryClient);
     await queryClient.resetQueries();
-    expect(queryClient.getQueryData(corpusKey(GRAPH))).toBeUndefined();
+    expect(queryClient.getQueryData(graphKey(GRAPH))).toBeUndefined();
     expect(first.detach).toHaveBeenCalledTimes(1);
-    queryClient.removeQueries({ queryKey: corpusKey(GRAPH) });
+    queryClient.removeQueries({ queryKey: graphKey(GRAPH) });
     expect(first.detach).toHaveBeenCalledTimes(1);
   });
 
   it("is detached once a refetch replaces it, and the new one is kept", async () => {
     const queryClient = cache();
     const first = await attached(queryClient);
-    const refetched = queryClient.refetchQueries({ queryKey: corpusKey(GRAPH) });
+    const refetched = queryClient.refetchQueries({ queryKey: graphKey(GRAPH) });
     const second = await attachOut(2);
     expect(first.detach, "the entry still holds it while the new one is out").not.toHaveBeenCalled();
     second.land();
     await refetched;
     expect(first.detach).toHaveBeenCalledTimes(1);
     expect(second.detach).not.toHaveBeenCalled();
-    queryClient.removeQueries({ queryKey: corpusKey(GRAPH) });
+    queryClient.removeQueries({ queryKey: graphKey(GRAPH) });
     expect(first.detach).toHaveBeenCalledTimes(1);
     expect(second.detach).toHaveBeenCalledTimes(1);
   });
@@ -141,7 +141,7 @@ describe("an attachment the entry holds", () => {
     const unsubscribe = reader(queryClient);
     const first = await attachOut(1);
     first.land();
-    await vi.waitFor(() => expect(queryClient.getQueryData(corpusKey(GRAPH))).toBeDefined());
+    await vi.waitFor(() => expect(queryClient.getQueryData(graphKey(GRAPH))).toBeDefined());
     // The reader stays: the reset refetches the entry it holds.
     void queryClient.resetQueries();
     const second = await attachOut(2);
@@ -150,7 +150,7 @@ describe("an attachment the entry holds", () => {
     await vi.waitFor(() => expect(first.detach).toHaveBeenCalledTimes(1));
     expect(second.detach).not.toHaveBeenCalled();
     unsubscribe();
-    queryClient.removeQueries({ queryKey: corpusKey(GRAPH) });
+    queryClient.removeQueries({ queryKey: graphKey(GRAPH) });
     expect(first.detach).toHaveBeenCalledTimes(1);
     expect(second.detach).toHaveBeenCalledTimes(1);
   });
@@ -160,11 +160,11 @@ describe("an attachment the entry holds", () => {
     const unsubscribe = reader(queryClient);
     const first = await attachOut(1);
     first.land();
-    await vi.waitFor(() => expect(queryClient.getQueryData(corpusKey(GRAPH))).toBeDefined());
+    await vi.waitFor(() => expect(queryClient.getQueryData(graphKey(GRAPH))).toBeDefined());
     void queryClient.resetQueries();
     const second = await attachOut(2);
     unsubscribe();
-    queryClient.removeQueries({ queryKey: corpusKey(GRAPH) });
+    queryClient.removeQueries({ queryKey: graphKey(GRAPH) });
     expect(first.detach).toHaveBeenCalledTimes(1);
     // The new attach, given up on while out, detaches itself when it lands.
     second.land();
@@ -180,7 +180,7 @@ describe("a detach that fails", () => {
     const queryClient = cache();
     const first = await attached(queryClient);
     first.detach.mockRejectedValueOnce(refused);
-    queryClient.removeQueries({ queryKey: corpusKey(GRAPH) });
+    queryClient.removeQueries({ queryKey: graphKey(GRAPH) });
     await vi.waitFor(() => expect(onFailure).toHaveBeenCalledTimes(1));
     expect(onFailure).toHaveBeenCalledWith(refused);
     queryClient.clear();
@@ -193,7 +193,7 @@ describe("a detach that fails", () => {
     const queryClient = cache();
     const first = await attached(queryClient);
     first.detach.mockRejectedValueOnce(refused);
-    const refetched = queryClient.refetchQueries({ queryKey: corpusKey(GRAPH) });
+    const refetched = queryClient.refetchQueries({ queryKey: graphKey(GRAPH) });
     (await attachOut(2)).land();
     await refetched;
     await vi.waitFor(() => expect(onFailure).toHaveBeenCalledTimes(1));
@@ -205,7 +205,7 @@ describe("a detach that fails", () => {
     const queryClient = cache();
     const { opened, first } = await attaching(queryClient);
     first.detach.mockRejectedValueOnce(refused);
-    queryClient.removeQueries({ queryKey: corpusKey(GRAPH) });
+    queryClient.removeQueries({ queryKey: graphKey(GRAPH) });
     await expect(opened).rejects.toBeInstanceOf(CancelledError);
     first.land();
     await vi.waitFor(() => expect(toastError).toHaveBeenCalledTimes(1));

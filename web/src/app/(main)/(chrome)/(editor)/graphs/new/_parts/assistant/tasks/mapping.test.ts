@@ -74,7 +74,7 @@ describe("the mapping Task", () => {
     expect(proposal.verdict).toEqual({ ok: true });
     expect(proposal.attempts).toBe(1);
     expect(programOf(input, proposal.value)).toBe(`${input.prelude}\n${GOOD}`);
-    expect(prompts[0]).toContain('@subject = \\"https://acme.example/id/award/{awards.id}\\"');
+    expect(prompts[0]).toContain('@subject = "https://acme.example/id/award/{awards.id}"');
   });
 
   it("sends fossil's own diagnostic back, at its line, and takes the repair", async () => {
@@ -83,7 +83,7 @@ describe("the mapping Task", () => {
     const proposal = await runTask(mapping, input, { model });
     expect(proposal.verdict).toEqual({ ok: true });
     expect(proposal.attempts).toBe(2);
-    expect(prompts[1]).toMatch(/It does not hold:.*line 18: `nmae` is not a field of `institutions`/);
+    expect(prompts[1]).toMatch(/It does not hold:[\s\S]*line 18: `nmae` is not a field of `institutions`/);
   });
 
   it("refuses a type with no mapping, and a subject that is not keasy's", async () => {

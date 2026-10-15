@@ -27,7 +27,7 @@ const GPU = {
 /**
  * The GPU, with WebGPU on: the model runs in the page (`web/src/lib/ai.ts`), and headless Chromium
  * offers WebGPU only when asked — on Linux, over Vulkan. A machine with no GPU still has none, and
- * Ask says so (`ai/unavailable`).
+ * Ask says so (`llm/unavailable`).
  */
 const WEBGPU = {
   args: [...GPU.args, "--enable-unsafe-webgpu", ...(process.platform === "linux" ? ["--enable-features=Vulkan"] : [])],
@@ -58,7 +58,7 @@ export default defineConfig({
       dependencies: ["setup"],
       use: { storageState: ".auth/editor.json" },
     },
-    // The dev seeds (`make seed`: LDBC SNB SF0.1, OpenFlights) through every view, where a console
+    // The dev seeds (`make seed`) through every view, where a console
     // or page error fails the test (support/smoke.ts). Needs the seeds in the store.
     {
       name: "smoke",
@@ -66,15 +66,6 @@ export default defineConfig({
       dependencies: ["setup"],
       // The seeds are large graphs, laid out live: on the GPU, as a reader with one sees them.
       use: { storageState: ".auth/editor.json", launchOptions: GPU },
-    },
-    // The evaluation set (eval/, Kanzo Tasks' phase 1): every case asked of the model the page runs,
-    // on this machine's GPU, scored and written to eval/results/<EVAL_MODEL>/. Live, slow, and never
-    // part of `test`: it names the projects it runs, as for the demos.
-    {
-      name: "eval",
-      testMatch: /eval\/.*\.eval\.ts$/,
-      dependencies: ["setup"],
-      use: { storageState: ".auth/editor.json", trace: "off", launchOptions: WEBGPU },
     },
     // Product demos, recorded rather than asserted (demos/, `make demo`). Never part of `test`:
     // it names the projects it runs, so CI and `make e2e` do not record.

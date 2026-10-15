@@ -286,7 +286,7 @@ impl Graph {
     /// `None` for a draft that has none yet. **This is the one place keasy
     /// composes an output path**, and it is keasy's to compose — a graph's home
     /// is the host's decision, not the language's. Everything below it
-    /// (table names, file names) belongs to fossil, and the corpus says it.
+    /// (table names, file names) belongs to fossil, and the graph says it.
     pub fn output_under(&self, sink: &StorageLocation) -> Option<StorageLocation> {
         self.folder.as_deref().map(|folder| sink.child(folder))
     }

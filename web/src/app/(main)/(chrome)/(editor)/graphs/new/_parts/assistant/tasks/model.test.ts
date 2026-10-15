@@ -96,6 +96,13 @@ describe("the decisions a draft raises", () => {
     const decisions = decisionsOf(DRAFT, NOBEL);
     expect(decisions.map((d) => d.id)).toEqual(["key/countries", "count/affiliations"]);
     expect(decisions[0]!.options.map((o) => o.id)).toEqual(["code", "name"]);
+    expect(decisions[1]).toMatchObject({
+      question: "Each row of affiliations links laureate to institution. Is a row only that link, or a thing counted on its own?",
+      options: [
+        { id: "link", label: "Only a link: laureate → institution" },
+        { id: "thing", label: "A thing of its own: affiliations" },
+      ],
+    });
     expect(modelTask(NOBEL).decide).toEqual({ "key/laureates": { assume: "id" }, "key/countries": { assume: "code" } });
   });
 
@@ -143,12 +150,12 @@ describe("what the person reads", () => {
     const relations = relationsOf(accepted, NOBEL);
     expect(relations.find((r) => r.id === "relation/Award")).toEqual({
       id: "relation/Award",
-      sentence: "Each award has a laureate, a year, a category and a share",
+      sentence: "award: laureate, year, category and share",
       example: ["Marie Curie", "1903", "Physics", "4"],
     });
     expect(relations.find((r) => r.id === "relation/Laureate")).toEqual({
       id: "relation/Laureate",
-      sentence: "Each laureate has affiliations, a name, a gender and a born",
+      sentence: "laureate: affiliation, name, gender and born",
       example: ["Sorbonne", "Marie Curie", "female", "1867-11-07"],
     });
   });

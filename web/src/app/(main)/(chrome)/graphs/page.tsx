@@ -25,7 +25,7 @@ import { ResourceList } from "@/components/resource-list";
 type Graph = Schemas["Graph"];
 type GraphStatus = Schemas["GraphStatus"];
 
-const STATUS_OPTIONS = (Object.keys(STATUS) as GraphStatus[]).map((value) => ({ value, label: STATUS[value].label }));
+const STATUS_ITEMS = (Object.keys(STATUS) as GraphStatus[]).map((value) => ({ value, label: STATUS[value].label }));
 
 export default function GraphsPage() {
   const editor = useSession().can("editor");
@@ -73,7 +73,7 @@ export default function GraphsPage() {
             title: `No ${lower(WORDS.graphs)} yet`,
             description: `A ${lower(WORDS.graph)} is a ${lower(WORDS.recipe)} over your connections, run to write its ${lower(WORDS.output)} to ${lower(WORDS.storage)}.`,
           }}
-          filters={<DataTableFacetFilter column="status" label="Status" options={STATUS_OPTIONS} size="sm" />}
+          filters={<DataTableFacetFilter column="status" items={STATUS_ITEMS} label="Status" size="sm" />}
           // One home per graph: its page, a draft's included; the recipe editor is reached from there.
           href={(graph) => `/graphs/${graph.id}`}
           noun={lower(WORDS.graphs)}

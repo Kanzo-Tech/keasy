@@ -30,16 +30,17 @@ overrides any of them ([`.env.example`](.env.example)). Anything past `make dev`
 ### AI in development
 
 The model runs in the browser, on WebGPU — Chrome or Edge, Safari 26, Firefox on Windows — through
-WebLLM (`web/src/lib/ai.ts` names and pins it). The browser downloads it in the background when a
-graph, the wizard or the assistant opens, about 2.3 GB once, and keeps it; nothing about a question
-leaves the browser, and no server holds a key. Its shards come from keasy's own origin, never a third
-party's: `make models` downloads them once into `infra/models`, which the stack serves at `/models`
-(`KEASY_MODEL_URL`, [`.env.example`](.env.example)). Without them, or in a browser without WebGPU,
-Ask and the assistant say so (`ai/unavailable`); everything else works.
+WebLLM. The browser downloads it in the background when a graph or the assistant opens, about
+2.3 GB once, and keeps it; nothing about a question leaves the browser, and no server holds a key.
+It comes from where WebLLM's own arrangement has it: the public MLC weights from Hugging Face and
+the compiled library from GitHub, both at pinned revisions and the small files checked against
+their hashes, as `web/public/models/app-config.json` lists them. Nothing to download or run
+for it here, but the browser needs egress to those hosts. In a browser without WebGPU, Ask and
+the assistant say so (`llm/unavailable`); everything else works.
 
 ## Dev accounts
 
-The platform's seed users (kanzo-ui `services/auth/seed`), all with password `password`.
+The platform's seed users (kanzo-ui `services/auth/seed`), all with password `kanzo-dev-password`.
 This instance serves the `acme` organization. A role comes from the organization group
 the user is in, which the seed maps onto keasy's roles (`configs.keasy-roles` in `infra/dev/platform.yaml`):
 
@@ -159,7 +160,6 @@ graph TD
     Web -->|"session records"| Valkey[("Valkey")]
     Server -->|"JWKS"| Keycloak
     Server --> SQLite[("SQLite")]
-    Browser -->|"the model's shards, once: /models"| Models["models (nginx)"]
     Keycloak --> PostgreSQL[("PostgreSQL")]
 ```
 
@@ -187,9 +187,9 @@ owner or an admin changes it (roles `reader ⊂ editor ⊂ admin`, from the Keyc
 organization the instance serves; the matrix is `docs/design/permissions.md`).
 
 The model runs in the browser too: `localModel` from `@kanzo-tech/llm/local`, WebLLM on
-WebGPU in a worker of its own, its shards downloaded from this origin's `/models`
-(`KEASY_MODEL_URL`, the `models` service). No call leaves the page, so there is nothing to forward,
-no model key and no budget to keep.
+WebGPU in a worker of its own, the models this origin's `/models/app-config.json` lists
+(`web/public/models/`; the weights themselves come from Hugging Face, once). No call
+leaves the page, so there is nothing to forward, no model key and no budget to keep.
 
 A **credential** (S3 or Azure) is who keasy is when it reaches a store; a
 **connection** puts one to use (a storage prefix — a source or the one sink). Both
@@ -201,8 +201,7 @@ An instance's look is declared, not edited: `KEASY_BRANDING_FILE` names a YAML
 file holding exactly what kanzo-ui's theme generator exports (`branding:` with
 `theme_css`, `families`, `default`, `lock`, and optionally `logo`), validated at
 boot and served publicly at `GET /v1/branding`. Without it every shipped theme is
-offered. Example: `infra/dev/branding.example.yml`; in a deployment, mounted from the
-organization's file (`infra/prod/README.md`).
+offered. Example: `infra/dev/branding.example.yml`.
 
 Stored credentials are sealed with `KEASY_SECRET_KEY`: 32 random bytes in base64
 (`openssl rand -base64 32`). The server refuses to start without one, and refuses
@@ -210,23 +209,6 @@ a database whose schema is not the one it ships — there are no migrations: a s
 change is the database dropped and created again, so wipe the volume (`make clean`, or
 `docker compose down -v`) and start the stack again. The latest such change is the
 `conversations` table (the assistant's conversations, and each graph's own).
-
-## Deployment
-
-The same compose files, on one server: `compose.yaml` with `compose.prod.yaml` — the platform as it
-runs in production, Traefik with Let's Encrypt in front — and one file per organization in
-`infra/prod/orgs/`. What a deployment says is versioned in `infra/prod/`: `prod.env` (the release,
-the domain, where the model is served) and `secrets.sops.env`, encrypted with SOPS and age to the keys of whoever
-deploys. On the server:
-
-```sh
-git pull && make deploy
-```
-
-Serving the model, adding or removing an organization, moving to a new release: edit a line in
-`infra/prod/`, commit, `make deploy`. [`infra/prod/README.md`](infra/prod/README.md) is the guide.
-Images are published to GHCR by `.github/workflows/images.yml` on `v*` tags, after the server and
-web CI pass.
 
 ## Development
 
@@ -238,12 +220,14 @@ web CI pass.
 | `make e2e` | The failure scenarios and the smoke over the dev seeds (`e2e/`, Playwright) against the stack, as CI; main checkout only, as Keycloak admits :3000 alone |
 | `make demo` | List the product demos; `DEMO=<name>` or `DEMO=all` records them (see [Demos](#demos)) |
 | `make api` | Regenerate the API contract ([API contract](#api-contract)) |
-| `make deploy`, `make secrets`, `make key` | A deployment ([`infra/prod/README.md`](infra/prod/README.md)) |
 
 Everything else is `docker compose`, which reads `compose.yaml` and `compose.override.yaml` on its
-own. The platform's release is `KANZO_UI_REF`, in the `include:` of `compose.override.yaml` and
-`compose.prod.yaml`, and moves with `@kanzo-tech/*` in `web/package.json`; the Rust toolchain is
-pinned once, in `server/rust-toolchain.toml`.
+own. The platform's release is `KANZO_UI_REF`, in the `include:` of `compose.override.yaml`, a literal
+default set by hand to the `@kanzo-tech/ui` release that `web/package.json` names, and derived from nothing;
+the Rust toolchain is pinned once, in `server/rust-toolchain.toml`. Images are published to GHCR by
+`.github/workflows/images.yml` on `v*` tags, after the server and web CI pass. There is no deployment yet:
+what one will need to know is in [`docs/design/permissions.md`](docs/design/permissions.md#when-a-deployment-exists)
+and [`docs/design/assistant.md`](docs/design/assistant.md).
 
 ## Demos
 
@@ -265,12 +249,12 @@ Playwright's frames into the MP4. The demos project runs Chromium on the GPU (Me
 `make demo` touches no container for a graph demo: Next's dev indicator and React Query's devtools
 are hidden in the recording's browser. A demo that asks the model (`nobel-ask`) asks everyone's, in
 the recording's browser on its GPU (WebGPU): it waits for the model to load before the take, and the
-figures on screen are the corpus's, read under the page's filter.
+figures on screen are the graph's, read under the page's filter.
 
 **Adding a demo** is a file `e2e/demos/<name>.demo.ts` calling `demo(name, description, { arrange,
 steps })` from `e2e/demos/record/`, transcribed from its table in `e2e/demos/STORYBOARD.md`; `make demo`
 lists it from that title. `arrange` gets the page ready off camera (`seedGraph` from
-`e2e/support/seeds.ts`, with `reuse`, finds or runs a dev example's graph) and gets the page and its
+`e2e/support/seeds.ts`, builds a dev example's graph) and gets the page and its
 `@kanzo-tech/testing` environment, made before the page loads. Each step is a **subtitle**, an
 **action** — a call on keasy's page objects (`e2e/support/app/`) or the library's harnesses, brushes
 and lassos in data — and a **check**, so a take whose page did something else fails rather than
@@ -300,11 +284,9 @@ make api   # UPDATE_EXPECT=1 cargo test --test api openapi, then pnpm generate
 api/                @keasy/api: the committed spec, its generated types and the client
 e2e/                @keasy/e2e: one Playwright test per failure scenario, the smoke over the dev seeds, its fixtures, and the `faults` profile's servers
 compose.yaml        keasy as it runs anywhere: the web, its sessions, its declaration in the realm
-compose.server.yaml one organization's server, which each organization's file extends
+compose.server.yaml one organization's server, which compose.override.yaml extends
 compose.override.yaml  development: the platform in its dev shape, builds, the S3 store, the faults
-compose.prod.yaml   a deployment: the platform as deployed, Traefik, secrets from the environment
 infra/dev/          development's organization, secrets, roles, S3 config and seed examples
-infra/prod/         a deployment's values: prod.env, orgs/, secrets.sops.env, and its guide
 server/             Rust API (Dockerfile = release, Dockerfile.dev = cargo-watch)
   src/main.rs       configures from the environment and serves
   src/startup.rs    Application, AppState, the router and the spec it publishes

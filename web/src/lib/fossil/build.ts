@@ -2,7 +2,7 @@ import { useSyncExternalStore } from "react";
 import type { Profiled } from "@fossil-lang/types";
 
 /**
- * The whole graph built from a program, once the person asks for it — *Build the whole graph* in the
+ * The whole graph built from a program, once the person asks for it — *Build the graph* in the
  * assistant: made the way the studio makes one, then run under its job in this tab's worker. Before
  * that, the assistant shows a preview over a sample in the chat itself (`lib/fossil/preview.ts`),
  * run again as often as a decision changes; a build is once, and Discover only ever opens what it

@@ -1,20 +1,18 @@
 import { type Code, CODES, type Foreign, helpUrl, isCode, isFossilError } from "@fossil-lang/types";
-import type { AuthErrorCode } from "@kanzo-tech/auth";
-import type { GraphError } from "@kanzo-tech/graph";
-import type { AiError } from "@kanzo-tech/llm";
-import type { EngineError } from "@kanzo-tech/mosaic";
-import { type ProblemCopy, toast } from "@kanzo-tech/ui";
+import type { ProblemCode } from "@kanzo-tech/kernel";
+import { type ProblemDescription, toast } from "@kanzo-tech/ui";
 
-import { ApiError, type ErrorCode, type NoBodyCode } from "@keasy/api";
+import { ApiError, type ErrorCode } from "@keasy/api";
 import { schemaOf } from "@/lib/api/spec";
 import { lower, WORDS } from "@/lib/vocabulary";
 
 /**
  * Failures the browser names itself, in the same `area/kind` grammar as fossil's and the server's: a
- * query the engine refused, a model call that failed uncoded, and anything uncoded. A failure the server
- * names too keeps the server's code (`rules/refused`, rudof refusing a rules document).
+ * query the engine refused, a model call that failed uncoded, a graph whose files do not read as
+ * Apache GraphAr, and anything uncoded. A failure the server names too keeps the server's code
+ * (`rules/refused`, rudof refusing a rules document).
  */
-export type ClientCode = "query/failed" | "llm/failed" | "web/unknown";
+export type ClientCode = "query/failed" | "llm/failed" | "graph/unreadable" | "web/unknown";
 
 /** A failure the browser raises itself, coded so it reaches the screen by the same path as the others. */
 export class ClientError extends Error {
@@ -51,11 +49,11 @@ const signIn = { label: "Sign in again", href: "/api/auth/signin" };
 
 /**
  * kanzo-ui's own failures, in the same grammar — its sign-in, its graph, its engine, its model
- * calls — as each library's error class declares them, so a code it renames is a type error here.
+ * calls — as the kernel's registry names them, so a code it renames is a type error here.
  */
-type KanzoCode = AuthErrorCode | GraphError["code"] | EngineError["code"] | AiError["code"];
+type KanzoCode = ProblemCode;
 
-const registry: Partial<Record<ErrorCode | NoBodyCode | ClientCode | Code | KanzoCode, Copy>> = {
+const registry: Partial<Record<ErrorCode | ClientCode | Code | KanzoCode, Copy>> = {
   "callback/state-mismatch": {
     title: "This sign-in could not be completed.",
     detail:
@@ -80,9 +78,13 @@ const registry: Partial<Record<ErrorCode | NoBodyCode | ClientCode | Code | Kanz
   "session/silent": { title: "Your session could not be read in time.", link: signIn },
   "idp/silent": { title: "The identity provider did not answer in time.", link: signIn },
   "idp/unreachable": { title: "The identity provider could not be reached.", link: signIn },
+  "api/unreachable": {
+    title: "The server could not be reached.",
+    detail: "keasy's server is not answering. Try again in a moment.",
+  },
   // The model runs in the page, and cannot here: this browser has no WebGPU, or this deployment serves
   // no model (`data.reason`: `webgpu`, `unserved` — lib/ai.ts).
-  "ai/unavailable": {
+  "llm/unavailable": {
     title: (data) => (reasonOf(data) === "unserved" ? "This workspace has no model." : "This browser cannot run the model."),
     detail: (data) =>
       reasonOf(data) === "unserved"
@@ -90,6 +92,21 @@ const registry: Partial<Record<ErrorCode | NoBodyCode | ClientCode | Code | Kanz
         : "Ask and the assistant run their model on this device, through WebGPU, which this browser does not offer. The rest of keasy works the same.",
   },
   "llm/failed": { title: "The model call failed. Please try again." },
+  // The model answered and its context cut it off: what it wrote is not an answer, and a shorter ask
+  // can be one (`data.reason` `context`, @kanzo-tech/llm).
+  "llm/truncated": {
+    title: "The answer was cut off.",
+    detail: (data) =>
+      reasonOf(data) === "context"
+        ? "The model ran out of room before it finished answering, so nothing was kept. Ask about less at once, or clear the filters and ask again."
+        : "The model stopped before it finished answering, so nothing was kept. Ask again.",
+  },
+  // `attachGraph` refused the files: the graph was built before keasy wrote Apache GraphAr, or they are damaged.
+  "graph/unreadable": {
+    title: "This graph's files cannot be read.",
+    detail:
+      "It was built before graphs were written as Apache GraphAr, or its files are damaged. A graph is read as it was built: build it again to open it.",
+  },
   "query/failed": {
     title: "Query execution failed. The AI may have generated invalid SQL. Try rephrasing your question.",
   },
@@ -136,11 +153,11 @@ const SERVER_CODES: ReadonlySet<string> = new Set(schemaOf("ErrorCode").enum);
  * code the server owns — `undefined` for any other, whose own words are its detail.
  */
 export function titleOf({ code, title, data }: { code: string; title?: string; data?: unknown }): string | undefined {
-  return copyOf(code, data)?.title ?? (SERVER_CODES.has(code) ? title : undefined);
+  return descriptionOf(code, data)?.title ?? (SERVER_CODES.has(code) ? title : undefined);
 }
 
-/** keasy's copy for `code`, where it overrides the code's own words; `data` is the problem's. */
-export function copyOf(code: string, data?: unknown): ProblemCopy | undefined {
+/** keasy's words for `code`, where it overrides the code's own words; `data` is the problem's. */
+export function descriptionOf(code: string, data?: unknown): ProblemDescription | undefined {
   const copy = registry[code as keyof typeof registry];
   if (!copy) return undefined;
   return {
@@ -157,7 +174,7 @@ export function pageOf(code: string): string | undefined {
 
 /**
  * A failure by the fields every coded error here shares — fossil's `FossilError`, the server's
- * `ApiError`, kanzo-ui's `AuthError`, `GraphError`, `EngineError` and `AiError` — which is what
+ * `ApiError`, kanzo-ui's `AuthError`, `GraphError`, `EngineError` and `LlmError` — which is what
  * kanzo-ui's `Problem` reads. `detail` is a stored problem's word for `message`.
  */
 export interface Coded {
@@ -174,7 +191,7 @@ const isCoded = (err: unknown): err is Coded =>
 
 /**
  * Any thrown value with a code to branch on: one that carries a code is itself — a model call's
- * `AiError` (`ai/unavailable`) included; anything else is `uncoded`, in its own words, its cause
+ * `LlmError` (`llm/unavailable`) included; anything else is `uncoded`, in its own words, its cause
  * kept — a model that failed to load or to answer.
  */
 export function coded(err: unknown, uncoded: ClientCode | ErrorCode = "web/unknown"): Coded {
@@ -236,7 +253,7 @@ export function fieldProblem(error: unknown): FieldProblem | null {
   if (!(error instanceof ApiError)) return null;
   const field = error.data?.field;
   if (!field) return null;
-  return { field, message: copyOf(error.code)?.title ?? error.message };
+  return { field, message: descriptionOf(error.code)?.title ?? error.message };
 }
 
 /** Toast a failed action: `title` names the action, the description is the code's copy or the failure's own words. */

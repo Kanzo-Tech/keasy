@@ -1,6 +1,6 @@
 FROM node:22-alpine AS builder
 
-# pnpm (pnpm-lock.yaml is v9). @fossil-lang/* come from npm (the `alpha` dist-tag)
+# pnpm (pnpm-lock.yaml is v9). @fossil-lang/* come from npm
 # — no vendoring. Build context: the repo root, since the web depends on the
 # workspace package `api/` (@keasy/api).
 RUN npm install -g pnpm@9
@@ -24,6 +24,8 @@ USER keasy
 # at `web/server.js` inside it.
 COPY --from=builder /app/web/.next/standalone ./
 COPY --from=builder /app/web/.next/static ./web/.next/static
+# The model's listing, /models/app-config.json, and anything else served as it is.
+COPY --from=builder /app/web/public ./web/public
 
 EXPOSE 3000
 ENV PORT=3000

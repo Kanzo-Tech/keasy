@@ -10,7 +10,7 @@ export function GraphInfo() {
   return (
     <div className="flex h-full flex-col">
       <div className="shrink-0 border-b border-border p-2">
-        <GraphSearch placeholder="Find anything in the graph…" />
+        <GraphSearch translations={{ placeholder: "Find anything in the graph…" }} />
       </div>
       <ScrollArea className="min-h-0 flex-1 p-3">
         {/* Its own boundary: the inspector does not wait on the graph's record, nor fail with it. */}

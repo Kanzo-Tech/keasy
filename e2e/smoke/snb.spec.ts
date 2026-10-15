@@ -17,17 +17,17 @@ test.describe.configure({ timeout: 300_000 });
 
 /** One tile of every kind and every chart mark, over a relation with a hop — a join. */
 const DASHBOARD = {
-  filters: [{ field: "Comment.browserUsed" }],
+  filters: [{ field: "browserUsed" }],
   tiles: [
     { id: "count", kind: "stat", title: "Replies", measure: { op: "count" } },
-    { id: "length", kind: "stat", title: "Mean reply length", measure: { op: "avg", field: "Comment.length" } },
-    { id: "bar", kind: "chart", span: 1, type: "bar", title: "By browser", x: "Comment.browserUsed", y: { op: "count" } },
-    { id: "line", kind: "chart", span: 1, type: "line", title: "Length over time", x: "Comment.creationDate", y: { op: "avg", field: "Comment.length" } },
-    { id: "area", kind: "chart", span: 1, type: "area", title: "Posts replied to over time", x: "Post.creationDate", y: { op: "count" } },
-    { id: "histogram", kind: "chart", span: 1, type: "histogram", title: "By reply length", x: "Comment.length", y: { op: "count" } },
-    { id: "dot", kind: "chart", span: 1, type: "dot", title: "Reply against post", x: "Post.length", y: { op: "value", field: "Comment.length" } },
-    { id: "fit", kind: "chart", span: 1, type: "regression", title: "Fit of reply against post", x: "Post.length", y: { op: "value", field: "Comment.length" } },
-    { id: "rows", kind: "table", span: 3, title: "Reply rows", columns: ["Comment.browserUsed", "Comment.length", "Post.length"] },
+    { id: "length", kind: "stat", title: "Mean reply length", measure: { op: "avg", field: "length" } },
+    { id: "bar", kind: "chart", span: 1, type: "bar", title: "By browser", x: "browserUsed", y: { op: "count" } },
+    { id: "line", kind: "chart", span: 1, type: "line", title: "Length over time", x: "creationDate", y: { op: "avg", field: "length" } },
+    { id: "area", kind: "chart", span: 1, type: "area", title: "Posts replied to over time", x: "replyOfPost.creationDate", y: { op: "count" } },
+    { id: "histogram", kind: "chart", span: 1, type: "histogram", title: "By reply length", x: "length", y: { op: "count" } },
+    { id: "dot", kind: "chart", span: 1, type: "dot", title: "Reply against post", x: "replyOfPost.length", y: { op: "value", field: "length" } },
+    { id: "fit", kind: "chart", span: 1, type: "regression", title: "Fit of reply against post", x: "replyOfPost.length", y: { op: "value", field: "length" } },
+    { id: "rows", kind: "table", span: 3, title: "Reply rows", columns: ["browserUsed", "length", "replyOfPost.length"] },
   ],
 };
 
@@ -54,7 +54,7 @@ test("the social network's dashboard over a hop draws every tile kind, and holds
     await (await (await dashboard.tile(title)).chart()).settled();
   }
   expect(await (await dashboard.tile("By browser")).text()).toContain("Firefox");
-  expect(await (await dashboard.tile("Reply rows")).text()).toContain("Comment.browserUsed");
+  expect(await (await dashboard.tile("Reply rows")).text()).toContain("browserUsed");
 
   // A brush on reply length, from 100 to 300 characters — past the bin of the shortest, as most
   // replies are under a hundred: every other tile reads the paths it keeps.
@@ -63,16 +63,16 @@ test("the social network's dashboard over a hop draws every tile kind, and holds
   expect(kept).toBeGreaterThan(0);
   expect(kept).toBeLessThan(PATHS);
   await (await (await dashboard.tile("Fit of reply against post")).chart()).settled();
-  // A clause chip reads its field and range: *Comment.length 100.0 – 300.0*. It shows once the page
+  // A clause chip reads its field and range: *length 100.0 – 300.0*. It shows once the page
   // delivers the brush's clause, a while after the brush.
-  await expect.poll(async () => (await bar.chips()).some((chip) => chip.startsWith("Comment.length "))).toBe(true);
-  await bar.remove("Comment.length");
+  await expect.poll(async () => (await bar.chips()).some((chip) => chip.startsWith("length "))).toBe(true);
+  await bar.remove("length");
   // Unfiltered, every tile reads the whole join again: as long as the first read, so as long a wait.
   await expect.poll(() => unfiltered(discover, "Replies"), { timeout: 60_000 }).toBe(figured(PATHS));
 
   // The filter chip: the 28,807 replies written in Firefox. The control's value list is the
   // library's and has no harness method yet, so it is driven by its roles.
-  await bar.open("Comment.browserUsed");
+  await bar.open("browserUsed");
   // Each value with its count over the whole relation.
   await page.getByRole("option", { name: "Firefox 28807", exact: true }).click();
   await page.keyboard.press("Escape");

@@ -41,19 +41,19 @@ export class DiscoverPage extends ComponentHarness {
     at: Parameters<typeof discoverUrl>[1] = {},
   ): Promise<DiscoverPage> {
     await page.goto(discoverUrl(graphId, at));
-    const discover = await env.harness(DiscoverPage);
+    const discover = await env.getHarness(DiscoverPage);
     await discover.views();
     return discover;
   }
 
   /** The view switch, a single-select toggle group named *View*. */
   views(): Promise<DockHarness> {
-    return this.env.harness(DockHarness.with({ name: "View" }));
+    return this.env.getHarness(DockHarness.with({ name: "View" }));
   }
 
   /** The dock's switcher, `ShellDockSwitcher`, named *Panels*. */
   dock(): Promise<DockHarness> {
-    return this.env.harness(DockHarness.with({ name: "Panels" }));
+    return this.env.getHarness(DockHarness.with({ name: "Panels" }));
   }
 
   /** Switches the main region to `view`, and waits for it to be the checked one. */
@@ -64,47 +64,47 @@ export class DiscoverPage extends ComponentHarness {
   /** Puts `panel` in the dock, if it is not there already, and waits for the panel to be up. */
   async panel(panel: Panel): Promise<void> {
     await (await this.dock()).open(panel);
-    await this.env.harness(DiscoverPage.docked(panel));
+    await this.env.getHarness(DiscoverPage.docked(panel));
   }
 
   /** The canvas of the Graph view. */
   graph(): Promise<GraphCanvasHarness> {
-    return this.env.harness(GraphCanvasHarness);
+    return this.env.getHarness(GraphCanvasHarness);
   }
 
   /** The Dashboard view's dashboard, once it has read its fields and nothing in it is loading. */
   async dashboard(): Promise<DashboardHarness> {
-    const dashboard = await this.env.harness(DashboardHarness);
+    const dashboard = await this.env.getHarness(DashboardHarness);
     await dashboard.settled();
     return dashboard;
   }
 
   /** The page's filter bar. */
   filters(): Promise<FilterBarHarness> {
-    return this.env.harness(FilterBarHarness);
+    return this.env.getHarness(FilterBarHarness);
   }
 
   /** The Settings panel, docked. */
   async settings(): Promise<SettingsPanel> {
     await this.panel("Settings");
-    return this.env.harness(SettingsPanel);
+    return this.env.getHarness(SettingsPanel);
   }
 
   /** The rules' badge, at the end of the filter bar, in either view. */
   rules(): Promise<RulesBadge> {
-    return this.env.harness(RulesBadge);
+    return this.env.getHarness(RulesBadge);
   }
 
   /** The Ask panel, docked. */
   async ask(): Promise<AskPanel> {
     await this.panel("Ask");
-    return this.env.harness(AskPanel);
+    return this.env.getHarness(AskPanel);
   }
 
   /** The graph search, in the Info panel, docked. */
   async search(): Promise<GraphSearch> {
     await this.panel("Info");
-    return this.env.harness(GraphSearch);
+    return this.env.getHarness(GraphSearch);
   }
 
   /**
@@ -113,7 +113,7 @@ export class DiscoverPage extends ComponentHarness {
    * The relation is not in the URL, so it is picked, not linked.
    */
   async relation(root: string, hops: readonly string[] = []): Promise<void> {
-    const picker = await this.env.harness(RelationPickerHarness);
+    const picker = await this.env.getHarness(RelationPickerHarness);
     await picker.pick(root);
     for (const hop of hops) await picker.add(hop);
   }
@@ -126,11 +126,11 @@ export class DiscoverPage extends ComponentHarness {
     // The dock's own handle, by its slot: the header has a separator of its own, beside the sidebar's toggle.
     const handle = await this.env.until(async () => (await this.host.find({ css: '[data-slot="resizable-resize-trigger"]' }))[0], "the dock has no resize handle");
     const panel = await this.env.until(async () => (await this.host.find({ role: "complementary", name: /panel$/ }))[0], "no panel is docked");
-    const before = (await panel.rect()).width;
-    const { x, y, width, height } = await handle.rect();
+    const before = (await panel.getDimensions()).width;
+    const { left: x, top: y, width, height } = await handle.getDimensions();
     const [cx, cy] = [x + width / 2, y + height / 2];
     await handle.drag([[cx, cy], [cx - by / 2, cy], [cx - by, cy]]);
-    await this.env.until(async () => (await panel.rect()).width > before, "the dock did not widen");
+    await this.env.until(async () => (await panel.getDimensions()).width > before, "the dock did not widen");
   }
 
   /**
@@ -157,7 +157,7 @@ export class DiscoverPage extends ComponentHarness {
    * The footer's `GraphCounts` sentence, once it has counted. It is there in either view, so it is
    * read here rather than through `GraphCanvasHarness.counts()`, which needs the canvas. Not waited
    * on `aria-busy`: GraphCounts is busy until the canvas has drawn, which the Dashboard view never
-   * does, while its figures are the corpus's from the first count.
+   * does, while its figures are the graph's from the first count.
    */
   async counts(): Promise<string> {
     // By its slot, not its words: a text query walks every node of the page, and with the canvas

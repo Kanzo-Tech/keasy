@@ -18,19 +18,19 @@ test.describe.configure({ timeout: 300_000 });
 
 /** One tile of every kind and every chart mark, over Airport — the relation a type alone is. */
 const DASHBOARD = {
-  filters: [{ field: "Airport.country" }],
+  filters: [{ field: "country" }],
   tiles: [
     { id: "count", kind: "stat", title: "Airports", measure: { op: "count" } },
-    { id: "altitude", kind: "stat", title: "Mean altitude", measure: { op: "avg", field: "Airport.altitude" } },
-    { id: "bar", kind: "chart", span: 1, type: "bar", title: "By country", x: "Airport.country", y: { op: "count" } },
-    { id: "line", kind: "chart", span: 1, type: "line", title: "Altitude along latitude", x: "Airport.lat", y: { op: "avg", field: "Airport.altitude" } },
-    { id: "area", kind: "chart", span: 1, type: "area", title: "Along longitude", x: "Airport.long", y: { op: "count" } },
-    { id: "histogram", kind: "chart", span: 1, type: "histogram", title: "By altitude", x: "Airport.altitude", y: { op: "count" } },
-    { id: "dot", kind: "chart", span: 1, type: "dot", title: "Positions", x: "Airport.long", y: { op: "value", field: "Airport.lat" } },
+    { id: "altitude", kind: "stat", title: "Mean altitude", measure: { op: "avg", field: "altitude" } },
+    { id: "bar", kind: "chart", span: 1, type: "bar", title: "By country", x: "country", y: { op: "count" } },
+    { id: "line", kind: "chart", span: 1, type: "line", title: "Altitude along latitude", x: "lat", y: { op: "avg", field: "altitude" } },
+    { id: "area", kind: "chart", span: 1, type: "area", title: "Along longitude", x: "long", y: { op: "count" } },
+    { id: "histogram", kind: "chart", span: 1, type: "histogram", title: "By altitude", x: "altitude", y: { op: "count" } },
+    { id: "dot", kind: "chart", span: 1, type: "dot", title: "Positions", x: "long", y: { op: "value", field: "lat" } },
     // The fit is what Mosaic pre-aggregates under another tile's brush: kanzo-ui 0.32.0 failed it
     // there with `Binder Error … "t0"`, then `preagg_… does not exist` on every brush after.
-    { id: "fit", kind: "chart", span: 1, type: "regression", title: "Altitude against latitude", x: "Airport.lat", y: { op: "value", field: "Airport.altitude" } },
-    { id: "rows", kind: "table", span: 3, title: "Airport rows", columns: ["Airport.name", "Airport.iataCode", "Airport.country"] },
+    { id: "fit", kind: "chart", span: 1, type: "regression", title: "Altitude against latitude", x: "lat", y: { op: "value", field: "altitude" } },
+    { id: "rows", kind: "table", span: 3, title: "Airport rows", columns: ["name", "iataCode", "country"] },
   ],
 };
 
@@ -62,7 +62,7 @@ test("the flights dashboard draws every tile kind, and holds under a brush and a
     await (await (await dashboard.tile(title)).chart()).settled();
   }
   expect(await (await dashboard.tile("By country")).text()).toContain("United States");
-  expect(await (await dashboard.tile("Airport rows")).text()).toContain("Airport.iataCode");
+  expect(await (await dashboard.tile("Airport rows")).text()).toContain("iataCode");
 
   // A brush on the altitude histogram, from 4,000 to 8,000 ft: every other tile reads the airports it
   // keeps, the fit pre-aggregated, and the bar names it as a chip.
@@ -71,15 +71,15 @@ test("the flights dashboard draws every tile kind, and holds under a brush and a
   expect(kept).toBeGreaterThan(0);
   expect(kept).toBeLessThan(AIRPORTS);
   await (await (await dashboard.tile("Altitude against latitude")).chart()).settled();
-  // A clause chip reads its field and range: *Airport.altitude 3976.6 – 7990.0*. It shows once the
+  // A clause chip reads its field and range: *altitude 3976.6 – 7990.0*. It shows once the
   // page delivers the brush's clause, a while after the brush.
-  await expect.poll(async () => (await bar.chips()).some((chip) => chip.startsWith("Airport.altitude "))).toBe(true);
-  await bar.remove("Airport.altitude");
+  await expect.poll(async () => (await bar.chips()).some((chip) => chip.startsWith("altitude "))).toBe(true);
+  await bar.remove("altitude");
   await expect.poll(() => unfiltered(discover, "Airports")).toBe(UNFILTERED);
 
   // The dashboard's filter chip: the 40 airports in Spain. The control's value list is the library's
   // and has no harness method yet, so it is driven by its roles.
-  await bar.open("Airport.country");
+  await bar.open("country");
   await page.getByRole("textbox", { name: "Filter values" }).fill("Spain");
   // Each value with its count over the whole relation.
   await page.getByRole("option", { name: "Spain 40", exact: true }).click();
@@ -89,13 +89,13 @@ test("the flights dashboard draws every tile kind, and holds under a brush and a
   const table = await dashboard.tile("Airport rows");
   expect(await table.text()).toContain("1–25 of 40");
   const rows = await Promise.all((await table.host.find({ role: "row" })).map((row) => row.text()));
-  expect(rows.filter((row) => !row.includes("Airport.country") && !row.includes("Spain"))).toEqual([]);
+  expect(rows.filter((row) => !row.includes("country") && !row.includes("Spain"))).toEqual([]);
 });
 
 test("leaving Discover with a dashboard filter in force logs nothing, and the page opens again", async ({ page, env, geoGraph }) => {
   // A frame that comes late, as on a busy machine or in a tab in the background: Mosaic batches its
   // queries behind `requestAnimationFrame`, so what a page queues on its way out runs well after it
-  // unmounts: a corpus detached as the page goes, rather than when the cache collects it, is gone
+  // unmounts: a graph detached as the page goes, rather than when the cache collects it, is gone
   // under those queries.
   await page.addInitScript(() => {
     const frame = window.requestAnimationFrame.bind(window);
@@ -107,7 +107,7 @@ test("leaving Discover with a dashboard filter in force logs nothing, and the pa
   const bar = await discover.filters();
   await expect.poll(() => unfiltered(discover, "Airports")).toBe(UNFILTERED);
 
-  await bar.open("Airport.country");
+  await bar.open("country");
   await page.getByRole("textbox", { name: "Filter values" }).fill("United States");
   await page.getByRole("option", { name: /^United States \d/ }).click();
   await page.keyboard.press("Escape");
@@ -118,7 +118,7 @@ test("leaving Discover with a dashboard filter in force logs nothing, and the pa
 
   // Leaving by a link unmounts the page in the browser: the dashboard withdraws its clause as it
   // goes, and every client still connected asks again. Those queries must not outlive their clients
-  // and run once the corpus is detached (the guard fails the test on the `Catalog Error` they logged).
+  // and run once the graph is detached (the guard fails the test on the `Catalog Error` they logged).
   // A `goto` would reload the page and tear nothing down.
   await page.getByRole("navigation", { name: "breadcrumb" }).getByRole("link", { name: "Graphs" }).click();
   await expect(page.getByPlaceholder("Search graphs...")).toBeVisible();

@@ -20,6 +20,7 @@ import {
   useGraphPrefs,
   useGraphState,
 } from "@kanzo-tech/graph";
+import type { Relation } from "@kanzo-tech/mosaic";
 import {
   ChartTimeline,
   FilterBar,
@@ -27,7 +28,6 @@ import {
   TileEditorAside,
   useMosaic,
   useTileEditorOpen,
-  type Relation,
 } from "@kanzo-tech/ui/analytics";
 import {
   Button,
@@ -52,7 +52,7 @@ import type { AnswerAdded } from "@kanzo-tech/ai/data";
 import { HeaderEnd } from "@/app/(main)/_parts/header-end";
 import { AskPanel } from "./_parts/ask-panel";
 import { DashboardStoreProvider } from "./_parts/dashboard-store";
-import { CorpusProvider, useCorpus, useJoinGraph } from "@/lib/fossil/corpus";
+import { GraphProvider, useAttachedGraph, useJoinGraph } from "@/lib/fossil/graph";
 import { GraphInfo } from "./_parts/graph-info";
 import { GraphSettings } from "./_parts/graph-settings";
 import { RulesBadge } from "./_parts/rules-badge";
@@ -103,7 +103,7 @@ export default function DiscoverPage({ params }: { params: Promise<{ id: string 
   const { id } = use(params);
   // The model Ask runs on starts downloading as the graph opens, not as its panel does.
   usePreloadModel();
-  // Opening the corpus is the one door: a missing graph (404), one that has not completed (409) and an
+  // Opening the graph is the one door: a missing graph (404), one that has not completed (409) and an
   // unreadable output all fail it, and the boundary shows that failure in place of the workspace.
   return (
     <>
@@ -118,9 +118,9 @@ export default function DiscoverPage({ params }: { params: Promise<{ id: string 
         }
         frame={(failure) => <ShellMain className="p-4">{failure}</ShellMain>}
       >
-        <CorpusProvider graphId={id}>
+        <GraphProvider graphId={id}>
           <Workspace />
-        </CorpusProvider>
+        </GraphProvider>
       </Boundary>
     </>
   );
@@ -168,7 +168,7 @@ function FormatAside({ shown }: { shown: boolean }) {
 }
 
 /** The footer: where the graph is, and how much of it is drawn. */
-function CorpusStatus() {
+function DiscoverFooter() {
   return (
     <span className="flex min-w-0 items-center gap-2 px-1 text-muted-foreground text-xs">
       <GraphStatus />
@@ -178,7 +178,7 @@ function CorpusStatus() {
 }
 
 function Workspace() {
-  const { name } = useCorpus();
+  const { name } = useAttachedGraph();
   const { coordinator, selection } = useMosaic();
   const { look, sim, placement, timeline } = useGraphPrefs();
   const graph = useJoinGraph();
@@ -329,7 +329,7 @@ function Workspace() {
       </ShellBody>
 
       <ShellFooter className="h-8 flex-row items-center justify-between px-2">
-        <CorpusStatus />
+        <DiscoverFooter />
         {/* Pressing the open panel's icon again collapses the dock. */}
         <ShellDockSwitcher
           aria-label="Panels"

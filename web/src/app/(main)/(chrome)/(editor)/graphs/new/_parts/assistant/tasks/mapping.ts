@@ -12,7 +12,7 @@ import { type FossilProgram, grammarFor, openProgram } from "@fossil-lang/wasm";
 import { defineTask, type Finding } from "@kanzo-tech/ai/task";
 import type { Accepted, AcceptedEdge, AcceptedType } from "./model";
 import { delimiterOf, type Profiled } from "./profile";
-import { plural, spoken } from "./words";
+import { splitWords } from "@kanzo-tech/mosaic";
 
 /** fossil's word on a program: every diagnostic of a check of `program`, the prelude included. */
 export type Check = (program: string, signal?: AbortSignal) => Promise<readonly FossilDiagnostic[]>;
@@ -40,6 +40,7 @@ const FOSSIL_TYPE: Record<Primitive, string> = {
   time: "Time",
   g_year: "GYear",
   any_uri: "AnyUri",
+  lang_string: "LangString",
 };
 
 /** `https://acme.example/` → the IRIs of a workspace's vocabulary and of its things, under it. */
@@ -48,7 +49,7 @@ function irisOf(base: string) {
   return {
     type: (name: string) => `${root}vocab/${name}`,
     field: (name: string) => `${root}vocab/${name}`,
-    thing: (name: string) => `${root}id/${spoken(name).replace(/ /g, "-")}/`,
+    thing: (name: string) => `${root}id/${splitWords(name).replace(/ /g, "-")}/`,
   };
 }
 
@@ -187,7 +188,7 @@ function planOf(type: AcceptedType, input: MappingInput): string {
   const edges = input.accepted.edges.filter((e) => e.from === type.name);
   const required = type.fields.filter((f) => !f.optional).map((f) => `${f.name} = ${type.source}.${f.column}`);
   const lines = [
-    `${plural(type.name)} : ${type.name} from ${type.source}`,
+    `${type.name}Rows : ${type.name} from ${type.source}`,
     `  @subject = "${input.subjects[type.name]}"`,
     ...type.fields.map((f) => `  ${f.name} from ${type.source}.${f.column}`),
     ...edges.filter((e) => !e.join).map((e) => `  ${e.name} = ${e.to}(${e.on}.${e.column})`),

@@ -1,8 +1,8 @@
 import { expect } from "@playwright/test";
-import type { TileHarness } from "@kanzo-tech/testing";
+import type { ModelTurn, TileHarness } from "@kanzo-tech/testing";
 
 import { DiscoverPage, saveDashboard } from "../support/app";
-import { type Rule, useModelDouble } from "../support/model";
+import { scriptModel } from "../support/model";
 import { seedGraph } from "../support/seeds";
 import { demo } from "./record";
 
@@ -23,10 +23,10 @@ const GERMANY = "Which ones were won in Germany?";
  * prizes counted by university, the eight on top; then the same, narrowed to a university in Germany.
  * The relation each needs is the page's to find, and the rows are DuckDB's, under the page's filter.
  */
-const BY_UNIVERSITY = { of: "LaureateAward", show: { kind: "chart", type: "bar", x: "University.name", y: { op: "count" } }, top: 8 };
-const RULES: Rule[] = [
-  { when: `Question: ${GERMANY}`, reply: { text: JSON.stringify({ ...BY_UNIVERSITY, where: [{ field: "Country.name", in: ["Germany"] }] }) } },
-  { when: `Question: ${UNIVERSITIES}`, reply: { text: JSON.stringify(BY_UNIVERSITY) } },
+const BY_UNIVERSITY = { of: "LaureateAward", show: { kind: "chart", type: "bar", x: "university.name", y: { op: "count" } }, top: 8 };
+const TURNS: ModelTurn[] = [
+  { when: `Question: ${GERMANY}`, reply: { text: JSON.stringify({ spec: { ...BY_UNIVERSITY, where: [{ field: "university.addressCountry.name", in: ["Germany"] }] } }) } },
+  { when: `Question: ${UNIVERSITIES}`, reply: { text: JSON.stringify({ spec: BY_UNIVERSITY }) } },
 ];
 
 /** Whether `rows` — an answer's data table — holds a row reading `value` and `n` (thousands separators aside). */
@@ -45,7 +45,7 @@ const holds = (rows: Record<string, string>[], value: string, n: number) =>
  *
  * The model is a double (`support/model.ts`), as `nobel-assistant`'s is: a recording that depended
  * on a small model filling the same spec on every take would be a different film each time, and what
- * the model in the page answers is the evaluation set's to measure (`eval/`). Everything else is the
+ * the model in the page answers is the evaluation set's to measure (kanzo-ui's `packages/ai/eval`). Everything else is the
  * stack's: the relation each answer needs is found by the page, and the chart and its rows are
  * DuckDB's, read under the page's filter. The check that the University of California reads 16 — its
  * Physics prizes, not its 43 in every category — proves that the answer is over what is in view. The
@@ -53,8 +53,8 @@ const holds = (rows: Record<string, string>[], value: string, n: number) =>
  */
 demo("nobel-ask", "Ask over the Nobel prizes: an answer added to the dashboard and opened there, then one that filters the map", {
   async arrange({ page, env }) {
-    await useModelDouble(page, { rules: RULES });
-    const id = await seedGraph(page, "nobel", { name: "Demo · Nobel laureates", reuse: true });
+    await scriptModel(page, { turns: TURNS });
+    const id = await seedGraph(page, "nobel", { name: "Demo · Nobel laureates" });
     await saveDashboard(page, id, RELATION, DASHBOARD);
     const discover = await DiscoverPage.open(page, env, id);
     // The Graph view on the map for the last step, then the dashboard the story starts on, Ask docked.
@@ -115,7 +115,7 @@ demo("nobel-ask", "Ask over the Nobel prizes: an answer added to the dashboard a
         const tile = await dashboard.tile("Count by University.name");
         await expect
           .poll(async () => {
-            const { y, height } = await tile.host.rect();
+            const { top: y, height } = await tile.host.getDimensions();
             return y >= 0 && y + height / 2 <= 900;
           })
           .toBe(true);

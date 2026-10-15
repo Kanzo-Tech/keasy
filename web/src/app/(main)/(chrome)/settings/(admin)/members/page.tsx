@@ -14,24 +14,17 @@ import {
   SectionTitle,
   SectionTitleGroup,
 } from "@kanzo-tech/ui";
-import { organizationOf } from "@kanzo-tech/auth";
+import { organizationConsoleUrl, organizationOf } from "@kanzo-tech/auth";
 import { auth, issuer } from "@/lib/auth/server";
 
 /**
- * The organization's console, from `KEASY_ORG_ADMIN_URL` with `{issuer_origin}`, `{alias}` and
- * `{id}` filled in; `undefined` when the deployment names none.
+ * The organization's settings in Keycloak's admin console; `undefined` when the realm sent the
+ * organization without its id.
  */
 async function consoleUrl(): Promise<string | undefined> {
-  const template = process.env.KEASY_ORG_ADMIN_URL?.trim();
-  if (!template) return undefined;
   const session = await auth.session({ required: true });
-  const alias = session.organization ?? "";
-  const values: Record<string, string> = {
-    issuer_origin: new URL(issuer()).origin,
-    alias: encodeURIComponent(alias),
-    id: encodeURIComponent(organizationOf(session, alias)?.id ?? ""),
-  };
-  return template.replace(/\{(issuer_origin|alias|id)\}/g, (_, key: string) => values[key]);
+  const organization = organizationOf(session, session.organization ?? "");
+  return organization && organizationConsoleUrl(issuer(), organization);
 }
 
 export default async function MembersSettingsPage() {

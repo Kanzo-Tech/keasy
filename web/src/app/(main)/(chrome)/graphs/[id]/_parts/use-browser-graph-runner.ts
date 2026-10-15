@@ -1,9 +1,9 @@
 import { useSyncExternalStore } from "react";
 import type { Profiled } from "@fossil-lang/types";
-import { ApiError, http, invalidate, type Schemas } from "@/lib/api/client";
+import { http, invalidate, retryable, type Schemas } from "@/lib/api/client";
 import { bounds } from "@/lib/api/spec";
 import { host } from "@/lib/fossil/host";
-import { runInWorker } from "@/lib/fossil/run-worker";
+import { runInto } from "@/lib/fossil/executor";
 import { toastError, wireOf } from "@/lib/errors";
 
 /**
@@ -13,12 +13,6 @@ import { toastError, wireOf } from "@/lib/errors";
  */
 export const LEASE_MS = bounds.graph_lease_ms;
 export const HEARTBEAT_MS = LEASE_MS / 4;
-
-/** A failure worth asking again: no answer, a server failure or a rate limit — never a refusal. */
-function transient(err: unknown): boolean {
-  if (!(err instanceof ApiError)) return true;
-  return err.status === undefined || err.status >= 500 || err.status === 429;
-}
 
 export interface Lease {
   /** Start renewing the lease every {@link HEARTBEAT_MS}. */
@@ -79,7 +73,7 @@ export function lease(
             },
             (err: unknown) => {
               // The graph ended without us (the sweep, or another tab): nothing left to hold.
-              if (!transient(err)) clearInterval(timer);
+              if (!retryable(err)) clearInterval(timer);
             },
           )
           .finally(() => {
@@ -98,7 +92,7 @@ export function lease(
         try {
           return await send();
         } catch (err) {
-          if (!transient(err) || now() + delay - renewed >= LEASE_MS) throw err;
+          if (!retryable(err) || now() + delay - renewed >= LEASE_MS) throw err;
           await wait(delay);
         }
       }
@@ -144,7 +138,7 @@ const STOPPED = "Stopped";
 
 /**
  * Run `graph` here — the server has made this caller its runner (`POST /v1/graphs/{id}/run`). The browser
- * is the worker: it runs the program with fossil's executor (`run`, in a Web Worker) — sources read and the corpus
+ * is the worker: it runs the program with fossil's executor (`run`, in a Web Worker) — sources read and the graph
  * written through credentials keasy vends to the runner alone — holding the lease while it does, and
  * reports how it ended. Only ever called from an explicit Run — the graph page's, or the assistant's
  * build; opening a page never runs anything. Answers how the run ended — the one already under way
@@ -160,7 +154,7 @@ export function startRun(graph: Schemas["Graph"], { profiled }: { profiled?: Pro
   const run = new AbortController();
   const stop = () => run.abort(new DOMException(STOPPED, "AbortError"));
   const held = lease(graphId, { onStopAsked: stop });
-  // The corpus is written: from here on a failure is keasy's record of it, never the run's.
+  // The graph is written: from here on a failure is keasy's record of it, never the run's.
   let ran = false;
   // A closed tab stops the run; it cannot report, so the server's lease sweep ends the graph.
   const closing = () => run.abort(new DOMException("The tab closed", "AbortError"));
@@ -170,11 +164,11 @@ export function startRun(graph: Schemas["Graph"], { profiled }: { profiled?: Pro
   const ended = (async (): Promise<RunOutcome> => {
     try {
       // `run` reads every document and source the program names through the host, writes the
-      // corpus under the graph, and answers its report or throws its `FossilError` — in a worker of
-      // its own, so the page paints and its Stop is pressable while it does (`run-worker.ts`). The
+      // graph under the graph, and answers its report or throws its `FossilError` — in fossil's own
+      // worker, so the page paints and its Stop is pressable while it does. The
       // report crosses untouched — `GraphStatusReport.report` is opaque JSON on the server — and is
       // asked again for as long as the lease is ours.
-      const { report } = await runInWorker(program, { host, into: { job: graphId }, profiled, signal: run.signal });
+      const { report } = await runInto(program, { host, into: { job: graphId }, profiled, signal: run.signal });
       ran = true;
       await held.report(() => reportStatus(graphId, { status: "completed", report }));
       return { status: "completed" };

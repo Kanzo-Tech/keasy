@@ -17,14 +17,14 @@ step the subtitle goes and the page is held for `TAIL` (3 s, `record/pace.ts`) b
 | what `chapter()` shows, before the action | the exact harness / page-object call; brushes and lassos in data | what must be true after, asserted with `expect.poll` over a harness method |
 
 `env` is `await playwright(page)`, made **before** the first `page.goto` (the hook registers charts
-and canvases as they mount). `bar` is `await env.harness(FilterBarHarness)`. `discover`, `settings`,
+and canvases as they mount). `bar` is `await env.getHarness(FilterBarHarness)`. `discover`, `settings`,
 `search`, `rules`, `ask` are keasy's page objects (`e2e/support/app/`). What the filters keep is the page's one
 count, the filter bar's readout, read in full by `discover.kept()`: `"778"` of the Dashboard view's
 relation, `"132"` of the Graph view's nodes.
 
 Every number below was computed from the example's CSV/JSON with DuckDB; the query is under each
 demo's **Numbers**. The OpenFlights and SNB queries run in `infra/dev/examples/<name>/data` after
-`sh infra/dev/seed.sh`; Nobel's in PR #119's `infra/dev/examples/nobel/data`.
+`sh infra/dev/seed.sh`; Nobel's in `infra/dev/examples/nobel/data`.
 
 ---
 
@@ -32,13 +32,13 @@ demo's **Numbers**. The OpenFlights and SNB queries run in `infra/dev/examples/<
 
 - **Hero tab:** `explore` · label **Analytics**
 - **Stat line:** *327K nodes · 765K edges — explored in your browser* (unchanged)
-- **Example / seed:** `snb` · `seedGraph(page, "snb", { name: "Demo · LDBC Social Network", reuse: true })`
+- **Example / seed:** `snb` · `seedGraph(page, "snb", { name: "Demo · LDBC Social Network" })`
 
 **Arrange (off camera)**
 
 1. `env = await playwright(page)`; seed.
 2. `page.goto(discoverUrl(id, { view: "dashboard" }))` — never the Graph view: 327K nodes.
-3. `dashboard = await env.harness(DashboardHarness); await dashboard.settled()`.
+3. `dashboard = await env.getHarness(DashboardHarness); await dashboard.settled()`.
 
 **Steps**
 
@@ -77,12 +77,12 @@ depends on which relations the mapping writes as edges); read it off GraphCounts
 
 - **Hero tab:** `map` · label **Hidden patterns**
 - **Stat line:** *Place points by their columns — patterns no link ever drew* (unchanged)
-- **Example / seed:** `openflights` · `seedGraph(page, "openflights", { name: "Demo · OpenFlights", reuse: true })`
+- **Example / seed:** `openflights` · `seedGraph(page, "openflights", { name: "Demo · OpenFlights" })`
 
 **Arrange (off camera)**
 
 1. `env = await playwright(page)`; seed; `discover.open(id)` (Graph view, Info docked).
-2. `graph = await env.harness(GraphCanvasHarness); await graph.ready()`.
+2. `graph = await env.getHarness(GraphCanvasHarness); await graph.ready()`.
 3. `graph.pause()` — the layout is not waited on: spread, the cloud looked as it did before, so the
    wait was a stretch of take where nothing changed.
 4. `settings.marks("Legible"); settings.edges("Hidden"); settings.labels(0)` — the 36,906 routes are fog.
@@ -144,7 +144,7 @@ is 31 whether the lasso's clause is ANDed with the search's or stands alone. Lef
 
 - **Hero tab:** `crossfilter` · label **Crossfilter**
 - **Stat line:** *One filter for every chart and the map* (unchanged)
-- **Example / seed:** `openflights`, same graph as demo 2 (`reuse: true`)
+- **Example / seed:** `openflights` · `seedGraph(page, "openflights", { name: "Demo · OpenFlights" })`
 
 **Arrange (off camera)**
 
@@ -230,7 +230,7 @@ lands in the bar"* is the check of the last step rather than a step of its own.
   University.name by count, top: 8 }`, and *…in Germany?* with the same and `where: Country.name in
   [Germany]`. The relation each needs is found by the page and the rows are DuckDB's, so the check
   that UC reads **16** (not 43) still proves "over what's in view". What the model in the page answers
-  is the evaluation set's to measure (`eval/`).
+  is the evaluation set's to measure (kanzo-ui's `packages/ai/eval`).
 - *Filter the page to these rows* keeps what the answer draws: the prizes in the categories its bars
   show. An answer drawn by university keeps those universities' prizes, at most the 22; read the
   figure off the take that captures it and pin steps 7 and 8 to it.
@@ -299,7 +299,7 @@ subjects of rudof's Shape Fragment instead, so step 6's check is what proves the
 
 - **Hero tab:** `nobel` · label **Nobel timeline**
 - **Stat line:** *1,026 Nobel prizes since 1901 — play them forward in time*
-- **Example / seed:** `nobel` · `seedGraph(page, "nobel", { name: "Demo · Nobel laureates", reuse: true })`
+- **Example / seed:** `nobel` · `seedGraph(page, "nobel", { name: "Demo · Nobel laureates" })`
 - **The story:** a century of science moving west — every prize at the city it was won in, the
   century played, Europe's early decades against the US's 1990s, then only the women.
 - **Depends on:** `GraphTimeline` (its brush snapped to five-year bars; Play inside the brushed
@@ -316,7 +316,7 @@ subjects of rudof's Shape Fragment instead, so step 6's check is what proves the
 2. `discover.open(id)`; `discover.onMap()` (each award at its first affiliation's city, edges hidden);
    `settings.timeline("date")`.
 3. `discover.view("Dashboard")`; `discover.relation("LaureateAward", [">laureate>Laureate", ">birthPlace>Country"])`; back to Graph; `panel("Info")`.
-4. `timeline = env.harness(TimelineHarness.with({ title: /^Timeline: / }))`.
+4. `timeline = env.getHarness(TimelineHarness.with({ title: /^Timeline: / }))`.
 
 **Steps**
 
@@ -392,29 +392,30 @@ from awards aw where aw.lat is not null;
   types, the `requirements` Task's chips, the `mapping` Task's program (its subjects under the page's
   origin, read in `arrange`), and Ask's specs per question. Everything else is the stack's: fossil's
   profile of the files, fossil's checker, the preview and the build on the page's engine, the answers
-  read from the corpus. The script was held against fossil's checker over the real Nobel profile when
+  read from the graph. The script was held against fossil's checker over the real Nobel profile when
   it was written: one attempt, no diagnostic.
 
 **Arrange (off camera)**
 
 1. `page.goto("/graphs")`, its origin read; `useModelDouble(page, { rules: script(origin) })`.
-2. `page.goto("/graphs/new/assistant")`; the *Files* tree lists `@Nobel laureates`.
+2. `page.goto("/graphs/new/assistant")`; the composer's *Sources* bar has the `@Nobel laureates` pill.
 
 **Steps**
 
 | # | Subtitle | Action | Check |
 | --- | --- | --- | --- |
-| 1 | Pick the files to explore | open `@Nobel laureates`; *Pick* each of the six `.json`; *Read these files* | the composer asks *What is this data about?* |
-| 2 | Say what it is about while they are read | type the sentence, Enter | *Here's what's in your data* |
-| 3 | What is in your data, counted | scroll to the things | six things, one per file |
-| 4 | What has no safe answer is yours to decide | `chooseRadio(…, LINK, "One: an award has institutions")` | that option is checked |
-| 5 | What has a safe default is taken, and said | scroll to the assumption | *I assumed: id* (a country by its id) |
-| 6 | Take the questions it suggests | the chips *How many prizes were awarded in each category?* and *Which institutions are behind the most prizes?* | two questions kept |
-| 7 | That's all: show me a preview | *That's all, show me a preview* | *Here is your data over its first 200 rows* |
-| 8 | Each question answered, over the first 200 rows | scroll to the answers | two answer cards, none being replaced · **poster** |
-| 9 | Change a decision: the preview runs again | `chooseRadio(…, COUNTRY, "name")` | the mapping was asked again for `{countries.name}`; two answer cards again, none stale |
-| 10 | Build the whole graph | *Build the whole graph* | *Your graph is ready to explore.* |
-| 11 | Ask your data, in Discover | *Ask your data* | Discover, the Ask panel docked |
+| 1 | Pick the files on the composer | the `@Nobel laureates` pill opens its menu; *Select all*; Escape | the pill reads *6 files* |
+| 2 | Say what it is about, and send | type the sentence in *What is this data about?*, Enter | the details pinned above the thread hold the sentence |
+| 3 | What I am doing, step by step | scroll to the *What I am doing* steps | *Proposed the types* |
+| 4 | What is in your data | *Here's what's in your data* | six things, one per file |
+| 5 | What has no safe answer is yours to decide | `chooseRadio(…, LINK, "Only a link: award → institution")` | that option is checked |
+| 6 | What has a safe default is taken, and said | scroll to the assumption | *I assumed: id* (a country by its id) |
+| 7 | Take the questions it suggests | the chips *How many prizes were awarded in each category?* and *Which institutions are behind the most prizes?* | two questions kept |
+| 8 | That's all: show me a preview | *That's all, show me a preview* | *Here is your data over its first 200 rows* |
+| 9 | Each question answered, over the first 200 rows | scroll to the answers | two answer cards, none being replaced · **poster** |
+| 10 | Change an assumption: the preview runs again | the assumption's *Change*, then `chooseRadio(…, COUNTRY, "name")` | the mapping was asked again for `{countries.name}`; two answer cards again, none stale |
+| 11 | Build the graph | *Build the graph* | *Your graph is ready to explore.* |
+| 12 | Ask your data, in Discover | *Ask your data* | Discover, the Ask panel docked |
 
 **Numbers** (`nobel/data`, as fossil's profile reads them)
 

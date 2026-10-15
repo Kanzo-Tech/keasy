@@ -1,7 +1,8 @@
 import { FossilError, isFossilError } from "@fossil-lang/types";
+import { Problem } from "@kanzo-tech/kernel";
 import { describe, expect, it } from "vitest";
 import { ApiError } from "@/lib/api/client";
-import { coded, copyOf, fieldProblem, pageOf, wireOf } from "./errors";
+import { coded, descriptionOf, fieldProblem, pageOf, wireOf } from "./errors";
 
 const overBudget = () =>
   FossilError.from({
@@ -23,20 +24,39 @@ describe("a failure, kept as JSON", () => {
   });
 
   it("says a run too large for the browser in keasy's words", () => {
-    expect(copyOf("run/over-budget")).toMatchObject({ title: "Too large for the browser" });
-    expect(copyOf("run/over-budget", { budget: 2 * 2 ** 30 })?.detail).toContain("(2 GiB)");
-    expect(copyOf("run/over-budget", { budget: 1.5 * 2 ** 30 })?.detail).toContain("(1.5 GiB)");
-    expect(copyOf("run/over-budget")?.detail).not.toContain("GiB");
+    expect(descriptionOf("run/over-budget")).toMatchObject({ title: "Too large for the browser" });
+    expect(descriptionOf("run/over-budget", { budget: 2 * 2 ** 30 })?.detail).toContain("(2 GiB)");
+    expect(descriptionOf("run/over-budget", { budget: 1.5 * 2 ** 30 })?.detail).toContain("(1.5 GiB)");
+    expect(descriptionOf("run/over-budget")?.detail).not.toContain("GiB");
   });
 
   it("names the missing file of a source from the location it carries", () => {
-    expect(copyOf("source/not-found")).toMatchObject({ title: "The source names no file" });
-    expect(copyOf("source/not-found", { location: "s3://lake/in/users.csv" })?.detail).toContain("s3://lake/in/users.csv");
-    expect(copyOf("source/not-found")?.detail).not.toContain("undefined");
+    expect(descriptionOf("source/not-found")).toMatchObject({ title: "The source names no file" });
+    expect(descriptionOf("source/not-found", { location: "s3://lake/in/users.csv" })?.detail).toContain("s3://lake/in/users.csv");
+    expect(descriptionOf("source/not-found")?.detail).not.toContain("undefined");
   });
 
   it("leaves a fossil code with no entry in fossil's own words", () => {
-    expect(copyOf("corpus/unreadable")).toBeUndefined();
+    expect(descriptionOf("write/duplicate-value")).toBeUndefined();
+  });
+
+  it("says a cut-off answer is cut off, not that the call failed, and what to do about it", () => {
+    expect(descriptionOf("llm/truncated")).toMatchObject({ title: "The answer was cut off." });
+    expect(descriptionOf("llm/truncated", { reason: "context" })?.detail).toContain("ran out of room");
+    expect(descriptionOf("llm/truncated")?.detail).not.toContain("ran out of room");
+    expect(descriptionOf("llm/truncated")).not.toEqual(descriptionOf("llm/failed"));
+  });
+
+  it("keeps a cut-off answer's code through the path every chat failure takes, uncoded or not", () => {
+    const cut = new Problem("llm/truncated", "The answer did not fit the model's context", { reason: "context" });
+    expect(coded(cut, "llm/failed")).toBe(cut);
+    expect(descriptionOf(coded(cut, "llm/failed").code, cut.data)?.detail).toContain("ran out of room");
+    expect(coded(new Error("boom"), "llm/failed").code).toBe("llm/failed");
+  });
+
+  it("says a graph whose files do not read as GraphAr was built before them, and to build it again", () => {
+    expect(descriptionOf("graph/unreadable")).toMatchObject({ title: "This graph's files cannot be read." });
+    expect(descriptionOf("graph/unreadable")?.detail).toContain("build it again");
   });
 
   it("is the server's body for a refusal, and has no page", () => {
@@ -53,7 +73,7 @@ describe("a failure, kept as JSON", () => {
 describe("a failure's cause", () => {
   it("is kept one level down, coded when it can be", () => {
     const store = new ApiError({ code: "store/silent", title: "The store did not answer in time", detail: "STS", data: { after: 10_000 } }, 504);
-    const shown = wireOf(new Error("could not open the corpus", { cause: store }));
+    const shown = wireOf(new Error("could not open the graph", { cause: store }));
     expect(shown).toMatchObject({ code: "web/unknown", cause: { code: "store/silent", data: { after: 10_000 } } });
   });
 
@@ -67,13 +87,13 @@ describe("a failure's cause", () => {
 
 describe("a library's coded failure", () => {
   it("is keyed by its code, its data kept", () => {
-    const unavailable = Object.assign(new Error("This browser cannot run the model"), { code: "ai/unavailable", data: { reason: "webgpu" } });
-    expect(coded(unavailable)).toMatchObject({ code: "ai/unavailable", data: { reason: "webgpu" } });
+    const unavailable = Object.assign(new Error("This browser cannot run the model"), { code: "llm/unavailable", data: { reason: "webgpu" } });
+    expect(coded(unavailable)).toMatchObject({ code: "llm/unavailable", data: { reason: "webgpu" } });
   });
 
   it("says which way the model cannot run: the browser, or a deployment that serves none", () => {
-    expect(copyOf("ai/unavailable", { reason: "webgpu" })?.title).toBe("This browser cannot run the model.");
-    expect(copyOf("ai/unavailable", { reason: "unserved" })?.title).toBe("This workspace has no model.");
+    expect(descriptionOf("llm/unavailable", { reason: "webgpu" })?.title).toBe("This browser cannot run the model.");
+    expect(descriptionOf("llm/unavailable", { reason: "unserved" })?.title).toBe("This workspace has no model.");
   });
 
   it("is read in fossil's grammar, digits and all", () => {

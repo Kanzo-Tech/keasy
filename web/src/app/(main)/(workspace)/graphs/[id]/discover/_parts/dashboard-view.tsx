@@ -3,16 +3,11 @@
 import { useEffect, useMemo, useRef } from "react";
 import type { AnswerAdded } from "@kanzo-tech/ai/data";
 import { ScrollArea, Skeleton } from "@kanzo-tech/ui";
-import {
-  Dashboard,
-  type Relation,
-  RelationPicker,
-  relationIdentities,
-  relationKey,
-} from "@kanzo-tech/ui/analytics";
+import { JoinResolver, type Relation, relationKey } from "@kanzo-tech/mosaic";
+import { Dashboard, RelationPicker } from "@kanzo-tech/ui/analytics";
 import { SavedBy } from "@/components/provenance";
 import { Boundary, Failed } from "@/components/boundary";
-import { useJoinGraph } from "@/lib/fossil/corpus";
+import { useJoinGraph } from "@/lib/fossil/graph";
 import { useDashboardStore } from "./dashboard-store";
 
 /**
@@ -109,7 +104,8 @@ function SavedDashboard({ relation, onRelationChange, shown }: DashboardViewProp
 
   const key = relationKey(graph, relation);
   useShowTile(board, shown, key, store.status === "ready" ? store.current.byRelation[key]?.tiles : undefined);
-  const identities = useMemo(() => relationIdentities(graph, relation), [graph, relation]);
+  // Each step's key: an identity, which the dashboard draws no tile of.
+  const keys = useMemo(() => new JoinResolver(graph).steps(relation).map((step) => step.key), [graph, relation]);
 
   // The document is read once; a failed read is shown in place of the dashboard, not replaced by
   // the automatic one an edit would then overwrite.
@@ -126,7 +122,7 @@ function SavedDashboard({ relation, onRelationChange, shown }: DashboardViewProp
       <ScrollArea className="min-h-0 flex-1" ref={board}>
         <Dashboard
           className="p-4"
-          exclude={identities.map((i) => i.column)}
+          exclude={keys}
           key={key}
           onChange={
             edit

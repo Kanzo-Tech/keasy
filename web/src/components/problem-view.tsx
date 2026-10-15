@@ -1,12 +1,12 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Button, DiagnosticList, Problem, type ProblemCopy } from "@kanzo-tech/ui";
+import { Button, DiagnosticList, Problem, type ProblemDescription } from "@kanzo-tech/ui";
 import type { ErrorCode } from "@/lib/api/client";
-import { type ClientCode, coded, copyOf, pageOf } from "@/lib/errors";
+import { type ClientCode, coded, descriptionOf, pageOf } from "@/lib/errors";
 
 /** keasy's words for a code, and the page that explains it when fossil raised it. */
-export const problemCopy = (code: string, data: unknown): ProblemCopy => ({ ...copyOf(code, data), page: pageOf(code) });
+export const describeProblem = (code: string, data: unknown): ProblemDescription => ({ ...descriptionOf(code, data), page: pageOf(code) });
 
 export interface ProblemItemProps {
   /** What was thrown, or a problem as stored. */
@@ -24,7 +24,7 @@ export interface ProblemItemProps {
  */
 export function ProblemItem({ error, uncoded, children }: ProblemItemProps) {
   return (
-    <Problem copy={problemCopy} data-problem="" error={coded(error, uncoded)}>
+    <Problem describe={describeProblem} data-problem="" error={coded(error, uncoded)}>
       {children}
     </Problem>
   );

@@ -4,36 +4,22 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { and, column, count, createTable, type ExprNode, isIn, literal, Query, sql, TableRefNode } from "@uwdata/mosaic-sql";
-import { engine, numbers, useClauses, useMosaic } from "@kanzo-tech/ui/analytics";
+import { engine, numbers } from "@kanzo-tech/mosaic";
+import { useClauses, useMosaic } from "@kanzo-tech/ui/analytics";
 import { usePick } from "@kanzo-tech/graph";
 import type { RdfFindingGroup, RdfFindingGroups, RdfPlace, Shapes, ShapeModelJson, TermValue } from "@kanzo-tech/rudof-wasm";
 import { type FindingSeverity, type FindingTally, tallyFindings } from "@kanzo-tech/ui";
-import { corpusKey, useCorpus, useGraphKey, useVertices } from "@/lib/fossil/corpus";
 import { queryClient } from "@/lib/api/query-client";
+import { graphKey, mappingQuery, useAttachedGraph, useGraphKey, useVertices } from "@/lib/fossil/graph";
+import { rudof } from "@/lib/fossil/rudof";
 
 /**
- * A graph's rules, run by rudof on the page's one DuckDB over the corpus as RDF — the
- * `"<graph>".triples` view fossil's `attach` creates. rudof parses the file, validates the triples
- * whose subjects are in the page's subset, and writes the Shape Fragment of what conforms with the
- * focus nodes that conform beside it; keasy only says which subset and reads the answer back.
+ * A graph's rules, run by rudof on the page's one DuckDB over the graph as RDF — the
+ * `"<graph>".triples` view rudof makes of the graph's mapping (`Mapping.triples`, over the graph's
+ * own tables, nothing materialised). rudof parses the file, validates the triples whose subjects are
+ * in the page's subset, and writes the Shape Fragment of what conforms with the focus nodes that
+ * conform beside it; keasy only says which subset and reads the answer back.
  */
-
-/**
- * rudof's SHACL stack, instantiated once and only when the rules are read: the graph never loads it.
- * A failed instantiation is not kept: the next read tries again.
- */
-function rudof() {
-  return queryClient.fetchQuery({
-    queryKey: ["rudof"],
-    queryFn: async () => {
-      const rudofWasm = await import("@kanzo-tech/rudof-wasm");
-      await rudofWasm.default();
-      return rudofWasm;
-    },
-    staleTime: Infinity,
-    gcTime: Infinity,
-  });
-}
 
 /** The rules file as rudof read it: the shapes it runs, and the model a reader names them by. */
 export interface ReadRules {
@@ -46,9 +32,9 @@ export interface ReadRules {
  * `ShapesError` placed by line and column.
  */
 export function useReadRules(text: string | undefined) {
-  const { name: corpus } = useCorpus();
+  const { name: catalog } = useAttachedGraph();
   const read = useQuery({
-    queryKey: [...corpusKey(corpus), "rules", text],
+    queryKey: [...graphKey(catalog), "rules", text],
     queryFn: async (): Promise<ReadRules> => {
       const { Shapes } = await rudof();
       const shapes = Shapes.parse(text!);
@@ -85,7 +71,7 @@ export interface Checked {
   findings: { conforms: boolean; groups: KeptGroup[]; unchecked: RdfFindingGroups["unchecked"] };
   inScope: number;
   total: number;
-  /** The subset's subjects, as SQL — `undefined` for the whole corpus. */
+  /** The subset's subjects, as SQL — `undefined` for the whole catalog. */
   subset: string | undefined;
   /** The rules file checked, as it was. */
   shapes: string;
@@ -107,10 +93,11 @@ export type Stale = "filter" | "rules";
  * queries. `check()` validates what the page holds at that moment — every clause but the rules' own,
  * so showing a finding narrows the graph and never the findings — and a second press, or `stop()`,
  * abandons the first: latest wins. The focus nodes are the subjects of the vertices the subset keeps,
- * each checked against the whole corpus.
+ * each checked against the whole catalog.
  */
 export function useRules(rules: ReadRules | undefined, text: string) {
-  const { name: corpus } = useCorpus();
+  const graph = useAttachedGraph();
+  const { name: catalog } = graph;
   const { coordinator } = useMosaic();
   const pick = usePick(PICK);
   // Re-rendered on every clause, only so the badge can say the subset moved since the last check.
@@ -118,7 +105,7 @@ export function useRules(rules: ReadRules | undefined, text: string) {
   const vertices = useVertices();
   const key = useGraphKey();
   const predicate = pick.predicate();
-  const triples = String(new TableRefNode([corpus, "triples"]));
+  const triples = String(new TableRefNode([catalog, "triples"]));
   const subset = predicate.length
     ? String(Query.from(vertices).select({ s_type: literal("I"), s_value: column("subject") }).where(predicate))
     : undefined;
@@ -129,14 +116,21 @@ export function useRules(rules: ReadRules | undefined, text: string) {
   useEffect(() => () => running.current?.abort(), []);
 
   /**
-   * The page's engine, and the relation rudof reads the focus nodes from: rudof takes a relation's
-   * name, so `over`'s subjects are a view beside the triples, replaced on every read. No subset is
-   * no focus, and every target is checked.
+   * The page's engine, the graph as triples, and the relation rudof reads the focus nodes from: rudof
+   * takes a relation's name, so the triples are a view over the graph's tables, and `over`'s subjects
+   * a view beside them, each replaced on every read. No subset is no focus, and every target is checked.
    */
   const prepared = async (over: string | undefined, name: string, signal: AbortSignal) => {
     const attachedTo = await engine({ signal });
+    const mapping = await queryClient.fetchQuery(mappingQuery(graph));
+    await mapping.triples({
+      engine: attachedTo,
+      into: triples,
+      tables: (table) => String(new TableRefNode([catalog, table])),
+      signal,
+    });
     if (over === undefined) return { attachedTo, focus: undefined };
-    const focus = new TableRefNode([corpus, name]);
+    const focus = new TableRefNode([catalog, name]);
     await attachedTo.query(String(createTable(focus, over, { view: true, replace: true })), { signal });
     return { attachedTo, focus: String(focus) };
   };
@@ -251,8 +245,8 @@ export function useRules(rules: ReadRules | undefined, text: string) {
      * conforming node's neighbourhood, so a `sh:class` on a route took in every airport it reaches.
      */
     conforming: async (label: string) => {
-      const into = String(new TableRefNode([corpus, "rules_fragment"]));
-      const conforming = String(new TableRefNode([corpus, "rules_conforming"]));
+      const into = String(new TableRefNode([catalog, "rules_fragment"]));
+      const conforming = String(new TableRefNode([catalog, "rules_conforming"]));
       // Asked for by a press, and nothing stops it once asked: a signal that never aborts.
       const { signal } = new AbortController();
       const { attachedTo, focus } = await prepared(subset, "rules_focus", signal);

@@ -61,7 +61,7 @@ const mutationCache = new MutationCache({
  */
 const FRESH_MS = 30_000;
 
-// The corpora it holds are released by `releaseCorpora`, registered in `app/providers.tsx` with the
+// The graphs it holds are released by `releaseGraphs`, registered in `app/providers.tsx` with the
 // app's failure path, which imports the API client, and the API client imports this.
 const queryCache = new QueryCache({ onError: (error) => handleAuthError(error) });
 

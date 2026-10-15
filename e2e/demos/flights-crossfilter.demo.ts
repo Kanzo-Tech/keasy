@@ -11,7 +11,7 @@ import { demo } from "./record";
  */
 demo("flights-crossfilter", "Crossfiltering over OpenFlights: a click, a brush, and the same filter on the map", {
   async arrange({ page, env }) {
-    const id = await seedGraph(page, "openflights", { name: "Demo · OpenFlights", reuse: true });
+    const id = await seedGraph(page, "openflights", { name: "Demo · OpenFlights" });
     const discover = await DiscoverPage.open(page, env, id);
     // The Graph view set for step 3, then the dashboard the story starts on.
     const graph = await discover.onMap();

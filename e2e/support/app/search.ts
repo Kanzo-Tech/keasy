@@ -1,4 +1,4 @@
-import { ComponentHarness, type By, type Handle } from "@kanzo-tech/testing";
+import { ComponentHarness, type By, type TestElement } from "@kanzo-tech/testing";
 
 import { nameOf } from "./controls";
 
@@ -23,7 +23,7 @@ export class GraphSearch extends ComponentHarness {
     const box = await this.box();
     await box.fill(query);
     const [button, added] = await this.env.until(async () => {
-      const [found] = await this.env.root.find({ role: "button", name: ADD });
+      const [found] = await this.env.rootElement.find({ role: "button", name: ADD });
       if (!found) return null;
       const offered = Number(ADD.exec(await nameOf(found))?.[1]?.replace(/,/g, ""));
       return count === undefined || offered === count ? ([found, offered] as const) : null;
@@ -35,13 +35,13 @@ export class GraphSearch extends ComponentHarness {
   }
 
   /** The search's field, opened from its trigger when it is not already open. */
-  private async box(): Promise<Handle> {
-    if (!(await this.field())) await (await this.one({ role: "button", name: OPEN }, "the Info panel has no graph search")).click();
+  private async box(): Promise<TestElement> {
+    if (!(await this.field())) await (await this.locatorFor({ role: "button", name: OPEN }, "the Info panel has no graph search")()).click();
     return this.env.until(() => this.field(), "the graph search did not open");
   }
 
   /** The palette's field — Ark's `combobox`, named by its placeholder — while it is open. */
-  private async field(): Promise<Handle | undefined> {
-    return (await this.env.root.find({ role: "combobox", name: PLACEHOLDER }))[0];
+  private async field(): Promise<TestElement | undefined> {
+    return (await this.env.rootElement.find({ role: "combobox", name: PLACEHOLDER }))[0];
   }
 }

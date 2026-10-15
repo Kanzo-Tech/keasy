@@ -1,5 +1,5 @@
 import type { Format } from "@fossil-lang/types";
-import { formatFor } from "@fossil-lang/wasm";
+import { bindingName, formatFor } from "@fossil-lang/wasm";
 import { createTreeCollection } from "@kanzo-tech/ui";
 import type { Schemas } from "@/lib/api/client";
 import { reference, type StorageConnection } from "@/lib/connections";
@@ -48,25 +48,18 @@ export function connectionNode(c: StorageConnection): SourceBranch {
 }
 
 /**
- * A binding named after the file, as `IDENT` is written (`grammar.bnf`): its name without the
- * extension, each character an identifier cannot hold an `_`, and an `_` before a leading digit.
- */
-export function bindingName(file: string): string {
-  const stem = file.replace(/\.[^.]*$/, "").replace(/[^A-Za-z0-9_]/g, "_");
-  return /^[0-9]/.test(stem) || stem === "" ? `_${stem}` : stem;
-}
-
-/**
  * The children of `parent` from one listing of its folder: the folders directly under it that hold
  * a readable file, unopened, then the readable files directly in it, each with its whole line and
- * size. A file's path under the connection is fossil's `referenceTo`, so nothing here re-derives a
- * prefix.
+ * size. A file's path under the connection is fossil's `referenceTo`, and the name its line binds it
+ * by is fossil's `bindingName` (the lexer's rule, which boots fossil's module the first time), so
+ * nothing here re-derives either.
  */
-export function childrenOf(
+export async function childrenOf(
   parent: SourceBranch,
   listing: readonly Schemas["FileEntry"][],
   formats: readonly Format[],
-): SourceNode[] {
+  { signal }: { signal?: AbortSignal } = {},
+): Promise<SourceNode[]> {
   const c = parent.connection;
   const { under } = parent;
   const role = roleOf(c);
@@ -91,7 +84,7 @@ export function childrenOf(
         name: rest,
         kind: "file",
         reader: format.name,
-        line: `${bindingName(rest)} := io.${format.name}("${ref}")`,
+        line: `${await bindingName(rest, { signal })} := io.${format.name}("${ref}")`,
         size,
       });
     }

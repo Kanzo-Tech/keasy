@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { delimiterOf, profiledOf } from "./profile";
+import { delimiterOf, profiledOf, thingName } from "./profile";
 import { INPUTS, NOBEL, PROFILE } from "./nobel.fixture";
 
 describe("the profile, as the Tasks read it", () => {
@@ -18,15 +18,12 @@ describe("the profile, as the Tasks read it", () => {
     expect(profiledOf(sampled, INPUTS).sources.map((s) => s.rows)).toEqual([null, 4, 2, 3, 2]);
   });
 
-  it("gives two files of one name two bindings", () => {
-    const twice = PROFILE.sources[0]!;
-    const other = { ...twice, descriptor: { ...twice.descriptor, key: "https://elsewhere.example/laureates.csv" } };
-    const profiled = profiledOf({ ...PROFILE, sources: [twice, other], inclusions: [] }, []);
-    expect(profiled.sources.map((s) => s.name)).toEqual(["laureates", "laureates_2"]);
-  });
-
   it("reads a binding's delimiter", () => {
     expect(delimiterOf('delimiter = "|"')).toBe("|");
     expect(delimiterOf(undefined)).toBeUndefined();
+  });
+
+  it("reads a file's name as a thing's", () => {
+    expect(thingName("nobel_laureates.csv")).toBe("Nobel laureates");
   });
 });

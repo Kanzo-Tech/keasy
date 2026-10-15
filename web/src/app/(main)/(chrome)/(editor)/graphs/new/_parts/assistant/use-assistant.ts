@@ -11,37 +11,39 @@
  * `model` once the files are read and *what is it about?* is answered — the relations and the
  * decisions; `requirements` once its decisions are taken — the question chips (`useTask`), and
  * whether each question kept is answerable; `mapping` once the person has asked all they wanted —
- * the program **Advanced** opens, and the preview and the build run. A Task that fails is in
+ * the program **Open in the editor** opens, and the preview and the build run. A Task that fails is in
  * `failures`, with its retry.
  *
  * A conversation kept is started again from its `seed`: the files picked, the person's choices and
  * the program last written — everything else is read and asked again, from the files.
  */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 // eslint-disable-next-line no-restricted-imports -- one listing per opened folder, the profile of the picked files and each Task's answer; each failure is shown in its place, beside the rest
 import { keepPreviousData, useQueries, useQuery } from "@tanstack/react-query";
 import { useTask } from "@kanzo-tech/ai";
 import { type Proposal, runTask } from "@kanzo-tech/ai/task";
 import type { Format, Profiled as Described } from "@fossil-lang/types";
 import { inputs, profile } from "@fossil-lang/wasm";
-import { engine } from "@kanzo-tech/ui/analytics";
+import { engine, splitWords } from "@kanzo-tech/mosaic";
 import type { FileReference } from "@/lib/assistant-conversation";
 import type { StorageConnection } from "@/lib/connections";
 import { ClientError } from "@/lib/errors";
 import { host } from "@/lib/fossil/host";
-import { childrenOf, connectionNode, type SourceFile, type SourceNode } from "../sources";
-import { useSources } from "../use-sources";
+import { childrenOf, connectionNode, type SourceBranch, type SourceFile, type SourceNode } from "../sources";
+import { listChildren } from "../use-sources";
 import { useModel } from "@/lib/ai";
 import { type AssistantData, type DecisionItem, optionOf, type Question, type QuestionOffer, type TaskFailure, type Thing } from "./model";
 import { fossilCheck, mapping, mappingInput, programOf } from "./tasks/mapping";
 import { accept, type Accepted, decisionsOf, defaultsOf, type Draft, modelTask, relationsOf } from "./tasks/model";
-import { type Profiled, profiledOf } from "./tasks/profile";
+import { type Profiled, profiledOf, thingName } from "./tasks/profile";
 import { isAnswerable, requirements } from "./tasks/requirements";
-import { spoken, thingName } from "./tasks/words";
 
 /** The rows the profile keeps of each file: enough for one row of each relation to be found across files. */
 const SHOWN = 50;
+
+/** No kept file resolved yet. */
+const NONE_KEPT: ReadonlyMap<string, SourceFile | null> = new Map();
 
 /** A file's id in the tree, `<connection>:<path>` (`childrenOf`'s), and the location it names. */
 const fileId = ({ connection, path }: FileReference) => `${connection}:${path}`;
@@ -57,13 +59,22 @@ const readable = (c: StorageConnection) => c.kind === "data" && c.direction !== 
  * A kept file as the tree writes it (`childrenOf`, down the folders it is in), without listing them:
  * `null` when its connection is gone or no reader takes it.
  */
-function keptFile(file: FileReference, connections: readonly StorageConnection[], formats: readonly Format[]): SourceFile | null {
+async function keptFile(
+  file: FileReference,
+  connections: readonly StorageConnection[],
+  formats: readonly Format[],
+  signal: AbortSignal,
+): Promise<SourceFile | null> {
   const connection = connections.find((c) => c.name === file.connection && readable(c));
   if (!connection) return null;
   const listing = [{ path: file.path, size: 0 }];
-  const down = (node: SourceNode): SourceFile[] =>
-    node.kind === "file" ? [node] : childrenOf(node, listing, formats).flatMap(down);
-  return down(connectionNode(connection))[0] ?? null;
+  // One path listed: each level holds the one folder it goes down, or the file.
+  for (let level: SourceNode[] = [connectionNode(connection)]; level[0]; ) {
+    const node = level[0];
+    if (node.kind === "file") return node;
+    level = await childrenOf(node, listing, formats, { signal });
+  }
+  return null;
 }
 
 /** The picked file a source's reference names, by its id; the reference itself when none does. */
@@ -118,13 +129,13 @@ export interface Seed {
 export interface Assistant extends AssistantData {
   /** The person's questions, each with whether these files can answer it. */
   questions: Question[];
-  /** The branches open in the tree. */
-  expanded: readonly string[];
-  setExpanded: (expanded: string[]) => void;
-  setSelected: (selected: Set<string>) => void;
+  /** Pick `files`, or drop them: what a pill's menu does. */
+  pick: (files: readonly SourceFile[], on: boolean) => void;
+  /** Drop every file of a connection: the cross on its pill. */
+  clear: (connection: string) => void;
   /** The person's pick of a decision's option. */
   choose: (decision: string, option: string) => void;
-  /** The picked files as the program's binding lines: what Advanced opens the editor with. */
+  /** The picked files as the program's binding lines: what Open in the editor opens the editor with. */
   program: string;
   /** The picked files as locations: what the conversation keeps of them. */
   files: FileReference[];
@@ -159,25 +170,47 @@ export function useAssistant({
   seed?: Seed;
 }): Assistant {
   // The sink is written to, not read from.
-  const sources = useSources(connections.filter(readable), formats);
-  const [expanded, setExpanded] = useState<string[]>([]);
-  const [selected, setSelected] = useState<Set<string>>(() => new Set(seed?.files.map(fileId)));
+  const readableConnections = useMemo(() => connections.filter(readable), [connections]);
+  const list = useCallback((node: SourceBranch) => listChildren(node, formats), [formats]);
+  // The files picked, by id: the file itself once a menu has listed it, `null` for a kept one, which
+  // `keptFiles` resolves without listing the folders it is in.
+  const [chosenFiles, setChosenFiles] = useState<ReadonlyMap<string, SourceFile | null>>(
+    () => new Map(seed?.files.map((f) => [fileId(f), null] as const)),
+  );
+  const selected = useMemo(() => new Set(chosenFiles.keys()), [chosenFiles]);
+  const pick = useCallback(
+    (files: readonly SourceFile[], on: boolean) =>
+      setChosenFiles((prev) => {
+        const next = new Map(prev);
+        for (const f of files) {
+          if (on) next.set(f.id, f);
+          else next.delete(f.id);
+        }
+        return next;
+      }),
+    [],
+  );
+  const clear = useCallback(
+    (connection: string) => setChosenFiles((prev) => new Map([...prev].filter(([id]) => !id.startsWith(`${connection}:`)))),
+    [],
+  );
   const [chosen, setChosen] = useState<Record<string, string>>(() => ({ ...seed?.chosen }));
   // The kept files, read without opening the folders they are in; and the kept program.
   const [kept] = useState(() => seed?.files ?? []);
-  const keptFiles = useMemo(
-    () => new Map(kept.map((f) => [fileId(f), keptFile(f, connections, formats)] as const)),
-    [kept, connections, formats],
-  );
+  // Each kept file's line names it by fossil's binding, which waits for fossil's module.
+  const keptRead = useQuery({
+    queryKey: ["assistant", "kept", kept, connections, formats],
+    queryFn: async ({ signal }) =>
+      new Map(await Promise.all(kept.map(async (f) => [fileId(f), await keptFile(f, connections, formats, signal)] as const))),
+    staleTime: Infinity,
+    retry: false,
+  });
+  const keptFiles = keptRead.data ?? NONE_KEPT;
   const [keptProgram] = useState(() => seed?.program ?? null);
 
-  const picked = [...selected].flatMap((id) => {
-    const node = sources.collection.findNode(id);
-    if (node?.kind === "file") return [node];
-    return keptFiles.get(id) ?? [];
-  });
+  const picked = [...chosenFiles].flatMap(([id, file]) => file ?? keptFiles.get(id) ?? []);
   // A kept file no connection reads any more is said, never dropped.
-  const unreachable = [...selected].filter((id) => keptFiles.get(id) === null && sources.collection.findNode(id) === undefined);
+  const unreachable = [...chosenFiles].filter(([id, file]) => file === null && keptFiles.get(id) === null).map(([id]) => id);
   const lines = picked.map((f) => f.line).sort();
   // The files are read together, once: the inclusions between two of them are part of the answer.
   const read = useQuery({
@@ -202,6 +235,7 @@ export function useAssistant({
       id,
       problem: new ClientError("web/unknown", "A file this conversation read cannot be read", `${id} is not on a connection this workspace reads.`),
     })),
+    ...(keptRead.error ? [{ id: "kept", problem: keptRead.error }] : []),
     ...(read.error
       ? [{ id: "profile", problem: read.error }]
       : (read.data?.undescribed ?? []).map(({ source, problem }) => ({ id: fileOf(picked, source.key), problem }))),
@@ -243,7 +277,7 @@ export function useAssistant({
   }, [acceptedKey]);
   const offers: QuestionOffer[] | null =
     accepted && offered.state === "ready"
-      ? offered.proposals.map((p) => ({ id: p.id, text: p.value.text, rationale: `Reads ${p.value.fields.map((f) => spoken(f.slice(f.indexOf(".") + 1))).join(", ")}` }))
+      ? offered.proposals.map((p) => ({ id: p.id, text: p.value.text, rationale: `Reads ${p.value.fields.map(splitWords).join(", ")}` }))
       : null;
   // A chip is answerable by construction: the resolver reached it before it was offered.
   const offeredTexts = new Set((offers ?? []).map((o) => o.text));
@@ -251,7 +285,7 @@ export function useAssistant({
   const marked = useQueries({
     queries: typed.map((q) => ({
       queryKey: ["assistant", "answerable", acceptedKey, q.text],
-      queryFn: ({ signal }: { signal: AbortSignal }) => isAnswerable(q.text, accepted!, profiled!, { model, signal }),
+      queryFn: ({ signal }: { signal: AbortSignal }) => isAnswerable(q.text, accepted!, { model, signal }),
       enabled: accepted !== null,
       retry: false,
       staleTime: Infinity,
@@ -289,7 +323,8 @@ export function useAssistant({
   ];
 
   return {
-    sources,
+    connections: readableConnections,
+    list,
     selected,
     reading: picked.length > 0 && read.isPending ? { done: 0, total: picked.length } : null,
     problems,
@@ -298,13 +333,12 @@ export function useAssistant({
     decisions,
     failures,
     questions: questions.map((q) => ({ ...q, answerable: answerable(q) })),
-    expanded,
-    setExpanded,
-    setSelected,
+    pick,
+    clear,
     choose: (decision, option) => setChosen((prev) => ({ ...prev, [decision]: option })),
     // The mapping's program once it holds; until then the picked files' bindings.
     program: mapped.data ?? picked.map((f) => f.line).join("\n"),
-    files: [...selected].map(locationOf),
+    files: [...chosenFiles.keys()].map(locationOf),
     mapped: accepted === null ? null : (mapped.data ?? keptProgram),
     writing: mapped.isFetching,
     described: read.data?.described ?? null,

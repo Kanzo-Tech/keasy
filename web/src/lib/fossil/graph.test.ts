@@ -5,23 +5,24 @@ import { ApiError } from "@/lib/api/client";
 
 const notFound = new ApiError({ code: "graph/not-found", title: "Not found", detail: "No such graph", data: {} }, 404);
 
-vi.mock("@kanzo-tech/ui/analytics", () => ({ engine: async () => ({ coordinator: {} }), MosaicProvider: () => null }));
+vi.mock("@kanzo-tech/mosaic", () => ({ engine: async () => ({ coordinator: {} }) }));
+vi.mock("@kanzo-tech/ui/analytics", () => ({ MosaicProvider: () => null }));
 vi.mock("@/lib/api/query-client", async () => {
   const { QueryClient } = await import("@tanstack/react-query");
   return { queryClient: new QueryClient() };
 });
 vi.mock("@/lib/fossil/host", () => ({ host: {} }));
-vi.mock("@fossil-lang/corpus", () => ({
-  attach: async () => {
+vi.mock("@/lib/fossil/attach", () => ({
+  attachJob: async () => {
     throw notFound;
   },
 }));
 
-const { corpusQuery } = await import("./corpus");
+const { graphQuery } = await import("./graph");
 
-describe("corpusQuery", () => {
+describe("graphQuery", () => {
   it("settles on the error a failed attach raises, so the page shows it instead of a spinner", async () => {
-    const observer = new QueryObserver(new QueryClient(), corpusQuery("00000000-0000-0000-0000-000000000000"));
+    const observer = new QueryObserver(new QueryClient(), graphQuery("00000000-0000-0000-0000-000000000000"));
     const settled = new Promise<ReturnType<typeof observer.getCurrentResult>>((resolve) => {
       const stop = observer.subscribe((result) => {
         if (result.status !== "pending") {

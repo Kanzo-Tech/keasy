@@ -12,7 +12,7 @@ import { jsonSchema } from "ai";
 import { defineTask, type Decision, type Finding } from "@kanzo-tech/ai/task";
 import type { Relation } from "../model";
 import { type Inclusion, type Profiled, rowsOf, type Source, sourceNamed, valuesOf } from "./profile";
-import { camel, listed, pascal, plural, singular, spoken, withArticle } from "./words";
+import { splitWords } from "@kanzo-tech/mosaic";
 
 // ── The artefact ────────────────────────────────────────────────────────────
 
@@ -91,8 +91,8 @@ export function decisionsOf(draft: Draft, profiled: Profiled): Decision[] {
     if (draft.edges.some((e) => e.to === type.name)) continue;
     decisions.push({
       id: keyDecision(source.name),
-      question: `Which column tells one ${spoken(type.name)} from another?`,
-      options: source.keys.map((k) => ({ id: k, label: spoken(k), detail: exampleOf(source, k) })),
+      question: `Which column tells one ${splitWords(type.name)} from another?`,
+      options: source.keys.map((k) => ({ id: k, label: splitWords(k), detail: exampleOf(source, k) })),
     });
   }
   const linked = new Set<string>();
@@ -101,13 +101,13 @@ export function decisionsOf(draft: Draft, profiled: Profiled): Decision[] {
     if (backed?.kind !== "link" || linked.has(backed.inclusion.from.source)) continue;
     const link = backed.inclusion.from.source;
     linked.add(link);
-    const [from, to] = [spoken(edge.from), spoken(edge.to)];
+    const [from, to] = [splitWords(edge.from), splitWords(edge.to)];
     decisions.push({
       id: countDecision(link),
-      question: `Each row of ${link} links ${withArticle(from)} to ${withArticle(to)}. When two ${plural(from)} share ${withArticle(to)}, is that one thing or two?`,
+      question: `Each row of ${link} links ${from} to ${to}. Is a row only that link, or a thing counted on its own?`,
       options: [
-        { id: "link", label: `One: ${withArticle(from)} has ${plural(to)}`, detail: `${link} only links them` },
-        { id: "thing", label: `Two: each row is ${withArticle(spoken(singular(link)))}`, detail: `counted on its own` },
+        { id: "link", label: `Only a link: ${from} → ${to}`, detail: `${link} only links them` },
+        { id: "thing", label: `A thing of its own: ${splitWords(link)}`, detail: `counted on its own` },
       ],
     });
   }
@@ -364,13 +364,13 @@ export function accept(draft: Draft, profiled: Profiled, option: (decision: stri
       const source = sourceNamed(profiled, link)!;
       const ends = [backed.back.from.column, inclusion.from.column];
       const taken = new Set(draft.types.map((t) => t.name));
-      let name = pascal(singular(spoken(link)));
-      for (let n = 2; taken.has(name); n++) name = `${pascal(singular(spoken(link)))}${n}`;
+      let name = pascal(singular(splitWords(link)));
+      for (let n = 2; taken.has(name); n++) name = `${pascal(singular(splitWords(link)))}${n}`;
       thing = {
         name,
         source: link,
         identity: ends,
-        fields: source.columns.filter((c) => !ends.includes(c.name)).flatMap((c) => field(link, { name: camel(pascal(spoken(c.name))), column: c.name })),
+        fields: source.columns.filter((c) => !ends.includes(c.name)).flatMap((c) => field(link, { name: camel(pascal(splitWords(c.name))), column: c.name })),
       };
       things.set(link, thing);
       types.push(thing);
@@ -380,6 +380,33 @@ export function accept(draft: Draft, profiled: Profiled, option: (decision: stri
   }
   return { types, edges };
 }
+
+// ── Identifiers ─────────────────────────────────────────────────────────────
+
+/** A file's name as a type's: `affiliations` → `affiliation`. */
+function singular(noun: string): string {
+  if (/ies$/i.test(noun)) return `${noun.slice(0, -3)}y`;
+  if (/(ss|us|is)$/i.test(noun)) return noun;
+  if (/(xes|ches|shes|sses)$/i.test(noun)) return noun.slice(0, -2);
+  return noun.replace(/s$/i, "");
+}
+
+/** `nobel affiliations` → `NobelAffiliations`. */
+function pascal(words: string): string {
+  return words
+    .split(/[^A-Za-z0-9]+/)
+    .filter(Boolean)
+    .map((w) => w[0]!.toUpperCase() + w.slice(1))
+    .join("");
+}
+
+/** `Laureate` → `laureate`. */
+const camel = (name: string) => (name ? name[0]!.toLowerCase() + name.slice(1) : name);
+
+const list = new Intl.ListFormat("en-GB", { type: "conjunction" });
+
+/** "a, b and c". */
+export const listed = (items: readonly string[]) => list.format(items);
 
 // ── What the person reads ───────────────────────────────────────────────────
 
@@ -409,7 +436,7 @@ export function relationsOf(accepted: Accepted, profiled: Profiled): Relation[] 
     const fields = type.fields.filter((f) => !type.identity.includes(f.column) && !out.some((e) => e.column === f.column));
     const parts = [...out.map((e) => ({ edge: e })), ...fields.map((f) => ({ field: f }))].slice(0, 4);
     if (parts.length === 0) return [];
-    const said = parts.map((p) => ("edge" in p ? (p.edge.many ? plural(spoken(p.edge.name)) : withArticle(spoken(p.edge.name))) : withArticle(spoken(p.field.name))));
+    const said = parts.map((p) => splitWords("edge" in p ? p.edge.name : p.field.name));
 
     const valueOf = (row: Record<string, string | null>, part: (typeof parts)[number]): string | null => {
       if ("field" in part) return row[part.field.column] ?? null;
@@ -431,7 +458,7 @@ export function relationsOf(accepted: Accepted, profiled: Profiled): Relation[] 
     return [
       {
         id: `relation/${type.name}`,
-        sentence: `Each ${spoken(type.name)} has ${listed(said)}`,
+        sentence: `${splitWords(type.name)}: ${listed(said)}`,
         example: full ? (full as string[]) : null,
       },
     ];

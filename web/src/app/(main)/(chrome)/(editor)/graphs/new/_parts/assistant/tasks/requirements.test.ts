@@ -14,9 +14,10 @@ interface Schema {
 
 const input = { accepted, about: "Nobel prizes" };
 
-const byInstitution: Requirement = { text: "Which institutions have the most laureates?", of: "Laureate", fields: ["Institution.name"] };
-const byCountry: Requirement = { text: "How many countries are there?", of: "Country", fields: ["Country.name"] };
-const unreachable: Requirement = { text: "Which country won the most awards?", of: "Award", fields: ["Country.name"] };
+const byInstitution: Requirement = { text: "Which institutions have the most laureates?", of: "Laureate", fields: ["affiliation.name"] };
+const byCountry: Requirement = { text: "How many countries are there?", of: "Country", fields: ["name"] };
+// `affiliation` is a link of a laureate's, not of an award's.
+const unreachable: Requirement = { text: "Which institution won the most awards?", of: "Award", fields: ["affiliation.name"] };
 
 describe("the requirements Task", () => {
   it("offers the questions Ask's resolver can reach, and drops the rest", async () => {
@@ -26,39 +27,50 @@ describe("the requirements Task", () => {
     expect(prompts[0]).toContain("Laureate.affiliation links to Institution, several per Laureate");
   });
 
-  it("names why a question cannot be answered: nothing links what it counts to what it reads", async () => {
+  it("names why a question cannot be answered: a path it reads does not leave what it counts", async () => {
     const verdict = await verify(requirements, unreachable, input);
     expect(verdict).toEqual({
       ok: false,
-      diagnostics: [{ code: "requirements/unreachable", at: "/of", message: "Which country won the most awards?: nothing links Award to Country in these files." }],
+      diagnostics: [
+        { code: "requirements/unreachable", at: "/fields", message: "Which institution won the most awards?: nothing in these files reaches affiliation.name from Award." },
+      ],
     });
   });
 
-  it("closes what a question may read to the accepted model's types and fields", () => {
-    const schema = requirements.output!(input, { types: ["Laureate"], fields: ["Laureate.name"] }) as unknown as { jsonSchema: Schema };
+  it("closes what a question may read to the accepted model's types and the paths from them", () => {
+    const schema = requirements.output!(input, { types: ["Laureate"], paths: { Laureate: ["name", "affiliation.name"] } }) as unknown as {
+      jsonSchema: Schema;
+    };
     expect(schema.jsonSchema.properties.of.enum).toEqual(["Laureate"]);
-    expect(schema.jsonSchema.properties.fields.items.enum).toEqual(["Laureate.name"]);
+    expect(schema.jsonSchema.properties.fields.items.enum).toEqual(["name", "affiliation.name"]);
+  });
+
+  it("offers the paths Ask's model writes, a link's and a link's way back among them, and no key", async () => {
+    const { paths } = await requirements.context!(input);
+    expect(paths.Award).toContain("laureate.affiliation.name");
+    expect(paths.Laureate).toContain("^laureate.category");
+    expect(Object.values(paths).flat().filter((p) => p === "id" || p.endsWith(".id"))).toEqual([]);
   });
 });
 
 describe("a question the person typed", () => {
-  it("is put to Ask over the accepted model, its fields the profile's", () => {
-    const asked = askInputOf("Prizes by category?", accepted, NOBEL);
-    expect(asked.graph).toEqual(joinGraphOf(accepted));
-    const award = asked.types.find((t) => t.relation.root === "Award")!;
-    expect(award.fields.find((f) => f.name === "Award.category")).toMatchObject({ kind: "categorical", values: ["Physics", "Chemistry"] });
-    expect(award.fields.find((f) => f.name === "Award.share")).toMatchObject({ kind: "numeric", role: "measure" });
+  it("is put to Ask over the accepted model's join graph, each field described by its type", () => {
+    const asked = askInputOf("Prizes by category?", accepted);
+    expect(asked).toEqual({ question: "Prizes by category?", graph: joinGraphOf(accepted) });
+    const award = asked.graph.types.find((t) => t.name === "Award")!;
+    expect(award.columns).toContainEqual({ name: "category", type: "VARCHAR" });
+    expect(award.columns).toContainEqual({ name: "id", type: "VARCHAR", role: "identity" });
   });
 
   it("is answerable when Ask's spec holds", async () => {
-    const spec = { of: "Award", show: { kind: "chart", type: "bar", x: "Award.category", y: { op: "count" } } };
-    expect(await isAnswerable("Prizes by category?", accepted, NOBEL, { model: scripted(spec).model })).toBe(true);
+    const spec = { of: "Award", show: { kind: "chart", type: "bar", x: "category", y: { op: "count" } } };
+    expect(await isAnswerable("Prizes by category?", accepted, { model: scripted({ spec }).model })).toBe(true);
   });
 
   it("is not when Ask cannot reach what it reads, after Ask's own repairs", async () => {
-    const spec = { of: "Award", show: { kind: "chart", type: "bar", x: "Country.name", y: { op: "count" } } };
-    const { model, prompts } = scripted(spec);
-    expect(await isAnswerable("Prizes by country?", accepted, NOBEL, { model })).toBe(false);
+    const spec = { of: "Award", show: { kind: "chart", type: "bar", x: "country.name", y: { op: "count" } } };
+    const { model, prompts } = scripted({ spec });
+    expect(await isAnswerable("Prizes by country?", accepted, { model })).toBe(false);
     expect(prompts).toHaveLength(3);
   });
 });
@@ -70,7 +82,7 @@ describe("the join graph the accepted model will be", () => {
     expect(graph.edges.map((e) => e.name)).toEqual(["Award_laureate_Laureate", "Laureate_affiliation_Institution"]);
     // A two-hop question: awards by their laureate's institution.
     const proposal = await runTask(requirements, input, {
-      model: scripted({ text: "Awards by institution?", of: "Award", fields: ["Institution.name"] }).model,
+      model: scripted({ text: "Awards by institution?", of: "Award", fields: ["laureate.affiliation.name"] }).model,
     });
     expect(proposal.verdict).toEqual({ ok: true });
   });

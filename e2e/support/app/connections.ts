@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test";
-import { ComponentHarness, type By, type Handle, type HarnessEnvironment } from "@kanzo-tech/testing";
+import { ComponentHarness, type By, type TestElement, type HarnessEnvironment } from "@kanzo-tech/testing";
 
 /** An action a row's menu offers: whether it may be used, and — when not — why, as the item says. */
 export interface Offered {
@@ -19,7 +19,7 @@ export class RowMenu extends ComponentHarness {
   /** The item that begins with `label`: whether it is enabled, and the reason it gives if not. */
   async offered(label: string): Promise<Offered> {
     const item = await this.item(label);
-    const disabled = (await item.attribute("aria-disabled")) === "true" || (await item.attribute("data-disabled")) !== null;
+    const disabled = (await item.getAttribute("aria-disabled")) === "true" || (await item.getAttribute("data-disabled")) !== null;
     const words = await item.text();
     return { enabled: !disabled, reason: words.slice(label.length).trim() };
   }
@@ -31,8 +31,8 @@ export class RowMenu extends ComponentHarness {
     await (await this.item(label)).click();
   }
 
-  private item(label: string): Promise<Handle> {
-    return this.one({ role: "menuitem", name: new RegExp(`^${label}`) }, `the menu offers no ${label}`);
+  private item(label: string): Promise<TestElement> {
+    return this.locatorFor({ role: "menuitem", name: new RegExp(`^${label}`) }, `the menu offers no ${label}`)();
   }
 }
 
@@ -46,25 +46,25 @@ export class ConnectionsPage extends ComponentHarness {
   /** Opens the tab of `kind`'s connections, once its search is up. */
   static async open(page: Page, env: HarnessEnvironment, kind: "data" | "vocab" = "data"): Promise<ConnectionsPage> {
     await page.goto(`/connections?type=${kind}`);
-    const connections = await env.harness(ConnectionsPage);
-    await connections.one({ role: "textbox", name: /Search connections/ }, "the connections have no search");
+    const connections = await env.getHarness(ConnectionsPage);
+    await connections.locatorFor({ role: "textbox", name: /Search connections/ }, "the connections have no search")();
     return connections;
   }
 
   /** Narrows the table to `name`, and opens that row's menu. */
   async actions(name: string): Promise<RowMenu> {
-    const search = await this.one({ role: "textbox", name: /Search connections/ }, "the connections have no search");
+    const search = await this.locatorFor({ role: "textbox", name: /Search connections/ }, "the connections have no search")();
     await search.fill(name);
-    const trigger = await this.one({ role: "button", name: `Actions for ${name}` }, `${name} has no actions`);
+    const trigger = await this.locatorFor({ role: "button", name: `Actions for ${name}` }, `${name} has no actions`)();
     await trigger.click();
-    return this.env.harness(RowMenu);
+    return this.env.getHarness(RowMenu);
   }
 
   /** Whether the row `name` offers a menu at all: a reader's rows offer none. */
   async hasActions(name: string): Promise<boolean> {
-    const search = await this.one({ role: "textbox", name: /Search connections/ }, "the connections have no search");
+    const search = await this.locatorFor({ role: "textbox", name: /Search connections/ }, "the connections have no search")();
     await search.fill(name);
-    await this.one({ role: "cell", name }, `no connection ${name}`);
+    await this.locatorFor({ role: "cell", name }, `no connection ${name}`)();
     return (await this.host.find({ role: "button", name: `Actions for ${name}` })).length > 0;
   }
 }

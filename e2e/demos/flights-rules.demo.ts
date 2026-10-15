@@ -18,7 +18,7 @@ import { demo } from "./record";
  */
 demo("flights-rules", "Rules over OpenFlights on the map: what breaks the rule, the high airports, then only what conforms", {
   async arrange({ page, env }) {
-    const id = await seedGraph(page, "openflights", { name: "Demo · OpenFlights", reuse: true });
+    const id = await seedGraph(page, "openflights", { name: "Demo · OpenFlights" });
     await saveRules(page, id, "openflights");
     const discover = await DiscoverPage.open(page, env, id, { panel: "none" });
     const graph = await discover.onMap();

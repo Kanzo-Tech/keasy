@@ -5,7 +5,7 @@ import type { Format } from "@fossil-lang/types";
 import { $api } from "@/lib/api/client";
 import { queryClient } from "@/lib/api/query-client";
 import type { StorageConnection } from "@/lib/connections";
-import { childrenOf, connectionNode, type SourceNode, sourceCollection } from "./sources";
+import { childrenOf, connectionNode, type SourceBranch, type SourceNode, sourceCollection } from "./sources";
 
 type Collection = ReturnType<typeof sourceCollection>;
 
@@ -15,6 +15,20 @@ export interface Sources {
   loadChildren: (details: { node: SourceNode }) => Promise<SourceNode[]>;
   onLoadChildrenComplete: (details: { collection: Collection }) => void;
   onLoadChildrenError: (details: { nodes: { node: SourceNode; error: unknown; indexPath: number[] }[] }) => void;
+}
+
+/**
+ * What `node` holds, from one listing of its folder (`/v1/connections/{name}/files`), kept after: the
+ * one way a branch is listed, the studio's tree opening it and the assistant's menus alike.
+ */
+export async function listChildren(node: SourceBranch, formats: readonly Format[]): Promise<SourceNode[]> {
+  const { connection, under } = node;
+  const { files } = await queryClient.fetchQuery(
+    $api.queryOptions("get", "/v1/connections/{name}/files", {
+      params: { path: { name: connection.name }, ...(under && { query: { prefix: under } }) },
+    }),
+  );
+  return await childrenOf(node, files, formats);
 }
 
 /**
@@ -28,13 +42,7 @@ export function useSources(connections: readonly StorageConnection[], formats: r
     collection,
     loadChildren: async ({ node }) => {
       if (node.kind === "file") return [];
-      const { connection, under } = node;
-      const { files } = await queryClient.fetchQuery(
-        $api.queryOptions("get", "/v1/connections/{name}/files", {
-          params: { path: { name: connection.name }, ...(under && { query: { prefix: under } }) },
-        }),
-      );
-      return childrenOf(node, files, formats);
+      return await listChildren(node, formats);
     },
     onLoadChildrenComplete: (d) => setCollection(d.collection),
     onLoadChildrenError: ({ nodes }) =>

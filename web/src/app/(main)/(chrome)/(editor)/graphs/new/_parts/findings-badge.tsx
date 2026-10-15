@@ -18,14 +18,14 @@ import {
   tallyFindings,
 } from "@kanzo-tech/ui";
 import type { Diagnostic } from "@fossil-lang/types";
-import { copyOf, pageOf } from "@/lib/errors";
+import { descriptionOf, pageOf } from "@/lib/errors";
 import { counted } from "@/lib/ui/format";
 
 /** LSP severity: 1 error, 2 warning, 3 information, 4 hint — as kanzo-ui's severities, a hint a note. */
 const SEVERITY = { 1: "violation", 2: "warning", 3: "info", 4: "info" } as const satisfies Record<number, FindingSeverity>;
 
 /** The compiler's words for a severity: an error, not a violation. */
-const LABELS = { severity: { violation: "Error", warning: "Warning", info: "Note" } };
+const TRANSLATIONS = { severity: { violation: "Error", warning: "Warning", info: "Note" } };
 
 const GROUPS = [
   { severity: "violation", title: "Errors" },
@@ -48,7 +48,7 @@ function scope(t: FindingTally): string {
 
 /** A diagnostic as one result: keasy's title for its code when it has one, the compiler's otherwise. */
 function findingOf(row: Diagnostic): Finding<Diagnostic> {
-  const copy = copyOf(row.code, row.data);
+  const copy = descriptionOf(row.code, row.data);
   return {
     severity: SEVERITY[row.severity],
     message: copy?.detail ?? row.message,
@@ -94,7 +94,7 @@ export function FindingsBadge({
 
   const counted = tallyFindings(listed);
   return (
-    <FindingsRoot labels={LABELS} onOpenChange={(d) => onOpenChange(d.open)} open={open} tally={counted}>
+    <FindingsRoot onOpenChange={(d) => onOpenChange(d.open)} open={open} tally={counted} translations={TRANSLATIONS}>
       <Badge size="lg">{tally}</Badge>
       <FindingsContent>
         <FindingsHeader>

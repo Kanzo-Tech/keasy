@@ -1,10 +1,11 @@
 /**
  * A small Nobel, as fossil's profile answers it — laureates, their awards, the institutions they
  * were at and the affiliations linking the two, and a countries file nothing points at — with a
- * model double that answers each call with the next scripted reply. For the Tasks' tests only.
+ * model that answers each call with the next scripted reply. For the Tasks' tests only.
  */
 
-import { MockLanguageModelV4 } from "ai/test";
+import { scriptedModel } from "@kanzo-tech/llm/testing";
+import { promptOf } from "@kanzo-tech/testing";
 import type { Engine, Input, Primitive, Profile } from "@fossil-lang/types";
 import type { Draft } from "./model";
 import { profiledOf } from "./profile";
@@ -15,9 +16,10 @@ type Col = [name: string, primitive: Primitive, nulls?: number];
 
 function source(file: string, columns: Col[], keys: string[], sample: (string | null)[][]): Profile["sources"][number] {
   return {
+    binding: file.replace(/\.csv$/, ""),
     descriptor: { key: `${BASE}${file}`, etag: "", columns: columns.map(([name, primitive]) => ({ name, primitive })) },
-    columns: columns.map(([name, , nulls = 0]) => ({ name, nulls, distinct: sample.length })),
-    keys,
+    columns: columns.map(([name, , nulls = 0]) => ({ name, null_count: nulls, distinct_count: sample.length })),
+    candidate_keys: keys,
     rows: sample.length,
     sampled: false,
     sample: sample as string[][],
@@ -69,9 +71,9 @@ export const PROFILE: Profile = {
     source("countries.csv", [["code", "string"], ["name", "string"]], ["code", "name"], [["FR", "France"], ["DE", "Germany"]]),
   ],
   inclusions: [
-    { from: { source: `${BASE}awards.csv`, column: "laureate_id" }, to: { source: `${BASE}laureates.csv`, column: "id" } },
-    { from: { source: `${BASE}affiliations.csv`, column: "laureate_id" }, to: { source: `${BASE}laureates.csv`, column: "id" } },
-    { from: { source: `${BASE}affiliations.csv`, column: "institution_id" }, to: { source: `${BASE}institutions.csv`, column: "id" } },
+    { from: { source: "awards", column: "laureate_id" }, to: { source: "laureates", column: "id" } },
+    { from: { source: "affiliations", column: "laureate_id" }, to: { source: "laureates", column: "id" } },
+    { from: { source: "affiliations", column: "institution_id" }, to: { source: "institutions", column: "id" } },
   ],
   failed: [],
 };
@@ -101,30 +103,24 @@ export const DRAFT: Draft = {
   ],
 };
 
-const usage = { inputTokens: { total: 1, noCache: 1, cacheRead: 0, cacheWrite: 0 }, outputTokens: { total: 1, text: 1, reasoning: 0 } };
-
 /**
- * A model that answers each call with the next of `replies` — an object as its JSON, a string as
- * it is — and the last one after that, keeping every prompt it was asked.
+ * `@kanzo-tech/llm/testing`'s model, answering each call with the next of `replies` — an object as
+ * its JSON, a string as it is — and the last one after that, keeping every prompt it was asked.
  */
 export function scripted(...replies: unknown[]) {
   const prompts: string[] = [];
-  const model = new MockLanguageModelV4({
-    doGenerate: async (call) => {
-      prompts.push(JSON.stringify(call.prompt));
-      const reply = replies[Math.min(prompts.length - 1, replies.length - 1)];
-      return {
-        content: [{ type: "text", text: typeof reply === "string" ? reply : JSON.stringify(reply) }],
-        finishReason: { unified: "stop", raw: "stop" },
-        usage,
-        warnings: [],
-      };
+  const model = scriptedModel({
+    turns: (call, index) => {
+      prompts.push(promptOf(call));
+      const reply = replies[Math.min(index, replies.length - 1)];
+      return typeof reply === "string" ? { text: reply } : { object: reply };
     },
   });
   return { model, prompts };
 }
 
-const DUCKDB: Record<Primitive, string> = {
+/** The DuckDB type a fixture column is described as; a file holds no language-tagged string. */
+const DUCKDB: Record<Exclude<Primitive, "lang_string">, string> = {
   string: "VARCHAR",
   integer: "BIGINT",
   float: "DOUBLE",
@@ -145,7 +141,7 @@ export const DESCRIBING: Engine = {
     const described = PROFILE.sources.find((s) => sql.includes(s.descriptor.key));
     if (!/^DESCRIBE/.test(sql) || !described) throw new Error(`The fixture engine answers no ${sql}`);
     const header = ["column_name", "column_type", "null", "key", "default", "extra"];
-    const rows = described.descriptor.columns.map((c) => [c.name, DUCKDB[c.primitive], "YES", null, null, null]);
+    const rows = described.descriptor.columns.map((c) => [c.name, DUCKDB[c.primitive as Exclude<Primitive, "lang_string">], "YES", null, null, null]);
     return {
       numRows: rows.length,
       schema: { fields: header.map((name) => ({ name })) },

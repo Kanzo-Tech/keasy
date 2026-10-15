@@ -1,10 +1,8 @@
 import { cookies } from "next/headers";
-import { forbidden, redirect } from "next/navigation";
+import { forbidden } from "next/navigation";
 import { parseSidebarCookie, SIDEBAR_COOKIE_NAME, SidebarProvider } from "@kanzo-tech/ui";
-import { AuthError, can } from "@kanzo-tech/auth";
+import { can } from "@kanzo-tech/auth";
 import { auth } from "@/lib/auth/server";
-import { ModelProvider } from "@/lib/ai";
-import { PROBLEM_PAGE } from "@/lib/routes";
 import { Shell } from "./shell";
 
 /**
@@ -20,31 +18,15 @@ export default async function MainLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  if (!can(await readSession(), "reader")) forbidden();
+  // An outage of the store or the IdP behind it is sent to the problem page with its code, by `required`.
+  if (!can(await auth.session({ required: true }), "reader")) forbidden();
 
   // The person's own choice, read back on the server so a reload starts where they left it.
   const defaultOpen = parseSidebarCookie((await cookies()).get(SIDEBAR_COOKIE_NAME)?.value);
 
   return (
     <SidebarProvider className="h-dvh min-h-0 overflow-hidden" defaultOpen={defaultOpen}>
-      {/* Where the model's shards are served, read per request so one image serves any deployment. */}
-      <ModelProvider url={process.env.KEASY_MODEL_URL?.trim() || undefined}>
-        <Shell>{children}</Shell>
-      </ModelProvider>
+      <Shell>{children}</Shell>
     </SidebarProvider>
   );
-}
-
-/**
- * The session, or the auth error page when the store or the IdP behind it does not answer. A server error
- * reaches the browser stripped of everything but a digest, so the code travels in the URL instead.
- */
-async function readSession() {
-  try {
-    return await auth.session({ required: true });
-  } catch (err) {
-    // The store, or the IdP, did not answer: a coded failure, which the problem page renders.
-    if (err instanceof AuthError) redirect(`${PROBLEM_PAGE}?code=${encodeURIComponent(err.code)}`);
-    throw err;
-  }
 }

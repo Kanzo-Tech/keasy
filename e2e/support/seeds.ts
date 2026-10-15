@@ -4,7 +4,6 @@ import { fileURLToPath } from "node:url";
 import type { Page } from "@playwright/test";
 
 import { runToCompletion } from "./fixtures";
-import { api } from "./stack/api";
 
 /**
  * The dev examples `make seed` fetches, one folder each under infra/dev/examples/, and the program
@@ -43,27 +42,15 @@ export function rules(example: Example): string {
   return read(example, "rules.ttl");
 }
 
-/** Whether the dev example `example` is in this tree: a demo of an example still on its way skips. */
-export function hasExample(example: Example): boolean {
-  return EXAMPLES.includes(example);
-}
-
 /**
  * A graph of the dev example `example`, named `name`, run to completion by the browser on `page`
- * (which must be signed in), within `within` ms. With `reuse`, a completed graph already named
- * `name` and run from the same recipe is returned instead of running another — a demo recorded
- * twice runs its graph once, and an example whose recipe changed is run again.
+ * (which must be signed in), within `within` ms. A built graph is written once, so each call builds
+ * its own: one found by name could be a graph an older writer built.
  */
 export async function seedGraph(
   page: Page,
   example: Example,
-  { name, within = 10 * 60_000, reuse = false }: { name: string; within?: number; reuse?: boolean },
+  { name, within = 10 * 60_000 }: { name: string; within?: number },
 ): Promise<string> {
-  const script = mapping(example);
-  if (reuse) {
-    const graphs = (await api(page).GET("/v1/graphs")).data!;
-    const done = graphs.find((g) => g.name === name && g.status === "completed" && g.script === script);
-    if (done) return done.id;
-  }
-  return runToCompletion(page, { name, script, within });
+  return runToCompletion(page, { name, script: mapping(example), within });
 }

@@ -6,29 +6,29 @@ import { describe, expect, it, vi } from "vitest";
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const ENGINE = { coordinator: {} };
-vi.mock("@kanzo-tech/ui/analytics", () => ({ engine: async () => ENGINE }));
+vi.mock("@kanzo-tech/mosaic", () => ({ engine: async () => ENGINE }));
 vi.mock("@/lib/fossil/host", () => ({ host: { name: "keasy" } }));
 vi.mock("@/lib/errors", () => ({ toastError: vi.fn() }));
-const FILES = [{ path: "fossil.json", bytes: new Uint8Array([123, 125]) }];
-const runInWorker = vi.fn<(program: string, options: unknown) => Promise<{ report: object; files: typeof FILES }>>(async () => ({ report: {}, files: FILES }));
-vi.mock("./run-worker", () => ({ runInWorker }));
+const FILES = [{ path: "fossil.graph.yml", bytes: new Uint8Array([110]) }];
+const runInto = vi.fn<(program: string, options: unknown) => Promise<{ report: object; files: typeof FILES }>>(async () => ({ report: {}, files: FILES }));
+vi.mock("./executor", () => ({ runInto }));
 type Attached = { name: string; detach: () => Promise<void> };
-const attachInMemory = vi.fn<(name: string, files: unknown, options: unknown) => Promise<Attached>>(async (name) => ({ name, detach: vi.fn(async () => {}) }));
-vi.mock("./memory-corpus", () => ({ attachInMemory }));
+const attachFiles = vi.fn<(name: string, options: unknown) => Promise<Attached>>(async (name) => ({ name, detach: vi.fn(async () => {}) }));
+vi.mock("./attach", () => ({ attachFiles }));
 
 const { QueryClient, QueryClientProvider } = await import("@tanstack/react-query");
-const { corpusKey } = await import("./corpus");
+const { graphKey } = await import("./graph");
 const { previewName, previewQuery, usePreview } = await import("./preview");
 
 describe("the assistant's preview", () => {
-  it("runs the program into memory in the run's worker, and attaches the files it answered", async () => {
+  it("runs the program into memory, and attaches the files it answered", async () => {
     const client = new QueryClient();
     const profiled = { descriptors: [], undescribed: [] } as never;
-    const corpus = await client.fetchQuery(previewQuery("program", profiled));
-    expect(runInWorker).toHaveBeenCalledWith("program", expect.objectContaining({ host: { name: "keasy" }, into: "memory", profiled }));
-    expect(attachInMemory).toHaveBeenCalledWith(previewName("program"), FILES, expect.objectContaining({ engine: ENGINE }));
-    expect(corpus).toMatchObject({ name: previewName("program"), engine: ENGINE });
-    expect(client.getQueryData(corpusKey(previewName("program")))).toBe(corpus);
+    const graph = await client.fetchQuery(previewQuery("program", profiled));
+    expect(runInto).toHaveBeenCalledWith("program", expect.objectContaining({ host: { name: "keasy" }, into: "memory", profiled }));
+    expect(attachFiles).toHaveBeenCalledWith(previewName("program"), expect.objectContaining({ engine: ENGINE, files: FILES }));
+    expect(graph).toMatchObject({ name: previewName("program"), engine: ENGINE });
+    expect(client.getQueryData(graphKey(previewName("program")))).toBe(graph);
   });
 
   it("is named by its program: a decision changed is a preview of its own", () => {
@@ -37,7 +37,7 @@ describe("the assistant's preview", () => {
     expect(previewName("x")).toMatch(/^preview-[0-9a-f]{8}$/);
   });
 
-  it("is idle with no program, runs, is ready, and keeps the last corpus while a changed program runs", async () => {
+  it("is idle with no program, runs, is ready, and keeps the last graph while a changed program runs", async () => {
     const client = new QueryClient();
     const seen: ReturnType<typeof usePreview>[] = [];
     const last = () => seen.at(-1);
@@ -52,24 +52,24 @@ describe("the assistant's preview", () => {
 
     await act(async () => render("first"));
     await vi.waitFor(() => expect(last()?.state).toBe("ready"));
-    const first = (last() as { corpus: { name: string } }).corpus;
+    const first = (last() as { graph: { name: string } }).graph;
     expect(first.name).toBe(previewName("first"));
 
     let land!: () => void;
-    attachInMemory.mockImplementationOnce(
+    attachFiles.mockImplementationOnce(
       (name) => new Promise((resolve) => (land = () => resolve({ name, detach: vi.fn(async () => {}) }))),
     );
     await act(async () => render("second"));
     await vi.waitFor(() => expect(land).toBeTypeOf("function"));
-    expect(last()).toMatchObject({ state: "running", corpus: first });
+    expect(last()).toMatchObject({ state: "running", graph: first });
     await act(async () => land());
-    await vi.waitFor(() => expect(last()).toMatchObject({ state: "ready", corpus: { name: previewName("second") } }));
+    await vi.waitFor(() => expect(last()).toMatchObject({ state: "ready", graph: { name: previewName("second") } }));
     act(() => root.unmount());
   });
 
   it("fails with the run's problem, and runs again when asked", async () => {
     const client = new QueryClient();
-    runInWorker.mockRejectedValueOnce(new Error("over budget"));
+    runInto.mockRejectedValueOnce(new Error("over budget"));
     const seen: ReturnType<typeof usePreview>[] = [];
     const last = () => seen.at(-1);
     function Probe() {

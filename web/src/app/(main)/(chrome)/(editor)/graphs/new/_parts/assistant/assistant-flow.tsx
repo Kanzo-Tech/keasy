@@ -20,14 +20,14 @@ import { usePreview } from "@/lib/fossil/preview";
 import { useGraphEditorStore } from "../graph-editor-store";
 import { useBuild } from "../use-build";
 import { AssistantChat } from "./assistant-chat";
-import { type Replies, type Restored, restore } from "./conversation";
+import { graphName, type Replies, type Restored, restore } from "./conversation";
 import type { Question } from "./model";
 import type { Preview } from "./preview-turn";
 import { useAssistant } from "./use-assistant";
 
 /**
  * The assistant's page: the workspace's connections and readers, then the conversation —
- * `?conversation=<id>` resumes a kept one, and `&decision=<id>` opens that decision's turn.
+ * `?conversation=<id>` resumes a kept one — or, one a graph was built from, shows it as it was built.
  */
 export function AssistantPage() {
   return (
@@ -50,34 +50,40 @@ function Loaded() {
   // Read once: the conversation's id is written back to the URL as it is saved, and that is not a
   // conversation to open again.
   const params = useSearchParams();
-  const [opened] = useState(() => ({ conversation: params.get("conversation"), decision: params.get("decision") }));
-  return <AssistantFlow connections={connections} formats={formats} {...opened} />;
+  // `new` is a conversation started from the page of another (*Start a new one from here*): the same
+  // route, opened clean.
+  return <Opened connections={connections} formats={formats} key={params.get("new") ?? ""} />;
+}
+
+function Opened({ connections, formats }: { connections: readonly StorageConnection[]; formats: readonly Format[] }) {
+  const params = useSearchParams();
+  const [conversation] = useState(() => params.get("conversation"));
+  return <AssistantFlow connections={connections} formats={formats} conversation={conversation} />;
 }
 
 /**
  * The conversation `conversation` — or a new one — read, then resumed: the chat starts where it
- * stood, and `decision` is opened at its options (Discover's **Change**).
+ * stood.
  */
 export function AssistantFlow({
   connections,
   formats,
   conversation = null,
-  decision = null,
 }: {
   connections: readonly StorageConnection[];
   formats: readonly Format[];
   conversation?: string | null;
-  decision?: string | null;
 }) {
   // The model the Tasks behind these turns ask starts downloading as the assistant opens.
   usePreloadModel();
   const kept = useAssistantConversation(conversation);
   // The id of the conversation the next save goes to, on the URL, so a reload resumes it.
   useEffect(() => {
-    if (kept.id === null) return;
     const url = new URL(window.location.href);
     if (url.searchParams.get("conversation") === kept.id) return;
-    window.history.replaceState(null, "", `${url.pathname}?conversation=${encodeURIComponent(kept.id)}`);
+    // Whatever else the URL carries — the page's `new`, the graph built — stays.
+    url.searchParams.set("conversation", kept.id);
+    window.history.replaceState(null, "", url);
   }, [kept.id]);
   if (kept.problem !== undefined) return <ProblemView className="m-auto" error={kept.problem} />;
   if (kept.messages === undefined) {
@@ -87,12 +93,12 @@ export function AssistantFlow({
       </Loading>
     );
   }
-  return <Resumed connections={connections} formats={formats} kept={kept} reopen={decision} seed={restore(kept.messages)} />;
+  return <Resumed connections={connections} formats={formats} kept={kept} seed={restore(kept.messages)} />;
 }
 
 /**
  * The conversation over `useAssistant`, from `seed`: the preview of the program the mapping writes,
- * and the whole graph built on request, from the conversation saved first. **Advanced** leaves for
+ * and the whole graph built on request, from the conversation saved first. **Open in the editor** leaves for
  * the studio with the picked files already written as the program's sources.
  */
 function Resumed({
@@ -100,14 +106,12 @@ function Resumed({
   formats,
   kept,
   seed,
-  reopen,
 }: {
   connections: readonly StorageConnection[];
   formats: readonly Format[];
   kept: AssistantConversation;
   /** Where the conversation stood when it was opened; read once. */
   seed: Restored;
-  reopen: string | null;
 }) {
   const router = useRouter();
   // What the person has replied, which the Tasks wait on; the chat keeps it and says each change.
@@ -120,11 +124,10 @@ function Resumed({
   // The preview runs the mapping's program; while it writes the next one, the last stays on screen.
   const ran = usePreview(assistant.mapped, assistant.described);
   const preview: Preview =
-    assistant.writing && ran.state !== "idle" ? { state: "running", corpus: ran.corpus, rerun: ran.rerun } : ran;
+    assistant.writing && ran.state !== "idle" ? { state: "running", graph: ran.graph, rerun: ran.rerun } : ran;
 
-  // The whole graph, once asked for, from the conversation saved first: a save over a built
-  // conversation starts a new one, so the build waits for the id the save answered.
-  const { progress, build } = useBuild(assistant.mapped, assistant.described, { conversation: kept.id ?? undefined });
+  // The whole graph, once asked for, from the conversation saved first: the build waits for the id the save answered.
+  const { progress, build } = useBuild(assistant.mapped, assistant.described, { conversation: kept.id, name: graphName(assistant.files) });
   const [asked, setAsked] = useState<{ conversation: string; program: string } | null>(null);
   useEffect(() => {
     if (asked !== null && asked.conversation === kept.id && asked.program === assistant.mapped) build();
@@ -143,6 +146,16 @@ function Resumed({
     );
   };
 
+  // Built, the header's trail ends with the graph's name: the id on the URL names it (`route-config`),
+  // for this visit only — a reload opens the conversation, which is kept as it was built.
+  const graphId = progress?.state === "done" ? progress.graphId : null;
+  useEffect(() => {
+    if (graphId === null) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set("graph", graphId);
+    window.history.replaceState(null, "", url);
+  }, [graphId]);
+
   const advanced = () => {
     const store = useGraphEditorStore.getState();
     store.setScript(assistant.program);
@@ -156,18 +169,16 @@ function Resumed({
       built={kept.built}
       initial={seed.replies}
       onAdvanced={advanced}
-      onBack={() => router.push("/graphs")}
       onBuild={onBuild}
       onChoose={assistant.choose}
-      onExpandedChange={assistant.setExpanded}
+      onClear={assistant.clear}
+      onPick={assistant.pick}
       onQuestionsChange={setQuestions}
       onReplies={onReplies}
       onSave={onSave}
-      onSelectedChange={assistant.setSelected}
       preview={preview}
       program={assistant.mapped}
       questions={assistant.questions}
-      reopen={reopen}
       status={<ModelStatus />}
     />
   );

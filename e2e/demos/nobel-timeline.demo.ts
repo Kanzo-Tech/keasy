@@ -16,8 +16,8 @@ const HOPS = [">laureate>Laureate", ">birthPlace>Country"];
 const DASHBOARD = {
   filters: [],
   tiles: [
-    { id: "gender", kind: "chart", span: 1, type: "bar", title: "Count by Laureate.gender", x: "Laureate.gender", y: { op: "count" } },
-    { id: "country", kind: "chart", span: 1, type: "bar", title: "Count by Country.name", x: "Country.name", y: { op: "count" } },
+    { id: "gender", kind: "chart", span: 1, type: "bar", title: "Count by Laureate.gender", x: "laureate.gender", y: { op: "count" } },
+    { id: "country", kind: "chart", span: 1, type: "bar", title: "Count by Country.name", x: "laureate.birthPlace.name", y: { op: "count" } },
   ],
 };
 
@@ -34,7 +34,7 @@ const end = async (timeline: TimelineHarness) => Number((await timeline.range())
  */
 demo("nobel-timeline", "Nobel prizes on a map and a timeline: a century of science moving west, then only the women", {
   async arrange({ page, env }) {
-    const id = await seedGraph(page, "nobel", { name: "Demo · Nobel laureates", reuse: true });
+    const id = await seedGraph(page, "nobel", { name: "Demo · Nobel laureates" });
     await saveDashboard(page, id, RELATION, DASHBOARD);
     const discover = await DiscoverPage.open(page, env, id);
     // Each award at its first affiliation's city, the edges hidden: the prizes are dots on the map.
@@ -48,7 +48,7 @@ demo("nobel-timeline", "Nobel prizes on a map and a timeline: a century of scien
     await graph.ready();
     // The settings leave the dock to Info, as on the other maps.
     await discover.panel("Info");
-    const timeline = await env.harness(TimelineHarness.with({ title: /^Timeline: / }));
+    const timeline = await env.getHarness(TimelineHarness.with({ title: /^Timeline: / }));
     return { discover, graph, timeline, bar: await discover.filters() };
   },
 

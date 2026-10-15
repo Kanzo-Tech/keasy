@@ -5,6 +5,12 @@ import { expect, type Page } from "@playwright/test";
 export const BASE_URL = process.env.KEASY_URL ?? "http://acme.localhost:3000";
 
 /**
+ * What a browser sends on the app's own requests, and Playwright's request context does not: the BFF
+ * refuses a request that says nothing about where it came from (kanzo-ui's `isSameSite`, closed).
+ */
+const SAME_ORIGIN = { origin: new URL(BASE_URL).origin, "sec-fetch-site": "same-origin" };
+
+/**
  * keasy's API as the page's session calls it: `@keasy/api`'s typed client over the page's request
  * context, which carries the context's cookies through the BFF as the app's own requests do. Every
  * path is a spec path and every body typed; a refusal throws `ApiError` (see {@link expectRefusal}).
@@ -16,7 +22,7 @@ export function api(page: Page) {
       const request = input instanceof Request ? input : new Request(input, init);
       const answer = await page.request.fetch(request.url, {
         method: request.method,
-        headers: Object.fromEntries(request.headers),
+        headers: { ...Object.fromEntries(request.headers), ...SAME_ORIGIN },
         data: request.body ? Buffer.from(await request.arrayBuffer()) : undefined,
         failOnStatusCode: false,
       });
@@ -45,7 +51,7 @@ export async function expectRefusal(call: Promise<unknown>, status: number, code
 export async function raw(page: Page, method: string, path: string, body?: string) {
   const answer = await page.request.fetch(`${BASE_URL}/api${path}`, {
     method,
-    headers: body === undefined ? {} : { "content-type": "application/json" },
+    headers: body === undefined ? SAME_ORIGIN : { ...SAME_ORIGIN, "content-type": "application/json" },
     // Bytes, so Playwright sends them as written rather than as a JSON string.
     data: body === undefined ? undefined : Buffer.from(body),
     failOnStatusCode: false,

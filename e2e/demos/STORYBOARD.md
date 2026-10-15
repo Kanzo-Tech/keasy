@@ -398,23 +398,24 @@ from awards aw where aw.lat is not null;
 **Arrange (off camera)**
 
 1. `page.goto("/graphs")`, its origin read; `useModelDouble(page, { rules: script(origin) })`.
-2. `page.goto("/graphs/new/assistant")`; the *Files* tree lists `@Nobel laureates`.
+2. `page.goto("/graphs/new/assistant")`; the composer's *Sources* bar has the `@Nobel laureates` pill.
 
 **Steps**
 
 | # | Subtitle | Action | Check |
 | --- | --- | --- | --- |
-| 1 | Pick the files to explore | open `@Nobel laureates`; *Pick* each of the six `.json`; *Read these files* | the composer asks *What is this data about?* |
-| 2 | Say what it is about while they are read | type the sentence, Enter | *Here's what's in your data* |
-| 3 | What is in your data, counted | scroll to the things | six things, one per file |
-| 4 | What has no safe answer is yours to decide | `chooseRadio(…, LINK, "One: an award has institutions")` | that option is checked |
-| 5 | What has a safe default is taken, and said | scroll to the assumption | *I assumed: id* (a country by its id) |
-| 6 | Take the questions it suggests | the chips *How many prizes were awarded in each category?* and *Which institutions are behind the most prizes?* | two questions kept |
-| 7 | That's all: show me a preview | *That's all, show me a preview* | *Here is your data over its first 200 rows* |
-| 8 | Each question answered, over the first 200 rows | scroll to the answers | two answer cards, none being replaced · **poster** |
-| 9 | Change a decision: the preview runs again | `chooseRadio(…, COUNTRY, "name")` | the mapping was asked again for `{countries.name}`; two answer cards again, none stale |
-| 10 | Build the whole graph | *Build the whole graph* | *Your graph is ready to explore.* |
-| 11 | Ask your data, in Discover | *Ask your data* | Discover, the Ask panel docked |
+| 1 | Pick the files on the composer | the `@Nobel laureates` pill opens its menu; *Select all*; Escape | the pill reads *6 files* |
+| 2 | Say what it is about, and send | type the sentence in *What is this data about?*, Enter | the details pinned above the thread hold the sentence |
+| 3 | What I am doing, step by step | scroll to the *What I am doing* steps | *Proposed the types* |
+| 4 | What is in your data | *Here's what's in your data* | six things, one per file |
+| 5 | What has no safe answer is yours to decide | `chooseRadio(…, LINK, "One: an award has institutions")` | that option is checked |
+| 6 | What has a safe default is taken, and said | scroll to the assumption | *I assumed: id* (a country by its id) |
+| 7 | Take the questions it suggests | the chips *How many prizes were awarded in each category?* and *Which institutions are behind the most prizes?* | two questions kept |
+| 8 | That's all: show me a preview | *That's all, show me a preview* | *Here is your data over its first 200 rows* |
+| 9 | Each question answered, over the first 200 rows | scroll to the answers | two answer cards, none being replaced · **poster** |
+| 10 | Change an assumption: the preview runs again | the assumption's *Change*, then `chooseRadio(…, COUNTRY, "name")` | the mapping was asked again for `{countries.name}`; two answer cards again, none stale |
+| 11 | Build the graph | *Build the graph* | *Your graph is ready to explore.* |
+| 12 | Ask your data, in Discover | *Ask your data* | Discover, the Ask panel docked |
 
 **Numbers** (`nobel/data`, as fossil's profile reads them)
 

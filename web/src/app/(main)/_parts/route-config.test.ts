@@ -23,6 +23,14 @@ describe("generateBreadcrumbs", () => {
     expect(crumbs.map((c) => c.name)).toEqual(["Dashboard", "Graphs", "Graph", "Edit recipe"]);
     expect(crumbs[2]).toMatchObject({ path: "/graphs/abc", label: { kind: "graph", id: "abc" } });
   });
+
+  it("ends the assistant's trail with the graph its conversation built, once it has", () => {
+    const path = "/graphs/new/assistant";
+    expect(generateBreadcrumbs(path).map((c) => c.name)).toEqual(["Dashboard", "Graphs", "New graph"]);
+    const built = generateBreadcrumbs(path, new URLSearchParams("conversation=c&graph=abc"));
+    expect(built.map((c) => c.name)).toEqual(["Dashboard", "Graphs", "Graph"]);
+    expect(built.at(-1)).toMatchObject({ path: "/graphs/abc", label: { kind: "graph", id: "abc" } });
+  });
 });
 
 describe("getSidebarRoutes", () => {

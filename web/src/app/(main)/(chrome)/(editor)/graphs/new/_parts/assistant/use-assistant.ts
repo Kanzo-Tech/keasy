@@ -11,14 +11,14 @@
  * `model` once the files are read and *what is it about?* is answered — the relations and the
  * decisions; `requirements` once its decisions are taken — the question chips (`useTask`), and
  * whether each question kept is answerable; `mapping` once the person has asked all they wanted —
- * the program **Advanced** opens, and the preview and the build run. A Task that fails is in
+ * the program **Open in the editor** opens, and the preview and the build run. A Task that fails is in
  * `failures`, with its retry.
  *
  * A conversation kept is started again from its `seed`: the files picked, the person's choices and
  * the program last written — everything else is read and asked again, from the files.
  */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 // eslint-disable-next-line no-restricted-imports -- one listing per opened folder, the profile of the picked files and each Task's answer; each failure is shown in its place, beside the rest
 import { keepPreviousData, useQueries, useQuery } from "@tanstack/react-query";
 import { useTask } from "@kanzo-tech/ai";
@@ -30,8 +30,8 @@ import type { FileReference } from "@/lib/assistant-conversation";
 import type { StorageConnection } from "@/lib/connections";
 import { ClientError } from "@/lib/errors";
 import { host } from "@/lib/fossil/host";
-import { childrenOf, connectionNode, type SourceFile, type SourceNode } from "../sources";
-import { useSources } from "../use-sources";
+import { childrenOf, connectionNode, type SourceBranch, type SourceFile, type SourceNode } from "../sources";
+import { listChildren } from "../use-sources";
 import { useModel } from "@/lib/ai";
 import { type AssistantData, type DecisionItem, optionOf, type Question, type QuestionOffer, type TaskFailure, type Thing } from "./model";
 import { fossilCheck, mapping, mappingInput, programOf } from "./tasks/mapping";
@@ -130,13 +130,13 @@ export interface Seed {
 export interface Assistant extends AssistantData {
   /** The person's questions, each with whether these files can answer it. */
   questions: Question[];
-  /** The branches open in the tree. */
-  expanded: readonly string[];
-  setExpanded: (expanded: string[]) => void;
-  setSelected: (selected: Set<string>) => void;
+  /** Pick `files`, or drop them: what a pill's menu does. */
+  pick: (files: readonly SourceFile[], on: boolean) => void;
+  /** Drop every file of a connection: the cross on its pill. */
+  clear: (connection: string) => void;
   /** The person's pick of a decision's option. */
   choose: (decision: string, option: string) => void;
-  /** The picked files as the program's binding lines: what Advanced opens the editor with. */
+  /** The picked files as the program's binding lines: what Open in the editor opens the editor with. */
   program: string;
   /** The picked files as locations: what the conversation keeps of them. */
   files: FileReference[];
@@ -171,9 +171,30 @@ export function useAssistant({
   seed?: Seed;
 }): Assistant {
   // The sink is written to, not read from.
-  const sources = useSources(connections.filter(readable), formats);
-  const [expanded, setExpanded] = useState<string[]>([]);
-  const [selected, setSelected] = useState<Set<string>>(() => new Set(seed?.files.map(fileId)));
+  const readableConnections = useMemo(() => connections.filter(readable), [connections]);
+  const list = useCallback((node: SourceBranch) => listChildren(node, formats), [formats]);
+  // The files picked, by id: the file itself once a menu has listed it, `null` for a kept one, which
+  // `keptFiles` resolves without listing the folders it is in.
+  const [chosenFiles, setChosenFiles] = useState<ReadonlyMap<string, SourceFile | null>>(
+    () => new Map(seed?.files.map((f) => [fileId(f), null] as const)),
+  );
+  const selected = useMemo(() => new Set(chosenFiles.keys()), [chosenFiles]);
+  const pick = useCallback(
+    (files: readonly SourceFile[], on: boolean) =>
+      setChosenFiles((prev) => {
+        const next = new Map(prev);
+        for (const f of files) {
+          if (on) next.set(f.id, f);
+          else next.delete(f.id);
+        }
+        return next;
+      }),
+    [],
+  );
+  const clear = useCallback(
+    (connection: string) => setChosenFiles((prev) => new Map([...prev].filter(([id]) => !id.startsWith(`${connection}:`)))),
+    [],
+  );
   const [chosen, setChosen] = useState<Record<string, string>>(() => ({ ...seed?.chosen }));
   // The kept files, read without opening the folders they are in; and the kept program.
   const [kept] = useState(() => seed?.files ?? []);
@@ -188,13 +209,9 @@ export function useAssistant({
   const keptFiles = keptRead.data ?? NONE_KEPT;
   const [keptProgram] = useState(() => seed?.program ?? null);
 
-  const picked = [...selected].flatMap((id) => {
-    const node = sources.collection.findNode(id);
-    if (node?.kind === "file") return [node];
-    return keptFiles.get(id) ?? [];
-  });
+  const picked = [...chosenFiles].flatMap(([id, file]) => file ?? keptFiles.get(id) ?? []);
   // A kept file no connection reads any more is said, never dropped.
-  const unreachable = [...selected].filter((id) => keptFiles.get(id) === null && sources.collection.findNode(id) === undefined);
+  const unreachable = [...chosenFiles].filter(([id, file]) => file === null && keptFiles.get(id) === null).map(([id]) => id);
   const lines = picked.map((f) => f.line).sort();
   // The files are read together, once: the inclusions between two of them are part of the answer.
   const read = useQuery({
@@ -307,7 +324,8 @@ export function useAssistant({
   ];
 
   return {
-    sources,
+    connections: readableConnections,
+    list,
     selected,
     reading: picked.length > 0 && read.isPending ? { done: 0, total: picked.length } : null,
     problems,
@@ -316,13 +334,12 @@ export function useAssistant({
     decisions,
     failures,
     questions: questions.map((q) => ({ ...q, answerable: answerable(q) })),
-    expanded,
-    setExpanded,
-    setSelected,
+    pick,
+    clear,
     choose: (decision, option) => setChosen((prev) => ({ ...prev, [decision]: option })),
     // The mapping's program once it holds; until then the picked files' bindings.
     program: mapped.data ?? picked.map((f) => f.line).join("\n"),
-    files: [...selected].map(locationOf),
+    files: [...chosenFiles.keys()].map(locationOf),
     mapped: accepted === null ? null : (mapped.data ?? keptProgram),
     writing: mapped.isFetching,
     described: read.data?.described ?? null,

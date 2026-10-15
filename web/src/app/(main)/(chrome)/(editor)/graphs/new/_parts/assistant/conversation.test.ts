@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { toStored } from "@/lib/assistant-conversation";
-import { converse, messagesOf, NO_REPLIES, type Replies, restore, waitingFor } from "./conversation";
+import { converse, graphName, messagesOf, NO_REPLIES, type Replies, restore, waitingFor } from "./conversation";
 import { blocks, type DecisionItem } from "./model";
 
 /** No safe default: whether a shared Nobel is one award or two has two right answers. */
@@ -33,60 +33,75 @@ const assumed: DecisionItem = {
 };
 
 const picked = new Set(["nobel:laureates.csv", "nobel:awards.csv"]);
+const sent: Replies = { ...NO_REPLIES, about: "" };
 const kinds = (data: Parameters<typeof converse>[0], replies: Partial<Replies>) =>
   converse(data, { ...NO_REPLIES, ...replies }).turns.map((t) => t.kind);
 
 describe("the conversation", () => {
-  it("asks for the files first, and waits on them", () => {
+  it("is empty until the first message — the files and what they are about — is sent, and waits on it", () => {
     const { turns, waiting } = converse({ selected: new Set(), reading: null, decisions: null, questions: [] }, NO_REPLIES);
-    expect(turns.map((t) => t.kind)).toEqual(["pick"]);
-    expect(waiting).toBe("pick");
+    expect(turns).toEqual([]);
+    expect(waiting).toBe("send");
   });
 
-  it("asks what it is about while the files are read, and goes on only once they are", () => {
+  it("sends the files and what they are about as one message, counted by connection, and reads them under it", () => {
     const reading = { done: 4, total: 6 };
-    expect(kinds({ selected: picked, reading, decisions: null, questions: [] }, { picked: true })).toEqual([
-      "pick",
-      "picked",
-      "reading",
-      "about",
+    const at = converse({ selected: new Set([...picked, "cordis:projects.csv"]), reading, decisions: null, questions: [] }, { ...NO_REPLIES, about: "Nobel prizes" });
+    expect(at.turns).toEqual([
+      { kind: "sent", sources: [{ connection: "nobel", files: 2 }, { connection: "cordis", files: 1 }], about: "Nobel prizes" },
+      { kind: "steps", group: "read" },
     ]);
-    const skipped = converse({ selected: picked, reading, decisions: null, questions: [] }, { ...NO_REPLIES, picked: true, about: "" });
-    expect(skipped.waiting).toBe("reading");
-    expect(skipped.turns.at(-1)).toEqual({ kind: "about-reply", text: "" });
+    expect(at.waiting).toBe("reading");
   });
 
-  it("says what is in the data, then asks each open decision as a turn of its own and waits on it", () => {
+  it("says what is in the data, then each assumption as a line, then each open decision as a turn of its own, and waits on it", () => {
     const data = { selected: picked, reading: null, decisions: [open, assumed], questions: [] };
-    const at = converse(data, { ...NO_REPLIES, picked: true, about: "" });
-    expect(at.turns.map((t) => t.kind)).toEqual(["pick", "picked", "reading", "about", "about-reply", "understood", "decide"]);
+    const at = converse(data, sent);
+    expect(at.turns.map((t) => t.kind)).toEqual(["sent", "steps", "understood", "assumed", "decide"]);
     expect(at.waiting).toBe("decide");
   });
 
-  it("an assumption is said and blocks nothing; a chosen decision is the person's reply", () => {
+  it("a chosen decision is the person's reply and the next turn follows it", () => {
     const data = { selected: picked, reading: null, decisions: [{ ...open, chosen: "two" }, assumed], questions: [] };
-    const { turns, waiting } = converse(data, { ...NO_REPLIES, picked: true, about: "Nobel prizes" });
-    expect(turns.slice(5).map((t) => t.kind)).toEqual(["understood", "decide", "decided", "assumed", "ask"]);
+    const { turns, waiting } = converse(data, { ...sent, about: "Nobel prizes" });
+    expect(turns.slice(2).map((t) => t.kind)).toEqual(["understood", "assumed", "decide", "decided", "ask"]);
     expect(waiting).toBe("ask");
     expect(blocks(assumed)).toBe(false);
     expect(blocks(open)).toBe(true);
   });
 
-  it("each question kept is a reply, and once the person says that is all, the preview, then the build", () => {
+  it("each question kept is a reply, and once the person says that is all: the run's steps, the preview, then the build to ask for", () => {
     const questions = [{ id: "q1", text: "Who won twice?", answerable: true }];
     const data = { selected: picked, reading: null, decisions: [], questions };
-    const { turns, waiting } = converse(data, { picked: true, about: "", asked: true });
-    expect(turns.slice(-5).map((t) => t.kind)).toEqual(["ask", "asked", "asked-all", "preview", "build"]);
+    const { turns, waiting, closed } = converse(data, { ...sent, asked: true });
+    expect(turns.slice(-6).map((t) => t.kind)).toEqual(["ask", "asked", "asked-all", "steps", "preview", "build"]);
     expect(waiting).toBeNull();
+    expect(closed).toBe(false);
+  });
+
+  it("asking for the graph is the person's message, then the build's steps, and a built one closes the conversation", () => {
+    const data = { selected: picked, reading: null, decisions: [], questions: [] };
+    const asked = { ...sent, asked: true, built: true };
+    expect(converse(data, asked).turns.slice(-4).map((t) => t.kind)).toEqual(["preview", "build-reply", "steps", "build"]);
+    // A build under way in this tab is asked for, whatever this page has replied.
+    expect(kinds({ ...data, build: { state: "building", graphId: null } }, { ...sent, asked: true })).toContain("build-reply");
+    expect(converse({ ...data, build: { state: "building", graphId: "g" } }, asked).closed).toBe(false);
+    expect(converse({ ...data, build: { state: "done", graphId: "g" } }, asked).closed).toBe(true);
   });
 });
 
 describe("what a turn says", () => {
-  it("says why the reply cannot be given yet", () => {
-    expect(waitingFor("pick", 0)).toBe("Pick at least one file");
-    expect(waitingFor("pick", 2)).toBeNull();
-    expect(waitingFor("reading", 2)).toBe("Wait for the files to be read");
-    expect(waitingFor("decide", 2)).toBe("Choose an option above to continue");
+  it("says what a composer that cannot take a reply is waiting on", () => {
+    expect(waitingFor("reading")).toBe("Reading your files…");
+    expect(waitingFor("decide")).toBe("Answer above, or ask your own question…");
+    expect(waitingFor("send")).toBeNull();
+    expect(waitingFor("ask")).toBeNull();
+  });
+
+  it("names the graph after the connections it was read through", () => {
+    expect(graphName([{ connection: "Nobel laureates", path: "a.csv" }, { connection: "Nobel laureates", path: "b.csv" }])).toBe("Nobel laureates");
+    expect(graphName([{ connection: "a", path: "x" }, { connection: "b", path: "y" }])).toBe("a, b");
+    expect(graphName([])).toBe("New graph");
   });
 });
 
@@ -96,23 +111,19 @@ describe("what is kept of the conversation", () => {
     { connection: "nobel", path: "awards.csv" },
   ];
   const questions = [{ id: "q1", text: "Who won twice?", answerable: true }];
-  const done = { picked: true, about: "Nobel prizes", asked: true };
+  const done: Replies = { about: "Nobel prizes", asked: true, built: false };
   const turnsOf = (decisions: DecisionItem[], replies: Replies = done) =>
     converse({ selected: picked, reading: null, decisions, questions }, replies).turns;
 
-  it("is a message per turn, its kind and what the person picked, chose or typed — nothing the gate strips", () => {
+  it("is a message per turn, its kind and what the person sent, chose or typed — nothing the gate strips, no steps", () => {
     const messages = messagesOf(turnsOf([{ ...open, chosen: "one" }, assumed]), { files, program: "program" });
     expect(toStored(messages)).toEqual(messages);
     expect(messages.map((m) => `${m.role}:${m.id}`)).toEqual([
-      "assistant:pick",
-      "user:picked",
-      "assistant:reading",
-      "assistant:about",
-      "user:about-reply",
+      "user:sent",
       "assistant:understood",
+      "assistant:assumed:share",
       "assistant:decide:award-key",
       "user:decided:award-key",
-      "assistant:assumed:share",
       "assistant:ask",
       "user:asked:q1",
       "user:asked-all",
@@ -120,13 +131,21 @@ describe("what is kept of the conversation", () => {
       "assistant:build",
     ]);
     const parts = (id: string) => messages.find((m) => m.id === id)!.parts.slice(1);
-    expect(parts("picked")).toEqual([{ type: "data-files", data: { files } }]);
-    expect(parts("about-reply")).toEqual([{ type: "data-about", data: { text: "Nobel prizes" } }]);
+    // One message, the files and what they are about together.
+    expect(parts("sent")).toEqual([
+      { type: "data-files", data: { files } },
+      { type: "data-about", data: { text: "Nobel prizes" } },
+    ]);
     expect(parts("decide:award-key")).toEqual([{ type: "data-decision", data: { decision: open.decision, option: null, assumed: false } }]);
     expect(parts("decided:award-key")).toEqual([{ type: "data-decision", data: { decision: open.decision, option: "one", assumed: false } }]);
     expect(parts("assumed:share")).toEqual([{ type: "data-decision", data: { decision: assumed.decision, option: "fraction", assumed: true } }]);
     expect(parts("asked:q1")).toEqual([{ type: "data-question", data: questions[0] }]);
     expect(parts("preview")).toEqual([{ type: "data-program", data: { program: "program" } }]);
+  });
+
+  it("keeps the person's message asking for the graph", () => {
+    const messages = messagesOf(turnsOf([], { ...done, built: true }), { files, program: "program" });
+    expect(messages.slice(-2).map((m) => `${m.role}:${m.id}`)).toEqual(["user:build-reply", "assistant:build"]);
   });
 
   it("is opened again where it stood: the files, what it is about, the person's choices, the questions, the program", () => {
@@ -138,15 +157,20 @@ describe("what is kept of the conversation", () => {
     expect(again.turns.map((t) => t.kind)).toEqual(turnsOf([{ ...open, chosen: "one" }, assumed]).map((t) => t.kind));
   });
 
+  it("is not reopened mid-build: asking for the graph is not restored", () => {
+    const messages = toStored(messagesOf(turnsOf([], { ...done, built: true }), { files, program: "program" }));
+    expect(restore(messages).replies).toEqual(done);
+  });
+
   it("an assumption is the default's to take again, and a decision still asked is open", () => {
     expect(restore(messagesOf(turnsOf([assumed]), { files, program: null })).chosen).toEqual({});
     expect(restore(messagesOf(turnsOf([{ ...assumed, chosen: "amount" }]), { files, program: null })).chosen).toEqual({ share: "amount" });
     const asking = restore(messagesOf(turnsOf([open, assumed], { ...done, asked: false }), { files, program: null }));
     expect(asking.chosen).toEqual({});
-    expect(asking.replies).toEqual({ picked: true, about: "Nobel prizes", asked: false });
+    expect(asking.replies).toEqual({ about: "Nobel prizes", asked: false, built: false });
   });
 
-  it("a new conversation, or one that never sent its files, starts at the pick", () => {
+  it("a new conversation, or one that never sent its first message, starts at the composer", () => {
     expect(restore([])).toEqual({ replies: NO_REPLIES, files: [], chosen: {}, questions: [], program: null });
     const unsent = messagesOf(converse({ selected: new Set(), reading: null, decisions: null, questions: [] }, NO_REPLIES).turns, { files: [], program: null });
     expect(restore(unsent).replies).toEqual(NO_REPLIES);

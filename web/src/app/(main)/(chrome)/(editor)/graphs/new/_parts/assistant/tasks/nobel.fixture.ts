@@ -16,6 +16,7 @@ type Col = [name: string, primitive: Primitive, nulls?: number];
 
 function source(file: string, columns: Col[], keys: string[], sample: (string | null)[][]): Profile["sources"][number] {
   return {
+    binding: file.replace(/\.csv$/, ""),
     descriptor: { key: `${BASE}${file}`, etag: "", columns: columns.map(([name, primitive]) => ({ name, primitive })) },
     columns: columns.map(([name, , nulls = 0]) => ({ name, null_count: nulls, distinct_count: sample.length })),
     candidate_keys: keys,
@@ -70,9 +71,9 @@ export const PROFILE: Profile = {
     source("countries.csv", [["code", "string"], ["name", "string"]], ["code", "name"], [["FR", "France"], ["DE", "Germany"]]),
   ],
   inclusions: [
-    { from: { source: `${BASE}awards.csv`, column: "laureate_id" }, to: { source: `${BASE}laureates.csv`, column: "id" } },
-    { from: { source: `${BASE}affiliations.csv`, column: "laureate_id" }, to: { source: `${BASE}laureates.csv`, column: "id" } },
-    { from: { source: `${BASE}affiliations.csv`, column: "institution_id" }, to: { source: `${BASE}institutions.csv`, column: "id" } },
+    { from: { source: "awards", column: "laureate_id" }, to: { source: "laureates", column: "id" } },
+    { from: { source: "affiliations", column: "laureate_id" }, to: { source: "laureates", column: "id" } },
+    { from: { source: "affiliations", column: "institution_id" }, to: { source: "institutions", column: "id" } },
   ],
   failed: [],
 };

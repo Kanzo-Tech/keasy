@@ -31,7 +31,7 @@ improved.
 
 **The catalogue is read once.** `@kanzo-tech/graph` reads a graph's catalogue (`graphar_vertex_types`,
 `graphar_edge_types`, `graphar_properties`) into the `JoinGraph` — its types with rows and columns, its
-edges with their ends and rows — and `CorpusScope` holds it, cached under the corpus: the overview's types-and-edges tables, the graph key and Ask's graph are that one read, and keasy holds
+edges with their ends and rows — and `GraphScope` holds it, cached under the graph: the overview's types-and-edges tables, the graph key and Ask's graph are that one read, and keasy holds
 no SQL over the catalogue. *What would reverse it:* something the overview shows that the `JoinGraph`
 does not carry — then it goes into the library's read, not back into a query here.
 

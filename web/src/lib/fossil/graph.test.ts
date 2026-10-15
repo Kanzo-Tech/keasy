@@ -18,11 +18,11 @@ vi.mock("@/lib/fossil/attach", () => ({
   },
 }));
 
-const { corpusQuery } = await import("./corpus");
+const { graphQuery } = await import("./graph");
 
-describe("corpusQuery", () => {
+describe("graphQuery", () => {
   it("settles on the error a failed attach raises, so the page shows it instead of a spinner", async () => {
-    const observer = new QueryObserver(new QueryClient(), corpusQuery("00000000-0000-0000-0000-000000000000"));
+    const observer = new QueryObserver(new QueryClient(), graphQuery("00000000-0000-0000-0000-000000000000"));
     const settled = new Promise<ReturnType<typeof observer.getCurrentResult>>((resolve) => {
       const stop = observer.subscribe((result) => {
         if (result.status !== "pending") {

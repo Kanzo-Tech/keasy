@@ -32,7 +32,7 @@ demo's **Numbers**. The OpenFlights and SNB queries run in `infra/dev/examples/<
 
 - **Hero tab:** `explore` · label **Analytics**
 - **Stat line:** *327K nodes · 765K edges — explored in your browser* (unchanged)
-- **Example / seed:** `snb` · `seedGraph(page, "snb", { name: "Demo · LDBC Social Network", reuse: true })`
+- **Example / seed:** `snb` · `seedGraph(page, "snb", { name: "Demo · LDBC Social Network" })`
 
 **Arrange (off camera)**
 
@@ -77,7 +77,7 @@ depends on which relations the mapping writes as edges); read it off GraphCounts
 
 - **Hero tab:** `map` · label **Hidden patterns**
 - **Stat line:** *Place points by their columns — patterns no link ever drew* (unchanged)
-- **Example / seed:** `openflights` · `seedGraph(page, "openflights", { name: "Demo · OpenFlights", reuse: true })`
+- **Example / seed:** `openflights` · `seedGraph(page, "openflights", { name: "Demo · OpenFlights" })`
 
 **Arrange (off camera)**
 
@@ -144,7 +144,7 @@ is 31 whether the lasso's clause is ANDed with the search's or stands alone. Lef
 
 - **Hero tab:** `crossfilter` · label **Crossfilter**
 - **Stat line:** *One filter for every chart and the map* (unchanged)
-- **Example / seed:** `openflights`, same graph as demo 2 (`reuse: true`)
+- **Example / seed:** `openflights` · `seedGraph(page, "openflights", { name: "Demo · OpenFlights" })`
 
 **Arrange (off camera)**
 
@@ -299,7 +299,7 @@ subjects of rudof's Shape Fragment instead, so step 6's check is what proves the
 
 - **Hero tab:** `nobel` · label **Nobel timeline**
 - **Stat line:** *1,026 Nobel prizes since 1901 — play them forward in time*
-- **Example / seed:** `nobel` · `seedGraph(page, "nobel", { name: "Demo · Nobel laureates", reuse: true })`
+- **Example / seed:** `nobel` · `seedGraph(page, "nobel", { name: "Demo · Nobel laureates" })`
 - **The story:** a century of science moving west — every prize at the city it was won in, the
   century played, Europe's early decades against the US's 1990s, then only the women.
 - **Depends on:** `GraphTimeline` (its brush snapped to five-year bars; Play inside the brushed
@@ -392,7 +392,7 @@ from awards aw where aw.lat is not null;
   types, the `requirements` Task's chips, the `mapping` Task's program (its subjects under the page's
   origin, read in `arrange`), and Ask's specs per question. Everything else is the stack's: fossil's
   profile of the files, fossil's checker, the preview and the build on the page's engine, the answers
-  read from the corpus. The script was held against fossil's checker over the real Nobel profile when
+  read from the graph. The script was held against fossil's checker over the real Nobel profile when
   it was written: one attempt, no diagnostic.
 
 **Arrange (off camera)**

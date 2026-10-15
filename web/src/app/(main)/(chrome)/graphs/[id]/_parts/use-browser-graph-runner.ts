@@ -138,7 +138,7 @@ const STOPPED = "Stopped";
 
 /**
  * Run `graph` here — the server has made this caller its runner (`POST /v1/graphs/{id}/run`). The browser
- * is the worker: it runs the program with fossil's executor (`run`, in a Web Worker) — sources read and the corpus
+ * is the worker: it runs the program with fossil's executor (`run`, in a Web Worker) — sources read and the graph
  * written through credentials keasy vends to the runner alone — holding the lease while it does, and
  * reports how it ended. Only ever called from an explicit Run — the graph page's, or the assistant's
  * build; opening a page never runs anything. Answers how the run ended — the one already under way
@@ -154,7 +154,7 @@ export function startRun(graph: Schemas["Graph"], { profiled }: { profiled?: Pro
   const run = new AbortController();
   const stop = () => run.abort(new DOMException(STOPPED, "AbortError"));
   const held = lease(graphId, { onStopAsked: stop });
-  // The corpus is written: from here on a failure is keasy's record of it, never the run's.
+  // The graph is written: from here on a failure is keasy's record of it, never the run's.
   let ran = false;
   // A closed tab stops the run; it cannot report, so the server's lease sweep ends the graph.
   const closing = () => run.abort(new DOMException("The tab closed", "AbortError"));
@@ -164,7 +164,7 @@ export function startRun(graph: Schemas["Graph"], { profiled }: { profiled?: Pro
   const ended = (async (): Promise<RunOutcome> => {
     try {
       // `run` reads every document and source the program names through the host, writes the
-      // corpus under the graph, and answers its report or throws its `FossilError` — in fossil's own
+      // graph under the graph, and answers its report or throws its `FossilError` — in fossil's own
       // worker, so the page paints and its Stop is pressable while it does. The
       // report crosses untouched — `GraphStatusReport.report` is opaque JSON on the server — and is
       // asked again for as long as the lease is ours.

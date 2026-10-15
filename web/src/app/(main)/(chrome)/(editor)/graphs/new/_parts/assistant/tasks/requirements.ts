@@ -38,7 +38,7 @@ export interface RequirementsContext {
 /** How far from what it counts a question reads: a field of the type, across one link, or two. */
 const HOPS = 2;
 
-/** The DuckDB type a field of a primitive is read as, in the corpus the accepted model will write. */
+/** The DuckDB type a field of a primitive is read as, in the graph the accepted model will write. */
 const DUCKDB: Record<Primitive, string> = {
   string: "VARCHAR",
   integer: "BIGINT",
@@ -55,7 +55,7 @@ const DUCKDB: Record<Primitive, string> = {
 /**
  * The graph the accepted model will be, as Ask joins it: a table per type, its key an identity and
  * its fields described by their type, and one table per edge. Written by hand because nothing has run
- * yet; the corpus a run writes is read as `readJoinGraph` reads it.
+ * yet; the graph a run writes is read as `readJoinGraph` reads it.
  */
 export function joinGraphOf(accepted: Accepted): JoinGraph {
   return {

@@ -69,25 +69,25 @@ async function failedOnQuestions(page: Page) {
   await expect(page.getByRole("button", { name: "Who bought the most?" })).toHaveCount(0);
 }
 
-test("11 a browser without WebGPU fails the answer in Ask as llm/unavailable", async ({ page, env, corpusGraph }) => {
+test("11 a browser without WebGPU fails the answer in Ask as llm/unavailable", async ({ page, env, builtGraph }) => {
   await withoutWebGPU(page);
-  await (await askPanel(page, env, corpusGraph)).send("How many people are there?");
+  await (await askPanel(page, env, builtGraph)).send("How many people are there?");
   // Said at once, by its code, rather than a load that never finishes.
   await expectProblem(page, "llm/unavailable", { within: 15_000 });
 });
 
-test("12 the shards of the model cannot be downloaded: Ask says so, not an empty answer", async ({ page, env, corpusGraph }) => {
+test("12 the shards of the model cannot be downloaded: Ask says so, not an empty answer", async ({ page, env, builtGraph }) => {
   // WebLLM's words for a shard the origin does not serve; a call after a failed load fails the same way.
   const fail = "Cannot fetch http://acme.localhost:3000/models/Qwen3-4B-q4f16_1-MLC/resolve/a5c9fab/params_shard_0.bin";
   await scriptModel(page, { load: { fail }, turns: [{ when: question("How many people are there?"), reply: { fail } }] });
-  const panel = await askPanel(page, env, corpusGraph);
+  const panel = await askPanel(page, env, builtGraph);
   // The load began as the graph opened, and its failure is the panel's badge before anything is asked.
   await expectModelProblem(page, "llm/failed", { within: 15_000 });
   await panel.send("How many people are there?");
   await expect(page.locator('[data-slot="chat-error"] [data-code="llm/failed"]')).toBeVisible({ timeout: 15_000 });
 });
 
-test("13 a model that stops writing mid-answer can be stopped, and the next question is answered", async ({ page, env, corpusGraph }) => {
+test("13 a model that stops writing mid-answer can be stopped, and the next question is answered", async ({ page, env, builtGraph }) => {
   const words = "How many people are there?";
   await scriptModel(page, {
     turns: [
@@ -95,7 +95,7 @@ test("13 a model that stops writing mid-answer can be stopped, and the next ques
       { when: question(words), reply: { text: JSON.stringify({ spec: { of: "Person", show: { kind: "stat", measure: { op: "count" } } } }) } },
     ],
   });
-  const panel = await askPanel(page, env, corpusGraph);
+  const panel = await askPanel(page, env, builtGraph);
   await panel.send(words);
   // Nothing bounds a model in the page but the person: the answer waits until they stop it.
   const stop = page.getByRole("complementary", { name: "Ask panel" }).getByRole("button", { name: "Stop" });
@@ -134,13 +134,13 @@ test("15 a structured answer that does not parse fails the step of the assistant
   await failedOnQuestions(page);
 });
 
-test("16 an answer the spec does not admit is refused in the reply, and the model reads why", async ({ page, env, corpusGraph }) => {
+test("16 an answer the spec does not admit is refused in the reply, and the model reads why", async ({ page, env, builtGraph }) => {
   // The model names a field Person does not have, every time it is asked: the spec is checked before
   // anything runs, sent back with the check's own words, and refused once the attempts are spent.
   const words = "How many people wear a 42?";
   const spec = { of: "Person", where: [{ field: "Person.shoeSize", in: ["42"] }], show: { kind: "stat", measure: { op: "count" } } };
   await scriptModel(page, { turns: [{ when: question(words), reply: { text: JSON.stringify({ spec }) } }] });
-  await (await askPanel(page, env, corpusGraph)).send(words);
+  await (await askPanel(page, env, builtGraph)).send(words);
   await expect(page.getByText(/I could not answer that over this data: .*Person\.shoeSize is not a field of Person/)).toBeVisible({
     timeout: 15_000,
   });
@@ -159,13 +159,13 @@ test("the assistant on a browser without WebGPU says so as llm/unavailable, not 
   await expectModelProblem(page, "llm/unavailable", { within: 20_000 });
 });
 
-test("an answer added to the dashboard is saved as a tile of its relation", async ({ page, env, corpusGraph }) => {
+test("an answer added to the dashboard is saved as a tile of its relation", async ({ page, env, builtGraph }) => {
   const title = `Asked ${Date.now()}`;
   const words = "How many people are there?";
   await scriptModel(page, {
     turns: [{ when: question(words), reply: { text: JSON.stringify({ spec: { of: "Person", show: { kind: "stat", measure: { op: "count" }, title } } }) } }],
   });
-  const answers = await (await askPanel(page, env, corpusGraph)).composer();
+  const answers = await (await askPanel(page, env, builtGraph)).composer();
   await answers.ask(words);
   // The figure is proven from the engine's result, against the fixture it was read from.
   expect(await answers.rows()).toEqual([{ count: String(PEOPLE) }]);
@@ -173,19 +173,19 @@ test("an answer added to the dashboard is saved as a tile of its relation", asyn
   await answers.addToDashboard();
   // Written at once, not after the editor's pause: an addition is a decision, not typing.
   await expect
-    .poll(async () => JSON.stringify((await api(page).GET("/v1/graphs/{id}/dashboard", { params: { path: { id: corpusGraph } } })).data), {
+    .poll(async () => JSON.stringify((await api(page).GET("/v1/graphs/{id}/dashboard", { params: { path: { id: builtGraph } } })).data), {
       timeout: 10_000,
     })
     .toContain(title);
 });
 
-test("the assistant's question reaches Ask once: asked as Discover opens, not again on a refresh", async ({ page, env, corpusGraph }) => {
+test("the assistant's question reaches Ask once: asked as Discover opens, not again on a refresh", async ({ page, env, builtGraph }) => {
   const words = "How many people are there?";
   await scriptModel(page, {
     turns: [{ when: question(words), reply: { text: JSON.stringify({ spec: { of: "Person", show: { kind: "stat", measure: { op: "count" } } } }) } }],
   });
   // What the assistant's last turn links to: Ask docked, the person's question handed over.
-  await page.goto(`/graphs/${corpusGraph}/discover?panel=ask&q=${encodeURIComponent(words)}`);
+  await page.goto(`/graphs/${builtGraph}/discover?panel=ask&q=${encodeURIComponent(words)}`);
   const ask = await env.getHarness(AskPanel);
   await ask.warmUp();
   const answers = await ask.composer();

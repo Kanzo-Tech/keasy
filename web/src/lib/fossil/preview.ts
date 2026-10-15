@@ -1,11 +1,11 @@
 "use client";
 
-// eslint-disable-next-line no-restricted-imports -- the preview fails as a state of the chat's, beside the decisions that changed it, and keeps the corpus it had
+// eslint-disable-next-line no-restricted-imports -- the preview fails as a state of the chat's, beside the decisions that changed it, and keeps the graph it had
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import type { Profiled } from "@fossil-lang/types";
 
 import { attachFiles } from "./attach";
-import { corpusOf, type Corpus } from "./corpus";
+import { graphOf, type AttachedGraph } from "./graph";
 import { runInto } from "./executor";
 import { host } from "./host";
 
@@ -18,14 +18,14 @@ import { host } from "./host";
  * preview is in the chat*).
  */
 
-/** Where the preview is: `running` keeps the corpus it replaces on screen until the new one lands. */
+/** Where the preview is: `running` keeps the graph it replaces on screen until the new one lands. */
 export type PreviewState =
   | { state: "idle" }
-  | { state: "running"; corpus: Corpus | null }
-  | { state: "ready"; corpus: Corpus }
-  | { state: "failed"; problem: unknown; corpus: Corpus | null };
+  | { state: "running"; graph: AttachedGraph | null }
+  | { state: "ready"; graph: AttachedGraph }
+  | { state: "failed"; problem: unknown; graph: AttachedGraph | null };
 
-/** What SQL calls the preview of `program`: one name per program, so a program changed is a corpus of its own. */
+/** What SQL calls the preview of `program`: one name per program, so a program changed is a graph of its own. */
 export function previewName(program: string): string {
   // FNV-1a, 32 bits: a name, not a digest anyone relies on.
   let hash = 0x811c9dc5;
@@ -34,13 +34,13 @@ export function previewName(program: string): string {
 }
 
 /**
- * The preview of `program`'s options, cached as every corpus is (`corpusKey`): the previews of
- * programs no longer shown are given back `CORPUS_GC_MS` after the last reader went, and one
+ * The preview of `program`'s options, cached as every graph is (`graphKey`): the previews of
+ * programs no longer shown are given back `GRAPH_GC_MS` after the last reader went, and one
  * run again replaces its attachment, which is then detached.
  */
 export function previewQuery(program: string, profiled: Profiled | null) {
   const name = previewName(program);
-  return corpusOf(name, async (engine, signal) => {
+  return graphOf(name, async (engine, signal) => {
     const { files } = await runInto(program, { host, into: "memory", ...(profiled ? { profiled } : {}), signal });
     return attachFiles(name, { engine, files, signal });
   });
@@ -58,8 +58,8 @@ export function usePreview(program: string | null, profiled: Profiled | null): P
   });
   const rerun = () => void query.refetch();
   if (program === null) return { state: "idle", rerun };
-  const corpus = query.data ?? null;
-  if (query.isError) return { state: "failed", problem: query.error, corpus, rerun };
-  if (query.isPlaceholderData || query.isFetching || corpus === null) return { state: "running", corpus, rerun };
-  return { state: "ready", corpus, rerun };
+  const graph = query.data ?? null;
+  if (query.isError) return { state: "failed", problem: query.error, graph, rerun };
+  if (query.isPlaceholderData || query.isFetching || graph === null) return { state: "running", graph, rerun };
+  return { state: "ready", graph, rerun };
 }

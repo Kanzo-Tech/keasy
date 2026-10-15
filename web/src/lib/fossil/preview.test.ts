@@ -17,18 +17,18 @@ const attachFiles = vi.fn<(name: string, options: unknown) => Promise<Attached>>
 vi.mock("./attach", () => ({ attachFiles }));
 
 const { QueryClient, QueryClientProvider } = await import("@tanstack/react-query");
-const { corpusKey } = await import("./corpus");
+const { graphKey } = await import("./graph");
 const { previewName, previewQuery, usePreview } = await import("./preview");
 
 describe("the assistant's preview", () => {
   it("runs the program into memory, and attaches the files it answered", async () => {
     const client = new QueryClient();
     const profiled = { descriptors: [], undescribed: [] } as never;
-    const corpus = await client.fetchQuery(previewQuery("program", profiled));
+    const graph = await client.fetchQuery(previewQuery("program", profiled));
     expect(runInto).toHaveBeenCalledWith("program", expect.objectContaining({ host: { name: "keasy" }, into: "memory", profiled }));
     expect(attachFiles).toHaveBeenCalledWith(previewName("program"), expect.objectContaining({ engine: ENGINE, files: FILES }));
-    expect(corpus).toMatchObject({ name: previewName("program"), engine: ENGINE });
-    expect(client.getQueryData(corpusKey(previewName("program")))).toBe(corpus);
+    expect(graph).toMatchObject({ name: previewName("program"), engine: ENGINE });
+    expect(client.getQueryData(graphKey(previewName("program")))).toBe(graph);
   });
 
   it("is named by its program: a decision changed is a preview of its own", () => {
@@ -37,7 +37,7 @@ describe("the assistant's preview", () => {
     expect(previewName("x")).toMatch(/^preview-[0-9a-f]{8}$/);
   });
 
-  it("is idle with no program, runs, is ready, and keeps the last corpus while a changed program runs", async () => {
+  it("is idle with no program, runs, is ready, and keeps the last graph while a changed program runs", async () => {
     const client = new QueryClient();
     const seen: ReturnType<typeof usePreview>[] = [];
     const last = () => seen.at(-1);
@@ -52,7 +52,7 @@ describe("the assistant's preview", () => {
 
     await act(async () => render("first"));
     await vi.waitFor(() => expect(last()?.state).toBe("ready"));
-    const first = (last() as { corpus: { name: string } }).corpus;
+    const first = (last() as { graph: { name: string } }).graph;
     expect(first.name).toBe(previewName("first"));
 
     let land!: () => void;
@@ -61,9 +61,9 @@ describe("the assistant's preview", () => {
     );
     await act(async () => render("second"));
     await vi.waitFor(() => expect(land).toBeTypeOf("function"));
-    expect(last()).toMatchObject({ state: "running", corpus: first });
+    expect(last()).toMatchObject({ state: "running", graph: first });
     await act(async () => land());
-    await vi.waitFor(() => expect(last()).toMatchObject({ state: "ready", corpus: { name: previewName("second") } }));
+    await vi.waitFor(() => expect(last()).toMatchObject({ state: "ready", graph: { name: previewName("second") } }));
     act(() => root.unmount());
   });
 

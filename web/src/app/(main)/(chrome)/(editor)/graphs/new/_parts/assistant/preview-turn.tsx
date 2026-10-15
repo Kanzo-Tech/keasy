@@ -8,8 +8,8 @@ import { askParts } from "@/components/ask-parts";
 import { Boundary } from "@/components/boundary";
 import { ProblemView } from "@/components/problem-view";
 import { useModelLoad } from "@/lib/ai";
-import { useCorpusAsk } from "@/lib/fossil/ask";
-import { type Corpus, CorpusScope } from "@/lib/fossil/corpus";
+import { useGraphAsk } from "@/lib/fossil/ask";
+import { type AttachedGraph, GraphScope } from "@/lib/fossil/graph";
 import type { PreviewState } from "@/lib/fossil/preview";
 import type { Question } from "./model";
 import { Said } from "./turns";
@@ -26,13 +26,13 @@ export type Preview = PreviewState & { rerun: () => void };
  * beside the heading, until the new ones land — and stay dimmed if the run fails.
  */
 export function PreviewTurn({ preview, questions }: { preview: Preview; questions: readonly Question[] }) {
-  const corpus = preview.state === "idle" ? null : preview.corpus;
-  // Nothing to show until there is a corpus or a failure: the steps say what is under way.
-  if (!corpus && preview.state !== "failed") return null;
-  const stale = corpus !== null && preview.state !== "ready";
+  const graph = preview.state === "idle" ? null : preview.graph;
+  // Nothing to show until there is a graph or a failure: the steps say what is under way.
+  if (!graph && preview.state !== "failed") return null;
+  const stale = graph !== null && preview.state !== "ready";
   return (
     <Said label="Preview">
-      {corpus && (
+      {graph && (
         <p className="flex flex-wrap items-center gap-x-3 gap-y-1 font-medium text-base">
           <span className="flex items-center gap-2">
             <Sparkles aria-hidden className="size-4 text-primary" />
@@ -47,7 +47,7 @@ export function PreviewTurn({ preview, questions }: { preview: Preview; question
         </p>
       )}
       {preview.state === "failed" && <ProblemView error={preview.problem} onRetry={preview.rerun} />}
-      {corpus && (
+      {graph && (
         // The answers being replaced: still there to read, but plainly not the ones to act on.
         <div
           aria-busy={preview.state === "running" || undefined}
@@ -55,10 +55,10 @@ export function PreviewTurn({ preview, questions }: { preview: Preview; question
           data-stale={stale || undefined}
           inert={stale || undefined}
         >
-          <Answers corpus={corpus} questions={questions} />
+          <Answers graph={graph} questions={questions} />
         </div>
       )}
-      {corpus && questions.length > 0 && (
+      {graph && questions.length > 0 && (
         <p className="text-muted-foreground text-sm">
           These are the first {ROWS} rows of each file. The whole graph counts every row.
         </p>
@@ -76,28 +76,28 @@ function Working({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** The questions answered over `corpus`, each one Ask's turn: a new corpus is a new chat, asked again. */
-function Answers({ corpus, questions }: { corpus: Corpus; questions: readonly Question[] }) {
+/** The questions answered over `graph`, each one Ask's turn: a new graph is a new chat, asked again. */
+function Answers({ graph, questions }: { graph: AttachedGraph; questions: readonly Question[] }) {
   if (questions.length === 0) {
     return <p className="text-muted-foreground">You kept no questions. Build the graph and ask it anything in Discover.</p>;
   }
   return (
     <Boundary fallback={<Working>Reading the preview…</Working>}>
-      <CorpusScope corpus={corpus} key={corpus.name}>
+      <GraphScope graph={graph} key={graph.name}>
         <Asked questions={questions} />
-      </CorpusScope>
+      </GraphScope>
     </Boundary>
   );
 }
 
 /**
- * Ask over the preview, as Discover's panel runs it (`useCorpusAsk`): each kept question sent in turn
+ * Ask over the preview, as Discover's panel runs it (`useGraphAsk`): each kept question sent in turn
  * once the model is ready — one at a time, as a chat answers — and each part drawn as `Chat` draws it
  * (`askParts`): an answer as an `AnswerCard` with its `AskChips`, which ask an edited spec again with
  * no model, and a decision as a question.
  */
 function Asked({ questions }: { questions: readonly Question[] }) {
-  const { chat, graph } = useCorpusAsk();
+  const { chat, graph } = useGraphAsk();
   const ready = useModelLoad().state === "ready";
   const { messages, status, sendMessage } = chat;
   const sent = messages.filter((m) => m.role === "user").length;

@@ -26,7 +26,7 @@ import {
   TableRow,
 } from "@kanzo-tech/ui";
 import type { Schemas } from "@/lib/api/client";
-import { CorpusProvider, useJoinGraph } from "@/lib/fossil/corpus";
+import { GraphProvider, useJoinGraph } from "@/lib/fossil/graph";
 import { counted, formatDate, formatGraphDuration } from "@/lib/ui/format";
 import { PART_TABLE_HEIGHT } from "@/lib/ui/table-heights";
 
@@ -37,9 +37,9 @@ import { PART_TABLE_HEIGHT } from "@/lib/ui/table-heights";
  */
 export function Overview({ graph }: { graph: Schemas["Graph"] }) {
   return (
-    <CorpusProvider graphId={graph.id}>
+    <GraphProvider graphId={graph.id}>
       <Holds graph={graph} />
-    </CorpusProvider>
+    </GraphProvider>
   );
 }
 

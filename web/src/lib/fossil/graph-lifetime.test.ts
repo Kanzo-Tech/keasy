@@ -6,13 +6,13 @@ import { QueryClientProvider, useSuspenseQuery } from "@tanstack/react-query";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 /**
- * **An attached corpus lives as long as the query cache keeps its entry**, which is the cache's
+ * **An attached graph lives as long as the query cache keeps its entry**, which is the cache's
  * lifecycle: kept while a page observes it, collected `gcTime` after the last one went, detached
  * when it is collected. Not as the page unmounts: Mosaic still runs what that page queued on the
- * way out, and it must find the corpus attached. The page's children suspend on their own reads of
- * the corpus, and React commits nothing of a tree that has not, so while they do no observer holds
- * the corpus query: useSuspenseQuery's floor on `gcTime` is 1 s (TanStack Query's
- * `ensureSuspenseTimers`), and a corpus collected that soon was detached under its own readers.
+ * way out, and it must find the graph attached. The page's children suspend on their own reads of
+ * the graph, and React commits nothing of a tree that has not, so while they do no observer holds
+ * the graph query: useSuspenseQuery's floor on `gcTime` is 1 s (TanStack Query's
+ * `ensureSuspenseTimers`), and a graph collected that soon was detached under its own readers.
  */
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -28,9 +28,9 @@ vi.mock("@kanzo-tech/ui/analytics", () => ({
 vi.mock("@kanzo-tech/graph", () => ({ readJoinGraph: async () => ({ types: [], edges: [] }) }));
 vi.mock("@/lib/api/query-client", async () => {
   const { QueryClient } = await import("@tanstack/react-query");
-  const { releaseCorpora } = await import("./corpus-cache");
+  const { releaseGraphs } = await import("./graph-cache");
   const queryClient = new QueryClient();
-  releaseCorpora(queryClient.getQueryCache(), {
+  releaseGraphs(queryClient.getQueryCache(), {
     onFailure: (err) => {
       throw err;
     },
@@ -47,16 +47,16 @@ vi.mock("@/lib/fossil/attach", () => ({
 vi.mock("@/lib/fossil/rudof", () => ({ parseMapping: async () => ({ model: () => ({ tables: [] }) }) }));
 
 const { queryClient } = await import("@/lib/api/query-client");
-const { CORPUS_GC_MS, CorpusProvider, corpusKey, useCorpus } = await import("./corpus");
+const { GRAPH_GC_MS, GraphProvider, graphKey, useAttachedGraph } = await import("./graph");
 
 const GRAPH = "00000000-0000-4000-8000-000000000001";
 
-/** A child that reads the corpus for `ms` before it can draw, and records whether it was still there; the cache keeps what it read until the corpus goes. */
+/** A child that reads the graph for `ms` before it can draw, and records whether it was still there; the cache keeps what it read until the graph goes. */
 function slowChild(ms: number, seen: boolean[]) {
   return function Child() {
-    const { name: graphId } = useCorpus();
+    const { name: graphId } = useAttachedGraph();
     useSuspenseQuery({
-      queryKey: [...corpusKey(graphId), "child", ms],
+      queryKey: [...graphKey(graphId), "child", ms],
       gcTime: Infinity,
       queryFn: () => new Promise<null>((resolve) => setTimeout(() => (seen.push(attached.has(graphId)), resolve(null)), ms)),
     });
@@ -64,9 +64,9 @@ function slowChild(ms: number, seen: boolean[]) {
   };
 }
 
-/** The page as Discovery and the overview compose it: the corpus opened, then its readers under it. */
+/** The page as Discovery and the overview compose it: the graph opened, then its readers under it. */
 function Page({ child }: { child: () => null }) {
-  return h(CorpusProvider, { graphId: GRAPH, children: h(child) });
+  return h(GraphProvider, { graphId: GRAPH, children: h(child) });
 }
 
 async function render(child: () => null, { strict = false } = {}) {
@@ -87,12 +87,12 @@ afterEach(() => {
   detach.mockClear();
 });
 
-describe("an attached corpus", () => {
+describe("an attached graph", () => {
   it("stays attached while its page's children suspend for longer than the cache's floor", async () => {
     const seen: boolean[] = [];
     const root = await render(slowChild(1_500, seen));
     await settle(2_500);
-    expect(seen, "the corpus as the child's read found it").toEqual([true]);
+    expect(seen, "the graph as the child's read found it").toEqual([true]);
     expect(detach).not.toHaveBeenCalled();
     expect(attached.has(GRAPH)).toBe(true);
     await act(async () => root.unmount());
@@ -103,11 +103,11 @@ describe("an attached corpus", () => {
     await settle(100);
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
     await act(async () => root.unmount());
-    await act(async () => vi.advanceTimersByTime(CORPUS_GC_MS - 1));
-    expect(detach, "a page that unmounts leaves its corpus for what it queued").not.toHaveBeenCalled();
+    await act(async () => vi.advanceTimersByTime(GRAPH_GC_MS - 1));
+    expect(detach, "a page that unmounts leaves its graph for what it queued").not.toHaveBeenCalled();
     await act(async () => vi.advanceTimersByTime(1));
     expect(detach).toHaveBeenCalledTimes(1);
-    expect(queryClient.getQueryCache().findAll({ queryKey: corpusKey(GRAPH) })).toEqual([]);
+    expect(queryClient.getQueryCache().findAll({ queryKey: graphKey(GRAPH) })).toEqual([]);
   });
 
   it("is reused, not attached again, by a page that opens it within the cache's time", async () => {

@@ -14,10 +14,10 @@ import type { Branding } from "@/lib/branding";
 import { BrandingProvider } from "@/lib/branding-context";
 import { toastError } from "@/lib/errors";
 import { LOCALE } from "@/lib/ui/format";
-import { RELEASE_FAILED, releaseCorpora } from "@/lib/fossil/corpus-cache";
+import { RELEASE_FAILED, releaseGraphs } from "@/lib/fossil/graph-cache";
 
-// The query cache detaches the corpora it holds; one that does not detach is said, with its code.
-releaseCorpora(queryClient.getQueryCache(), { onFailure: (err) => toastError(err, RELEASE_FAILED) });
+// The query cache detaches the graphs it holds; one that does not detach is said, with its code.
+releaseGraphs(queryClient.getQueryCache(), { onFailure: (err) => toastError(err, RELEASE_FAILED) });
 
 /**
  * Cookie-backed rather than localStorage: `themeScript()` reads the same source before hydration,

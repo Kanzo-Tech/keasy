@@ -249,12 +249,12 @@ Playwright's frames into the MP4. The demos project runs Chromium on the GPU (Me
 `make demo` touches no container for a graph demo: Next's dev indicator and React Query's devtools
 are hidden in the recording's browser. A demo that asks the model (`nobel-ask`) asks everyone's, in
 the recording's browser on its GPU (WebGPU): it waits for the model to load before the take, and the
-figures on screen are the corpus's, read under the page's filter.
+figures on screen are the graph's, read under the page's filter.
 
 **Adding a demo** is a file `e2e/demos/<name>.demo.ts` calling `demo(name, description, { arrange,
 steps })` from `e2e/demos/record/`, transcribed from its table in `e2e/demos/STORYBOARD.md`; `make demo`
 lists it from that title. `arrange` gets the page ready off camera (`seedGraph` from
-`e2e/support/seeds.ts`, with `reuse`, finds or runs a dev example's graph) and gets the page and its
+`e2e/support/seeds.ts`, builds a dev example's graph) and gets the page and its
 `@kanzo-tech/testing` environment, made before the page loads. Each step is a **subtitle**, an
 **action** — a call on keasy's page objects (`e2e/support/app/`) or the library's harnesses, brushes
 and lassos in data — and a **check**, so a take whose page did something else fails rather than

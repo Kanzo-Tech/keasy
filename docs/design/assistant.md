@@ -182,7 +182,7 @@ place**: *what's in your data* with what it assumed, the one decision, the sugge
 preview, the build. A decision changed — on its `Question`, or behind an assumption's *Change* — stays
 selected where it was made, and what it causes is new: the steps that write the program again and run
 the preview again, and a new preview message after them. The preview that changed under *Updating…*,
-dimmed and inert until the new corpus replaced it, goes: two previews are two messages, and the
+dimmed and inert until the new graph replaced it, goes: two previews are two messages, and the
 earlier one still says what the earlier program answered. This is how ChatGPT's data analysis and
 Julius read: a result is under the step that made it, and a new run is a new result below, never the
 old one rewritten — so the thread is the order things happened in, which is what makes it a record.
@@ -385,17 +385,17 @@ on it; nothing downstream runs on a refused artefact.
 
 **Built 2026-10-13.** Once there is a program, it runs over the first 200 rows
 of each source **into memory** — fossil's `run(program, { host, into: "memory", limit: 200 })`, in
-fossil's run worker, which answers the corpus's files as bytes and writes nothing — and the files are
+fossil's run worker, which answers the graph's files as bytes and writes nothing — and the files are
 attached to the assistant page's engine from those bytes (`attachFiles`, `lib/fossil/attach.ts`): the
 buffers are registered under a prefix of their own, `@kanzo-tech/graphar-duckdb`'s `attachGraph` reads
 the GraphAr graph from them, and detaching gives them back — the same graph a build writes, read the
 same way ([the graph](graph.md)). *What would reverse it:* fossil or `graphar-duckdb` offering the
-in-memory form themselves — then keasy's registration of the buffers goes, as `@fossil-lang/corpus`'s
+in-memory form themselves — then keasy's registration of the buffers goes, as fossil's former
 `attach({ files })` once promised it would. `usePreview(program, profiled)`
-(`lib/fossil/preview.ts`) is the hook: `idle`, `running` — the last corpus kept on screen —, `ready`
-or `failed`, each corpus named by its program and cached as a graph's is, so a decision changed is a
-preview of its own and the one it replaces is given back once nothing reads it. Inside `CorpusScope`
-over it, `useCorpusAsk()` (`lib/fossil/ask.ts`) is Ask as Discover's panel runs it, and the person's
+(`lib/fossil/preview.ts`) is the hook: `idle`, `running` — the last graph kept on screen —, `ready`
+or `failed`, each graph named by its program and cached as a graph's is, so a decision changed is a
+preview of its own and the one it replaces is given back once nothing reads it. Inside `GraphScope`
+over it, `useGraphAsk()` (`lib/fossil/ask.ts`) is Ask as Discover's panel runs it, and the person's
 questions are answered in the chat with `AnswerCard`s over the sample. One door to fossil's executor,
 `lib/fossil/executor.ts`, maps `{ job }` and `"memory"` onto `run`'s `into`.
 
@@ -404,8 +404,8 @@ Task's program and nothing before it: *Write the program* is the step it waits o
 preview*. A decision changed is a model accepted again, so the mapping writes the program again, and
 its run is a new checkpoint and a new preview message at the end; the one before stays where it was,
 answering what its program answered. Today's preview turn is one message that changes in place — the
-last answers dimmed and inert under *Updating…* until the new corpus replaces them — and that goes with
-the thread ([each result is a new message](#each-result-is-a-new-message-at-the-end)). Each kept question is sent to `useCorpusAsk()`'s chat in turn — one at a time, as a chat
+last answers dimmed and inert under *Updating…* until the new graph replaces them — and that goes with
+the thread ([each result is a new message](#each-result-is-a-new-message-at-the-end)). Each kept question is sent to `useGraphAsk()`'s chat in turn — one at a time, as a chat
 answers, and only once the model is ready — and drawn as Ask's panel draws it, an `AnswerCard` with
 its `AskChips`. There is no composer under them: a tie Ask asks back is answered in Discover, over the
 whole graph. A failed run is said with its problem and a retry (`rerun`).
@@ -421,7 +421,7 @@ off the URL as it does, so nothing asks it twice.
 sees answers over their own rows next to the question that shaped them, changes a decision and sees
 the answer change, before anything is written — 200 rows in memory cost seconds, so running it again
 is cheap where building the graph again is not. And Discover only ever shows a whole graph, the
-graph's own output under its id: no second corpus beside it to switch from, nothing that is not what
+graph's own output under its id: no second graph beside it to switch from, nothing that is not what
 the graph holds.
 
 **Build the graph** builds the current checkpoint's program, and saves the conversation first and
@@ -627,10 +627,10 @@ same-origin` and `Cross-Origin-Embedder-Policy: require-corp` added to `next.con
 locally, against the dev stack:
 
 - `auth.spec.ts` and `discover.spec.ts`: 14 of 15 passed — sign-in through Keycloak, a graph run to
-  completion in the browser over the dev S3 store (`runToCompletion`), and Discover over its corpus.
+  completion in the browser over the dev S3 store (`runToCompletion`), and Discover over its graph.
   The one that failed, *the view and the dock's panel are the URL's*, fails the same way with the
   headers off: React Query's dev-only devtools overlay takes the dock's click.
-- A test that opened Discover over that corpus read `crossOriginIsolated` true and `SharedArrayBuffer`
+- A test that opened Discover over that graph read `crossOriginIsolated` true and `SharedArrayBuffer`
   defined, and saw no request blocked by COEP.
 - From the isolated page, a ranged `fetch` of a presigned `e2e/data/people.csv` on the dev S3 store
   (`s3.localhost:9000`, another origin) answered 206 with `Content-Range` exposed: a CORS read, which

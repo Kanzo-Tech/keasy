@@ -30,7 +30,7 @@ const PENINSULA: Point[] = [
  */
 demo("flights-map", "OpenFlights put on a map: the force layout's scatter, then longitude and latitude, then Spain lassoed", {
   async arrange({ page, env }) {
-    const id = await seedGraph(page, "openflights", { name: "Demo · OpenFlights", reuse: true });
+    const id = await seedGraph(page, "openflights", { name: "Demo · OpenFlights" });
     const discover = await DiscoverPage.open(page, env, id);
     const graph = await discover.graph();
     await graph.ready();

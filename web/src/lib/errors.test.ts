@@ -73,7 +73,7 @@ describe("a failure, kept as JSON", () => {
 describe("a failure's cause", () => {
   it("is kept one level down, coded when it can be", () => {
     const store = new ApiError({ code: "store/silent", title: "The store did not answer in time", detail: "STS", data: { after: 10_000 } }, 504);
-    const shown = wireOf(new Error("could not open the corpus", { cause: store }));
+    const shown = wireOf(new Error("could not open the graph", { cause: store }));
     expect(shown).toMatchObject({ code: "web/unknown", cause: { code: "store/silent", data: { after: 10_000 } } });
   });
 

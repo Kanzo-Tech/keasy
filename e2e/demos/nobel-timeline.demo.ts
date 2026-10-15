@@ -34,7 +34,7 @@ const end = async (timeline: TimelineHarness) => Number((await timeline.range())
  */
 demo("nobel-timeline", "Nobel prizes on a map and a timeline: a century of science moving west, then only the women", {
   async arrange({ page, env }) {
-    const id = await seedGraph(page, "nobel", { name: "Demo · Nobel laureates", reuse: true });
+    const id = await seedGraph(page, "nobel", { name: "Demo · Nobel laureates" });
     await saveDashboard(page, id, RELATION, DASHBOARD);
     const discover = await DiscoverPage.open(page, env, id);
     // Each award at its first affiliation's city, the edges hidden: the prizes are dots on the map.

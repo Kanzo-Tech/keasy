@@ -19,18 +19,18 @@ test("02 a graph that has not completed opens in discover as graph/not-completed
   await expectProblem(page, "graph/not-completed", { within: 10_000 });
 });
 
-test("17 a rules file rudof cannot read is rules/refused in the rules' popover, and nothing is saved", async ({ page, env, corpusGraph }) => {
-  const rules = await (await DiscoverPage.open(page, env, corpusGraph)).rules();
+test("17 a rules file rudof cannot read is rules/refused in the rules' popover, and nothing is saved", async ({ page, env, builtGraph }) => {
+  const rules = await (await DiscoverPage.open(page, env, builtGraph)).rules();
   expect(await rules.tally()).toBe("No rules");
   await rules.open();
   // Dropped as a person drops it: the server reads it with rudof and refuses it where Turtle stops.
   await rules.drop("broken.ttl", "@prefix sh: <http://www.w3.org/ns/shacl#> .\n<#S> a sh:NodeShape ;\n  sh:path .\n");
   await expectProblem(page, "rules/refused", { within: 20_000 });
-  expect((await api(page).GET("/v1/graphs/{id}/rules", { params: { path: { id: corpusGraph } } })).data).toBeNull();
+  expect((await api(page).GET("/v1/graphs/{id}/rules", { params: { path: { id: builtGraph } } })).data).toBeNull();
 });
 
-test("the tile editor is the Dashboard view's: Graph view hides it, and its draft comes back with Dashboard", async ({ page, env, corpusGraph }) => {
-  const discover = await DiscoverPage.open(page, env, corpusGraph, { view: "dashboard" });
+test("the tile editor is the Dashboard view's: Graph view hides it, and its draft comes back with Dashboard", async ({ page, env, builtGraph }) => {
+  const discover = await DiscoverPage.open(page, env, builtGraph, { view: "dashboard" });
   await discover.dashboard();
   const format = page.getByRole("complementary", { name: "Format" });
   await page.getByRole("button", { name: "Add tile" }).click();
@@ -44,9 +44,9 @@ test("the tile editor is the Dashboard view's: Graph view hides it, and its draf
   await expect(title).toHaveValue("Kept across views");
 });
 
-test("the view and the dock's panel are the URL's: a link opens them, and pressing them writes it", async ({ page, env, corpusGraph }) => {
+test("the view and the dock's panel are the URL's: a link opens them, and pressing them writes it", async ({ page, env, builtGraph }) => {
   const settings = page.getByRole("complementary", { name: "Settings panel" });
-  const discover = await DiscoverPage.open(page, env, corpusGraph, { view: "dashboard", panel: "settings" });
+  const discover = await DiscoverPage.open(page, env, builtGraph, { view: "dashboard", panel: "settings" });
   const [views, dock] = [await discover.views(), await discover.dock()];
   expect(await views.current()).toBe("Dashboard");
   expect(await dock.current()).toBe("Settings");
@@ -75,8 +75,8 @@ test("the view and the dock's panel are the URL's: a link opens them, and pressi
   expect(await (await discover.dock()).current()).toBeNull();
 });
 
-test("rules are validated over the corpus's triples: what fails, what conforms, and over the page's subset", async ({ page, env, corpusGraph }) => {
-  const discover = await DiscoverPage.open(page, env, corpusGraph);
+test("rules are validated over the graph's triples: what fails, what conforms, and over the page's subset", async ({ page, env, builtGraph }) => {
+  const discover = await DiscoverPage.open(page, env, builtGraph);
   const rules = await discover.rules();
   // The suite's own rules over its fixtures (e2e/fixtures/vocab/shop.ttl), dropped on the badge's popover as a person drops them.
   await rules.drop("shop.ttl", readFileSync(new URL("../fixtures/vocab/shop.ttl", import.meta.url), "utf8"));
@@ -84,7 +84,7 @@ test("rules are validated over the corpus's triples: what fails, what conforms, 
   // Nothing validates by itself: the badge says so until Check is pressed.
   await expect.poll(() => rules.tally()).toBe("Not checked");
 
-  // Over the whole corpus: the two people outside GB and US break the Person rule; every order
+  // Over the whole graph: the two people outside GB and US break the Person rule; every order
   // keeps its own.
   expect(await rules.check()).toBe("All 20 nodes checked · 18 conform");
   // The badge reads the tally in either view: here, the two people.

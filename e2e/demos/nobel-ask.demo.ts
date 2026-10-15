@@ -54,7 +54,7 @@ const holds = (rows: Record<string, string>[], value: string, n: number) =>
 demo("nobel-ask", "Ask over the Nobel prizes: an answer added to the dashboard and opened there, then one that filters the map", {
   async arrange({ page, env }) {
     await scriptModel(page, { turns: TURNS });
-    const id = await seedGraph(page, "nobel", { name: "Demo · Nobel laureates", reuse: true });
+    const id = await seedGraph(page, "nobel", { name: "Demo · Nobel laureates" });
     await saveDashboard(page, id, RELATION, DASHBOARD);
     const discover = await DiscoverPage.open(page, env, id);
     // The Graph view on the map for the last step, then the dashboard the story starts on, Ask docked.

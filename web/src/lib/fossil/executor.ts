@@ -1,5 +1,5 @@
 import { run } from "@fossil-lang/executor";
-import type { CorpusFile, Host, Profiled, RunReport } from "@fossil-lang/types";
+import type { GraphFile, Host, Profiled, RunReport } from "@fossil-lang/types";
 
 /**
  * keasy's one door to fossil's executor: every run — a graph's, written under its job, and the
@@ -7,15 +7,15 @@ import type { CorpusFile, Host, Profiled, RunReport } from "@fossil-lang/types";
  * `run` is one edit here.
  *
  * fossil 0.3.0-alpha.32's `run(program, { host, into, … })` runs in a worker of fossil's own, so the
- * page paints and a Stop is pressed while it does, and says where the corpus goes: `{ job }` writes it
+ * page paints and a Stop is pressed while it does, and says where the graph goes: `{ job }` writes it
  * under the job's prefix with a credential the host vends, and answers the report; `"memory"`, with a
- * `limit` of rows per source, writes nothing and answers the corpus's files.
+ * `limit` of rows per source, writes nothing and answers the graph's files.
  */
 
 /** The rows of each source a preview reads. */
 export const PREVIEW_ROWS = 200;
 
-/** Where a run's corpus goes: under a job, or back to the caller over the first {@link PREVIEW_ROWS} rows. */
+/** Where a run's graph goes: under a job, or back to the caller over the first {@link PREVIEW_ROWS} rows. */
 export type Into = { job: string } | "memory";
 
 /** What a run is asked with. */
@@ -27,10 +27,10 @@ export interface RunInto {
   signal?: AbortSignal;
 }
 
-/** How a run ended: its report, and — run into memory — the corpus's files; none under a job. */
+/** How a run ended: its report, and — run into memory — the graph's files; none under a job. */
 export interface Ran {
   report: RunReport;
-  files: CorpusFile[];
+  files: GraphFile[];
 }
 
 /** Run `program` into `into` (see {@link Into}). Rejects with fossil's `FossilError`, or `signal`'s reason. */

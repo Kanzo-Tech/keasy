@@ -124,7 +124,7 @@ function Resumed({
   // The preview runs the mapping's program; while it writes the next one, the last stays on screen.
   const ran = usePreview(assistant.mapped, assistant.described);
   const preview: Preview =
-    assistant.writing && ran.state !== "idle" ? { state: "running", corpus: ran.corpus, rerun: ran.rerun } : ran;
+    assistant.writing && ran.state !== "idle" ? { state: "running", graph: ran.graph, rerun: ran.rerun } : ran;
 
   // The whole graph, once asked for, from the conversation saved first: the build waits for the id the save answered.
   const { progress, build } = useBuild(assistant.mapped, assistant.described, { conversation: kept.id, name: graphName(assistant.files) });

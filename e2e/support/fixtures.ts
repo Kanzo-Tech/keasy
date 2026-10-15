@@ -5,12 +5,12 @@ import { expect, test as base } from "./env";
 import { api, BASE_URL, createGraph } from "./stack/api";
 
 /**
- * A graph the browser has run to completion, so its corpus opens in Discovery: the suite's shop, or
+ * A graph the browser has run to completion, so its graph opens in Discovery: the suite's shop, or
  * `script`, given `within` ms to run.
  */
 export async function runToCompletion(
   page: Page,
-  { name = "e2e corpus", script, within = 180_000 }: { name?: string; script?: string; within?: number } = {},
+  { name = "e2e graph", script, within = 180_000 }: { name?: string; script?: string; within?: number } = {},
 ): Promise<string> {
   const id = await createGraph(page, { name, script });
   await page.goto(`/graphs/${id}`);
@@ -49,8 +49,8 @@ export function discoverUrl(
   return `/graphs/${graphId}/discover${query.size ? `?${query}` : ""}`;
 }
 
-export const test = base.extend<object, { corpusGraph: string }>({
-  corpusGraph: [
+export const test = base.extend<object, { builtGraph: string }>({
+  builtGraph: [
     async ({ browser }, use) => {
       // Worker-scoped, so it signs in on a context of its own rather than a test's.
       const context = await browser.newContext({

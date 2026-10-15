@@ -16,7 +16,7 @@ interface Out {
 }
 const out: Out[] = [];
 
-vi.mock("@kanzo-tech/mosaic", () => ({ engine: async () => ({ coordinator: {} }) }));
+vi.mock("@kanzo-tech/mosaic/engine", () => ({ engine: async () => ({}) }));
 vi.mock("@/lib/fossil/host", () => ({ host: {} }));
 const toastError = vi.fn();
 vi.mock("@/lib/errors", () => ({ toastError }));

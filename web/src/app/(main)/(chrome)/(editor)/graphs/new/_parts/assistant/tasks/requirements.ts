@@ -8,7 +8,7 @@
  */
 
 import { jsonSchema, type LanguageModel } from "ai";
-import { type JoinGraph, JoinResolver } from "@kanzo-tech/mosaic";
+import { type JoinGraph, JoinResolver } from "@kanzo-tech/relations";
 import { ask, type AskInput } from "@kanzo-tech/ai/data";
 import { defineTask, type Finding, runTask } from "@kanzo-tech/ai/task";
 import type { Primitive } from "@fossil-lang/types";

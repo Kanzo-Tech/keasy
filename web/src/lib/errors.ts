@@ -45,7 +45,12 @@ function gib(bytes: number): string {
 /** Why a failure that says so happened: `data.reason`. */
 const reasonOf = (data: unknown) => (data as { reason?: unknown } | undefined)?.reason;
 
-const signIn = { label: "Sign in again", href: "/api/auth/signin" };
+/**
+ * The edge's sign-out, back to this host's root, which the edge turns into a sign-in: what a session
+ * that ended or a token that was refused needs, since signing in over a session the edge still holds
+ * would forward the same token. Under the edge's prefix (`@kanzo-tech/auth`'s default, `/api/auth`).
+ */
+const signIn = { label: "Sign in again", href: "/api/auth/sign_out?rd=%2F" };
 
 /**
  * kanzo-ui's own failures, in the same grammar — its sign-in, its graph, its engine, its model
@@ -54,28 +59,14 @@ const signIn = { label: "Sign in again", href: "/api/auth/signin" };
 type KanzoCode = ProblemCode;
 
 const registry: Partial<Record<ErrorCode | ClientCode | Code | KanzoCode, Copy>> = {
-  "callback/state-mismatch": {
-    title: "This sign-in could not be completed.",
-    detail:
-      "The sign-in was started in another tab, took too long, or was opened from the browser's history. Start it again.",
-    link: signIn,
-  },
-  "callback/nonce-mismatch": { title: "This sign-in could not be completed.", link: signIn },
-  "token/exchange-failed": { title: "The identity provider refused the sign-in.", link: signIn },
   "session/absent": { title: "You are signed out.", link: signIn },
   "token/refused": {
     title: "Your session has ended.",
     detail: "The identity provider ended it, after a while away or a sign-out elsewhere. Sign in again.",
     link: signIn,
   },
-  "organization/invalid": { title: "No such workspace." },
+  "organization/denied": { title: "You are not a member of this workspace." },
   "claims/no-subject": { title: "The identity provider sent an incomplete identity." },
-  "session/unavailable": {
-    title: "Your session could not be read.",
-    detail: "The session service is not answering. Try again in a moment.",
-    link: signIn,
-  },
-  "session/silent": { title: "Your session could not be read in time.", link: signIn },
   "idp/silent": { title: "The identity provider did not answer in time.", link: signIn },
   "idp/unreachable": { title: "The identity provider could not be reached.", link: signIn },
   "api/unreachable": {

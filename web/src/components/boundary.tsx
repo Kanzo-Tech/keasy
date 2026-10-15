@@ -55,7 +55,7 @@ const never = () => () => {};
  * a `QueryErrorResetBoundary`, an error boundary that renders the failure with {@link ProblemView},
  * and a `Suspense` with `fallback` while it loads. Retry resets the failed queries and renders again.
  *
- * Its children render only in the browser. Every query reaches the API through the BFF with the
+ * Its children render only in the browser. Every query reaches the API through the edge with the
  * session cookie, which a server render does not have, so on the server the fallback is drawn —
  * what the page drew while loading before `useSuspenseQuery` — and the queries start on hydration.
  */

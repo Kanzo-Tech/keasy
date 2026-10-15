@@ -4,11 +4,9 @@ import { auth } from "@/lib/auth/server";
 import { tenantOf } from "@/lib/tenant";
 
 /**
- * The session's authority on every page request: it renews the session before its access token
- * lapses, ends one the identity provider refused, and sends a navigation without a live session to
- * sign in and back to the page it asked for. `/api` is the API forward and the sign-in routes, which
- * answer for themselves — the back-channel logout among them, which Keycloak calls on an internal
- * host. A page on a host that addresses no organization does not exist.
+ * Every request the edge let through: a page on a host that addresses no organization does not
+ * exist; the rest go on with the URL the browser addressed, for the session's tenant. `/api` is the
+ * API forward, which answers for itself.
  */
 export function proxy(request: NextRequest) {
   // `Host`, not `nextUrl`: Next builds the URL from the address it listens on, not the one asked for.

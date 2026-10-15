@@ -20,7 +20,7 @@ import {
   useGraphPrefs,
   useGraphState,
 } from "@kanzo-tech/graph";
-import type { Relation } from "@kanzo-tech/mosaic";
+import type { Relation } from "@kanzo-tech/relations";
 import {
   ChartTimeline,
   FilterBar,
@@ -179,7 +179,7 @@ function DiscoverFooter() {
 
 function Workspace() {
   const { name } = useAttachedGraph();
-  const { coordinator, selection } = useMosaic();
+  const { engine, selection } = useMosaic();
   const { look, sim, placement, timeline } = useGraphPrefs();
   const graph = useJoinGraph();
   const [relation, setRelation] = useState<Relation>(() => ({ root: graph.types[0]?.name ?? "", path: [] }));
@@ -206,7 +206,7 @@ function Workspace() {
       }}
     >
     <GraphRoot
-      coordinator={coordinator}
+      engine={engine}
       filterBy={selection}
       from={name}
       look={look}

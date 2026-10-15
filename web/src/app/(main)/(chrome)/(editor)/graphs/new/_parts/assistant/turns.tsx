@@ -4,7 +4,7 @@ import { ArrowRight, Check, CircleHelp, CircleX, ExternalLink, Lightbulb, Messag
 import { useId, useState } from "react";
 import { Link } from "@kanzo-tech/navigation/next";
 import { Message, MessageContent } from "@kanzo-tech/ai";
-import { splitWords } from "@kanzo-tech/mosaic";
+import { splitWords } from "@kanzo-tech/relations";
 import {
   Badge,
   Button,

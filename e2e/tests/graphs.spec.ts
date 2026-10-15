@@ -70,7 +70,7 @@ test("19 a tab closed mid-run ends the graph as graph/abandoned, and it can be d
 
 test("20 deleting a running graph is refused as graph/still-running", async ({ page }) => {
   // The graphs list offers no Delete for a running graph, so the refusal is asked of the API, through
-  // the BFF, as the page would ask it.
+  // the edge and the web, as the page would ask it.
   const id = await createGraph(page);
   await api(page).POST("/v1/graphs/{id}/run", { params: { path: { id } } });
   await expectRefusal(api(page).DELETE("/v1/graphs/{id}", { params: { path: { id } } }), 409, "graph/still-running");

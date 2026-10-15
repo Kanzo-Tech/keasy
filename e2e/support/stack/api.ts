@@ -5,15 +5,15 @@ import { expect, type Page } from "@playwright/test";
 export const BASE_URL = process.env.KEASY_URL ?? "http://acme.localhost:3000";
 
 /**
- * What a browser sends on the app's own requests, and Playwright's request context does not: the BFF
+ * What a browser sends on the app's own requests, and Playwright's request context does not: the web
  * refuses a request that says nothing about where it came from (kanzo-ui's `isSameSite`, closed).
  */
 const SAME_ORIGIN = { origin: new URL(BASE_URL).origin, "sec-fetch-site": "same-origin" };
 
 /**
  * keasy's API as the page's session calls it: `@keasy/api`'s typed client over the page's request
- * context, which carries the context's cookies through the BFF as the app's own requests do. Every
- * path is a spec path and every body typed; a refusal throws `ApiError` (see {@link expectRefusal}).
+ * context, which carries the context's cookies through the edge and the web as the app's own
+ * requests do. Every path is a spec path and every body typed; a refusal throws `ApiError` (see {@link expectRefusal}).
  */
 export function api(page: Page) {
   return createApiClient({

@@ -1,76 +1,35 @@
 import { expect, test } from "../support/fixtures";
 
 import { SOURCE } from "../support/stack/api";
-import { stop, tickets, up, valkey } from "../support/stack/compose";
+import { restart, stop, up } from "../support/stack/compose";
 import { expectProblem } from "../support/stack/problem";
-import { enterPassword, enterUsername, signIn } from "../support/auth/sign-in";
 
-test.describe("signed out", () => {
-  test.use({ storageState: { cookies: [], origins: [] } });
-
-  test("08 Keycloak down during sign-in lands on /auth/error naming the IdP", async ({ page }) => {
-    test.setTimeout(300_000);
-    // The BFF caches the IdP's discovery, so with Keycloak already down a sign-in sends the browser
-    // straight to a host it cannot reach — the browser's error page, not keasy's to draw. What keasy
-    // does own is the callback's token exchange: Keycloak goes down between the form and that.
-    // The callback is a redirect hop, which Playwright does not route; the form's POST is not, so
-    // Keycloak answers it, and goes down before the browser follows its redirect to the callback.
-    // The form asks in two steps, both posted there; the password's is the one before the callback.
-    try {
-      await page.goto("/");
-      await enterUsername(page, "bruno");
-      await page.locator("#password").waitFor();
-      await page.route("**/login-actions/authenticate**", async (route) => {
-        const answer = await route.fetch({ maxRedirects: 0 });
-        stop("keycloak");
-        await route.fulfill({ response: answer });
-      });
-      await enterPassword(page);
-      await expect(page).toHaveURL(/\/auth\/error\?code=/, { timeout: 60_000 });
-      await expectProblem(page, "idp/unreachable", { within: 5_000 });
-    } finally {
-      up("keycloak");
-    }
-  });
-
-  test("09 a callback whose state does not match is callback/state-mismatch on /auth/error", async ({ page }) => {
-    // A callback this browser never started: no transaction cookie, a forged state.
-    await page.goto("/api/auth/callback?state=forged&code=forged");
-    await expectProblem(page, "callback/state-mismatch", { within: 10_000 });
-  });
+test("08 with Keycloak down a web that cannot fetch the realm's keys lands on /auth/error naming the IdP", async ({ page }) => {
+  test.setTimeout(600_000);
+  // Signing in is the edge's (oauth2-proxy). What keasy owns is verifying the token the edge
+  // forwards, against the realm's keys: a web that has never fetched them, started while Keycloak is
+  // down, cannot, and says so by its code rather than by an error page or a sign-in loop.
+  // A page first, so the edge holds a token renewed within the last minute: it renews no more until
+  // that one lapses, and Keycloak is down from here.
+  await page.goto("/");
+  await page.getByRole("navigation", { name: "Platform" }).waitFor();
+  stop("keycloak");
+  try {
+    restart("web");
+    await page.goto("/");
+    await expect(page).toHaveURL(/\/auth\/error\?code=/, { timeout: 60_000 });
+    await expectProblem(page, "idp/unreachable", { within: 5_000 });
+  } finally {
+    up("keycloak");
+  }
 });
 
 test("10 a session that expired mid-way sends a mutation back to sign in", async ({ page }) => {
   await page.goto(`/connections/${encodeURIComponent(SOURCE)}`);
   await page.getByRole("button", { name: "Test" }).waitFor();
+  // The edge answers the API 401 for a request with no session, and the page loads again, which the
+  // edge sends to Keycloak's form: its own session went with the cookies.
   await page.context().clearCookies();
   await page.getByRole("button", { name: "Test" }).click();
   await expect(page).toHaveURL(/localhost:8080/, { timeout: 15_000 });
-});
-
-test.describe("a session that ends while the page is away", () => {
-  test.use({ storageState: { cookies: [], origins: [] } });
-
-  /**
-   * The cookie outlives the session behind it — the realm's idle timeout, a sign-out elsewhere, a
-   * store that lost the row. The proxy finds no session behind the cookie and sends the navigation
-   * to sign in carrying the page it asked for; Keycloak's own session is still alive, so signing in
-   * needs no form and lands back on that page.
-   */
-  test("a deep link whose session is gone comes back to the same page after signing in", async ({ page }) => {
-    const before = tickets();
-    await signIn(page, "bruno");
-    const mine = [...tickets()].filter((ticket) => !before.has(ticket));
-    expect(mine, "one new ticket for this sign-in").toHaveLength(1);
-
-    // Off the app first: a page left open would find the session gone through its own polling and
-    // sign in from there — correctly, but racing the navigation this test is about.
-    await page.goto("about:blank");
-    valkey("DEL", ...mine);
-
-    const deep = `/connections/${encodeURIComponent(SOURCE)}?from=e2e`;
-    await page.goto(deep);
-    await expect(page).toHaveURL((url) => `${url.pathname}${url.search}` === deep, { timeout: 30_000 });
-    await page.getByRole("button", { name: "Test" }).waitFor();
-  });
 });

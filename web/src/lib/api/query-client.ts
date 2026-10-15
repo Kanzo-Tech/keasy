@@ -1,12 +1,12 @@
 import "client-only";
 
-import { ApiError, type paths } from "@keasy/api";
+import { ApiError, HttpError, type paths } from "@keasy/api";
 import { MutationCache, QueryCache, QueryClient } from "@tanstack/react-query";
 import { toast } from "@kanzo-tech/ui";
 
 import { toastError } from "@/lib/errors";
 
-let redirected = false;
+let leaving = false;
 
 /** A path the API answers a `GET` on: what a mutation names as a read it changed. */
 export type GetPath = {
@@ -78,13 +78,17 @@ export const queryClient = new QueryClient({
 });
 
 /**
- * A workspace the person holds no role in any more sends them home. A refused session is not
- * handled here: the BFF's own fetch signs in again when a renewal is refused.
+ * A session that ended answers 401 — from the edge, or from the forwarder for a token it refused —
+ * and the page is loaded again, which the edge turns into a sign-in that comes back here. A
+ * workspace the person holds no role in any more sends them home.
  */
 function handleAuthError(error: unknown) {
-  if (redirected || !(error instanceof ApiError)) return;
-  if (error.code === "rbac/no-membership") {
-    redirected = true;
+  if (leaving || !(error instanceof ApiError || error instanceof HttpError)) return;
+  if (error.status === 401) {
+    leaving = true;
+    window.location.reload();
+  } else if (error instanceof ApiError && error.code === "rbac/no-membership") {
+    leaving = true;
     window.location.href = "/";
   }
 }

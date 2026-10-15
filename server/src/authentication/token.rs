@@ -2,10 +2,11 @@
 //!
 //! This server is a **resource server** and nothing else: it obtains no
 //! credential, redirects nobody, and holds no session. The relying party is the
-//! web BFF (`@kanzo-tech/auth/next`), which keeps the tokens and forwards one on
-//! every call it proxies. What is left here is the half the package's Keycloak
-//! page states in words rather than code, because the resource servers it talks
-//! about are not written in TypeScript:
+//! platform's edge (oauth2-proxy), and the web forwards the access token it was
+//! handed (`@kanzo-tech/auth/next`) on every call, as it came: one token for
+//! every organization the person belongs to. What is left here is the half the
+//! package's Keycloak page states in words rather than code, because the
+//! resource servers it talks about are not written in TypeScript:
 //!
 //! | | |
 //! | --- | --- |

@@ -3,14 +3,15 @@
 # literal; a local .env overrides any variable (.env.example).
 #
 # The platform comes from kanzo-ui at KANZO_UI_REF, in its development shape: Keycloak on :8080 with
-# two organizations (acme, globex) and seeded people.
+# two organizations (acme, globex) and seeded people, and the edge (auth-proxy) on :3000 over plain
+# HTTP — every organization at <alias>.localhost:3000.
 #
 # `*.localhost` is loopback on the host and a network alias here, so one URL works from the browser
 # and from a container: the S3 endpoint a vended credential names is addressed that way.
 
 include:
   - path:
-      - https://github.com/Kanzo-Tech/ui.git#${KANZO_UI_REF:-v0.47.0}:services/compose.dev.yaml
+      - https://github.com/Kanzo-Tech/ui.git#${KANZO_UI_REF:-v0.48.0}:services/compose.dev.yaml
       # keasy's additions to the platform in development: its roles on the seeded groups.
       - infra/dev/platform.yaml
 
@@ -20,8 +21,6 @@ services:
       context: .
       dockerfile: web/Dockerfile.dev
     pull_policy: build
-    ports:
-      - "3000:3000"
     volumes:
       - ./web/src:/app/web/src
       # The model's listing (public/models/app-config.json), edited without a rebuild.
@@ -33,7 +32,7 @@ services:
     environment:
       # Development runs one organization's server, so every host reaches it.
       KEASY_API_URL: http://acme-server:8080
-    # The first answer is Next compiling the sign-in route — minutes on a small machine after a clean
+    # The first answer is Next compiling the API route — minutes on a small machine after a clean
     # start, which would otherwise look like a stack that never came up. `make dev` waits for it.
     healthcheck:
       timeout: 300s
@@ -183,8 +182,8 @@ services:
 secrets:
   keasy-oidc:
     file: ./infra/dev/secrets/keasy-oidc
-  keasy-session:
-    file: ./infra/dev/secrets/keasy-session
+  keasy-cookie:
+    file: ./infra/dev/secrets/keasy-cookie
   acme-secret-key:
     file: ./infra/dev/secrets/acme-secret-key
 

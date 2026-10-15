@@ -11,19 +11,6 @@ function compose(...args: string[]) {
   execFileSync("docker", ["compose", ...args], { cwd: ROOT, stdio: "inherit" });
 }
 
-/** `valkey-cli` against the stack's session store, and what it printed. */
-export function valkey(...args: string[]): string {
-  return execFileSync("docker", ["compose", "exec", "-T", "valkey", "valkey-cli", ...args], {
-    cwd: ROOT,
-    encoding: "utf8",
-  });
-}
-
-/** Every session ticket the store holds now. */
-export function tickets(): Set<string> {
-  return new Set(valkey("--scan").split("\n").filter(Boolean));
-}
-
 /** Stop `services`. Paired with {@link up} in a `finally`, so a failed scenario leaves the stack whole. */
 export function stop(...services: string[]) {
   compose("stop", ...services);
@@ -32,6 +19,12 @@ export function stop(...services: string[]) {
 /** Start `services` (any profile) and wait until they report healthy. */
 export function up(...services: string[]) {
   compose("--profile", "faults", "up", "-d", "--wait", ...services);
+}
+
+/** Restart `services` alone, whatever their dependencies are doing, and wait until they report healthy. */
+export function restart(...services: string[]) {
+  compose("restart", ...services);
+  compose("up", "-d", "--wait", "--no-deps", ...services);
 }
 
 /** Run `scenario` with `services` stopped, and bring them back whatever happens. */

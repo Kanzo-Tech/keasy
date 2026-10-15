@@ -21,11 +21,14 @@ const attached = new Set<string>();
 const attaches = vi.fn((graphId: string) => void attached.add(graphId));
 const detach = vi.fn(async (graphId: string) => void attached.delete(graphId));
 
-vi.mock("@kanzo-tech/mosaic", () => ({ engine: async () => ({ coordinator: {} }), withMapping: (graph: unknown) => graph }));
+vi.mock("@kanzo-tech/mosaic/engine", () => ({ engine: async () => ({}) }));
 vi.mock("@kanzo-tech/ui/analytics", () => ({
   MosaicProvider: ({ children }: { children: ReactNode }) => children,
 }));
-vi.mock("@kanzo-tech/graph", () => ({ readJoinGraph: async () => ({ types: [], edges: [] }) }));
+vi.mock("@kanzo-tech/relations", () => ({
+  readJoinGraph: async () => ({ types: [], edges: [] }),
+  withMapping: (graph: unknown) => graph,
+}));
 vi.mock("@/lib/api/query-client", async () => {
   const { QueryClient } = await import("@tanstack/react-query");
   const { releaseGraphs } = await import("./graph-cache");

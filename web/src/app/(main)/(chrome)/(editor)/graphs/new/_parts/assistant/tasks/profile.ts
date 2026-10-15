@@ -6,7 +6,7 @@
  */
 
 import type { Input, Primitive, Profile } from "@fossil-lang/types";
-import { splitWords } from "@kanzo-tech/mosaic";
+import { splitWords } from "@kanzo-tech/relations";
 
 /** One column of a source, with what the profile counted of it. */
 export interface Column {

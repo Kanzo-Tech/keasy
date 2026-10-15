@@ -4,7 +4,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { and, column, count, createTable, type ExprNode, isIn, literal, Query, sql, TableRefNode } from "@uwdata/mosaic-sql";
-import { engine, numbers } from "@kanzo-tech/mosaic";
+import { numbers } from "@kanzo-tech/mosaic";
+import { engine } from "@kanzo-tech/mosaic/engine";
 import { useClauses, useMosaic } from "@kanzo-tech/ui/analytics";
 import { usePick } from "@kanzo-tech/graph";
 import type { RdfFindingGroup, RdfFindingGroups, RdfPlace, Shapes, ShapeModelJson, TermValue } from "@kanzo-tech/rudof-wasm";
@@ -98,7 +99,6 @@ export type Stale = "filter" | "rules";
 export function useRules(rules: ReadRules | undefined, text: string) {
   const graph = useAttachedGraph();
   const { name: catalog } = graph;
-  const { coordinator } = useMosaic();
   const pick = usePick(PICK);
   // Re-rendered on every clause, only so the badge can say the subset moved since the last check.
   useClauses(useMosaic().selection);
@@ -189,7 +189,9 @@ export function useRules(rules: ReadRules | undefined, text: string) {
 
   /** The vertices whose subjects `subjects` selects, published as the rules' clause, named `label`. */
   const publish = async (subjects: ExprNode, label: string) => {
-    const ids = numbers(await coordinator.query(Query.from(vertices).select(key).where(subjects)), key);
+    // Asked for by a press, and nothing stops it once asked: a signal that never aborts.
+    const { signal } = new AbortController();
+    const ids = numbers(await graph.engine.query(String(Query.from(vertices).select(key).where(subjects)), { signal }), key);
     pick.pick(ids, label);
   };
 

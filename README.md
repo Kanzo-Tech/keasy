@@ -40,7 +40,7 @@ the assistant say so (`llm/unavailable`); everything else works.
 
 ## Dev accounts
 
-The platform's seed users (kanzo-ui `services/auth/seed`), all with password `password`.
+The platform's seed users (kanzo-ui `services/auth/seed`), all with password `kanzo-dev-password`.
 This instance serves the `acme` organization. A role comes from the organization group
 the user is in, which the seed maps onto keasy's roles (`configs.keasy-roles` in `infra/dev/platform.yaml`):
 

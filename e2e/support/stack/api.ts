@@ -1,4 +1,5 @@
-import { ApiError, createApiClient } from "@keasy/api";
+import { isProblem } from "@kanzo-tech/kernel";
+import { createApiClient } from "@keasy/api";
 import { expect, type Page } from "@playwright/test";
 
 /** Where the suite reaches keasy: the stack on :3000, the only origin Keycloak admits. */
@@ -13,7 +14,7 @@ const SAME_ORIGIN = { origin: new URL(BASE_URL).origin, "sec-fetch-site": "same-
 /**
  * keasy's API as the page's session calls it: `@keasy/api`'s typed client over the page's request
  * context, which carries the context's cookies through the edge and the web as the app's own
- * requests do. Every path is a spec path and every body typed; a refusal throws `ApiError` (see {@link expectRefusal}).
+ * requests do. Every path is a spec path and every body typed; a refusal throws the kernel's `Problem` (see {@link expectRefusal}).
  */
 export function api(page: Page) {
   return createApiClient({
@@ -37,7 +38,7 @@ export async function expectRefusal(call: Promise<unknown>, status: number, code
   const refused = await call.then(
     () => undefined,
     (error: unknown) => {
-      if (error instanceof ApiError) return { status: error.status, code: error.code };
+      if (isProblem(error)) return { status: error.status, code: error.code };
       throw error;
     },
   );
@@ -45,8 +46,8 @@ export async function expectRefusal(call: Promise<unknown>, status: number, code
 }
 
 /**
- * A request the typed client cannot make, because it is wrong on purpose (scenario 23): its status
- * and the `code` of the ErrorBody it answers.
+ * A request the typed client cannot make, because it is wrong on purpose (scenario 23): its status,
+ * the media type it answers with, and the `code` of the problem it carries.
  */
 export async function raw(page: Page, method: string, path: string, body?: string) {
   const answer = await page.request.fetch(`${BASE_URL}/api${path}`, {
@@ -56,7 +57,11 @@ export async function raw(page: Page, method: string, path: string, body?: strin
     data: body === undefined ? undefined : Buffer.from(body),
     failOnStatusCode: false,
   });
-  return { status: answer.status(), code: ((await answer.json().catch(() => null)) as { code?: string } | null)?.code };
+  return {
+    status: answer.status(),
+    type: answer.headers()["content-type"],
+    code: ((await answer.json().catch(() => null)) as { code?: string } | null)?.code,
+  };
 }
 
 export const SINK = "Workspace output";

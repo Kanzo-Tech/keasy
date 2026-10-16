@@ -1,5 +1,5 @@
-//! Every failure the server can answer, in the one shape: `{code, title,
-//! detail, data}` — whoever produced it, the handler or axum before it. (No
+//! Every failure the server can answer, in the one shape: `application/problem+json`,
+//! `{type, status, title, detail, code, data}` — whoever produced it, the handler or axum before it. (No
 //! route takes a query string, so a `Query` rejection has nothing to be tested on.)
 
 use axum::http::{Method, StatusCode, header};
@@ -9,13 +9,26 @@ use crate::helpers::{EDITOR, Options, TestApp, spawn_app, spawn_app_with};
 use keasy_server::configuration::Rate;
 use keasy_server::domain::Direction;
 
-/// The status and the whole body, which must be an `ErrorBody`.
+/// The status and the whole body, which must be a problem (RFC 9457) whose
+/// `type` is its `code`'s and whose `status` is the response's.
 async fn refused(response: reqwest::Response) -> (StatusCode, serde_json::Value) {
     let status = response.status();
-    let body: serde_json::Value = response.json().await.expect("an error body is JSON");
-    for field in ["code", "title", "detail"] {
+    assert_eq!(
+        response.headers()[header::CONTENT_TYPE],
+        "application/problem+json"
+    );
+    let body: serde_json::Value = response.json().await.expect("a problem is JSON");
+    for field in ["type", "code", "title", "detail"] {
         assert!(body[field].is_string(), "{field} in {body}");
     }
+    assert_eq!(
+        body["type"].as_str().unwrap(),
+        format!(
+            "tag:kanzo.tech,2026:problem/{}",
+            body["code"].as_str().unwrap()
+        ),
+    );
+    assert_eq!(body["status"], status.as_u16(), "{body}");
     assert!(body["data"].is_object(), "data in {body}");
     (status, body)
 }
@@ -25,7 +38,7 @@ fn url(app: &TestApp, path: &str) -> String {
 }
 
 #[tokio::test]
-async fn what_axum_refuses_before_a_handler_speaks_error_body_too() {
+async fn what_axum_refuses_before_a_handler_is_a_problem_too() {
     let app = spawn_app().await;
     let member = app.token(EDITOR);
     let c = &app.client;

@@ -8,13 +8,13 @@ use crate::domain::{
     Actor, ConnectionView, Credential, Direction, Provenance, ResourceName, SecretSpec,
     StorageLocation, StorageTarget,
 };
-use crate::error::{ErrorCode, Refusal};
+use crate::error::{Refusal, ServerCode};
 use crate::storage_client::Endpoints;
 
 /// The connection `name`, or 404.
 pub async fn named(db: &Database, name: &str) -> Result<ConnectionView, Refusal> {
     persistence::get(&*db.read().await, name)?
-        .ok_or_else(|| Refusal::not_found(ErrorCode::ConnectionNotFound, "No such connection"))
+        .ok_or_else(|| Refusal::new(ServerCode::ConnectionNotFound, "No such connection"))
 }
 
 /// The secret `connection` points at, checked for reaching the URL's
@@ -101,7 +101,7 @@ pub async fn save(
         Some(name) => persistence::update(&conn, name, &connection, by)?,
     }
     persistence::get(&conn, &connection.name)?
-        .ok_or_else(|| Refusal::not_found(ErrorCode::ConnectionNotFound, "No such connection"))
+        .ok_or_else(|| Refusal::new(ServerCode::ConnectionNotFound, "No such connection"))
 }
 
 pub async fn create(
@@ -132,7 +132,7 @@ pub fn storage(
 ) -> Result<(StorageLocation, SecretSpec), Refusal> {
     let location = StorageLocation::parse(&connection.target.url).map_err(Refusal::invalid)?;
     let spec = crate::credentials::persistence::get(conn, key, &connection.secret)?
-        .ok_or_else(|| Refusal::not_found(ErrorCode::SecretNotFound, "No such secret"))?
+        .ok_or_else(|| Refusal::new(ServerCode::SecretNotFound, "No such secret"))?
         .spec;
     let location = location.within(&spec).map_err(Refusal::invalid)?;
     Ok((location, spec))
@@ -142,7 +142,7 @@ pub fn storage(
 /// sink is reached only through its graphs.
 pub fn source(conn: &rusqlite::Connection, name: &str) -> Result<ConnectionView, Refusal> {
     let connection = persistence::get(conn, name)?
-        .ok_or_else(|| Refusal::not_found(ErrorCode::ConnectionNotFound, "No such connection"))?;
+        .ok_or_else(|| Refusal::new(ServerCode::ConnectionNotFound, "No such connection"))?;
     if connection.target.direction != Direction::Source {
         return Err(Refusal::invalid(format!(
             "{name:?} is not a storage source"

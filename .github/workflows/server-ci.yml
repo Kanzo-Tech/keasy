@@ -29,7 +29,24 @@ jobs:
 
       - name: clippy
         working-directory: server
-        run: cargo clippy --all-targets -- -D warnings
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      # src/problems.rs is generated from problems.bnf and @kanzo-tech/kernel's,
+      # which npm ships: the kernel's is read from api/node_modules.
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: problems match the registries
+        run: |
+          pnpm install --frozen-lockfile --filter @keasy/api
+          cd server && cargo xtask problems --check
 
       # Includes the golden test that the committed api/openapi.json is the
       # contract the routes publish.

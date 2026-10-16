@@ -1,6 +1,7 @@
 import "client-only";
 
-import { ApiError, HttpError, type paths } from "@keasy/api";
+import { HttpError, type paths } from "@keasy/api";
+import { isProblem } from "@kanzo-tech/kernel";
 import { MutationCache, QueryCache, QueryClient } from "@tanstack/react-query";
 import { toast } from "@kanzo-tech/ui";
 
@@ -83,11 +84,11 @@ export const queryClient = new QueryClient({
  * workspace the person holds no role in any more sends them home.
  */
 function handleAuthError(error: unknown) {
-  if (leaving || !(error instanceof ApiError || error instanceof HttpError)) return;
+  if (leaving || !(isProblem(error) || error instanceof HttpError)) return;
   if (error.status === 401) {
     leaving = true;
     window.location.reload();
-  } else if (error instanceof ApiError && error.code === "rbac/no-membership") {
+  } else if (isProblem(error, "rbac/no-membership")) {
     leaving = true;
     window.location.href = "/";
   }

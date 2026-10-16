@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { ApiError, HttpError, retryable } from "@keasy/api";
+import { Problem } from "@kanzo-tech/kernel";
+import { HttpError, retryable } from "@keasy/api";
 
-const coded = (code: string, status?: number) => new ApiError({ code: code as never, title: "", detail: "", data: {} }, status);
+const coded = (code: string, status?: number) => new Problem(code, "", {}, { status });
 
 describe("retryable", () => {
   it("asks again when nothing answered: a network failure, a deadline", () => {

@@ -876,7 +876,7 @@ async fn a_run_is_stopped_by_its_runner_or_an_admin_through_its_runner() {
 }
 
 /// Running again re-runs a graph that ended, in the same folder: the last run's
-/// report and end go, and the output is written over.
+/// end goes, and the output is written over.
 #[tokio::test]
 async fn running_again_writes_over_the_last_output() {
     let app = spawn_app().await;
@@ -885,20 +885,16 @@ async fn running_again_writes_over_the_last_output() {
     app.connection("sink", "key", Direction::Sink, "u-1").await;
     let id = app.running(&member).await;
     let (_, done) = app
-        .report(
-            &member,
-            &id,
-            json!({ "status": "completed", "report": { "dest": "d" } }),
-        )
+        .report(&member, &id, json!({ "status": "completed" }))
         .await;
-    assert_eq!(done["report"], json!({ "dest": "d" }));
+    assert_eq!(done["status"], "completed");
 
     let (status, again) = app.run(&member, &id).await;
     assert_eq!(status, StatusCode::OK, "{again}");
     assert_eq!(again["status"], "running");
     assert_eq!(again["folder"], done["folder"], "the same folder");
     assert_eq!(again["output"], done["output"]);
-    assert!(again.get("report").is_none() && again.get("completed_at").is_none());
+    assert!(again.get("completed_at").is_none());
     assert_eq!(
         app.vend(&member, json!({ "job": id }), "write").await.0,
         StatusCode::BAD_GATEWAY,

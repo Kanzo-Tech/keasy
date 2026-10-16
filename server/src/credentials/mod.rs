@@ -8,13 +8,13 @@ pub mod sealing;
 
 use crate::database::Database;
 use crate::domain::{Actor, Credential, ResourceName, SecretSpec, SecretView};
-use crate::error::{ErrorCode, Refusal};
+use crate::error::{Refusal, ServerCode};
 use crate::storage_client::Endpoints;
 
 /// The credential `name`, unsealed, or 404.
 pub async fn named(db: &Database, name: &str) -> Result<Credential, Refusal> {
     persistence::get(&*db.read().await, db.secret_key(), name)?
-        .ok_or_else(|| Refusal::not_found(ErrorCode::SecretNotFound, "No such secret"))
+        .ok_or_else(|| Refusal::new(ServerCode::SecretNotFound, "No such secret"))
 }
 
 /// Parse, probe, seal and store a credential, LISTing `probe_url` when one is
@@ -42,6 +42,6 @@ pub async fn create(
         &report.taken_by(by),
     )?;
     let stored = persistence::get(&conn, db.secret_key(), name.as_ref())?
-        .ok_or_else(|| Refusal::not_found(ErrorCode::SecretNotFound, "No such secret"))?;
+        .ok_or_else(|| Refusal::new(ServerCode::SecretNotFound, "No such secret"))?;
     Ok(stored.view(Vec::new()))
 }

@@ -11,14 +11,13 @@ use std::str::FromStr;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use axum::http::StatusCode;
 use rusqlite::Connection;
 use serde::de::DeserializeOwned;
 use tokio::sync::{Mutex, MutexGuard};
 
 use crate::credentials::sealing::SecretKey;
 use crate::domain::{Actor, Provenance};
-use crate::error::{ErrorCode, Refusal};
+use crate::error::{Refusal, ServerCode};
 
 const READ_POOL_SIZE: usize = 4;
 
@@ -56,23 +55,15 @@ impl From<DbError> for Refusal {
         match e {
             DbError::Invalid(message) => Refusal::invalid(message),
             DbError::AlreadyExists(message) => {
-                Refusal::conflict(ErrorCode::ResourceAlreadyExists, message)
+                Refusal::new(ServerCode::ResourceAlreadyExists, message)
             }
-            DbError::FolderTaken(message) => Refusal::field(
-                StatusCode::CONFLICT,
-                ErrorCode::GraphFolderTaken,
-                "folder",
-                message,
-            ),
+            DbError::FolderTaken(message) => {
+                Refusal::field(ServerCode::GraphFolderTaken, "folder", message)
+            }
             DbError::InUse {
                 message,
                 dependents,
-            } => Refusal::about(
-                StatusCode::CONFLICT,
-                ErrorCode::ResourceInUse,
-                message,
-                dependents,
-            ),
+            } => Refusal::about(ServerCode::ResourceInUse, message, dependents),
             e => {
                 tracing::error!(error = %e, "database failure");
                 Refusal::internal()
@@ -327,8 +318,6 @@ CREATE TABLE graphs (
         ON UPDATE CASCADE ON DELETE RESTRICT,
     folder          TEXT CHECK (status = 'draft' OR folder IS NOT NULL),
     script          TEXT,
-    -- fossil's run report, opaque. What the graph holds, the graph says.
-    report          TEXT CHECK (report IS NULL OR json_valid(report)),
     -- The conversation it was built from; a graph outlives it.
     conversation    TEXT REFERENCES conversations (id) ON DELETE SET NULL
 );

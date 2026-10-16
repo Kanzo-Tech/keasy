@@ -14,7 +14,7 @@ use crate::authentication::role::{Caller, Editor, Reader};
 use crate::connections::{named, persistence};
 use crate::database::Database;
 use crate::domain::{ConnectionView, Provenance, ResourceName, StorageTarget, ValidationReport};
-use crate::error::{ErrorBody, Refusal};
+use crate::error::{Problem, Refusal};
 use crate::startup::AppState;
 use crate::storage_client;
 
@@ -129,11 +129,11 @@ pub async fn list_connections(
     request_body = CreateConnectionRequest,
     responses(
         (status = 201, description = "Validated and stored", body = ConnectionView),
-        (status = 400, description = "No such secret, or a URL it does not reach", body = ErrorBody),
-        (status = 403, description = "A sink by anyone but an admin, or on a secret the caller may not use", body = ErrorBody),
-        (status = 409, description = "A connection of that name, or a second sink", body = ErrorBody),
-        (status = 422, description = "The connection did not validate", body = ErrorBody),
-        (status = 504, description = "The store did not answer the probe in time", body = ErrorBody),
+        (status = 400, description = "No such secret, or a URL it does not reach", body = Problem, content_type = "application/problem+json"),
+        (status = 403, description = "A sink by anyone but an admin, or on a secret the caller may not use", body = Problem, content_type = "application/problem+json"),
+        (status = 409, description = "A connection of that name, or a second sink", body = Problem, content_type = "application/problem+json"),
+        (status = 422, description = "The connection did not validate", body = Problem, content_type = "application/problem+json"),
+        (status = 504, description = "The store did not answer the probe in time", body = Problem, content_type = "application/problem+json"),
     )
 )]
 pub async fn create_connection(
@@ -167,7 +167,7 @@ pub async fn create_connection(
     params(("name" = String, Path, description = "Connection name")),
     responses(
         (status = 200, description = "The connection", body = ConnectionView),
-        (status = 404, description = "No such connection", body = ErrorBody),
+        (status = 404, description = "No such connection", body = Problem, content_type = "application/problem+json"),
     )
 )]
 pub async fn get_connection(
@@ -183,10 +183,10 @@ pub async fn get_connection(
     request_body = UpdateConnectionRequest,
     responses(
         (status = 200, description = "Validated again and stored", body = ConnectionView),
-        (status = 403, description = "Neither its owner nor an admin; the sink, anyone but an admin; or a secret the caller may not use", body = ErrorBody),
-        (status = 404, description = "No such connection", body = ErrorBody),
-        (status = 422, description = "The connection did not validate", body = ErrorBody),
-        (status = 504, description = "The store did not answer the probe in time", body = ErrorBody),
+        (status = 403, description = "Neither its owner nor an admin; the sink, anyone but an admin; or a secret the caller may not use", body = Problem, content_type = "application/problem+json"),
+        (status = 404, description = "No such connection", body = Problem, content_type = "application/problem+json"),
+        (status = 422, description = "The connection did not validate", body = Problem, content_type = "application/problem+json"),
+        (status = 504, description = "The store did not answer the probe in time", body = Problem, content_type = "application/problem+json"),
     )
 )]
 pub async fn update_connection(
@@ -224,9 +224,9 @@ pub async fn update_connection(
     params(("name" = String, Path, description = "Connection name")),
     responses(
         (status = 204, description = "Deleted"),
-        (status = 403, description = "Neither its owner nor an admin; the sink, anyone but an admin", body = ErrorBody),
-        (status = 404, description = "No such connection", body = ErrorBody),
-        (status = 409, description = "Graphs wrote their output to it; `dependents` names them", body = ErrorBody),
+        (status = 403, description = "Neither its owner nor an admin; the sink, anyone but an admin", body = Problem, content_type = "application/problem+json"),
+        (status = 404, description = "No such connection", body = Problem, content_type = "application/problem+json"),
+        (status = 409, description = "Graphs wrote their output to it; `dependents` names them", body = Problem, content_type = "application/problem+json"),
     )
 )]
 pub async fn delete_connection(
@@ -244,9 +244,9 @@ pub async fn delete_connection(
     params(("name" = String, Path, description = "Connection name")),
     responses(
         (status = 200, description = "The probe's report, stored with the connection and naming who asked for it", body = ValidationReport),
-        (status = 403, description = "The sink, tested by anyone but an admin", body = ErrorBody),
-        (status = 404, description = "No such connection", body = ErrorBody),
-        (status = 504, description = "The store did not answer the probe in time", body = ErrorBody),
+        (status = 403, description = "The sink, tested by anyone but an admin", body = Problem, content_type = "application/problem+json"),
+        (status = 404, description = "No such connection", body = Problem, content_type = "application/problem+json"),
+        (status = 504, description = "The store did not answer the probe in time", body = Problem, content_type = "application/problem+json"),
     )
 )]
 /// LIST a source, WRITE and DELETE under the sink. Any editor tests a source,
@@ -275,10 +275,10 @@ pub async fn validate_connection(
     params(("name" = String, Path, description = "Connection name"), FilesQuery),
     responses(
         (status = 200, description = "The first `limit` objects under the connection's prefix, or under `prefix` within it", body = FileListing),
-        (status = 400, description = "Not a storage source, or a prefix that leaves it (`data.field`)", body = ErrorBody),
-        (status = 404, description = "No such connection", body = ErrorBody),
-        (status = 502, description = "The store refused the listing", body = ErrorBody),
-        (status = 504, description = "The store did not answer in time", body = ErrorBody),
+        (status = 400, description = "Not a storage source, or a prefix that leaves it (`data.field`)", body = Problem, content_type = "application/problem+json"),
+        (status = 404, description = "No such connection", body = Problem, content_type = "application/problem+json"),
+        (status = 502, description = "The store refused the listing", body = Problem, content_type = "application/problem+json"),
+        (status = 504, description = "The store did not answer in time", body = Problem, content_type = "application/problem+json"),
     )
 )]
 /// What lies under a source is used, not read: an editor lists it, as an

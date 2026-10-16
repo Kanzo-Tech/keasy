@@ -3,7 +3,6 @@
 
 use axum::Json;
 use axum::extract::{Path, State};
-use axum::http::StatusCode;
 use rudof_rdf::backend::{OxigraphInMemoryError, ReaderMode};
 use rudof_rdf::{RDFFormat, STRING_BASE};
 use serde::Deserialize;
@@ -14,7 +13,7 @@ use utoipa_axum::routes;
 use crate::authentication::permission::Action;
 use crate::authentication::role::{Editor, Reader};
 use crate::domain::Rules;
-use crate::error::{ErrorBody, ErrorCode, Refusal};
+use crate::error::{Problem, Refusal, ServerCode};
 use crate::graphs::{any, rules};
 use crate::startup::AppState;
 
@@ -36,7 +35,7 @@ pub struct PutRulesRequest {
     params(("id" = String, Path, description = "Graph ID")),
     responses(
         (status = 200, description = "The graph's rules, or null when none are saved", body = Option<Rules>),
-        (status = 404, description = "Graph not found", body = ErrorBody),
+        (status = 404, description = "Graph not found", body = Problem, content_type = "application/problem+json"),
     )
 )]
 pub async fn get_rules(
@@ -53,10 +52,10 @@ pub async fn get_rules(
     request_body = PutRulesRequest,
     responses(
         (status = 200, description = "Rules saved", body = Rules),
-        (status = 400, description = "`name` is not a file's name: `request/invalid` on the field `name`", body = ErrorBody),
-        (status = 404, description = "Graph not found", body = ErrorBody),
-        (status = 413, description = "The shapes graph is larger than a graph's rules may be", body = ErrorBody),
-        (status = 422, description = "rudof refused the shapes graph: `rules/refused`, placed by `line` and `column` when it is not Turtle", body = ErrorBody),
+        (status = 400, description = "`name` is not a file's name: `request/invalid` on the field `name`", body = Problem, content_type = "application/problem+json"),
+        (status = 404, description = "Graph not found", body = Problem, content_type = "application/problem+json"),
+        (status = 413, description = "The shapes graph is larger than a graph's rules may be", body = Problem, content_type = "application/problem+json"),
+        (status = 422, description = "rudof refused the shapes graph: `rules/refused`, placed by `line` and `column` when it is not Turtle", body = Problem, content_type = "application/problem+json"),
     )
 )]
 /// The rules are the graph's: who may change the graph may save them.
@@ -70,8 +69,7 @@ pub async fn put_rules(
     let size = payload.shapes.len();
     if size > MAX_SHAPES_BYTES {
         return Err(Refusal::new(
-            StatusCode::PAYLOAD_TOO_LARGE,
-            ErrorCode::RequestTooLarge,
+            ServerCode::RequestTooLarge,
             format!("A graph's rules are at most {MAX_SHAPES_BYTES} bytes; these are {size}"),
         ));
     }
@@ -126,12 +124,7 @@ fn read(shapes: &str) -> Result<(), Refusal> {
         },
         _ => None,
     };
-    let mut refusal = Refusal::field(
-        StatusCode::UNPROCESSABLE_ENTITY,
-        ErrorCode::RulesRefused,
-        "shapes",
-        error.to_string(),
-    );
+    let mut refusal = Refusal::field(ServerCode::RulesRefused, "shapes", error.to_string());
     if let Some(at) = at {
         refusal.body.data.line = Some(at.line + 1);
         refusal.body.data.column = Some(at.column + 1);

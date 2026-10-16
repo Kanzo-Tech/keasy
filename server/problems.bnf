@@ -1,0 +1,87 @@
+(* ==========================================================================
+   problems.bnf - THE CODES KEASY'S SERVER ANSWERS WITH.
+
+   A host's own registry, in the grammar of @kanzo-tech/kernel's `problems.bnf`
+   (read the grammar there): the same `base`, and no code of the kernel's. Every
+   refusal the server writes is `application/problem+json` (RFC 9457) under one of
+   these. `cargo xtask problems` writes `src/problems.rs` from this file and the
+   kernel's; `--check` fails on a difference, and on a row the kernel's registry
+   already holds.
+
+   A comment directly above a row is the variant's doc comment.
+
+   The grammar's `data` has no list: `dependents` (the names a refusal is about,
+   on resource/in-use, connection/overlaps and probe/failed) is a string list
+   the kernel's grammar cannot declare, and is left off those rows.
+   ========================================================================== *)
+
+base "tag:kanzo.tech,2026:problem/" .
+
+row auth/session-required       = 401 ; "Sign in required"                            ; - .
+row auth/keys-unavailable       = 503 ; "The identity provider is unreachable"        ; - .
+row rbac/no-membership          = 403 ; "Not a member of this workspace"              ; - .
+row rbac/insufficient-role      = 403 ; "Your role does not allow this"               ; - .
+(* The caller holds the role, but not this resource: another member's. *)
+row rbac/forbidden              = 403 ; "Not allowed"                                 ; - .
+row request/rate-limited        = 429 ; "Too many requests"                           ; - .
+(* Well-formed, but what it asks for is not allowed. *)
+row request/invalid             = 400 ; "The request is not valid"                    ; field?: string .
+(* Not well-formed: a body, path or query that does not parse. axum answers 400, 415 or 422, and the
+   problem carries the status it answered with. *)
+row request/malformed           = 400 ; "The request is malformed"                    ; - .
+row request/method-not-allowed  = 405 ; "The method is not allowed here"              ; - .
+row request/too-large           = 413 ; "The request is too large"                    ; - .
+(* No route answers at this path. *)
+row route/not-found             = 404 ; "No such route"                               ; - .
+row server/internal             = 500 ; "The server failed"                           ; - .
+(* The server did not answer within its own bound; `after` says how long it waited, in milliseconds. *)
+row server/silent               = 503 ; "The server did not answer in time"           ; after: number .
+(* The server is up but cannot serve: its database did not answer. *)
+row server/not-ready            = 503 ; "The server is not ready"                     ; - .
+row graph/not-found             = 404 ; "Graph not found"                             ; - .
+(* Only a draft is edited or submitted. *)
+row graph/not-draft             = 409 ; "Not a draft"                                 ; - .
+(* A graph's output is read once the graph has completed. *)
+row graph/not-completed         = 409 ; "The graph has not completed"                 ; - .
+(* Not running yet: a graph's output is written, and its run reported, only once it runs. *)
+row graph/not-running           = 409 ; "The graph is not running"                    ; - .
+(* The graph has ended - completed, failed, cancelled or swept - so it has no run left to report or
+   write. *)
+row graph/ended                 = 409 ; "The graph has ended"                         ; - .
+row graph/still-running         = 409 ; "The graph is still running"                  ; - .
+(* A run is under way already: a graph runs once at a time. *)
+row graph/already-running       = 409 ; "The graph is running already"                ; - .
+(* The runner went silent: no heartbeat within the lease. Stored as the graph's problem by the sweep,
+   never an answer. *)
+row graph/abandoned             = -   ; "The run was abandoned"                       ; - .
+(* The runner's own tab lost the run (it reloaded, or closed and came back) and its runner ended it,
+   to run it again. Stored as the graph's problem; reported by the runner, never raised by the
+   server. *)
+row graph/interrupted           = -   ; "The run was interrupted"                     ; - .
+row graph/invalid-destination   = 400 ; "Not a valid destination"                     ; - .
+row graph/no-destination        = 400 ; "No destination"                              ; - .
+(* Another graph that is not a draft writes to that folder of the sink; `field` is `folder`. *)
+row graph/folder-taken          = 409 ; "Another graph writes to that folder"         ; field: string .
+row conversation/not-found      = 404 ; "Conversation not found"                      ; - .
+(* A graph was built from the conversation: it is that graph's record, and is not saved over. *)
+row conversation/built          = 409 ; "A graph was built from this conversation"    ; - .
+row secret/not-found            = 404 ; "Secret not found"                            ; - .
+row connection/not-found        = 404 ; "Connection not found"                        ; - .
+(* A secret or connection of that name exists already, or a second sink. *)
+row resource/already-exists     = 409 ; "It exists already"                           ; - .
+(* Still used: `dependents` names what uses it. *)
+row resource/in-use             = 409 ; "Still in use"                                ; - .
+(* A storage connection's location lies within another's, or holds one: `dependents` names them.
+   Locations never overlap, so a prefix has one owner. *)
+row connection/overlaps         = 409 ; "The location overlaps another"               ; - .
+(* A secret or connection was probed and did not pass; `dependents` names the connections that
+   failed. *)
+row probe/failed                = 422 ; "Validation failed"                           ; - .
+(* The store answered and refused: to vend, or to list. *)
+row store/refused               = 502 ; "The store refused"                           ; - .
+(* The store, or the identity service in front of it (Entra, STS), did not answer within its
+   deadline; `after` says how long it was given, in milliseconds. *)
+row store/silent                = 504 ; "The store did not answer in time"            ; after: number .
+(* rudof refused a rules document: it is not Turtle, or not a SHACL shapes graph. `line` and `column`
+   place it when the Turtle parser does. *)
+row rules/refused               = 422 ; "The rules could not be read"                 ; field: string, line?: number, column?: number .

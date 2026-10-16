@@ -99,15 +99,6 @@ pub struct Graph {
     /// The program every run of the graph runs.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub script: Option<String>,
-    /// What the last run reported, verbatim and **opaque**: fossil's run report
-    /// (`RunReport`, `{dest, dropped}`). keasy stores it, hands it back and
-    /// never reads a field of it — the last time a host re-typed this struct,
-    /// it ended up asking for `vertex/<Type>.parquet`, a file the layout pass
-    /// deletes. What the corpus holds is the corpus's to say: a reader opens
-    /// it and asks its `fossil_tables` and `fossil_columns`.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[schema(value_type = Option<Value>)]
-    pub report: Option<serde_json::Value>,
     /// The assistant's conversation the graph was built from, set when it is
     /// created and never after: what was decided, and how.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -139,7 +130,6 @@ impl Graph {
             folder: folder.map(GraphFolder::into_inner),
             output: None,
             script: Some(script),
-            report: None,
             conversation: None,
             can: Can::default(),
             can_stop: false,
@@ -167,7 +157,7 @@ impl Graph {
     }
 
     /// `runner` starts a run: the graph's first, or another over the last one's
-    /// output, in the same folder. The last run's end, report and problem go;
+    /// output, in the same folder. The last run's end and problem go;
     /// the lease starts now. A graph runs once at a time.
     pub fn run(&mut self, runner: Actor) -> Result<(), Transition> {
         match self.status {
@@ -182,7 +172,6 @@ impl Graph {
         self.heartbeat_at = Some(now);
         self.completed_at = None;
         self.problem = None;
-        self.report = None;
         self.cancel_requested = false;
         Ok(())
     }
@@ -193,7 +182,6 @@ impl Graph {
         &mut self,
         by: &str,
         status: GraphStatus,
-        report: Option<serde_json::Value>,
         problem: Option<serde_json::Value>,
     ) -> Result<(), Transition> {
         self.running()?;
@@ -204,15 +192,11 @@ impl Graph {
         match status {
             GraphStatus::Draft | GraphStatus::Idle => return Err(Transition::Backwards),
             GraphStatus::Running => self.heartbeat_at = Some(now),
-            GraphStatus::Completed => {
-                self.report = report;
-                self.completed_at = Some(now);
-            }
+            GraphStatus::Completed | GraphStatus::Cancelled => self.completed_at = Some(now),
             GraphStatus::Failed => {
                 self.problem = problem;
                 self.completed_at = Some(now);
             }
-            GraphStatus::Cancelled => self.completed_at = Some(now),
         }
         if status.has_ended() {
             self.cancel_requested = false;
@@ -408,12 +392,7 @@ mod tests {
     fn ended(status: GraphStatus) -> Graph {
         let mut graph = running("u-1");
         graph
-            .report(
-                "u-1",
-                status,
-                Some(json!({"dest": "d"})),
-                Some(json!({"code": "c"})),
-            )
+            .report("u-1", status, Some(json!({"code": "c"})))
             .unwrap();
         graph
     }
@@ -450,7 +429,7 @@ mod tests {
         let mut graph = draft(Some("people"));
         assert_eq!(graph.run(actor("u-1")), Err(Transition::NeverRun));
         assert_eq!(
-            graph.report("u-1", GraphStatus::Running, None, None),
+            graph.report("u-1", GraphStatus::Running, None),
             Err(Transition::NeverRun)
         );
         assert_eq!(
@@ -484,8 +463,8 @@ mod tests {
             assert_eq!(graph.status, GraphStatus::Running);
             assert_eq!(graph.runner, Some(actor("u-9")));
             assert_eq!(
-                (&graph.completed_at, &graph.report, &graph.problem),
-                (&None, &None, &None),
+                (&graph.completed_at, &graph.problem),
+                (&None, &None),
                 "{status:?}: the last run's end goes"
             );
             assert_eq!(graph.folder.as_deref(), Some("people"), "the same folder");
@@ -496,31 +475,24 @@ mod tests {
     fn only_the_runner_reports_and_only_forward() {
         let mut graph = running("u-1");
         assert_eq!(
-            graph.report("u-2", GraphStatus::Running, None, None),
+            graph.report("u-2", GraphStatus::Running, None),
             Err(Transition::NotRunner)
         );
         for back in [GraphStatus::Draft, GraphStatus::Idle] {
-            assert_eq!(
-                graph.report("u-1", back, None, None),
-                Err(Transition::Backwards)
-            );
+            assert_eq!(graph.report("u-1", back, None), Err(Transition::Backwards));
         }
-        assert_eq!(
-            graph.report("u-1", GraphStatus::Running, None, None),
-            Ok(())
-        );
+        assert_eq!(graph.report("u-1", GraphStatus::Running, None), Ok(()));
 
         let done = ended(GraphStatus::Completed);
-        assert_eq!(done.report, Some(json!({"dest": "d"})));
-        assert_eq!(done.problem, None);
+        assert_eq!(done.problem, None, "only a failure keeps its problem");
         let failed = ended(GraphStatus::Failed);
         assert_eq!(failed.problem, Some(json!({"code": "c"})));
         assert_eq!(
-            ended(GraphStatus::Cancelled).report("u-1", GraphStatus::Running, None, None),
+            ended(GraphStatus::Cancelled).report("u-1", GraphStatus::Running, None),
             Err(Transition::Ended)
         );
         assert_eq!(
-            idle().report("u-1", GraphStatus::Running, None, None),
+            idle().report("u-1", GraphStatus::Running, None),
             Err(Transition::NotRunning)
         );
     }
@@ -553,9 +525,7 @@ mod tests {
         let mut graph = running("u-1");
         graph.stop(&caller("u-9", "admin")).unwrap();
         assert!(graph.cancel_requested);
-        graph
-            .report("u-1", GraphStatus::Cancelled, None, None)
-            .unwrap();
+        graph.report("u-1", GraphStatus::Cancelled, None).unwrap();
         assert!(!graph.cancel_requested, "an end answers the request");
 
         assert_eq!(

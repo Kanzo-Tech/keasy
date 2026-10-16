@@ -1322,7 +1322,7 @@
         "tags": [
           "Graphs"
         ],
-        "summary": "The runner's one report, taken from the runner alone: `running` renews the\nlease — a run no report has renewed for the lease (60 s) is swept as\n`graph/abandoned`; an end records how the run ended, and dates it.\n`completed` stores the run report verbatim, unread. The answer says\nwhether someone asked the run to stop.",
+        "summary": "The runner's one report, taken from the runner alone: `running` renews the\nlease — a run no report has renewed for the lease (60 s) is swept as\n`graph/abandoned`; an end records how the run ended, and dates it. The\nanswer says whether someone asked the run to stop.",
         "operationId": "report_status",
         "parameters": [
           {
@@ -2627,9 +2627,6 @@
               "problem": {
                 "description": "Why a `Failed` run failed, as the browser that ran it reported it: a\nproblem (`{ code, title, detail, data, … }`), stored verbatim and\n**opaque** — the web branches on its `code`, the server never does."
               },
-              "report": {
-                "description": "What the last run reported, verbatim and **opaque**: fossil's run report\n(`RunReport`, `{dest, dropped}`). keasy stores it, hands it back and\nnever reads a field of it — the last time a host re-typed this struct,\nit ended up asking for `vertex/<Type>.parquet`, a file the layout pass\ndeletes. What the corpus holds is the corpus's to say: a reader opens\nit and asks its `fossil_tables` and `fossil_columns`."
-              },
               "runner": {
                 "oneOf": [
                   {
@@ -2693,9 +2690,6 @@
         "properties": {
           "problem": {
             "description": "Why the run failed (on `failed`): the run's problem, stored verbatim\nand opaque — but for the title of a code the server owns, which it\nfills in when the problem carries none."
-          },
-          "report": {
-            "description": "fossil's run report (on `completed`), stored verbatim and never read."
           },
           "status": {
             "$ref": "#/components/schemas/GraphStatus",

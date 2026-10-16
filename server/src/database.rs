@@ -327,8 +327,6 @@ CREATE TABLE graphs (
         ON UPDATE CASCADE ON DELETE RESTRICT,
     folder          TEXT CHECK (status = 'draft' OR folder IS NOT NULL),
     script          TEXT,
-    -- fossil's run report, opaque. What the graph holds, the graph says.
-    report          TEXT CHECK (report IS NULL OR json_valid(report)),
     -- The conversation it was built from; a graph outlives it.
     conversation    TEXT REFERENCES conversations (id) ON DELETE SET NULL
 );

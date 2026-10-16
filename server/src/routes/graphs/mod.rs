@@ -90,10 +90,6 @@ pub struct GraphStatusReport {
     /// `running` (renews the lease), or the end: `completed`, `failed` or
     /// `cancelled`.
     pub status: GraphStatus,
-    /// fossil's run report (on `completed`), stored verbatim and never read.
-    #[serde(default)]
-    #[schema(value_type = Option<Value>)]
-    pub report: Option<serde_json::Value>,
     /// Why the run failed (on `failed`): the run's problem, stored verbatim
     /// and opaque — but for the title of a code the server owns, which it
     /// fills in when the problem carries none.
@@ -286,9 +282,8 @@ pub async fn run_graph(
 )]
 /// The runner's one report, taken from the runner alone: `running` renews the
 /// lease — a run no report has renewed for the lease (60 s) is swept as
-/// `graph/abandoned`; an end records how the run ended, and dates it.
-/// `completed` stores the run report verbatim, unread. The answer says
-/// whether someone asked the run to stop.
+/// `graph/abandoned`; an end records how the run ended, and dates it. The
+/// answer says whether someone asked the run to stop.
 pub async fn report_status(
     caller: Editor,
     State(state): State<AppState>,
@@ -310,7 +305,6 @@ pub async fn report_status(
         Ok(graph.report(
             &caller.user_id,
             payload.status.clone(),
-            payload.report.clone(),
             payload.problem.clone().map(crate::error::titled),
         )?)
     })

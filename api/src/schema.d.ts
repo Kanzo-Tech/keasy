@@ -271,9 +271,8 @@ export interface paths {
         /**
          * The runner's one report, taken from the runner alone: `running` renews the
          *     lease — a run no report has renewed for the lease (60 s) is swept as
-         *     `graph/abandoned`; an end records how the run ended, and dates it.
-         *     `completed` stores the run report verbatim, unread. The answer says
-         *     whether someone asked the run to stop.
+         *     `graph/abandoned`; an end records how the run ended, and dates it. The
+         *     answer says whether someone asked the run to stop.
          */
         post: operations["report_status"];
         delete?: never;
@@ -677,15 +676,6 @@ export interface components {
              *     **opaque** — the web branches on its `code`, the server never does.
              */
             problem?: unknown;
-            /**
-             * @description What the last run reported, verbatim and **opaque**: fossil's run report
-             *     (`RunReport`, `{dest, dropped}`). keasy stores it, hands it back and
-             *     never reads a field of it — the last time a host re-typed this struct,
-             *     it ended up asking for `vertex/<Type>.parquet`, a file the layout pass
-             *     deletes. What the corpus holds is the corpus's to say: a reader opens
-             *     it and asks its `fossil_tables` and `fossil_columns`.
-             */
-            report?: unknown;
             runner?: null | components["schemas"]["Actor"];
             /** @description The program every run of the graph runs. */
             script?: string | null;
@@ -715,8 +705,6 @@ export interface components {
              *     fills in when the problem carries none.
              */
             problem?: unknown;
-            /** @description fossil's run report (on `completed`), stored verbatim and never read. */
-            report?: unknown;
             /**
              * @description `running` (renews the lease), or the end: `completed`, `failed` or
              *     `cancelled`.

@@ -300,8 +300,8 @@ the rest in the background, the way fossil's profile already splits.
   category and year*, with a real example from the sample rows, the edge's end looked up across
   sources through its inclusion — and `decisions`. IRIs are keasy's: a type is
   `<origin>/vocab/<Type>`, a field `<origin>/vocab/<field>`, a subject
-  `<origin>/id/<type>/{<source>.<key>}`, computed from the workspace's origin and the names, never
-  written by the model.
+  `<origin>/id/<type>/{<source>.<key>}`, computed by fossil from the workspace's origin and the names
+  (`vocabularyOf`, `subjectOf` of `@fossil-lang/wasm`), never written by the model.
 - *What would reverse it:* a small model that names and links types worse with the profile's
   closed lists than a person does by hand, over the examples — then the types are drawn from the
   sources one to one, and only the names are asked.
@@ -332,9 +332,12 @@ the rest in the background, the way fossil's profile already splits.
 - **Context**: the accepted model's types, and from each the paths Ask's model writes, two links out
   at most (`category`, `laureate.affiliation.name`, `^laureate.category`), keys left out.
 - **Contract**: `{ text, of, fields }`, `of` a type and `fields` a list of paths from it, both enums.
-- **Oracle**: Ask's resolver — `JoinResolver` from `@kanzo-tech/mosaic` over the join graph the
-  accepted model will be (`joinGraphOf`, written by hand: nothing has run yet) — reaches each path
-  from `of` (`requirements/unreachable`, naming the paths it does not).
+- **Oracle**: Ask's resolver — `JoinResolver` from `@kanzo-tech/relations` over the join graph the
+  accepted model will be (`joinGraphOf`) — reaches each path from `of` (`requirements/unreachable`,
+  naming the paths it does not). Nothing has run yet, so the graph is described as a built one is
+  (`withMapping`), by the mapping fossil makes of the declared types before any run
+  (`program.mapping()` over the prelude, parsed by rudof): each type's class, each column's predicate,
+  datatype and term type, each edge's predicate, the same the built graph's `mapping.ttl` states.
 - **Offered** with `propose` through `useTask`, five at a time, as chips; a chip is answerable by
   construction. **A question the person types** is marked by Ask's own Task, `ask` from
   `@kanzo-tech/ai/data`, run over the same join graph, which says what each field is: answerable when
@@ -364,13 +367,15 @@ graph; [cleanup](cleanup.md)). Three of the Tasks' pieces re-derived what a libr
   not the type's plural. *What would reverse it:* a library offering inflection by language (then a
   sentence may count and article again, and says it in the page's language), or a reader who finds
   *Kinds of thing: 6* colder than *six kinds of things* enough to be worth a heuristic.
-- **`requirements`** (`tasks/requirements.ts`) — its oracle is `JoinResolver`, Ask's own, over a
-  `JoinGraph` that `joinGraphOf` writes from the accepted model. It **stays**: the questions are
-  offered before any program has run, so there is no attached graph to read a `JoinGraph` from, and
-  kanzo-ui's one constructor of one (`readJoinGraph`) reads an attached GraphAr graph and nothing
-  else. It is data in the library's shape, not a second resolver. *What would reverse it:* kanzo-ui
-  exporting a constructor of a `JoinGraph` from a declared model — then `joinGraphOf` is that call;
-  or the questions waiting for the preview, and Ask offering them over it.
+- **`requirements`** (`tasks/requirements.ts`) — its oracle is `JoinResolver`, Ask's own, over
+  `joinGraphOf`: the accepted model's tables, described by fossil's mapping of the declared types
+  (`withMapping`). The tables' shape stays written here — a table per type keyed by an identity, one
+  per edge named as fossil's run names it, each field's DuckDB type — because a mapping states what
+  rows mean, not how they are joined: an edge's ends are only in its SQL, and kanzo-ui's one
+  constructor of a `JoinGraph` (`readJoinGraph`) reads an attached graph. It is data in the library's
+  shape, not a second resolver. *What would reverse it:* kanzo-ui exporting a constructor of a
+  `JoinGraph` from a mapping, or fossil's mapping stating an edge's ends — then `joinGraphOf` is that
+  call; or the questions waiting for the preview, and Ask offering them over it.
 - **`profile`'s facts** — `profiledOf` is the one transform of fossil's `profile()` answer into the
   shape the Tasks read, and nothing else reads the profile twice: the studio's checker describes at
   `depth: "types"` (`use-source-descriptors.ts`), which is a different question. The

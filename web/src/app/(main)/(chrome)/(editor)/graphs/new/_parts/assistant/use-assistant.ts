@@ -26,7 +26,7 @@ import { type Proposal, runTask } from "@kanzo-tech/ai/task";
 import type { Format, Profiled as Described } from "@fossil-lang/types";
 import { inputs, profile } from "@fossil-lang/wasm";
 import { engine } from "@kanzo-tech/mosaic/engine";
-import { splitWords } from "@kanzo-tech/relations";
+import { type JoinGraph, splitWords } from "@kanzo-tech/relations";
 import type { FileReference } from "@/lib/assistant-conversation";
 import type { StorageConnection } from "@/lib/connections";
 import { ClientError } from "@/lib/errors";
@@ -35,10 +35,10 @@ import { childrenOf, connectionNode, type SourceBranch, type SourceFile, type So
 import { listChildren } from "../use-sources";
 import { useModel } from "@/lib/ai";
 import { type AssistantData, type DecisionItem, optionOf, type Question, type QuestionOffer, type TaskFailure, type Thing } from "./model";
-import { fossilCheck, mapping, mappingInput, programOf } from "./tasks/mapping";
+import { declare, fossilCheck, mapping, mappingOf, programOf } from "./tasks/mapping";
 import { accept, type Accepted, decisionsOf, defaultsOf, type Draft, modelTask, relationsOf } from "./tasks/model";
 import { type Profiled, profiledOf, thingName } from "./tasks/profile";
-import { isAnswerable, requirements } from "./tasks/requirements";
+import { isAnswerable, joinGraphOf, requirements } from "./tasks/requirements";
 
 /** The rows the profile keeps of each file: enough for one row of each relation to be found across files. */
 const SHOWN = 50;
@@ -111,6 +111,7 @@ function held<A>({ task, value, verdict }: Proposal<A>): A {
 }
 
 const NO_MODEL: Accepted = { types: [], edges: [] };
+const NO_GRAPH: JoinGraph = { types: [], edges: [] };
 
 /** The option the decision `id` stands at: the person's pick, else its default. */
 function standing(items: readonly DecisionItem[], id: string): string | null {
@@ -269,13 +270,26 @@ export function useAssistant({
   }, [draft, profiled, decisions, accepted]);
   const acceptedKey = accepted ? JSON.stringify(accepted) : null;
 
+  // ── fossil declares the accepted model, and the graph it will be is described by fossil's mapping of it ──
+  const declared = useQuery({
+    queryKey: ["assistant", "declared", acceptedKey],
+    queryFn: async ({ signal }) => {
+      const declaration = await declare(accepted!, profiled!, { base: window.location.origin, signal });
+      return { declaration, graph: joinGraphOf(accepted!, await mappingOf(declaration.prelude, { host, signal })) };
+    },
+    enabled: accepted !== null,
+    retry: false,
+    staleTime: Infinity,
+  });
+  const graph = accepted ? (declared.data?.graph ?? null) : null;
+
   // ── requirements: questions to start from, once the model is accepted ──
-  const offered = useTask(requirements, { accepted: accepted ?? NO_MODEL, about: about ?? "" }, { model });
+  const offered = useTask(requirements, { accepted: accepted ?? NO_MODEL, graph: graph ?? NO_GRAPH, about: about ?? "" }, { model });
   const propose = useRef(offered.propose);
   propose.current = offered.propose;
   useEffect(() => {
-    if (acceptedKey !== null) propose.current();
-  }, [acceptedKey]);
+    if (graph !== null) propose.current();
+  }, [graph]);
   const offers: QuestionOffer[] | null =
     accepted && offered.state === "ready"
       ? offered.proposals.map((p) => ({ id: p.id, text: p.value.text, rationale: `Reads ${p.value.fields.map(splitWords).join(", ")}` }))
@@ -286,8 +300,8 @@ export function useAssistant({
   const marked = useQueries({
     queries: typed.map((q) => ({
       queryKey: ["assistant", "answerable", acceptedKey, q.text],
-      queryFn: ({ signal }: { signal: AbortSignal }) => isAnswerable(q.text, accepted!, { model, signal }),
-      enabled: accepted !== null,
+      queryFn: ({ signal }: { signal: AbortSignal }) => isAnswerable(q.text, graph!, { model, signal }),
+      enabled: graph !== null,
       retry: false,
       staleTime: Infinity,
     })),
@@ -304,13 +318,13 @@ export function useAssistant({
     queryFn: async ({ signal }) => {
       const check = fossilCheck({ host, engine: await engine({ signal }) });
       try {
-        const input = await mappingInput(accepted!, profiled!, { base: window.location.origin, check, signal });
+        const input = { accepted: accepted!, ...declared.data!.declaration, check };
         return programOf(input, held(await runTask(mapping, input, { model, signal })));
       } finally {
         check.close();
       }
     },
-    enabled: accepted !== null && asked,
+    enabled: accepted !== null && declared.data !== undefined && asked,
     retry: false,
     staleTime: Infinity,
     // A decision changed is a program written again: the last one stays the preview's meanwhile.
@@ -319,6 +333,7 @@ export function useAssistant({
 
   const failures: TaskFailure[] = [
     ...(drafted.isError ? [{ task: "model" as const, problem: drafted.error, retry: () => void drafted.refetch() }] : []),
+    ...(declared.isError ? [{ task: "requirements" as const, problem: declared.error, retry: () => void declared.refetch() }] : []),
     ...(offered.state === "failed" ? [{ task: "requirements" as const, problem: offered.error, retry: () => offered.propose() }] : []),
     ...(mapped.isError ? [{ task: "mapping" as const, problem: mapped.error, retry: () => void mapped.refetch() }] : []),
   ];

@@ -40,6 +40,43 @@ export function issuer(): string {
  * membership, which is what the workspace switcher lists; the forwarder refuses a host whose
  * organization the token does not name (`organization/denied`).
  */
+/**
+ * The Content-Security-Policy `auth.proxy` sends with a nonce drawn per request: `script-src` is
+ * `'nonce-…' 'strict-dynamic'` and what is listed here, so a script runs only when this response
+ * named it or one it named loaded it — Next's own inline scripts and the theme script carry the
+ * nonce (`x-nonce`, read in the root layout), and every page renders per request.
+ *
+ * It matters because the session is this origin's: script running here can call `/api` and the
+ * forwarder attaches the token for it. An XSS on this origin *is* API access.
+ *
+ * - `'wasm-unsafe-eval'`: fossil's compiler and DuckDB compile WebAssembly in this browser.
+ * - `worker-src 'self'`: DuckDB's, fossil's run and the model's workers are this app's own assets.
+ * - `style-src 'unsafe-inline'`: Ark UI and the theme set positions and custom properties in style
+ *   attributes as they measure, which no nonce reaches, and the operator's brand stylesheet is inline.
+ * - `connect-src https:`: the browser reads and writes the workspace's own cloud account with a
+ *   credential keasy vends for one prefix, on the customer's hosts; the model's weights come from
+ *   huggingface.co and its library from raw.githubusercontent.com, fetched, never run.
+ * - Development compiles with `eval` and talks to itself over a websocket; production allows neither.
+ */
+function contentSecurityPolicy(): Record<string, string[]> {
+  const dev = process.env.NODE_ENV === "development";
+  return {
+    "default-src": ["'self'"],
+    "script-src": ["'wasm-unsafe-eval'", ...(dev ? ["'unsafe-eval'"] : [])],
+    "style-src": ["'self'", "'unsafe-inline'"],
+    // `next/font/google` self-hosts the files it downloads at build time.
+    "font-src": ["'self'", "data:"],
+    "img-src": ["'self'", "data:", "blob:"],
+    "connect-src": ["'self'", "https:", "blob:", "data:", ...(dev ? ["ws:", "http:"] : [])],
+    "worker-src": ["'self'"],
+    "frame-src": ["'self'"],
+    "object-src": ["'none'"],
+    "base-uri": ["'self'"],
+    "form-action": ["'self'"],
+    "frame-ancestors": ["'none'"],
+  };
+}
+
 export const auth = kanzoAuth(() => ({
   issuer: issuer(),
   clientId: required("KEASY_OIDC_CLIENT_ID"),
@@ -47,6 +84,7 @@ export const auth = kanzoAuth(() => ({
   jwks: process.env.KEASY_OIDC_JWKS_URL?.trim() || undefined,
   organization: (request) => tenantOf(request.url.hostname),
   problemPage: PROBLEM_PAGE,
+  csp: contentSecurityPolicy(),
   // Each organization's own server. The spec's paths already start with `/v1`, so the forward
   // strips `/api` only; a host that addresses no organization reaches none (404).
   apis: {

@@ -136,8 +136,8 @@ export class DiscoverPage extends ComponentHarness {
   /**
    * OpenFlights as every airport demo starts, in the Graph view: on a map (x = `long`, y = `lat`), its
    * 36.9K routes hidden (drawn, they are fog and nothing on the map reads), legible marks, no labels
-   * (each an airport's IRI), and the layout paused. On a map the points come from long and lat, so the
-   * force layout has nothing to do but hold the page up.
+   * (each an airport's IRI). The force layout is paused before the map; on the map the points come
+   * from long and lat, and nothing lays out.
    */
   async onMap(): Promise<GraphCanvasHarness> {
     const graph = await this.graph();
@@ -149,7 +149,6 @@ export class DiscoverPage extends ComponentHarness {
     await settings.edges("Hidden");
     await settings.labels("None");
     await settings.backdrop({ vignette: true, grid: true });
-    await graph.pause();
     return graph;
   }
 

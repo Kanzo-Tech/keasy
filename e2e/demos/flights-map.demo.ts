@@ -56,7 +56,6 @@ demo("flights-map", "OpenFlights put on a map: the force layout's scatter, then 
       async action() {
         await discover.panel("Settings");
         await settings.placement("Map", { x: "long", y: "lat" });
-        await graph.pause();
       },
       // `placement` resolves once Map is checked and both axes read their columns. On the map the
       // positions are the data's and nothing lays out: a layout running over them pushes the points

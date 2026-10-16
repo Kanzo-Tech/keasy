@@ -121,7 +121,7 @@ function script(origin: string): ModelTurn[] {
 const PACE = { wait: 1_200, perWord: 25 };
 
 /** The connection's pill above the composer: *+ @Nobel laureates*, then *@Nobel laureates · 6 files*. */
-const pill = (page: Page) => page.locator(`[data-connection="${CONNECTION}"]`).getByRole("button", { name: `@${CONNECTION}` });
+const pill = (page: Page) => page.locator(`[data-connection="${CONNECTION}"]`).getByRole("button", { name: new RegExp(`^@${CONNECTION}`) });
 
 /** The preview's answers, once each kept question has its card and none is being replaced. */
 async function answered(page: Page): Promise<number> {

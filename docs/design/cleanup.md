@@ -188,7 +188,7 @@ Each is TanStack Query's own pattern, already a dependency.
 - **`page.clock` for windows of time.** `graphs.spec.ts`'s 7 s and 3 s waits assert that nothing
   happens over a window; `page.clock.install()` and `fastForward()` assert the same in milliseconds,
   and so do the poll's and the autosave's timers. ~10.
-- **One smoke fixture.** `geoGraph`, `snbGraph`, `cordisGraph` and `nobelGraph` differ by name and
+- **One smoke fixture.** `geoGraph`, `snbGraph` and `nobelGraph` differ by name and
   budget: one `seeded(example)` worker fixture keyed by `EXAMPLES`. ~25.
 
 *What would reverse it:* a call the typed client cannot express — a body that must be wrong on

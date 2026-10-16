@@ -102,7 +102,7 @@ The thread, for the Nobel files:
 
 ### Sources in the composer, as Claude's connectors
 
-Above the composer's field, **one pill per readable connection** — *+ @CORDIS*, *+ @Nobel laureates* —
+Above the composer's field, **one pill per readable connection** — *+ @OpenFlights*, *+ @Nobel laureates* —
 the connections `use-assistant.ts` already reads (`readable`: data, not the sink). A pill opens a small
 menu anchored to it, as Claude's connector does: the connection's name with **Select all**, then each
 readable file as a checkable item with its size. What is picked stays on the pill — *@Nobel laureates ·

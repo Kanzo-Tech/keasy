@@ -16,7 +16,7 @@ import { BASE_URL } from "./support/stack/api";
 /**
  * Chromium on the machine's GPU. Headless Chromium draws WebGL in software (SwiftShader) unless told
  * otherwise, and a Graph view of hundreds of thousands of points then lays out at a step a second:
- * minutes for CORDIS's 206K vertices, against seconds on the GPU. These put it on the GPU through
+ * minutes for LDBC SNB's 341K vertices, against seconds on the GPU. These put it on the GPU through
  * ANGLE: Metal on a Mac (measured: "ANGLE Metal Renderer: Apple M4 Pro"); elsewhere the GPU flags
  * still lift the blocklist. A runner with no GPU at all still draws in software.
  */

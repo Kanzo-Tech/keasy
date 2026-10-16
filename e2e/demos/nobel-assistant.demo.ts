@@ -45,9 +45,9 @@ const DRAFT = {
 /** The questions the model suggests: three chips, two of which the demo takes. */
 const REQUIREMENTS = {
   elements: [
-    { text: BY_CATEGORY, of: "Award", fields: ["Award.category", "Category.name"] },
-    { text: BY_INSTITUTION, of: "Award", fields: ["Award.institution", "Institution.name"] },
-    { text: "How many laureates are women?", of: "Laureate", fields: ["Laureate.gender"] },
+    { text: BY_CATEGORY, of: "Award", fields: ["category.name"] },
+    { text: BY_INSTITUTION, of: "Award", fields: ["institution.name"] },
+    { text: "How many laureates are women?", of: "Laureate", fields: ["gender"] },
   ],
 };
 
@@ -108,11 +108,11 @@ function script(origin: string): ModelTurn[] {
     { when: "You write the mappings of a Fossil program", reply: { text: mappings(origin, "id") } },
     {
       when: `Question: ${BY_INSTITUTION}`,
-      reply: json({ spec: { of: "Award", show: { kind: "chart", type: "bar", x: "Institution.name", y: { op: "count" } } } }),
+      reply: json({ spec: { of: "Award", show: { kind: "chart", type: "bar", x: "institution.name", y: { op: "count" } } } }),
     },
     {
       when: `Question: ${BY_CATEGORY}`,
-      reply: json({ spec: { of: "Award", show: { kind: "chart", type: "bar", x: "Category.name", y: { op: "count" } } } }),
+      reply: json({ spec: { of: "Award", show: { kind: "chart", type: "bar", x: "category.name", y: { op: "count" } } } }),
     },
   ];
 }
@@ -121,7 +121,7 @@ function script(origin: string): ModelTurn[] {
 const PACE = { wait: 1_200, perWord: 25 };
 
 /** The connection's pill above the composer: *+ @Nobel laureates*, then *@Nobel laureates · 6 files*. */
-const pill = (page: Page) => page.locator(`[data-connection="${CONNECTION}"]`).getByRole("button", { name: `@${CONNECTION}` });
+const pill = (page: Page) => page.locator(`[data-connection="${CONNECTION}"]`).getByRole("button", { name: new RegExp(`^@${CONNECTION}`) });
 
 /** The preview's answers, once each kept question has its card and none is being replaced. */
 async function answered(page: Page): Promise<number> {

@@ -1,13 +1,13 @@
 name: infra-ci
 
 # The compose files are the whole system: they must resolve — the platform included from kanzo-ui
-# at KANZO_UI_REF, every secret named — before anything runs them.
+# at the release the web is built against, every secret named — before anything runs them.
 on:
   pull_request:
-    paths: ["compose*.yaml", "infra/**", ".github/workflows/infra-ci.yml"]
+    paths: ["compose*.yaml", "infra/**", "web/package.json", ".github/workflows/infra-ci.yml"]
   push:
     branches: [main]
-    paths: ["compose*.yaml", "infra/**", ".github/workflows/infra-ci.yml"]
+    paths: ["compose*.yaml", "infra/**", "web/package.json", ".github/workflows/infra-ci.yml"]
 
 concurrency:
   group: infra-ci-${{ github.ref }}
@@ -22,6 +22,14 @@ jobs:
 
       - name: Development resolves
         run: docker compose --profile faults config --quiet
+
+      # The platform's tag is the @kanzo-tech/ui version the web is built against: one release.
+      - name: The platform is the web's kanzo-ui
+        run: |
+          included=$(sed -n 's|.*github.com/Kanzo-Tech/ui.git#v\([^:]*\):services/.*|\1|p' compose.override.yaml)
+          pinned=$(jq -r '.dependencies["@kanzo-tech/ui"] | ltrimstr("^")' web/package.json)
+          echo "compose.override.yaml includes kanzo-ui v$included; web/package.json names @kanzo-tech/ui $pinned"
+          [ -n "$included" ] && [ "$included" = "$pinned" ]
 
       - name: The scripts
         run: shellcheck infra/dev/seed.sh

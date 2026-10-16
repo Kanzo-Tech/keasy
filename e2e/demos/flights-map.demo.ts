@@ -44,7 +44,7 @@ demo("flights-map", "OpenFlights put on a map: the force layout's scatter, then 
     return { discover, graph, settings };
   },
 
-  steps: ({ discover, graph, settings }) => [
+  steps: ({ discover, graph, settings }, { page }) => [
     {
       subtitle: "A graph of airports and their routes",
       // Woken, so the cloud is moving when the map takes over.
@@ -56,10 +56,14 @@ demo("flights-map", "OpenFlights put on a map: the force layout's scatter, then 
       async action() {
         await discover.panel("Settings");
         await settings.placement("Map", { x: "long", y: "lat" });
-        await graph.pause();
       },
-      // `placement` resolves once Map is checked and both axes read their columns.
-      check: () => expect.poll(() => graph.counts()).toMatch(/\b(3,218|3\.2K) of (3,218|3\.2K) (nodes )?placed\b/),
+      // `placement` resolves once Map is checked and both axes read their columns. On the map the
+      // positions are the data's and nothing lays out: a layout running over them pushes the points
+      // against the square's walls, so the take fails here rather than posters that.
+      async check() {
+        await expect.poll(() => graph.counts()).toMatch(/\b(3,218|3\.2K) of (3,218|3\.2K) (nodes )?placed\b/);
+        await expect(page.getByRole("button", { name: /^(Resume|Run) the layout$/ })).toBeVisible();
+      },
       poster: true,
     },
     {

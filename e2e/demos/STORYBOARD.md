@@ -44,10 +44,10 @@ demo's **Numbers**. The OpenFlights and SNB queries run in `infra/dev/examples/<
 
 | # | Subtitle | Action | Check |
 | --- | --- | --- | --- |
-| 1 | Pick what to explore | `await discover.relation("Person")` | `dashboard.tile("Count by Person.gender")` resolves; `discover.figure("Rows")` → `"1,528"` and `discover.counts()` matches nothing: no filter yet |
-| 2 | Every column gets a chart — click a bar to filter | `(await (await dashboard.tile("Count by Person.gender")).chart()).pick({ y: "female" })` | `discover.kept()` → `"778"`; `bar.chips()` contains `Person.gender …female` |
-| 3 | Drag across time to narrow it further | `(await (await dashboard.tile("Count by Person.birthday")).chart()).brush({ x: [new Date("1985-01-01"), new Date("1990-01-01")] })` | `discover.figure("Rows")` → `"391"` · **poster** |
-| 4 | Every filter lands in the bar | hover the `Person.gender` chip (page: `bar` has no hover; `page.getByRole("button", { name: /Person\.gender/ }).hover()` stays in the spec as the one raw call, or `discover.hoverChip("Person.gender")`) | `bar.chips()` has two entries: gender and birthday |
+| 1 | Pick what to explore | `await discover.relation("Person")` | `dashboard.tile("Count by gender")` resolves; `discover.figure("Rows")` → `"1,528"` and `discover.counts()` matches nothing: no filter yet |
+| 2 | Every column gets a chart — click a bar to filter | `(await (await dashboard.tile("Count by gender")).chart()).pick({ y: "female" })` | `discover.kept()` → `"778"`; `bar.chips()` contains `gender …female` |
+| 3 | Drag across time to narrow it further | `(await (await dashboard.tile("Count by birthday")).chart()).brush({ x: [new Date("1985-01-01"), new Date("1990-01-01")] })` | `discover.figure("Rows")` → `"391"` · **poster** |
+| 4 | Every filter lands in the bar | hover the `gender` chip (`bar` has no hover: `page.getByRole("button", { name: /\bgender\b/ }).hover()` is the one raw call) | `bar.chips()` has two entries: gender and birthday |
 
 The brush is written in data now: *born 1985–1989*, where today's take drags 30 %→62 % of the width
 (≈ 1983–1986, a range no subtitle could name).
@@ -69,7 +69,6 @@ depends on which relations the mapping writes as edges); read it off GraphCounts
 
 - The birthday histogram's brush may snap to its bins. If the figure reads other than 391, the bins
   are what it counted: take the check from `discover.figure("Rows")` once and pin it, the subtitle names no number.
-- The `Person.gender` chip text is the page's (`Person.gender: female`?) — pinned on the first run.
 
 ---
 
@@ -93,7 +92,7 @@ depends on which relations the mapping writes as edges); read it off GraphCounts
 | # | Subtitle | Action | Check |
 | --- | --- | --- | --- |
 | 1 | A graph of airports and their routes | `graph.run()` (woken, so the cloud moves on camera) | the transport reads *Pause the layout*; `graph.counts()` → `/3,218 nodes/` (or `3.2K`) |
-| 2 | Put it on a map: longitude across, latitude up | `settings.placement("Map", { x: "lon", y: "lat" })` then `graph.pause()` | `graph.counts()` → `/3,218 of 3,218 placed/` (or `3.2K`); the placement radio *Map* is checked · **poster** |
+| 2 | Put it on a map: longitude across, latitude up | `settings.placement("Map", { x: "long", y: "lat" })` then `graph.pause()` | `graph.counts()` → `/3,218 of 3,218 placed/` (or `3.2K`); the transport offers *Resume* or *Run*: nothing lays out over the map · **poster** |
 | 3 | Find anything — here, every airport in Spain | `search.add("country:Spain")` (Info → *Find anything in the graph* → type → *Add 40 to the subset*) | the add button read `Add 40 to the subset`; `discover.kept()` → `"40"` |
 | 4 | Frame Spain | `graph.frame()` — the toolbar's one Frame (kanzo-ui #179), on what the search kept | `discover.kept()` still `"40"` |
 | 5 | Lasso the peninsula — the Canaries stay out | `graph.lasso(PENINSULA, { in: "data" })` (the polygon below, in lon/lat) | `discover.kept()` → `"31"` |
@@ -148,21 +147,20 @@ is 31 whether the lasso's clause is ANDed with the search's or stands alone. Lef
 
 **Arrange (off camera)**
 
-1. `env`; seed; `discover.open(id)`; `graph.ready()`; `graph.pause()`.
-2. `settings.placement("Map", { x: "lon", y: "lat" }); settings.marks("Legible"); settings.edges("Hidden"); settings.labels(0)` — the Graph view, set for step 3.
+1. `env`; seed; `saveDashboard(page, id, "Airport", …)` — *Count by country* (bar), *Count by long*, *Count by lat*, *Count by altitude* (histograms) and *long × lat*. Saved, because the automatic dashboard charts the first three categories in the graph's order (name, iataCode, icaoCode), and country is not one.
+2. `discover.open(id)`; `discover.onMap()` — the Graph view, set for step 3.
 3. `discover.view("Dashboard")`; `dashboard.settled()`.
 
 **Steps**
 
 | # | Subtitle | Action | Check |
 | --- | --- | --- | --- |
-| 1 | Click a country — every chart follows | `(await (await dashboard.tile(/Count by Airport\.country/)).chart()).pick({ y: "United States" })` | `discover.figure("Rows")` → `"551"`; `dashboard.settled()` |
-| 2 | Drag across longitude — just the West | `(await (await dashboard.tile(/Count by Airport\.lon$/)).chart()).brush({ x: [-125, -100] })` | `discover.figure("Rows")` → `"132"` · **poster** |
-| 3 | Switch to the graph — the same filter, framed on the map | `discover.view("Graph")`; `graph.ready()`; `graph.frame()` — one step | `discover.kept()` → `"135"`; `bar.chips()` has the country and the lon clauses |
+| 1 | Click a country — every chart follows | `(await (await dashboard.tile("Count by country")).chart()).pick({ y: "United States" })` | `discover.kept()` → `"551"`; `dashboard.settled()` |
+| 2 | Drag across longitude — just the West | `(await (await dashboard.tile("Count by long")).chart()).brush({ x: [-128, -98.98] })` | `discover.kept()` → `"135"` · **poster** |
+| 3 | Switch to the graph — the same filter, framed on the map | `discover.view("Graph")`; `graph.ready()`; `graph.frame()` — one step | `discover.kept()` → `"135"`; `bar.chips()` has the country and the long clauses |
 
 The take brushes `[-128, -98.98]`, whose edges both sit in gaps of the data, so it reads **135** (US
-airports west of 98.98° W) whatever a pixel does; the `[-125, -100]` figures below are the first
-plan's. The switch and the frame are one step: a view that appears and is framed at once, under one
+airports west of 98.98° W) whatever a pixel does. The switch and the frame are one step: a view that appears and is framed at once, under one
 subtitle, rather than a subtitle for each half. The old opening chapter *"One filter, every chart"*
 (a subtitle with no action under it) went: the first subtitle leads the first click. *"Every filter
 lands in the bar"* is the check of the last step rather than a step of its own.
@@ -172,14 +170,8 @@ lands in the bar"* is the check of the last step rather than a step of its own.
 | Figure | Value | Query |
 | --- | --- | --- |
 | Top country by airports | United States, 551 (then Canada 206, China 173) | `select country, count(*) from a group by 1 order by 2 desc limit 5` |
-| US airports at lon −125 … −100 | 132 | `select count(*) from a where country='United States' and lon between -125 and -100` |
-| Every airport at lon −125 … −100 | 213 | `select count(*) from a where lon between -125 and -100` |
-
-**Risks**
-
-- Whether the lon brush filters by its extent or by the bins it covers: by extent it is 132; read the
-  figure on the first run and pin it.
-- `discover.kept()` reads the readout's leading figure, in full.
+| US airports at lon −128 … −98.98 | 135 | `select count(*) from a where country='United States' and lon between -128 and -98.98` |
+| Every airport at lon −128 … −98.98 | 229 | `select count(*) from a where lon between -128 and -98.98` |
 
 ---
 
@@ -195,7 +187,7 @@ lands in the bar"* is the check of the last step rather than a step of its own.
 **Arrange (off camera)**
 
 1. `useModelDouble` with the two specs below; `env`; seed; save the dashboard on `LaureateAward>category>Category` (one tile, *Count by
-   Category.name*); `discover.open(id)`.
+   category.name*); `discover.open(id)`.
 2. `discover.onMap()` — the Graph view on the map for step 8 — then `view("Dashboard")`,
    `relation("LaureateAward", [">category>Category"])`, `dashboard.settled()`, `panel("Ask")`.
 3. `ask.warmUp()`: the double's model, ready.
@@ -204,7 +196,7 @@ lands in the bar"* is the check of the last step rather than a step of its own.
 
 | # | Subtitle | Action | Check |
 | --- | --- | --- | --- |
-| 1 | Filter the page: Physics only | *Count by Category.name* `pick({ y: "Physics" })` | `discover.kept()` → `"230"` |
+| 1 | Filter the page: Physics only | *Count by category.name* `pick({ y: "Physics" })` | `discover.kept()` → `"230"` |
 | 2 | Ask about what's in view, in plain words | `answers.ask("Which universities won the most prizes?")` | a new answer card began |
 | 3 | The answer is a chart, over the Physics prizes in view | `answers.answer()` | the tile is by *University*; its rows hold UC **16**, not **43** (every category's) · **poster** |
 | 4 | Add it to the dashboard | `answers.addToDashboard()` | the card offers *Open on the dashboard* (the tile is on the answer's relation's dashboard, not the one in view) |
@@ -227,10 +219,11 @@ lands in the bar"* is the check of the last step rather than a step of its own.
 - **The model is a double** (`support/model.ts`), as `nobel-assistant`'s is: a small model filled
   another spec on each take (a sum of `share`, the `University` type alone), and a recording is the
   same film every time. It answers *Which universities…* with `{ of: "LaureateAward", show: bar of
-  University.name by count, top: 8 }`, and *…in Germany?* with the same and `where: Country.name in
-  [Germany]`. The relation each needs is found by the page and the rows are DuckDB's, so the check
-  that UC reads **16** (not 43) still proves "over what's in view". What the model in the page answers
-  is the evaluation set's to measure (kanzo-ui's `packages/ai/eval`).
+  university.name by count, top: 8 }`, and *…in Germany?* with the same and `where:
+  university.addressCountry.name in [Germany]`. The relation each needs is found by the page and
+  the rows are DuckDB's, so the check that UC reads **16** (not 43) still proves "over what's in
+  view". What the model in the page answers is the evaluation set's to measure (kanzo-ui's
+  `packages/ai/eval`).
 - *Filter the page to these rows* keeps what the answer draws: the prizes in the categories its bars
   show. An answer drawn by university keeps those universities' prizes, at most the 22; read the
   figure off the take that captures it and pin steps 7 and 8 to it.
@@ -309,7 +302,7 @@ subjects of rudof's Shape Fragment instead, so step 6's check is what proves the
 **Arrange (off camera)**
 
 1. `env`; seed; `saveDashboard(id, "LaureateAward>laureate>Laureate>birthPlace>Country", …)` — two
-   bar tiles, *Count by Laureate.gender* and *Count by Country.name*: each award with its laureate
+   bar tiles, *Count by laureate.gender* and *Count by laureate.birthPlace.name*: each award with its laureate
    and the country the laureate was born in, rooted at the award so a pick keeps awards, the dots on
    the map. (A dashboard's pick is withdrawn when its relation changes, so the gender and the
    country the story ends on are one relation.)
@@ -326,8 +319,8 @@ subjects of rudof's Shape Fragment instead, so step 6's check is what proves the
 | 2 | Play the whole century | `timeline.brush([1900, 2029])`; `timeline.play()`; poll the window's end to ≥ 2025 | the end year ≥ 2025 |
 | 3 | 1900–1930: 9 in 10 mapped prizes were won in Europe | `bar.remove("date")`; `timeline.brush([1900, 1930])`; `graph.frame()` | `timeline.range()` → `/^19(00\|01) – 19(29\|30)$/`; `discover.kept()` → `/^(156\|151)$/` (every prize in the window; 93 or 90 of them mapped) |
 | 4 | 1990–2000: 65 of 86 mapped prizes were won in the US | `bar.remove("date")`; `timeline.brush([1990, 2000])`; `graph.frame()` | `timeline.range()` → `"1990 – 2000"`; `discover.kept()` → `"117"` (86 mapped) · **poster** |
-| 5 | Only the women — play the century again | `discover.view("Dashboard")`; *Count by Laureate.gender* `pick({ y: "female" })`; `discover.view("Graph")`; `bar.remove("date")`; brush 1900–2029 and play to the end | `discover.kept()` → `"68"` (29 mapped); `bar.chips()` holds `Laureate.gender` |
-| 6 | One filter, every view | `discover.view("Dashboard")` | *Count by Country.name*'s top bar is `USA`; `bar.chips()` holds `date` and `Laureate.gender` |
+| 5 | Only the women — play the century again | `discover.view("Dashboard")`; *Count by laureate.gender* `pick({ y: "female" })`; `discover.view("Graph")`; `bar.remove("date")`; brush 1900–2029 and play to the end | `discover.kept()` → `"68"` (29 mapped); `bar.chips()` holds `laureate.gender` |
+| 6 | One filter, every view | `discover.view("Dashboard")` | *Count by laureate.birthPlace.name*'s top bar is `USA`; `bar.chips()` holds `date` and `laureate.gender` |
 
 *Mapped* is said because the map places 749 of the 1,026 awards — those whose first affiliation has
 a city on record — and the readout counts every prize the window keeps, mapped or not (`select

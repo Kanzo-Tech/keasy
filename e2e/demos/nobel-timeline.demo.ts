@@ -16,8 +16,8 @@ const HOPS = [">laureate>Laureate", ">birthPlace>Country"];
 const DASHBOARD = {
   filters: [],
   tiles: [
-    { id: "gender", kind: "chart", span: 1, type: "bar", title: "Count by Laureate.gender", x: "laureate.gender", y: { op: "count" } },
-    { id: "country", kind: "chart", span: 1, type: "bar", title: "Count by Country.name", x: "laureate.birthPlace.name", y: { op: "count" } },
+    { id: "gender", kind: "chart", span: 1, type: "bar", x: "laureate.gender", y: { op: "count" } },
+    { id: "country", kind: "chart", span: 1, type: "bar", x: "laureate.birthPlace.name", y: { op: "count" } },
   ],
 };
 
@@ -112,14 +112,14 @@ demo("nobel-timeline", "Nobel prizes on a map and a timeline: a century of scien
         // The pick is the dashboard's, crossed onto the awards; the timeline plays under it.
         async action() {
           await discover.view("Dashboard");
-          await (await (await (await discover.dashboard()).tile("Count by Laureate.gender")).chart()).pick({ y: "female" });
+          await (await (await (await discover.dashboard()).tile("Count by laureate.gender")).chart()).pick({ y: "female" });
           // The pick stays on the page through every step after it: its chip is in the bar.
           const picked = async (after: string) =>
             expect(
-              (await bar.chips()).some((chip) => /\bLaureate\.gender\b/.test(chip)),
+              (await bar.chips()).some((chip) => /\blaureate\.gender\b/.test(chip)),
               `the gender pick's chip is in the bar after ${after}`,
             ).toBe(true);
-          await expect.poll(async () => (await bar.chips()).some((chip) => /\bLaureate\.gender\b/.test(chip))).toBe(true);
+          await expect.poll(async () => (await bar.chips()).some((chip) => /\blaureate\.gender\b/.test(chip))).toBe(true);
           await discover.view("Graph");
           await picked("the view changed to Graph");
           await graph.ready();
@@ -135,7 +135,7 @@ demo("nobel-timeline", "Nobel prizes on a map and a timeline: a century of scien
         },
         async check() {
           // The pick outlived the view change and the replay: its chip is still in the bar.
-          expect((await bar.chips()).some((chip) => /\bLaureate\.gender\b/.test(chip))).toBe(true);
+          expect((await bar.chips()).some((chip) => /\blaureate\.gender\b/.test(chip))).toBe(true);
           // 68 prizes went to women, 29 of them with a place on the map.
           // The 68 prizes won by women; 29 of them are on the map.
           await expect.poll(() => discover.kept()).toBe("68");
@@ -147,10 +147,10 @@ demo("nobel-timeline", "Nobel prizes on a map and a timeline: a century of scien
         async check() {
           const dashboard = await discover.dashboard();
           // Where the 68 women were born: the USA 18, France 6, Poland 5.
-          expect((await categories(await dashboard.tile("Count by Country.name")))[0]).toBe("USA");
+          expect((await categories(await dashboard.tile("Count by laureate.birthPlace.name")))[0]).toBe("USA");
           const chips = await bar.chips();
           expect(chips.some((chip) => /\bdate\b/.test(chip))).toBe(true);
-          expect(chips.some((chip) => /\bLaureate\.gender\b/.test(chip))).toBe(true);
+          expect(chips.some((chip) => /\blaureate\.gender\b/.test(chip))).toBe(true);
         },
       },
     ];

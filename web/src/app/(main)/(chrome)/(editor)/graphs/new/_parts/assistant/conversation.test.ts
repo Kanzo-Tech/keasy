@@ -46,9 +46,9 @@ describe("the conversation", () => {
 
   it("sends the files and what they are about as one message, counted by connection, and reads them under it", () => {
     const reading = { done: 4, total: 6 };
-    const at = converse({ selected: new Set([...picked, "cordis:projects.csv"]), reading, decisions: null, questions: [] }, { ...NO_REPLIES, about: "Nobel prizes" });
+    const at = converse({ selected: new Set([...picked, "openflights:airports.csv"]), reading, decisions: null, questions: [] }, { ...NO_REPLIES, about: "Nobel prizes" });
     expect(at.turns).toEqual([
-      { kind: "sent", sources: [{ connection: "nobel", files: 2 }, { connection: "cordis", files: 1 }], about: "Nobel prizes" },
+      { kind: "sent", sources: [{ connection: "nobel", files: 2 }, { connection: "openflights", files: 1 }], about: "Nobel prizes" },
       { kind: "steps", group: "read" },
     ]);
     expect(at.waiting).toBe("reading");

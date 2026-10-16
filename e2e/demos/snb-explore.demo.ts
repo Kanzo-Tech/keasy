@@ -25,23 +25,23 @@ demo("snb-explore", "Dashboard over LDBC SNB: pick a type, click a bar, brush a 
       subtitle: "Pick what to explore",
       action: () => discover.relation("Person"),
       async check() {
-        await dashboard.tile("Count by Person.gender");
+        await dashboard.tile("Count by gender");
         // 1,528 people, and no filter yet: the readout counts the whole relation.
         await expect.poll(async () => (await discover.filters()).readout()).toBe("1,528 rows");
       },
     },
     {
       subtitle: "Every column gets a chart — click a bar to filter",
-      action: async () => (await (await dashboard.tile("Count by Person.gender")).chart()).pick({ y: "female" }),
+      action: async () => (await (await dashboard.tile("Count by gender")).chart()).pick({ y: "female" }),
       async check() {
         await expect.poll(() => discover.kept()).toBe("778");
-        expect((await bar.chips()).some((chip) => /\bPerson\.gender\b/.test(chip))).toBe(true);
+        expect((await bar.chips()).some((chip) => /\bgender\b/.test(chip))).toBe(true);
       },
     },
     {
       subtitle: "Drag across time to narrow it further",
       action: async () =>
-        (await (await dashboard.tile("Count by Person.birthday")).chart()).brush({ x: [new Date("1985-01-01"), new Date("1990-01-01")] }),
+        (await (await dashboard.tile("Count by birthday")).chart()).brush({ x: [new Date("1985-01-01"), new Date("1990-01-01")] }),
       // Women born 1985–1989. A histogram may snap the brush to its bins: if it reads otherwise, the
       // bins are what it counted — pin the figure from the first take.
       check: () => expect.poll(() => discover.kept()).toBe("391"),
@@ -50,10 +50,10 @@ demo("snb-explore", "Dashboard over LDBC SNB: pick a type, click a bar, brush a 
     {
       subtitle: "Every filter lands in the bar",
       // A hover, which no harness has: the one raw call of the demo, on the chip by its role.
-      action: () => page.getByRole("region", { name: "Filters" }).getByRole("button", { name: /Person\.gender/ }).first().hover(),
+      action: () => page.getByRole("region", { name: "Filters" }).getByRole("button", { name: /\bgender\b/ }).first().hover(),
       async check() {
         const chips = await bar.chips();
-        expect(chips.filter((chip) => /\bPerson\.(gender|birthday)\b/.test(chip))).toHaveLength(2);
+        expect(chips.filter((chip) => /\b(gender|birthday)\b/.test(chip))).toHaveLength(2);
       },
     },
   ],

@@ -39,9 +39,9 @@
           "503": {
             "description": "The database did not answer in time",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -133,9 +133,9 @@
           "400": {
             "description": "No such secret, or a URL it does not reach",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -143,9 +143,9 @@
           "403": {
             "description": "A sink by anyone but an admin, or on a secret the caller may not use",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -153,9 +153,9 @@
           "409": {
             "description": "A connection of that name, or a second sink",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -163,9 +163,9 @@
           "422": {
             "description": "The connection did not validate",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -173,9 +173,9 @@
           "504": {
             "description": "The store did not answer the probe in time",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -221,9 +221,9 @@
           "404": {
             "description": "No such connection",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -260,9 +260,9 @@
           "403": {
             "description": "Neither its owner nor an admin; the sink, anyone but an admin",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -270,9 +270,9 @@
           "404": {
             "description": "No such connection",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -280,9 +280,9 @@
           "409": {
             "description": "Graphs wrote their output to it; `dependents` names them",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -336,9 +336,9 @@
           "403": {
             "description": "Neither its owner nor an admin; the sink, anyone but an admin; or a secret the caller may not use",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -346,9 +346,9 @@
           "404": {
             "description": "No such connection",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -356,9 +356,9 @@
           "422": {
             "description": "The connection did not validate",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -366,9 +366,9 @@
           "504": {
             "description": "The store did not answer the probe in time",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -434,9 +434,9 @@
           "400": {
             "description": "Not a storage source, or a prefix that leaves it (`data.field`)",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -444,9 +444,9 @@
           "404": {
             "description": "No such connection",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -454,9 +454,9 @@
           "502": {
             "description": "The store refused the listing",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -464,9 +464,9 @@
           "504": {
             "description": "The store did not answer in time",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -513,9 +513,9 @@
           "403": {
             "description": "The sink, tested by anyone but an admin",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -523,9 +523,9 @@
           "404": {
             "description": "No such connection",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -533,9 +533,9 @@
           "504": {
             "description": "The store did not answer the probe in time",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -581,9 +581,9 @@
           "404": {
             "description": "Conversation not found",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -648,9 +648,9 @@
           "400": {
             "description": "The id is not a UUID, or the messages are not a JSON array (`data.field`)",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -658,9 +658,9 @@
           "403": {
             "description": "Neither its owner nor an admin (`rbac/forbidden`)",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -668,9 +668,9 @@
           "409": {
             "description": "A graph was built from it (`conversation/built`): carry on in another id",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -678,9 +678,9 @@
           "413": {
             "description": "The messages are heavier than a conversation may be",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -754,9 +754,9 @@
           "400": {
             "description": "The destination is not a sink, the name or folder is misspelled, or there is no such conversation (`data.field`)",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -764,9 +764,9 @@
           "403": {
             "description": "The conversation is someone else's (`rbac/forbidden`)",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -812,9 +812,9 @@
           "404": {
             "description": "Graph not found",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -851,9 +851,9 @@
           "403": {
             "description": "Neither its owner nor an admin (`rbac/forbidden`)",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -861,9 +861,9 @@
           "404": {
             "description": "Graph not found",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -871,9 +871,9 @@
           "409": {
             "description": "Graph is still running",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -927,9 +927,9 @@
           "400": {
             "description": "The name or folder is misspelled (`data.field`)",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -937,9 +937,9 @@
           "403": {
             "description": "Neither its owner nor an admin (`rbac/forbidden`)",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -947,9 +947,9 @@
           "404": {
             "description": "Graph not found",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -957,9 +957,9 @@
           "409": {
             "description": "Not a draft: `graph/not-draft`",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -1012,9 +1012,9 @@
           "404": {
             "description": "Graph not found",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -1069,9 +1069,9 @@
           "400": {
             "description": "The spec is not a JSON object",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -1079,9 +1079,9 @@
           "404": {
             "description": "Graph not found",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -1089,9 +1089,9 @@
           "413": {
             "description": "The spec is larger than a dashboard may be",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -1144,9 +1144,9 @@
           "404": {
             "description": "Graph not found",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -1201,9 +1201,9 @@
           "400": {
             "description": "`name` is not a file's name: `request/invalid` on the field `name`",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -1211,9 +1211,9 @@
           "404": {
             "description": "Graph not found",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -1221,9 +1221,9 @@
           "413": {
             "description": "The shapes graph is larger than a graph's rules may be",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -1231,9 +1231,9 @@
           "422": {
             "description": "rudof refused the shapes graph: `rules/refused`, placed by `line` and `column` when it is not Turtle",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -1280,9 +1280,9 @@
           "400": {
             "description": "A draft, which is submitted before it runs",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -1290,9 +1290,9 @@
           "404": {
             "description": "Graph not found",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -1300,9 +1300,9 @@
           "409": {
             "description": "It runs already (`graph/already-running`)",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -1359,9 +1359,9 @@
           "400": {
             "description": "The status is not running or an end, or the graph is a draft",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -1369,9 +1369,9 @@
           "403": {
             "description": "Not the graph's runner (`rbac/forbidden`)",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -1379,9 +1379,9 @@
           "404": {
             "description": "Graph not found",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -1389,9 +1389,9 @@
           "409": {
             "description": "Nothing runs (`graph/not-running`), or the run has ended (`graph/ended`): the sweep's `graph/abandoned` among them",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -1438,9 +1438,9 @@
           "403": {
             "description": "Neither its runner, its owner nor an admin (`rbac/forbidden`)",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -1448,9 +1448,9 @@
           "404": {
             "description": "Graph not found",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -1458,9 +1458,9 @@
           "409": {
             "description": "Nothing runs (`graph/not-running`), or the run has ended (`graph/ended`)",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -1517,9 +1517,9 @@
           "400": {
             "description": "The name or folder is missing or misspelled (`data.field`)",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -1527,9 +1527,9 @@
           "403": {
             "description": "Neither its owner nor an admin (`rbac/forbidden`)",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -1537,9 +1537,9 @@
           "404": {
             "description": "Graph not found",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -1547,9 +1547,9 @@
           "409": {
             "description": "Not a draft (`graph/not-draft`), or another graph writes to that folder already (`graph/folder-taken`; the graph stays a draft, unchanged)",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -1623,9 +1623,9 @@
           "400": {
             "description": "An invalid name",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -1633,9 +1633,9 @@
           "409": {
             "description": "A secret of that name exists",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -1643,9 +1643,9 @@
           "422": {
             "description": "The secret did not validate",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -1653,9 +1653,9 @@
           "504": {
             "description": "The store did not answer the probe in time",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -1701,9 +1701,9 @@
           "404": {
             "description": "No such secret",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -1740,9 +1740,9 @@
           "403": {
             "description": "Neither its owner nor an admin",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -1750,9 +1750,9 @@
           "404": {
             "description": "No such secret",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -1760,9 +1760,9 @@
           "409": {
             "description": "Connections still use it; `dependents` names them",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -1817,9 +1817,9 @@
           "403": {
             "description": "Neither its owner nor an admin",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -1827,9 +1827,9 @@
           "404": {
             "description": "No such secret",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -1837,9 +1837,9 @@
           "422": {
             "description": "A connection using it would not validate with the new spec; `dependents` names them",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -1847,9 +1847,9 @@
           "504": {
             "description": "The store did not answer the probe in time",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -1896,9 +1896,9 @@
           "404": {
             "description": "No such secret",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -1906,9 +1906,9 @@
           "504": {
             "description": "The store did not answer the probe in time",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -1954,9 +1954,9 @@
           "400": {
             "description": "Not a storage source, or an access the scope does not give",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -1964,9 +1964,9 @@
           "403": {
             "description": "A source read below editor; a graph written below editor, or by anyone but its runner",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -1974,9 +1974,9 @@
           "404": {
             "description": "No such connection, or no such graph",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -1984,9 +1984,9 @@
           "409": {
             "description": "A graph read before it completed (`graph/not-completed`), or written before it runs (`graph/not-running`) or after it ended (`graph/ended`)",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -1994,9 +1994,9 @@
           "502": {
             "description": "The store refused to vend",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -2004,9 +2004,9 @@
           "504": {
             "description": "The store, or the identity service before it, did not answer in time",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -2388,120 +2388,6 @@
           }
         }
       },
-      "ErrorBody": {
-        "type": "object",
-        "description": "The body of every 4xx/5xx, and the payload of an SSE `error` frame — the\nshape fossil's problems have: a code, its fixed title, a detail for a\nperson that nothing parses, and the data the code carries.",
-        "required": [
-          "code",
-          "title",
-          "detail",
-          "data"
-        ],
-        "properties": {
-          "code": {
-            "$ref": "#/components/schemas/ErrorCode"
-          },
-          "data": {
-            "$ref": "#/components/schemas/ErrorData"
-          },
-          "detail": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
-          }
-        }
-      },
-      "ErrorCode": {
-        "type": "string",
-        "description": "Every error the server answers with. Closed: a code the server does not\ndeclare here cannot be sent, and the web keys its copy by this enum.\n\nOne grammar with fossil's and kanzo-ui's codes, `area/kind`, so one registry\nin the web keys all three. The areas are keasy's own and never one of\nfossil's (`storage`, `engine`, `run`, …): a code means one thing. Each\nvariant is its wire name spelled in Rust, `area/kind-x` as `AreaKindX`, so\nthe code a test asserts and the variant a handler names are one word.\n\nEvery refusal the server writes is an [`ErrorBody`] with one of these.",
-        "enum": [
-          "auth/session-required",
-          "auth/keys-unavailable",
-          "rbac/no-membership",
-          "rbac/insufficient-role",
-          "rbac/forbidden",
-          "request/rate-limited",
-          "request/invalid",
-          "request/malformed",
-          "request/method-not-allowed",
-          "request/too-large",
-          "route/not-found",
-          "server/internal",
-          "server/silent",
-          "server/not-ready",
-          "graph/not-found",
-          "graph/not-draft",
-          "graph/not-completed",
-          "graph/not-running",
-          "graph/ended",
-          "graph/still-running",
-          "graph/already-running",
-          "graph/abandoned",
-          "graph/interrupted",
-          "graph/invalid-destination",
-          "graph/no-destination",
-          "graph/folder-taken",
-          "conversation/not-found",
-          "conversation/built",
-          "secret/not-found",
-          "connection/not-found",
-          "resource/already-exists",
-          "resource/in-use",
-          "connection/overlaps",
-          "probe/failed",
-          "store/refused",
-          "store/silent",
-          "rules/refused"
-        ]
-      },
-      "ErrorData": {
-        "type": "object",
-        "description": "What a refusal carries beside its words.",
-        "properties": {
-          "after": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int64",
-            "description": "How long a deadline waited before it fired, in milliseconds: set on\nthe `*/silent` codes, and only on them.",
-            "minimum": 0
-          },
-          "column": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int64",
-            "description": "The column on `line`, as the parser counts it.",
-            "minimum": 0
-          },
-          "dependents": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "What the refusal is about: what still uses a secret or connection,\nor the connections a rotation would break."
-          },
-          "field": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "The request field the refusal is about, so a form can say it on that\nfield: `folder`, `name`."
-          },
-          "line": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int64",
-            "description": "Where in the field's text the refusal is, when its parser says: the\n1-based line and column (in characters) its own message prints.",
-            "minimum": 0
-          }
-        }
-      },
       "FileEntry": {
         "type": "object",
         "description": "One object under a connection's prefix.",
@@ -2713,6 +2599,93 @@
           "fail",
           "skip"
         ]
+      },
+      "Problem": {
+        "type": "object",
+        "description": "Every 4xx/5xx the server writes, and every problem it stores:\n`application/problem+json` (RFC 9457), with the extension members\n`@kanzo-tech/kernel`'s `Problem.from` reads back (§3.2) — `code`, its\ndiscriminator, and `data`, what the code carries.",
+        "required": [
+          "type",
+          "title",
+          "detail",
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/ServerCode"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ProblemData"
+          },
+          "detail": {
+            "type": "string",
+            "description": "This occurrence, for a person; nothing parses it (§3.1.4)."
+          },
+          "status": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "The HTTP status of the response that carries it (§3.1.2); absent from a\nproblem that is stored, never answered.",
+            "minimum": 0
+          },
+          "title": {
+            "type": "string",
+            "description": "The code's title, the same for every occurrence (§3.1.3)."
+          },
+          "type": {
+            "type": "string",
+            "description": "The registry's base followed by `code`: derived from it, never set apart\n(§3.1.1)."
+          }
+        }
+      },
+      "ProblemData": {
+        "type": "object",
+        "description": "What a problem carries beside its words.",
+        "properties": {
+          "after": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "How long a deadline waited before it fired, in milliseconds: set on\nthe `*/silent` codes, and only on them.",
+            "minimum": 0
+          },
+          "column": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "The column on `line`, as the parser counts it.",
+            "minimum": 0
+          },
+          "dependents": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "What the refusal is about: what still uses a secret or connection,\nor the connections a rotation would break."
+          },
+          "field": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The request field the refusal is about, so a form can say it on that\nfield: `folder`, `name`."
+          },
+          "line": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Where in the field's text the refusal is, when its parser says: the\n1-based line and column (in characters) its own message prints.",
+            "minimum": 0
+          }
+        }
       },
       "Provenance": {
         "type": "object",
@@ -3075,6 +3048,49 @@
           }
         ]
       },
+      "ServerCode": {
+        "type": "string",
+        "description": "Every code the server answers with. Closed: a code `problems.bnf` does not\ndeclare cannot be sent. Each variant is its wire name spelled in Rust,\n`area/kind-x` as `AreaKindX`.",
+        "enum": [
+          "auth/session-required",
+          "auth/keys-unavailable",
+          "rbac/no-membership",
+          "rbac/insufficient-role",
+          "rbac/forbidden",
+          "request/rate-limited",
+          "request/invalid",
+          "request/malformed",
+          "request/method-not-allowed",
+          "request/too-large",
+          "route/not-found",
+          "server/internal",
+          "server/silent",
+          "server/not-ready",
+          "graph/not-found",
+          "graph/not-draft",
+          "graph/not-completed",
+          "graph/not-running",
+          "graph/ended",
+          "graph/still-running",
+          "graph/already-running",
+          "graph/abandoned",
+          "graph/interrupted",
+          "graph/invalid-destination",
+          "graph/no-destination",
+          "graph/folder-taken",
+          "conversation/not-found",
+          "conversation/built",
+          "secret/not-found",
+          "connection/not-found",
+          "resource/already-exists",
+          "resource/in-use",
+          "connection/overlaps",
+          "probe/failed",
+          "store/refused",
+          "store/silent",
+          "rules/refused"
+        ]
+      },
       "StorageCredentialsRequest": {
         "type": "object",
         "required": [
@@ -3277,9 +3293,9 @@
       "Forbidden": {
         "description": "The caller holds no role this route admits",
         "content": {
-          "application/json": {
+          "application/problem+json": {
             "schema": {
-              "$ref": "#/components/schemas/ErrorBody"
+              "$ref": "#/components/schemas/Problem"
             }
           }
         }
@@ -3287,9 +3303,9 @@
       "InternalError": {
         "description": "The server failed",
         "content": {
-          "application/json": {
+          "application/problem+json": {
             "schema": {
-              "$ref": "#/components/schemas/ErrorBody"
+              "$ref": "#/components/schemas/Problem"
             }
           }
         }
@@ -3297,9 +3313,9 @@
       "KeysUnavailable": {
         "description": "The identity provider's keys are unreachable",
         "content": {
-          "application/json": {
+          "application/problem+json": {
             "schema": {
-              "$ref": "#/components/schemas/ErrorBody"
+              "$ref": "#/components/schemas/Problem"
             }
           }
         }
@@ -3307,9 +3323,9 @@
       "RateLimited": {
         "description": "The caller exceeded their request rate",
         "content": {
-          "application/json": {
+          "application/problem+json": {
             "schema": {
-              "$ref": "#/components/schemas/ErrorBody"
+              "$ref": "#/components/schemas/Problem"
             }
           }
         }
@@ -3317,9 +3333,9 @@
       "Unauthorized": {
         "description": "No verified bearer token",
         "content": {
-          "application/json": {
+          "application/problem+json": {
             "schema": {
-              "$ref": "#/components/schemas/ErrorBody"
+              "$ref": "#/components/schemas/Problem"
             }
           }
         }

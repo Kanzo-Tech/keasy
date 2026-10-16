@@ -5,7 +5,7 @@ use axum::http::StatusCode;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-use crate::error::{ErrorBody, ErrorCode, Refusal};
+use crate::error::{Problem, Refusal, ServerCode};
 use crate::startup::AppState;
 
 /// How long readiness waits on the database before it says not ready.
@@ -21,7 +21,7 @@ pub async fn liveness() -> StatusCode {
 #[utoipa::path(get, path = "/healthz/ready", tag = "Health", security(()),
     responses(
         (status = 200, description = "The database answers"),
-        (status = 503, description = "The database did not answer in time", body = ErrorBody),
+        (status = 503, description = "The database did not answer in time", body = Problem, content_type = "application/problem+json"),
     )
 )]
 /// Ready when the database answers. The identity provider's keys are not a
@@ -46,11 +46,7 @@ pub async fn readiness(State(state): State<AppState>) -> Result<StatusCode, Refu
 }
 
 fn not_ready() -> Refusal {
-    Refusal::new(
-        StatusCode::SERVICE_UNAVAILABLE,
-        ErrorCode::ServerNotReady,
-        "the database did not answer",
-    )
+    Refusal::new(ServerCode::ServerNotReady, "the database did not answer")
 }
 
 /// Public: the probes.

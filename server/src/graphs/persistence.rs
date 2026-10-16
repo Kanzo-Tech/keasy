@@ -6,7 +6,7 @@ use crate::database::{
     DbError, DbResult, constraint, created_columns, enum_column, json_column_opt, owner_columns,
 };
 use crate::domain::{Actor, Graph};
-use crate::error::{ErrorBody, ErrorCode};
+use crate::error::{Problem, ServerCode};
 
 const COLUMNS: &str = "id, name, status, created_at, started_at, completed_at, heartbeat_at, \
                        runner, runner_name, cancel_requested, problem, owner, owner_name, \
@@ -125,13 +125,12 @@ pub const LEASE: std::time::Duration = std::time::Duration::from_secs(60);
 /// Run before every read of graphs rather than on a schedule: a tab that closed
 /// cannot say so, and the next person to look is the only one who can notice.
 pub fn sweep(conn: &Connection, now: jiff::Timestamp) -> DbResult<usize> {
-    let problem = serde_json::to_string(&ErrorBody::new(
-        ErrorCode::GraphAbandoned,
+    let problem = serde_json::to_string(&Problem::new(
+        ServerCode::GraphAbandoned,
         format!(
             "Nothing ran this graph for {} s: the tab that ran it closed",
             LEASE.as_secs()
         ),
-        Vec::new(),
     ))?;
     Ok(conn.execute(
         "UPDATE graphs SET status = 'failed', completed_at = ?1, problem = ?2, cancel_requested = 0

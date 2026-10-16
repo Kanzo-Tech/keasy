@@ -6,7 +6,6 @@ pub mod vend;
 use std::future::Future;
 use std::time::Duration;
 
-use axum::http::StatusCode;
 use futures::StreamExt;
 use futures::stream::BoxStream;
 use object_store::aws::{AmazonS3, AmazonS3Builder};
@@ -18,7 +17,7 @@ use object_store::{
 use secrecy::ExposeSecret;
 
 use crate::domain::{SecretSpec, StorageLocation, StoreKind};
-use crate::error::{ErrorCode, Refusal};
+use crate::error::{Refusal, ServerCode};
 use crate::startup::REQUEST_DEADLINE;
 
 /// How long the store may take to accept a connection.
@@ -106,15 +105,10 @@ impl From<&str> for StoreFailure {
 impl From<StoreFailure> for Refusal {
     fn from(e: StoreFailure) -> Self {
         match e {
-            StoreFailure::Refused(message) => {
-                Refusal::new(StatusCode::BAD_GATEWAY, ErrorCode::StoreRefused, message)
+            StoreFailure::Refused(message) => Refusal::new(ServerCode::StoreRefused, message),
+            silent @ StoreFailure::Silent { after, .. } => {
+                Refusal::silent(ServerCode::StoreSilent, silent.to_string(), after)
             }
-            silent @ StoreFailure::Silent { after, .. } => Refusal::silent(
-                StatusCode::GATEWAY_TIMEOUT,
-                ErrorCode::StoreSilent,
-                silent.to_string(),
-                after,
-            ),
         }
     }
 }

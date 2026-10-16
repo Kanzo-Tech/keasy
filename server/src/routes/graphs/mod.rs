@@ -14,7 +14,7 @@ use utoipa_axum::routes;
 use crate::authentication::permission::Action;
 use crate::authentication::role::{Editor, Reader};
 use crate::domain::{Graph, GraphFolder, GraphStatus, ResourceName};
-use crate::error::{ErrorBody, ErrorCode, Refusal};
+use crate::error::{Problem, Refusal, ServerCode};
 use crate::graphs::{any, persistence, present, transition};
 use crate::startup::AppState;
 
@@ -127,8 +127,8 @@ pub async fn list_graphs(
     request_body = CreateGraphRequest,
     responses(
         (status = 201, description = "The draft, created; `POST /v1/graphs/{id}/submit` makes it a graph to run", body = Graph),
-        (status = 400, description = "The destination is not a sink, the name or folder is misspelled, or there is no such conversation (`data.field`)", body = ErrorBody),
-        (status = 403, description = "The conversation is someone else's (`rbac/forbidden`)", body = ErrorBody),
+        (status = 400, description = "The destination is not a sink, the name or folder is misspelled, or there is no such conversation (`data.field`)", body = Problem, content_type = "application/problem+json"),
+        (status = 403, description = "The conversation is someone else's (`rbac/forbidden`)", body = Problem, content_type = "application/problem+json"),
     )
 )]
 /// A graph begins as a draft, always: what it runs, where it lands. Submitting
@@ -143,8 +143,7 @@ pub async fn create_graph(
             .is_some_and(|c| c.target.is_sink());
     if !is_sink {
         return Err(Refusal::new(
-            StatusCode::BAD_REQUEST,
-            ErrorCode::GraphInvalidDestination,
+            ServerCode::GraphInvalidDestination,
             "sink_connection must name the workspace sink",
         ));
     }
@@ -175,7 +174,7 @@ pub async fn create_graph(
     params(("id" = String, Path, description = "Graph ID")),
     responses(
         (status = 200, description = "Graph details", body = Graph),
-        (status = 404, description = "Graph not found", body = ErrorBody),
+        (status = 404, description = "Graph not found", body = Problem, content_type = "application/problem+json"),
     )
 )]
 pub async fn get_graph(
@@ -193,10 +192,10 @@ pub async fn get_graph(
     request_body = DraftEdits,
     responses(
         (status = 200, description = "The draft, edited", body = Graph),
-        (status = 400, description = "The name or folder is misspelled (`data.field`)", body = ErrorBody),
-        (status = 403, description = "Neither its owner nor an admin (`rbac/forbidden`)", body = ErrorBody),
-        (status = 404, description = "Graph not found", body = ErrorBody),
-        (status = 409, description = "Not a draft: `graph/not-draft`", body = ErrorBody),
+        (status = 400, description = "The name or folder is misspelled (`data.field`)", body = Problem, content_type = "application/problem+json"),
+        (status = 403, description = "Neither its owner nor an admin (`rbac/forbidden`)", body = Problem, content_type = "application/problem+json"),
+        (status = 404, description = "Graph not found", body = Problem, content_type = "application/problem+json"),
+        (status = 409, description = "Not a draft: `graph/not-draft`", body = Problem, content_type = "application/problem+json"),
     )
 )]
 pub async fn edit_draft(
@@ -219,10 +218,10 @@ pub async fn edit_draft(
     request_body = DraftEdits,
     responses(
         (status = 200, description = "The draft is now a graph to run, idle, under the same id", body = Graph),
-        (status = 400, description = "The name or folder is missing or misspelled (`data.field`)", body = ErrorBody),
-        (status = 403, description = "Neither its owner nor an admin (`rbac/forbidden`)", body = ErrorBody),
-        (status = 404, description = "Graph not found", body = ErrorBody),
-        (status = 409, description = "Not a draft (`graph/not-draft`), or another graph writes to that folder already (`graph/folder-taken`; the graph stays a draft, unchanged)", body = ErrorBody),
+        (status = 400, description = "The name or folder is missing or misspelled (`data.field`)", body = Problem, content_type = "application/problem+json"),
+        (status = 403, description = "Neither its owner nor an admin (`rbac/forbidden`)", body = Problem, content_type = "application/problem+json"),
+        (status = 404, description = "Graph not found", body = Problem, content_type = "application/problem+json"),
+        (status = 409, description = "Not a draft (`graph/not-draft`), or another graph writes to that folder already (`graph/folder-taken`; the graph stays a draft, unchanged)", body = Problem, content_type = "application/problem+json"),
     )
 )]
 /// A draft becomes a graph to run, in place: the edits, the folder check and
@@ -248,9 +247,9 @@ pub async fn submit_graph(
     params(("id" = String, Path, description = "Graph ID")),
     responses(
         (status = 200, description = "The graph runs, and the caller is its runner: the browser that asked runs the program and reports on it", body = Graph),
-        (status = 400, description = "A draft, which is submitted before it runs", body = ErrorBody),
-        (status = 404, description = "Graph not found", body = ErrorBody),
-        (status = 409, description = "It runs already (`graph/already-running`)", body = ErrorBody),
+        (status = 400, description = "A draft, which is submitted before it runs", body = Problem, content_type = "application/problem+json"),
+        (status = 404, description = "Graph not found", body = Problem, content_type = "application/problem+json"),
+        (status = 409, description = "It runs already (`graph/already-running`)", body = Problem, content_type = "application/problem+json"),
     )
 )]
 /// Start a run, with the caller as its runner — any editor runs any graph:
@@ -274,10 +273,10 @@ pub async fn run_graph(
     request_body = GraphStatusReport,
     responses(
         (status = 200, description = "Recorded: the lease renewed, or the run's end; and whether the run is asked to stop", body = RunSignal),
-        (status = 400, description = "The status is not running or an end, or the graph is a draft", body = ErrorBody),
-        (status = 403, description = "Not the graph's runner (`rbac/forbidden`)", body = ErrorBody),
-        (status = 404, description = "Graph not found", body = ErrorBody),
-        (status = 409, description = "Nothing runs (`graph/not-running`), or the run has ended (`graph/ended`): the sweep's `graph/abandoned` among them", body = ErrorBody),
+        (status = 400, description = "The status is not running or an end, or the graph is a draft", body = Problem, content_type = "application/problem+json"),
+        (status = 403, description = "Not the graph's runner (`rbac/forbidden`)", body = Problem, content_type = "application/problem+json"),
+        (status = 404, description = "Graph not found", body = Problem, content_type = "application/problem+json"),
+        (status = 409, description = "Nothing runs (`graph/not-running`), or the run has ended (`graph/ended`): the sweep's `graph/abandoned` among them", body = Problem, content_type = "application/problem+json"),
     )
 )]
 /// The runner's one report, taken from the runner alone: `running` renews the
@@ -318,9 +317,9 @@ pub async fn report_status(
     params(("id" = String, Path, description = "Graph ID")),
     responses(
         (status = 200, description = "The run is asked to stop: its runner aborts on its next report and reports `cancelled`", body = Graph),
-        (status = 403, description = "Neither its runner, its owner nor an admin (`rbac/forbidden`)", body = ErrorBody),
-        (status = 404, description = "Graph not found", body = ErrorBody),
-        (status = 409, description = "Nothing runs (`graph/not-running`), or the run has ended (`graph/ended`)", body = ErrorBody),
+        (status = 403, description = "Neither its runner, its owner nor an admin (`rbac/forbidden`)", body = Problem, content_type = "application/problem+json"),
+        (status = 404, description = "Graph not found", body = Problem, content_type = "application/problem+json"),
+        (status = 409, description = "Nothing runs (`graph/not-running`), or the run has ended (`graph/ended`)", body = Problem, content_type = "application/problem+json"),
     )
 )]
 /// Ask a run to stop, from wherever it is watched: its runner may, the graph's
@@ -341,9 +340,9 @@ pub async fn stop_graph(
     params(("id" = String, Path, description = "Graph ID")),
     responses(
         (status = 204, description = "Graph deleted"),
-        (status = 403, description = "Neither its owner nor an admin (`rbac/forbidden`)", body = ErrorBody),
-        (status = 404, description = "Graph not found", body = ErrorBody),
-        (status = 409, description = "Graph is still running", body = ErrorBody),
+        (status = 403, description = "Neither its owner nor an admin (`rbac/forbidden`)", body = Problem, content_type = "application/problem+json"),
+        (status = 404, description = "Graph not found", body = Problem, content_type = "application/problem+json"),
+        (status = 409, description = "Graph is still running", body = Problem, content_type = "application/problem+json"),
     )
 )]
 pub async fn delete_graph(

@@ -16,7 +16,7 @@ use crate::authentication::permission::Action;
 use crate::authentication::role::{Editor, Reader};
 use crate::conversations;
 use crate::domain::Conversation;
-use crate::error::{ErrorBody, ErrorCode, Refusal};
+use crate::error::{Problem, Refusal, ServerCode};
 use crate::startup::AppState;
 
 /// The most a conversation's messages may weigh, as stored JSON: the turns, the
@@ -44,8 +44,7 @@ fn messages(messages: serde_json::Value) -> Result<Vec<serde_json::Value>, Refus
         .unwrap_or(usize::MAX);
     if size > MAX_MESSAGES_BYTES {
         return Err(Refusal::new(
-            StatusCode::PAYLOAD_TOO_LARGE,
-            ErrorCode::RequestTooLarge,
+            ServerCode::RequestTooLarge,
             format!(
                 "A conversation's messages are at most {MAX_MESSAGES_BYTES} bytes; these are {size}"
             ),
@@ -58,14 +57,14 @@ fn messages(messages: serde_json::Value) -> Result<Vec<serde_json::Value>, Refus
 /// from it reads what was decided.
 pub fn any(conn: &rusqlite::Connection, id: &str) -> Result<Conversation, Refusal> {
     conversations::get(conn, id)?
-        .ok_or_else(|| Refusal::not_found(ErrorCode::ConversationNotFound, "No such conversation"))
+        .ok_or_else(|| Refusal::new(ServerCode::ConversationNotFound, "No such conversation"))
 }
 
 #[utoipa::path(get, path = "/v1/conversations/{id}", tag = "Conversations", security(("bearer" = ["reader"])),
     params(("id" = String, Path, description = "Conversation ID")),
     responses(
         (status = 200, description = "The conversation, its messages as they were last saved", body = Conversation),
-        (status = 404, description = "Conversation not found", body = ErrorBody),
+        (status = 404, description = "Conversation not found", body = Problem, content_type = "application/problem+json"),
     )
 )]
 pub async fn get_conversation(
@@ -84,10 +83,10 @@ pub async fn get_conversation(
     responses(
         (status = 200, description = "The messages, replaced whole", body = Conversation),
         (status = 201, description = "The conversation, started with these messages", body = Conversation),
-        (status = 400, description = "The id is not a UUID, or the messages are not a JSON array (`data.field`)", body = ErrorBody),
-        (status = 403, description = "Neither its owner nor an admin (`rbac/forbidden`)", body = ErrorBody),
-        (status = 409, description = "A graph was built from it (`conversation/built`): carry on in another id", body = ErrorBody),
-        (status = 413, description = "The messages are heavier than a conversation may be", body = ErrorBody),
+        (status = 400, description = "The id is not a UUID, or the messages are not a JSON array (`data.field`)", body = Problem, content_type = "application/problem+json"),
+        (status = 403, description = "Neither its owner nor an admin (`rbac/forbidden`)", body = Problem, content_type = "application/problem+json"),
+        (status = 409, description = "A graph was built from it (`conversation/built`): carry on in another id", body = Problem, content_type = "application/problem+json"),
+        (status = 413, description = "The messages are heavier than a conversation may be", body = Problem, content_type = "application/problem+json"),
     )
 )]
 /// Save the conversation `id` after a reply: every message, replacing what was
@@ -121,8 +120,8 @@ pub async fn save_conversation(
     {
         return Ok((status, Json(saved)));
     }
-    Err(Refusal::conflict(
-        ErrorCode::ConversationBuilt,
+    Err(Refusal::new(
+        ServerCode::ConversationBuilt,
         "A graph was built from this conversation; carry on in another",
     ))
 }

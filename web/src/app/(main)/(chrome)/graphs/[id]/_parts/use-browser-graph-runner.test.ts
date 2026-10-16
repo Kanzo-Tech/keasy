@@ -1,13 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/api/client", async () => {
-  const { ApiError, retryable } = await import("@keasy/api");
-  return { ApiError, retryable, http: {}, invalidate: vi.fn() };
+  const { retryable } = await import("@keasy/api");
+  return { retryable, http: {}, invalidate: vi.fn() };
 });
 vi.mock("@/lib/fossil/host", () => ({ host: {} }));
 vi.mock("@/lib/errors", () => ({ toastError: vi.fn(), wireOf: vi.fn() }));
 
-const { ApiError } = await import("@keasy/api");
+const { Problem } = await import("@kanzo-tech/kernel");
 const { lease, LEASE_MS } = await import("./use-browser-graph-runner");
 
 /** A clock that `wait` advances, so the retries run without real time passing. */
@@ -16,7 +16,7 @@ function clock() {
   return { now: () => t, wait: async (ms: number) => void (t += ms) };
 }
 
-const down = () => new ApiError({ code: "server/silent", title: "", detail: "", data: {} });
+const down = () => new Problem("server/silent", "", {});
 
 describe("the graph's lease", () => {
   it("reports again after a transient failure, and lands", async () => {
@@ -34,7 +34,7 @@ describe("the graph's lease", () => {
   });
 
   it("does not ask again when the server refused, as for a graph the sweep already ended", async () => {
-    const ended = new ApiError({ code: "graph/ended", title: "", detail: "", data: {} }, 409);
+    const ended = new Problem("graph/ended", "", {}, { status: 409 });
     const send = vi.fn().mockRejectedValue(ended);
     await expect(lease("j", clock()).report(send)).rejects.toBe(ended);
     expect(send).toHaveBeenCalledTimes(1);

@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use axum::body::Body;
 use axum::extract::DefaultBodyLimit;
-use axum::http::{Request, StatusCode};
+use axum::http::Request;
 use axum::middleware::Next;
 use axum::response::{IntoResponse, Response};
 use axum::{Router, middleware};
@@ -27,7 +27,7 @@ use crate::authentication::role::Role;
 use crate::authentication::token::{SharedValidator, Validator};
 use crate::configuration::{BrandingSettings, DatabaseSettings, Rate, Settings};
 use crate::database::Database;
-use crate::error::{ErrorBody, ErrorCode, ErrorData, Refusal};
+use crate::error::{Problem, ProblemData, Refusal, ServerCode};
 use crate::routes;
 use crate::storage_client::Endpoints;
 
@@ -203,7 +203,7 @@ const BODY_LIMIT: usize = 2 * 1024 * 1024;
 
 /// What every request passes through, outermost last: a body limit, the
 /// request deadline, a panic caught as a 500, and every failure spoken as an
-/// [`ErrorBody`] — so a client never meets a dropped connection, a hang or a
+/// [`Problem`] — so a client never meets a dropped connection, a hang or a
 /// plain-text body.
 fn guarded<S: Clone + Send + Sync + 'static>(router: Router<S>, deadline: Duration) -> Router<S> {
     router
@@ -212,7 +212,7 @@ fn guarded<S: Clone + Send + Sync + 'static>(router: Router<S>, deadline: Durati
             within(deadline, request, next)
         }))
         .layer(CatchPanicLayer::custom(crate::error::panicked))
-        .layer(middleware::map_response(crate::error::as_error_body))
+        .layer(middleware::map_response(crate::error::as_problem))
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(crate::telemetry::request_span)
@@ -247,8 +247,7 @@ pub async fn within(deadline: Duration, request: Request<Body>, next: Next) -> R
                 "request deadline fired"
             );
             Refusal::silent(
-                StatusCode::SERVICE_UNAVAILABLE,
-                ErrorCode::ServerSilent,
+                ServerCode::ServerSilent,
                 "The server did not answer within its deadline",
                 deadline,
             )
@@ -279,12 +278,9 @@ impl KeyExtractor for Subject {
 /// The refusal a caller over their rate gets.
 fn over_rate(error: GovernorError) -> Response {
     match error {
-        GovernorError::TooManyRequests { .. } => Refusal::new(
-            StatusCode::TOO_MANY_REQUESTS,
-            ErrorCode::RequestRateLimited,
-            "Too many requests",
-        )
-        .into_response(),
+        GovernorError::TooManyRequests { .. } => {
+            Refusal::new(ServerCode::RequestRateLimited, "Too many requests").into_response()
+        }
         _ => Refusal::internal().into_response(),
     }
 }
@@ -298,7 +294,7 @@ fn over_rate(error: GovernorError) -> Response {
         version = "1.0.0",
         description = "Keasy host: identity, connections, vended credentials and the graph record",
     ),
-    components(schemas(ErrorBody, ErrorCode, ErrorData, Role)),
+    components(schemas(Problem, ServerCode, ProblemData, Role)),
     modifiers(&Bearer, &Unattributed, &Bounds),
     security(("bearer" = [])),
 )]
@@ -361,6 +357,7 @@ impl Modify for Bounds {
 
 #[cfg(test)]
 mod tests {
+    use axum::http::StatusCode;
     use axum::routing::get;
     use tower::ServiceExt;
 

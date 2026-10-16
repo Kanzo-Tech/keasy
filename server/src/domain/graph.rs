@@ -3,7 +3,7 @@ use crate::authentication::role::Caller;
 use serde::{Deserialize, Serialize};
 
 use super::{Access, Actor, GraphFolder, Provenance, ResourceName, StorageLocation, now_iso8601};
-use crate::error::{ErrorCode, Refusal};
+use crate::error::{Refusal, ServerCode};
 
 #[derive(
     Debug,
@@ -310,8 +310,8 @@ pub enum Transition {
 impl From<Transition> for Refusal {
     fn from(t: Transition) -> Self {
         match t {
-            Transition::NotDraft => Refusal::conflict(
-                ErrorCode::GraphNotDraft,
+            Transition::NotDraft => Refusal::new(
+                ServerCode::GraphNotDraft,
                 "Only a draft is edited or submitted",
             ),
             Transition::NoFolder => {
@@ -321,24 +321,24 @@ impl From<Transition> for Refusal {
                 Refusal::invalid("A run reports running, completed, failed or cancelled")
             }
             Transition::NeverRun => Refusal::invalid("A draft is never run: submit it first"),
-            Transition::AlreadyRunning => Refusal::conflict(
-                ErrorCode::GraphAlreadyRunning,
+            Transition::AlreadyRunning => Refusal::new(
+                ServerCode::GraphAlreadyRunning,
                 "The graph is running already",
             ),
             Transition::NotRunner => Refusal::forbidden(
                 "Only whoever runs the graph reports on it and writes its output; only they, its \
                  owner or an admin stop it",
             ),
-            Transition::Ended => Refusal::conflict(ErrorCode::GraphEnded, "The run has ended"),
+            Transition::Ended => Refusal::new(ServerCode::GraphEnded, "The run has ended"),
             Transition::NotRunning => {
-                Refusal::conflict(ErrorCode::GraphNotRunning, "The graph is not running")
+                Refusal::new(ServerCode::GraphNotRunning, "The graph is not running")
             }
-            Transition::NotCompleted => Refusal::conflict(
-                ErrorCode::GraphNotCompleted,
+            Transition::NotCompleted => Refusal::new(
+                ServerCode::GraphNotCompleted,
                 "The graph has not completed, so it has no output to read",
             ),
-            Transition::StillRunning => Refusal::conflict(
-                ErrorCode::GraphStillRunning,
+            Transition::StillRunning => Refusal::new(
+                ServerCode::GraphStillRunning,
                 "Cannot delete a graph that is still running",
             ),
         }

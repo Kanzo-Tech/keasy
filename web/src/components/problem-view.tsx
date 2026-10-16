@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { Button, DiagnosticList, Problem, type ProblemDescription } from "@kanzo-tech/ui";
-import type { ErrorCode } from "@/lib/api/client";
+import type { RefusalCode } from "@/lib/api/client";
 import { type ClientCode, coded, descriptionOf, pageOf } from "@/lib/errors";
 
 /** keasy's words for a code, and the page that explains it when fossil raised it. */
@@ -12,7 +12,7 @@ export interface ProblemItemProps {
   /** What was thrown, or a problem as stored. */
   error: unknown;
   /** The code a failure that carries none is shown under. */
-  uncoded?: ClientCode | ErrorCode;
+  uncoded?: ClientCode | RefusalCode;
   /** Beside the problem's own link and details: a retry, a "go to". */
   children?: ReactNode;
 }

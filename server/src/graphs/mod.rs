@@ -2,14 +2,13 @@ pub mod dashboards;
 pub mod persistence;
 pub mod rules;
 
-use axum::http::StatusCode;
 use rusqlite::Connection;
 
 use crate::authentication::role::Caller;
 use crate::credentials::sealing::SecretKey;
 use crate::database::Database;
 use crate::domain::{Graph, SecretSpec, StorageLocation};
-use crate::error::{ErrorCode, Refusal};
+use crate::error::{Refusal, ServerCode};
 
 /// End the graphs no runner holds ([`persistence::sweep`]). Every read of graphs
 /// calls it first, so no one is ever shown a run that has stopped as running.
@@ -25,7 +24,7 @@ pub async fn sweep(db: &Database) -> Result<(), Refusal> {
 /// a caller whose answer turns on whether a run is still held sweeps first.
 pub fn any(conn: &Connection, id: &str) -> Result<Graph, Refusal> {
     persistence::get(conn, id)?
-        .ok_or_else(|| Refusal::not_found(ErrorCode::GraphNotFound, "No such graph"))
+        .ok_or_else(|| Refusal::new(ServerCode::GraphNotFound, "No such graph"))
 }
 
 /// The graph as `caller` is shown it: who may change and stop it, and where its
@@ -74,8 +73,7 @@ pub fn output(
     let sink =
         crate::connections::persistence::get(conn, &graph.sink_connection)?.ok_or_else(|| {
             Refusal::new(
-                StatusCode::BAD_REQUEST,
-                ErrorCode::GraphNoDestination,
+                ServerCode::GraphNoDestination,
                 "The graph's destination connection no longer exists",
             )
         })?;

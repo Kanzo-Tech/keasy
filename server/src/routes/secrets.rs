@@ -12,7 +12,7 @@ use crate::authentication::role::Editor;
 use crate::connections::persistence as connections;
 use crate::credentials::{named, persistence, probe};
 use crate::domain::{ResourceName, SecretSpec, SecretView, ValidationReport};
-use crate::error::{ErrorBody, ErrorCode, Refusal};
+use crate::error::{Problem, Refusal, ServerCode};
 use crate::startup::AppState;
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -61,10 +61,10 @@ pub async fn list_secrets(
     request_body = CreateSecretRequest,
     responses(
         (status = 201, description = "Validated and stored", body = SecretView),
-        (status = 400, description = "An invalid name", body = ErrorBody),
-        (status = 409, description = "A secret of that name exists", body = ErrorBody),
-        (status = 422, description = "The secret did not validate", body = ErrorBody),
-        (status = 504, description = "The store did not answer the probe in time", body = ErrorBody),
+        (status = 400, description = "An invalid name", body = Problem, content_type = "application/problem+json"),
+        (status = 409, description = "A secret of that name exists", body = Problem, content_type = "application/problem+json"),
+        (status = 422, description = "The secret did not validate", body = Problem, content_type = "application/problem+json"),
+        (status = 504, description = "The store did not answer the probe in time", body = Problem, content_type = "application/problem+json"),
     )
 )]
 /// An editor creates one, and owns it; any editor may use it in a connection
@@ -90,7 +90,7 @@ pub async fn create_secret(
     params(("name" = String, Path, description = "Secret name")),
     responses(
         (status = 200, description = "The secret; never its value", body = SecretView),
-        (status = 404, description = "No such secret", body = ErrorBody),
+        (status = 404, description = "No such secret", body = Problem, content_type = "application/problem+json"),
     )
 )]
 pub async fn get_secret(
@@ -108,10 +108,10 @@ pub async fn get_secret(
     request_body = UpdateSecretRequest,
     responses(
         (status = 200, description = "Renamed and/or rotated", body = SecretView),
-        (status = 403, description = "Neither its owner nor an admin", body = ErrorBody),
-        (status = 404, description = "No such secret", body = ErrorBody),
-        (status = 422, description = "A connection using it would not validate with the new spec; `dependents` names them", body = ErrorBody),
-        (status = 504, description = "The store did not answer the probe in time", body = ErrorBody),
+        (status = 403, description = "Neither its owner nor an admin", body = Problem, content_type = "application/problem+json"),
+        (status = 404, description = "No such secret", body = Problem, content_type = "application/problem+json"),
+        (status = 422, description = "A connection using it would not validate with the new spec; `dependents` names them", body = Problem, content_type = "application/problem+json"),
+        (status = 504, description = "The store did not answer the probe in time", body = Problem, content_type = "application/problem+json"),
     )
 )]
 /// Rotation replaces the whole spec, and is committed only if every connection
@@ -155,7 +155,7 @@ pub async fn update_secret(
         report.as_ref(),
     )?;
     let stored = persistence::get(&conn, db.secret_key(), new_name.as_ref())?
-        .ok_or_else(|| Refusal::not_found(ErrorCode::SecretNotFound, "No such secret"))?;
+        .ok_or_else(|| Refusal::new(ServerCode::SecretNotFound, "No such secret"))?;
     let used_by = persistence::users_of(&conn, new_name.as_ref())?;
     Ok(Json(stored.view(used_by).seen_by(&caller)))
 }
@@ -164,9 +164,9 @@ pub async fn update_secret(
     params(("name" = String, Path, description = "Secret name")),
     responses(
         (status = 204, description = "Deleted"),
-        (status = 403, description = "Neither its owner nor an admin", body = ErrorBody),
-        (status = 404, description = "No such secret", body = ErrorBody),
-        (status = 409, description = "Connections still use it; `dependents` names them", body = ErrorBody),
+        (status = 403, description = "Neither its owner nor an admin", body = Problem, content_type = "application/problem+json"),
+        (status = 404, description = "No such secret", body = Problem, content_type = "application/problem+json"),
+        (status = 409, description = "Connections still use it; `dependents` names them", body = Problem, content_type = "application/problem+json"),
     )
 )]
 pub async fn delete_secret(
@@ -184,8 +184,8 @@ pub async fn delete_secret(
     params(("name" = String, Path, description = "Secret name")),
     responses(
         (status = 200, description = "The probe's report, stored with the secret and naming who asked for it", body = ValidationReport),
-        (status = 404, description = "No such secret", body = ErrorBody),
-        (status = 504, description = "The store did not answer the probe in time", body = ErrorBody),
+        (status = 404, description = "No such secret", body = Problem, content_type = "application/problem+json"),
+        (status = 504, description = "The store did not answer the probe in time", body = Problem, content_type = "application/problem+json"),
     )
 )]
 /// Probe the secret through every connection that uses it. Any editor may:

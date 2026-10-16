@@ -7,249 +7,88 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use utoipa::openapi::{OpenApi, Ref, RefOr, ResponseBuilder, content::ContentBuilder};
 
-/// Every error the server answers with. Closed: a code the server does not
-/// declare here cannot be sent, and the web keys its copy by this enum.
-///
-/// One grammar with fossil's and kanzo-ui's codes, `area/kind`, so one registry
-/// in the web keys all three. The areas are keasy's own and never one of
-/// fossil's (`storage`, `engine`, `run`, …): a code means one thing. Each
-/// variant is its wire name spelled in Rust, `area/kind-x` as `AreaKindX`, so
-/// the code a test asserts and the variant a handler names are one word.
-///
-/// Every refusal the server writes is an [`ErrorBody`] with one of these.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema, strum::EnumIter)]
-pub enum ErrorCode {
-    #[serde(rename = "auth/session-required")]
-    AuthSessionRequired,
-    #[serde(rename = "auth/keys-unavailable")]
-    AuthKeysUnavailable,
-    #[serde(rename = "rbac/no-membership")]
-    RbacNoMembership,
-    #[serde(rename = "rbac/insufficient-role")]
-    RbacInsufficientRole,
-    /// The caller holds the role, but not this resource: another member's.
-    #[serde(rename = "rbac/forbidden")]
-    RbacForbidden,
-    #[serde(rename = "request/rate-limited")]
-    RequestRateLimited,
-    /// Well-formed, but what it asks for is not allowed.
-    #[serde(rename = "request/invalid")]
-    RequestInvalid,
-    /// Not well-formed: a body, path or query that does not parse.
-    #[serde(rename = "request/malformed")]
-    RequestMalformed,
-    #[serde(rename = "request/method-not-allowed")]
-    RequestMethodNotAllowed,
-    #[serde(rename = "request/too-large")]
-    RequestTooLarge,
-    /// No route answers at this path.
-    #[serde(rename = "route/not-found")]
-    RouteNotFound,
-    #[serde(rename = "server/internal")]
-    ServerInternal,
-    /// The server did not answer within its own bound; `after` says how long
-    /// it waited.
-    #[serde(rename = "server/silent")]
-    ServerSilent,
-    /// The server is up but cannot serve: its database did not answer.
-    #[serde(rename = "server/not-ready")]
-    ServerNotReady,
-    #[serde(rename = "graph/not-found")]
-    GraphNotFound,
-    /// Only a draft is edited or submitted.
-    #[serde(rename = "graph/not-draft")]
-    GraphNotDraft,
-    /// A graph's output is read once the graph has completed.
-    #[serde(rename = "graph/not-completed")]
-    GraphNotCompleted,
-    /// Not running yet: a graph's output is written, and its run reported, only
-    /// once it runs.
-    #[serde(rename = "graph/not-running")]
-    GraphNotRunning,
-    /// The graph has ended — completed, failed, cancelled or swept — so it has
-    /// no run left to report or write.
-    #[serde(rename = "graph/ended")]
-    GraphEnded,
-    #[serde(rename = "graph/still-running")]
-    GraphStillRunning,
-    /// A run is under way already: a graph runs once at a time.
-    #[serde(rename = "graph/already-running")]
-    GraphAlreadyRunning,
-    /// The runner went silent: no heartbeat within the lease. Stored as the
-    /// graph's problem by the sweep.
-    #[serde(rename = "graph/abandoned")]
-    GraphAbandoned,
-    /// The runner's own tab lost the run (it reloaded, or closed and came
-    /// back) and its runner ended it, to run it again. Stored as the graph's
-    /// problem; reported by the runner, never raised by the server.
-    #[serde(rename = "graph/interrupted")]
-    GraphInterrupted,
-    #[serde(rename = "graph/invalid-destination")]
-    GraphInvalidDestination,
-    #[serde(rename = "graph/no-destination")]
-    GraphNoDestination,
-    /// Another graph that is not a draft writes to that folder of the sink;
-    /// `field` is `folder`.
-    #[serde(rename = "graph/folder-taken")]
-    GraphFolderTaken,
-    #[serde(rename = "conversation/not-found")]
-    ConversationNotFound,
-    /// A graph was built from the conversation: it is that graph's record, and
-    /// is not saved over.
-    #[serde(rename = "conversation/built")]
-    ConversationBuilt,
-    #[serde(rename = "secret/not-found")]
-    SecretNotFound,
-    #[serde(rename = "connection/not-found")]
-    ConnectionNotFound,
-    /// A secret or connection of that name exists already, or a second sink.
-    #[serde(rename = "resource/already-exists")]
-    ResourceAlreadyExists,
-    /// Still used: `dependents` names what uses it.
-    #[serde(rename = "resource/in-use")]
-    ResourceInUse,
-    /// A storage connection's location lies within another's, or holds one:
-    /// `dependents` names them. Locations never overlap, so a prefix has one
-    /// owner.
-    #[serde(rename = "connection/overlaps")]
-    ConnectionOverlaps,
-    /// A secret or connection was probed and did not pass; `dependents`
-    /// names the connections that failed.
-    #[serde(rename = "probe/failed")]
-    ProbeFailed,
-    /// The store answered and refused: to vend, or to list.
-    #[serde(rename = "store/refused")]
-    StoreRefused,
-    /// The store, or the identity service in front of it (Entra, STS), did not
-    /// answer within its deadline; `after` says how long it was given.
-    #[serde(rename = "store/silent")]
-    StoreSilent,
-    /// rudof refused a rules document: it is not Turtle, or not a SHACL shapes
-    /// graph. `line` and `column` place it when the Turtle parser does.
-    #[serde(rename = "rules/refused")]
-    RulesRefused,
-}
+pub use crate::problems::{ServerCode, TYPE_BASE};
+
+/// The media type of every refusal (RFC 9457 §3).
+pub const PROBLEM_JSON: &str = "application/problem+json";
 
 /// A problem a runner reports, its title filled in when its code is the
 /// server's and it carries none: keasy's words for its own failures live in
-/// [`ErrorCode::title`], and the web sends the code alone.
+/// `problems.bnf`, and the web sends the code alone.
 pub fn titled(mut problem: serde_json::Value) -> serde_json::Value {
     if let Some(fields) = problem.as_object_mut()
         && !fields.contains_key("title")
         && let Some(code) = fields
             .get("code")
-            .and_then(|code| ErrorCode::deserialize(code).ok())
+            .and_then(|code| ServerCode::deserialize(code).ok())
     {
         fields.insert("title".into(), code.title().into());
     }
     problem
 }
 
-impl ErrorCode {
-    /// What the code means, fixed per code: the same words for every refusal
-    /// that carries it. What this refusal is about goes in `detail`.
-    pub fn title(self) -> &'static str {
-        match self {
-            Self::AuthSessionRequired => "Sign in required",
-            Self::AuthKeysUnavailable => "The identity provider is unreachable",
-            Self::RbacNoMembership => "Not a member of this workspace",
-            Self::RbacInsufficientRole => "Your role does not allow this",
-            Self::RbacForbidden => "Not allowed",
-            Self::RequestRateLimited => "Too many requests",
-            Self::RequestInvalid => "The request is not valid",
-            Self::RequestMalformed => "The request is malformed",
-            Self::RequestMethodNotAllowed => "The method is not allowed here",
-            Self::RequestTooLarge => "The request is too large",
-            Self::RouteNotFound => "No such route",
-            Self::ServerInternal => "The server failed",
-            Self::ServerSilent => "The server did not answer in time",
-            Self::ServerNotReady => "The server is not ready",
-            Self::GraphNotFound => "Graph not found",
-            Self::ConversationNotFound => "Conversation not found",
-            Self::ConversationBuilt => "A graph was built from this conversation",
-            Self::GraphNotDraft => "Not a draft",
-            Self::GraphNotCompleted => "The graph has not completed",
-            Self::GraphNotRunning => "The graph is not running",
-            Self::GraphEnded => "The graph has ended",
-            Self::GraphStillRunning => "The graph is still running",
-            Self::GraphAlreadyRunning => "The graph is running already",
-            Self::GraphAbandoned => "The run was abandoned",
-            Self::GraphInterrupted => "The run was interrupted",
-            Self::GraphInvalidDestination => "Not a valid destination",
-            Self::GraphNoDestination => "No destination",
-            Self::GraphFolderTaken => "Another graph writes to that folder",
-            Self::SecretNotFound => "Secret not found",
-            Self::ConnectionNotFound => "Connection not found",
-            Self::ResourceAlreadyExists => "It exists already",
-            Self::ResourceInUse => "Still in use",
-            Self::ConnectionOverlaps => "The location overlaps another",
-            Self::ProbeFailed => "Validation failed",
-            Self::StoreRefused => "The store refused",
-            Self::StoreSilent => "The store did not answer in time",
-            Self::RulesRefused => "The rules could not be read",
-        }
-    }
-}
-
-/// The body of every 4xx/5xx, and the payload of an SSE `error` frame — the
-/// shape fossil's problems have: a code, its fixed title, a detail for a
-/// person that nothing parses, and the data the code carries.
-#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
-pub struct ErrorBody {
-    pub code: ErrorCode,
+/// Every 4xx/5xx the server writes, and every problem it stores:
+/// `application/problem+json` (RFC 9457), with the extension members
+/// `@kanzo-tech/kernel`'s `Problem.from` reads back (§3.2) — `code`, its
+/// discriminator, and `data`, what the code carries.
+#[derive(Debug, Clone, Serialize, ToSchema)]
+pub struct Problem {
+    /// The registry's base followed by `code`: derived from it, never set apart
+    /// (§3.1.1).
+    #[serde(rename = "type")]
+    pub type_uri: String,
+    /// The HTTP status of the response that carries it (§3.1.2); absent from a
+    /// problem that is stored, never answered.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status: Option<u16>,
+    /// The code's title, the same for every occurrence (§3.1.3).
     pub title: String,
+    /// This occurrence, for a person; nothing parses it (§3.1.4).
     pub detail: String,
-    pub data: ErrorData,
+    pub code: ServerCode,
+    pub data: ProblemData,
 }
 
-/// What a refusal carries beside its words.
-#[derive(Debug, Clone, Default, Serialize, Deserialize, ToSchema)]
-pub struct ErrorData {
+/// What a problem carries beside its words.
+#[derive(Debug, Clone, Default, Serialize, ToSchema)]
+pub struct ProblemData {
     /// What the refusal is about: what still uses a secret or connection,
     /// or the connections a rotation would break.
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     pub dependents: Vec<String>,
     /// How long a deadline waited before it fired, in milliseconds: set on
     /// the `*/silent` codes, and only on them.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub after: Option<u64>,
     /// The request field the refusal is about, so a form can say it on that
     /// field: `folder`, `name`.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub field: Option<String>,
     /// Where in the field's text the refusal is, when its parser says: the
     /// 1-based line and column (in characters) its own message prints.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub line: Option<u64>,
     /// The column on `line`, as the parser counts it.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub column: Option<u64>,
 }
 
-impl ErrorBody {
-    pub fn new(code: ErrorCode, detail: impl Into<String>, dependents: Vec<String>) -> Self {
+impl Problem {
+    /// A problem of `code`, at the status `problems.bnf` gives it.
+    pub fn new(code: ServerCode, detail: impl Into<String>) -> Self {
         Self {
-            code,
+            type_uri: format!("{TYPE_BASE}{}", code.as_str()),
+            status: code.status(),
             title: code.title().to_string(),
             detail: detail.into(),
-            data: ErrorData {
-                dependents,
-                ..ErrorData::default()
-            },
+            code,
+            data: ProblemData::default(),
         }
-    }
-
-    /// A deadline that fired: `code` names who did not answer, `after` how
-    /// long they were given.
-    pub fn silent(code: ErrorCode, detail: impl Into<String>, after: Duration) -> Self {
-        let mut body = Self::new(code, detail, Vec::new());
-        body.data.after = Some(after.as_millis() as u64);
-        body
     }
 }
 
 /// Why a request was refused, and the one way the server refuses: a status
-/// and the [`ErrorBody`] it carries. Every failure a handler meets — the
+/// and the [`Problem`] it carries. Every failure a handler meets — the
 /// database's, the role check's, the token check's, the store's — converts into
 /// one, so a route has one error type and the wire has one shape.
 #[derive(Debug)]
@@ -257,148 +96,118 @@ pub struct Refusal {
     pub status: StatusCode,
     /// Boxed: a refusal is the `Err` of nearly every function here, and the
     /// body is the large part of it.
-    pub body: Box<ErrorBody>,
+    pub body: Box<Problem>,
 }
 
 impl Refusal {
-    pub fn new(status: StatusCode, code: ErrorCode, detail: impl Into<String>) -> Self {
-        Self::about(status, code, detail, Vec::new())
+    /// A refusal of `code`, at the status `problems.bnf` gives it. A code the
+    /// registry answers with no status (`-`) is stored, never refused with: one
+    /// that is anyway is the server's failure, a 500.
+    pub fn new(code: ServerCode, detail: impl Into<String>) -> Self {
+        let status = code
+            .status()
+            .and_then(|s| StatusCode::from_u16(s).ok())
+            .unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
+        let mut body = Problem::new(code, detail);
+        body.status = Some(status.as_u16());
+        Self {
+            status,
+            body: Box::new(body),
+        }
     }
 
     /// A refusal that names the resources it is about.
-    pub fn about(
-        status: StatusCode,
-        code: ErrorCode,
-        detail: impl Into<String>,
-        dependents: Vec<String>,
-    ) -> Self {
-        Self {
-            status,
-            body: Box::new(ErrorBody::new(code, detail, dependents)),
-        }
+    pub fn about(code: ServerCode, detail: impl Into<String>, dependents: Vec<String>) -> Self {
+        let mut refusal = Self::new(code, detail);
+        refusal.body.data.dependents = dependents;
+        refusal
     }
 
     /// A deadline that fired: `code` names who did not answer, `after` how
     /// long they were given.
-    pub fn silent(
-        status: StatusCode,
-        code: ErrorCode,
-        detail: impl Into<String>,
-        after: Duration,
-    ) -> Self {
-        Self {
-            status,
-            body: Box::new(ErrorBody::silent(code, detail, after)),
-        }
-    }
-
-    /// `code` is the resource's own `*/not-found`, so the web can tell a graph
-    /// that is not there from a route that is not.
-    pub fn not_found(code: ErrorCode, detail: impl Into<String>) -> Self {
-        Self::new(StatusCode::NOT_FOUND, code, detail)
+    pub fn silent(code: ServerCode, detail: impl Into<String>, after: Duration) -> Self {
+        let mut refusal = Self::new(code, detail);
+        refusal.body.data.after = Some(after.as_millis() as u64);
+        refusal
     }
 
     pub fn forbidden(message: impl Into<String>) -> Self {
-        Self::new(StatusCode::FORBIDDEN, ErrorCode::RbacForbidden, message)
+        Self::new(ServerCode::RbacForbidden, message)
     }
 
     pub fn invalid(message: impl Into<String>) -> Self {
-        Self::new(StatusCode::BAD_REQUEST, ErrorCode::RequestInvalid, message)
-    }
-
-    /// The resource is in a state that does not allow this: 409 and its code.
-    pub fn conflict(code: ErrorCode, detail: impl Into<String>) -> Self {
-        Self::new(StatusCode::CONFLICT, code, detail)
+        Self::new(ServerCode::RequestInvalid, message)
     }
 
     /// A refusal about one field of the request.
-    pub fn field(
-        status: StatusCode,
-        code: ErrorCode,
-        field: &str,
-        detail: impl Into<String>,
-    ) -> Self {
-        let mut refusal = Self::new(status, code, detail);
+    pub fn field(code: ServerCode, field: &str, detail: impl Into<String>) -> Self {
+        let mut refusal = Self::new(code, detail);
         refusal.body.data.field = Some(field.to_string());
         refusal
     }
 
     /// A field spelled in a way the request may not.
     pub fn invalid_field(field: &str, detail: impl Into<String>) -> Self {
-        Self::field(
-            StatusCode::BAD_REQUEST,
-            ErrorCode::RequestInvalid,
-            field,
-            detail,
-        )
+        Self::field(ServerCode::RequestInvalid, field, detail)
     }
 
     /// A storage location that would share a prefix with `dependents`.
     pub fn overlaps(message: impl Into<String>, dependents: Vec<String>) -> Self {
-        Self::about(
-            StatusCode::CONFLICT,
-            ErrorCode::ConnectionOverlaps,
-            message,
-            dependents,
-        )
+        Self::about(ServerCode::ConnectionOverlaps, message, dependents)
     }
 
     /// A probe ran and did not pass: the store or provider answered, and did
     /// not accept what it was shown. A store that refused to answer at all is
     /// `store/refused`, a 502, not this.
     pub fn probe_failed(message: impl Into<String>, dependents: Vec<String>) -> Self {
-        Self::about(
-            StatusCode::UNPROCESSABLE_ENTITY,
-            ErrorCode::ProbeFailed,
-            message,
-            dependents,
-        )
+        Self::about(ServerCode::ProbeFailed, message, dependents)
     }
 
     /// The server failed; what failed is logged, never sent.
     pub fn internal() -> Self {
-        Self::new(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            ErrorCode::ServerInternal,
-            "An internal error occurred",
-        )
+        Self::new(ServerCode::ServerInternal, "An internal error occurred")
     }
 }
 
 impl IntoResponse for Refusal {
     fn into_response(self) -> Response {
-        (self.status, Json(self.body)).into_response()
+        (
+            self.status,
+            [(header::CONTENT_TYPE, PROBLEM_JSON)],
+            Json(self.body),
+        )
+            .into_response()
     }
 }
 
-/// The backstop that makes every 4xx/5xx an [`ErrorBody`], whoever produced
-/// it. What the handlers refuse is one already; what reaches here bare is
-/// axum's own answer — no route (404), a method the route does not take (405),
-/// a body over the limit (413), and the `Json`, `Path` and `Query` rejections
-/// (400/415/422) — whose plain-text message becomes the `detail`. A JSON error
-/// body passes untouched: the server writes only `ErrorBody`.
-pub async fn as_error_body(response: Response) -> Response {
+/// The backstop that makes every 4xx/5xx a [`Problem`], whoever produced it.
+/// What the handlers refuse is one already, and passes untouched; what reaches
+/// here bare is axum's own answer — no route (404), a method the route does not
+/// take (405), a body over the limit (413), and the `Json`, `Path` and `Query`
+/// rejections (400/415/422, all `request/malformed`) — whose plain-text message
+/// becomes the `detail`, and whose status the problem keeps (RFC 9457 §3.1.2).
+pub async fn as_problem(response: Response) -> Response {
     let status = response.status();
     if !(status.is_client_error() || status.is_server_error()) {
         return response;
     }
-    let is_json = response
+    let is_problem = response
         .headers()
         .get(header::CONTENT_TYPE)
         .and_then(|v| v.to_str().ok())
-        .is_some_and(|v| v.starts_with("application/json"));
-    if is_json {
+        .is_some_and(|v| v.starts_with(PROBLEM_JSON));
+    if is_problem {
         return response;
     }
     let (parts, body) = response.into_parts();
     let code = match status {
-        StatusCode::NOT_FOUND => ErrorCode::RouteNotFound,
-        StatusCode::METHOD_NOT_ALLOWED => ErrorCode::RequestMethodNotAllowed,
-        StatusCode::PAYLOAD_TOO_LARGE => ErrorCode::RequestTooLarge,
-        StatusCode::TOO_MANY_REQUESTS => ErrorCode::RequestRateLimited,
-        StatusCode::UNAUTHORIZED => ErrorCode::AuthSessionRequired,
-        s if s.is_server_error() => ErrorCode::ServerInternal,
-        _ => ErrorCode::RequestMalformed,
+        StatusCode::NOT_FOUND => ServerCode::RouteNotFound,
+        StatusCode::METHOD_NOT_ALLOWED => ServerCode::RequestMethodNotAllowed,
+        StatusCode::PAYLOAD_TOO_LARGE => ServerCode::RequestTooLarge,
+        StatusCode::TOO_MANY_REQUESTS => ServerCode::RequestRateLimited,
+        StatusCode::UNAUTHORIZED => ServerCode::AuthSessionRequired,
+        s if s.is_server_error() => ServerCode::ServerInternal,
+        _ => ServerCode::RequestMalformed,
     };
     // A rejection's message is a sentence; anything longer is not one, and
     // an unreadable body is no reason to fail the failure.
@@ -411,7 +220,10 @@ pub async fn as_error_body(response: Response) -> Response {
     } else {
         text
     };
-    let mut out = Refusal::new(status, code, detail).into_response();
+    let mut refusal = Refusal::new(code, detail);
+    refusal.status = status;
+    refusal.body.status = Some(status.as_u16());
+    let mut out = refusal.into_response();
     if let Some(allow) = parts.headers.get(header::ALLOW) {
         out.headers_mut().insert(header::ALLOW, allow.clone());
     }
@@ -462,9 +274,9 @@ pub fn document_refusals(openapi: &mut OpenApi) {
                 ResponseBuilder::new()
                     .description(description)
                     .content(
-                        "application/json",
+                        PROBLEM_JSON,
                         ContentBuilder::new()
-                            .schema(Some(Ref::from_schema_name("ErrorBody")))
+                            .schema(Some(Ref::from_schema_name("Problem")))
                             .build(),
                     )
                     .build(),
@@ -496,7 +308,6 @@ pub fn document_refusals(openapi: &mut OpenApi) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use strum::IntoEnumIterator;
 
     /// The web reports `graph/interrupted` by its code: the title is the
     /// server's. A problem that carries a title, or whose code is not the
@@ -510,28 +321,6 @@ mod tests {
             serde_json::json!({ "code": "run/over-budget", "detail": "d" }),
         ] {
             assert_eq!(titled(kept.clone()), kept);
-        }
-    }
-
-    /// `area/kind-x` is `AreaKindX`: the variant a handler names is the code
-    /// the wire carries, spelled in Rust.
-    #[test]
-    fn each_variant_is_its_wire_name() {
-        for code in ErrorCode::iter() {
-            let wire = serde_json::to_value(code).unwrap();
-            let wire = wire.as_str().unwrap();
-            let spelled: String = wire
-                .split(['/', '-'])
-                .map(|w| {
-                    let mut c = w.chars();
-                    c.next()
-                        .unwrap()
-                        .to_uppercase()
-                        .chain(c)
-                        .collect::<String>()
-                })
-                .collect();
-            assert_eq!(format!("{code:?}"), spelled, "{wire}");
         }
     }
 }

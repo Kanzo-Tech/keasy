@@ -14,7 +14,7 @@ use utoipa_axum::routes;
 use crate::authentication::permission::Action;
 use crate::authentication::role::Reader;
 use crate::domain::{Access, VendedCredentials};
-use crate::error::{ErrorBody, Refusal};
+use crate::error::{Problem, Refusal};
 use crate::startup::AppState;
 use crate::storage_client;
 
@@ -40,12 +40,12 @@ pub struct StorageCredentialsRequest {
     request_body = StorageCredentialsRequest,
     responses(
         (status = 200, description = "A credential that opens the scope's prefix, and only it, for an hour", body = VendedCredentials),
-        (status = 400, description = "Not a storage source, or an access the scope does not give", body = ErrorBody),
-        (status = 403, description = "A source read below editor; a graph written below editor, or by anyone but its runner", body = ErrorBody),
-        (status = 404, description = "No such connection, or no such graph", body = ErrorBody),
-        (status = 409, description = "A graph read before it completed (`graph/not-completed`), or written before it runs (`graph/not-running`) or after it ended (`graph/ended`)", body = ErrorBody),
-        (status = 502, description = "The store refused to vend", body = ErrorBody),
-        (status = 504, description = "The store, or the identity service before it, did not answer in time", body = ErrorBody),
+        (status = 400, description = "Not a storage source, or an access the scope does not give", body = Problem, content_type = "application/problem+json"),
+        (status = 403, description = "A source read below editor; a graph written below editor, or by anyone but its runner", body = Problem, content_type = "application/problem+json"),
+        (status = 404, description = "No such connection, or no such graph", body = Problem, content_type = "application/problem+json"),
+        (status = 409, description = "A graph read before it completed (`graph/not-completed`), or written before it runs (`graph/not-running`) or after it ended (`graph/ended`)", body = Problem, content_type = "application/problem+json"),
+        (status = 502, description = "The store refused to vend", body = Problem, content_type = "application/problem+json"),
+        (status = 504, description = "The store, or the identity service before it, did not answer in time", body = Problem, content_type = "application/problem+json"),
     )
 )]
 /// Vend a credential over `scope` for `access`. Anyone in the workspace reads a

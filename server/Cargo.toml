@@ -6,6 +6,11 @@ authors = ["Ángel Iglesias Préstamo <angel.iglesias.prestamo@gmail.com>"]
 edition = "2024"
 publish = false
 
+# `cargo xtask` (the alias in .cargo/config.toml); `cargo build`, `test` and
+# `clippy` here still mean the server alone.
+[workspace]
+members = ["xtask"]
+
 [dependencies]
 strum = { version = "0.27", features = ["derive"] }
 thiserror = "2"

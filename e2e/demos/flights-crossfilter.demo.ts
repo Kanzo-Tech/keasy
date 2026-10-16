@@ -1,8 +1,24 @@
 import { expect } from "@playwright/test";
 
-import { DiscoverPage } from "../support/app";
+import { DiscoverPage, saveDashboard } from "../support/app";
 import { seedGraph } from "../support/seeds";
 import { demo } from "./record";
+
+/**
+ * The airports by country and by position. Saved rather than automatic: the automatic dashboard
+ * charts the first three categories in the graph's order — name, iataCode, icaoCode — and country
+ * is not among them.
+ */
+const DASHBOARD = {
+  filters: [],
+  tiles: [
+    { id: "country", kind: "chart", span: 1, type: "bar", x: "country", y: { op: "count" } },
+    { id: "long", kind: "chart", span: 1, type: "histogram", x: "long", y: { op: "count" } },
+    { id: "lat", kind: "chart", span: 1, type: "histogram", x: "lat", y: { op: "count" } },
+    { id: "altitude", kind: "chart", span: 1, type: "histogram", x: "altitude", y: { op: "count" } },
+    { id: "positions", kind: "chart", span: 2, type: "dot", x: "long", y: { op: "value", field: "lat" } },
+  ],
+};
 
 /**
  * Crossfiltering over OpenFlights: one filter for every chart and every view. A country clicked in the
@@ -12,12 +28,13 @@ import { demo } from "./record";
 demo("flights-crossfilter", "Crossfiltering over OpenFlights: a click, a brush, and the same filter on the map", {
   async arrange({ page, env }) {
     const id = await seedGraph(page, "openflights", { name: "Demo · OpenFlights" });
+    await saveDashboard(page, id, "Airport", DASHBOARD);
     const discover = await DiscoverPage.open(page, env, id);
     // The Graph view set for step 3, then the dashboard the story starts on.
     const graph = await discover.onMap();
     await discover.view("Dashboard");
     const dashboard = await discover.dashboard();
-    // Every tile drawn before the take starts: the fit's scatter is the slowest, and arrived on camera.
+    // Every tile drawn before the take starts: the scatter is the slowest, and arrived on camera.
     await dashboard.settled();
     return { discover, graph, dashboard, bar: await discover.filters() };
   },
@@ -25,7 +42,7 @@ demo("flights-crossfilter", "Crossfiltering over OpenFlights: a click, a brush, 
   steps: ({ discover, graph, dashboard, bar }) => [
     {
       subtitle: "Click a country — every chart follows",
-      action: async () => (await (await dashboard.tile(/Count by Airport\.country/)).chart()).pick({ y: "United States" }),
+      action: async () => (await (await dashboard.tile("Count by country")).chart()).pick({ y: "United States" }),
       async check() {
         await expect.poll(() => discover.kept()).toBe("551");
         await dashboard.settled();
@@ -33,7 +50,7 @@ demo("flights-crossfilter", "Crossfiltering over OpenFlights: a click, a brush, 
     },
     {
       subtitle: "Drag across longitude — just the West",
-      action: async () => (await (await dashboard.tile(/Count by Airport\.long$/)).chart()).brush({ x: [-128, -98.98] }),
+      action: async () => (await (await dashboard.tile("Count by long")).chart()).brush({ x: [-128, -98.98] }),
       // US airports west of 98.98°W. Both edges sit in gaps of the data — the west one in the 7° between
       // southeast Alaska and the Pacific coast, the east one 0.49° from the nearest airport — so a drag a pixel off
       // still reads the same figure.
@@ -51,8 +68,8 @@ demo("flights-crossfilter", "Crossfiltering over OpenFlights: a click, a brush, 
       async check() {
         await expect.poll(() => discover.kept()).toBe("135");
         const chips = await bar.chips();
-        expect(chips.some((chip) => /\bAirport\.country\b/.test(chip))).toBe(true);
-        expect(chips.some((chip) => /\bAirport\.long\b/.test(chip))).toBe(true);
+        expect(chips.some((chip) => /\bcountry\b/.test(chip))).toBe(true);
+        expect(chips.some((chip) => /\blong\b/.test(chip))).toBe(true);
       },
     },
   ],

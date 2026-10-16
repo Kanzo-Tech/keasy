@@ -11,7 +11,7 @@ const RELATION = "LaureateAward>category>Category";
 const HOPS = [">category>Category"];
 const DASHBOARD = {
   filters: [],
-  tiles: [{ id: "category", kind: "chart", span: 1, type: "bar", title: "Count by Category.name", x: "Category.name", y: { op: "count" } }],
+  tiles: [{ id: "category", kind: "chart", span: 1, type: "bar", x: "category.name", y: { op: "count" } }],
 };
 
 const UNIVERSITIES = "Which universities won the most prizes?";
@@ -74,7 +74,7 @@ demo("nobel-ask", "Ask over the Nobel prizes: an answer added to the dashboard a
   steps: ({ discover, graph, dashboard, answers, answered }) => [
     {
       subtitle: "Filter the page: Physics only",
-      action: async () => (await (await dashboard.tile("Count by Category.name")).chart()).pick({ y: "Physics" }),
+      action: async () => (await (await dashboard.tile("Count by category.name")).chart()).pick({ y: "Physics" }),
       check: () => expect.poll(() => discover.kept()).toBe("230"),
     },
     {
@@ -111,8 +111,8 @@ demo("nobel-ask", "Ask over the Nobel prizes: an answer added to the dashboard a
       // The page's onOpen: the Dashboard view on the answer's relation, the tile brought into view.
       action: () => answers.openOnDashboard(),
       async check() {
-        // By its title: the automatic tiles' table has a University.name column too.
-        const tile = await dashboard.tile("Count by University.name");
+        // By its title: the automatic tiles' table has a university.name column too.
+        const tile = await dashboard.tile("Count by university.name");
         await expect
           .poll(async () => {
             const { top: y, height } = await tile.host.getDimensions();

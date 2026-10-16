@@ -33,7 +33,7 @@ const countOf = (selected: ReadonlySet<string>, connection: StorageConnection) =
   [...selected].filter((id) => id.startsWith(`${connection.name}:`)).length;
 
 /**
- * Above the composer's field, one pill per readable connection — *+ @CORDIS* — as Claude's connectors
+ * Above the composer's field, one pill per readable connection — *+ @Nobel laureates* — as Claude's connectors
  * are (docs/design/assistant.md, *Sources in the composer*). A pill opens a menu of what the
  * connection lists: its name with **Select all**, then each file as a checkable item with its size,
  * and a submenu for each folder the listing returns. What is picked stays on the pill, *@Nobel

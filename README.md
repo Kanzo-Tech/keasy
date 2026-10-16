@@ -14,10 +14,10 @@ make dev
 [http://acme.localhost:3000](http://acme.localhost:3000) and log in at Keycloak. The first one takes
 a while — it compiles the server's dependencies and the web's first pages — and later ones reuse the
 cached volumes. The platform's services, identity and the session's edge, are kanzo-ui's, included by
-URL at `KANZO_UI_REF`; nothing is checked out.
+URL at the release `web/package.json` names; nothing is checked out.
 
 Every dev value is a literal in `compose.yaml` and `compose.override.yaml`, and a local `.env`
-overrides any of them ([`.env.example`](.env.example)). Anything past `make dev` is plain
+overrides any of them. Anything past `make dev` is plain
 `docker compose`, which reads the development files on its own: `docker compose logs -f web`,
 `docker compose restart acme-server`, `docker compose exec web sh`, `docker compose down`.
 
@@ -81,26 +81,13 @@ make seed   # downloads, checks the SHA-256s, unpacks into infra/dev/examples/<n
 The same `make seed` fetches a second, geographic graph: [OpenFlights](https://openflights.org/data)
 airports and routes, pinned to one upstream commit and its SHA-256s, and cut down to the 3,218
 airports some direct route touches and the 36,906 directed routes between them (700 KB of CSV, needs
-`python3`). Every airport carries numeric `lat` and `lon` in WGS 84 degrees, so Discover's Map
-placement (x = `lon`, y = `lat`) draws it as a map. The data is © OpenFlights under the
+`python3`). Every airport carries numeric `lat` and `long` in WGS 84 degrees, so Discover's Map
+placement (x = `long`, y = `lat`) draws it as a map. The data is © OpenFlights under the
 [ODbL](https://opendatacommons.org/licenses/odbl/1-0/) — `infra/dev/examples/openflights/data/NOTICE` is the
 attribution, and it travels to the bucket with the files. It is derived on your machine and not
 committed: the subset's own digest is pinned, so every machine derives the same bytes.
 
-A third is public funding: [CORDIS](https://cordis.europa.eu)'s Horizon Europe projects, the
-organisations in them and what each was granted, from the Publications Office's CSV export of
-2026-08-06 (37 MB zipped; CORDIS replaces the file in place, so the pin is the Internet Archive's
-capture of it). It is cut down to about 18 MB of CSV: 23,451 projects, 35,122 organisations, the
-145,274 participations between them, and the 2,767 call topics and 15 programme parts the projects
-answer.
-A participation is a vertex of its own, EURIO's `OrganisationRole`, as the role and the EU
-contribution belong to it; the shapes are EURIO's, the Publications Office's ontology of CORDIS,
-where it has a term. Organisations carry `lat` and `lon` where CORDIS has a position. The data is
-© European Union under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) —
-`infra/dev/examples/cordis/data/NOTICE` is the attribution — and, like OpenFlights, derived on your
-machine to pinned digests.
-
-And a fourth, whose time is on a relation: the [Nobel laureates](https://www.nobelprize.org/about/developer-zone-2/)
+And a third, whose time is on a relation: the [Nobel laureates](https://www.nobelprize.org/about/developer-zone-2/)
 and every prize awarded to 2025, from nobelprize.org's API (CC0), derived into six JSON files
 (470 KB, needs `python3`). Each prize a laureate won is a vertex between the laureate and the
 category — the API's own Linked Data vocabulary models it so, as `nobel:LaureateAward` — and it
@@ -121,7 +108,7 @@ Each example is one folder under `infra/dev/examples/<name>/`: `fetch.sh` (what 
 for it), `shapes.shex`, `mapping.fossil` and the gitignored `data/` it fetches. In the bucket it is
 `examples/<name>/data/` and `examples/<name>/shapes/`. At boot the instance declares, over them, a
 data source and a vocabulary connection per example — **LDBC SNB** and **LDBC SNB shapes**,
-**OpenFlights** and **OpenFlights shapes**, **CORDIS** and **CORDIS shapes**, **Nobel laureates**
+**OpenFlights** and **OpenFlights shapes**, **Nobel laureates**
 and **Nobel laureates shapes** — and the sink, **Workspace output** (`output/`). Access is proved
 before each connection row is written, and an existing sink is never overwritten. Each example's
 program reads its own two connections; paste one into the studio to map its graph into `output/`:
@@ -129,19 +116,13 @@ program reads its own two connections; paste one into the studio to map its grap
 | Program | Graph |
 |---------|-------|
 | `infra/dev/examples/snb/mapping.fossil` | LDBC SNB SF0.1 onto its `shapes.shex` |
-| `infra/dev/examples/openflights/mapping.fossil` | OpenFlights onto its `shapes.shex`: 3,218 `Airport` vertices with `lat`/`lon`, 36,906 `routeTo` edges |
-| `infra/dev/examples/cordis/mapping.fossil` | CORDIS onto its `shapes.shex` (EURIO): 206,629 vertices — 23,451 `Project`, 35,122 `Organisation`, 145,274 `OrganisationRole`, 2,782 `FundingScheme` — and 316,766 edges |
+| `infra/dev/examples/openflights/mapping.fossil` | OpenFlights onto its `shapes.shex`: 3,218 `Airport` vertices with `lat`/`long`, 36,906 `routeTo` edges |
 | `infra/dev/examples/nobel/mapping.fossil` | The Nobel laureates onto its `shapes.shex`: 1,018 `Laureate`, 1,026 `LaureateAward` with their year as `xsd:gYear`, 6 `Category`, 379 `University`, 86 `Country` |
 
 `infra/dev/examples/openflights/rules.ttl` is rules for the OpenFlights graph: a SHACL shapes graph
 to drop on the rules' badge in Discover's filter bar. Most airports conform; 44 fail it (no IATA code, or
 an ICAO field that is not a four-letter ICAO code), and two kinds draw a warning: 29 with no time
 zone and 218 above 4,000 ft, where takeoff performance is limited.
-
-`infra/dev/examples/cordis/rules.ttl` is the same for the CORDIS graph. It finds 5 organisations
-with no country, one with two, and 356 participations that do not say whether the organisation is an
-SME; and it warns about 12,525 projects that declare a total cost of 0, 1,675 organisations with no
-position, and 3,164 participations that have ended.
 
 `s3.localhost` is load-bearing: Docker's DNS answers it inside the compose network
 and `*.localhost` is loopback on the host, so the endpoint the server is given
@@ -222,8 +203,8 @@ change is the database dropped and created again, so wipe the volume (`make clea
 | `make api` | Regenerate the API contract ([API contract](#api-contract)) |
 
 Everything else is `docker compose`, which reads `compose.yaml` and `compose.override.yaml` on its
-own. The platform's release is `KANZO_UI_REF`, in the `include:` of `compose.override.yaml`, a literal
-default set by hand to the `@kanzo-tech/ui` release that `web/package.json` names, and derived from nothing;
+own. The platform's release is the tag in the `include:` of `compose.override.yaml`, the
+`@kanzo-tech/ui` version `web/package.json` names; infra-ci fails when the two differ;
 the Rust toolchain is pinned once, in `server/rust-toolchain.toml`. Images are published to GHCR by
 `.github/workflows/images.yml` on `v*` tags, after the server and web CI pass. There is no deployment yet:
 what one will need to know is in [`docs/design/permissions.md`](docs/design/permissions.md#when-a-deployment-exists)

@@ -1,18 +1,19 @@
 /**
- * **The `mapping` Task** — docs/design/assistant.md, *The three Tasks*. The accepted model becomes
- * a fossil `Vocabulary` — its types declared, every IRI computed here, and the sources with their
- * columns — and fossil's `grammarFor` answers the prelude and the grammar of what follows it. The
+ * **The `mapping` Task** — docs/design/assistant.md, *The three Tasks*. fossil declares the accepted
+ * model — its `vocabularyOf` the types, their IRIs and the sources with their columns, `subjectOf`
+ * each type's `@subject` — and its `grammarFor` answers the prelude and the grammar of what follows it. The
  * model writes the mappings held to that grammar, so it cannot name a column or a field that does
  * not exist; fossil's checker is the oracle for the rest, and its diagnostics go back for a bounded
  * number of repairs. The program is the prelude and the mappings; the person never has to read it.
  */
 
-import type { DeclaredType, Diagnostic as FossilDiagnostic, Engine, Host, Primitive, Vocabulary } from "@fossil-lang/types";
-import { type FossilProgram, grammarFor, openProgram } from "@fossil-lang/wasm";
+import type { Diagnostic as FossilDiagnostic, Engine, Host, SourceVocabulary, Vocabulary } from "@fossil-lang/types";
+import { type FossilProgram, grammarFor, openProgram, subjectOf, vocabularyOf } from "@fossil-lang/wasm";
 import { defineTask, type Finding } from "@kanzo-tech/ai/task";
-import type { Accepted, AcceptedEdge, AcceptedType } from "./model";
+import type { MappingModel } from "@kanzo-tech/relations";
+import { parseMapping } from "@/lib/fossil/rudof";
+import type { Accepted, AcceptedType } from "./model";
 import { delimiterOf, type Profiled } from "./profile";
-import { splitWords } from "@kanzo-tech/relations";
 
 /** fossil's word on a program: every diagnostic of a check of `program`, the prelude included. */
 export type Check = (program: string, signal?: AbortSignal) => Promise<readonly FossilDiagnostic[]>;
@@ -30,74 +31,38 @@ export interface MappingInput {
   check: Check;
 }
 
-const FOSSIL_TYPE: Record<Primitive, string> = {
-  string: "String",
-  integer: "Integer",
-  float: "Float",
-  bool: "Bool",
-  date: "Date",
-  date_time: "DateTime",
-  time: "Time",
-  g_year: "GYear",
-  any_uri: "AnyUri",
-  lang_string: "LangString",
-};
-
-/** `https://acme.example/` → the IRIs of a workspace's vocabulary and of its things, under it. */
-function irisOf(base: string) {
-  const root = base.endsWith("/") ? base : `${base}/`;
-  return {
-    type: (name: string) => `${root}vocab/${name}`,
-    field: (name: string) => `${root}vocab/${name}`,
-    thing: (name: string) => `${root}id/${splitWords(name).replace(/ /g, "-")}/`,
-  };
+/** The profiled sources as fossil's vocabulary names them: each binding, its format, its reference and its columns. */
+function sourcesOf(profiled: Profiled): SourceVocabulary[] {
+  return profiled.sources.map((s) => {
+    const delimiter = delimiterOf(s.option);
+    return { name: s.name, format: s.format, reference: s.key, columns: s.columns.map((c) => c.name), ...(delimiter ? { delimiter } : {}) };
+  });
 }
 
-/** An edge's declared type: `Ref<T>`, `Option<Ref<T>>` where some have none, `Seq<Ref<T>>` across a link. */
-const edgeType = (e: AcceptedEdge) => (e.many ? `Seq<Ref<${e.to}>>` : e.optional ? `Option<Ref<${e.to}>>` : `Ref<${e.to}>`);
+/** What the accepted model declares, before any mapping is written: fossil's vocabulary of it, the prelude and grammar over that, and each type's `@subject`. */
+export type Declared = Pick<MappingInput, "vocabulary" | "prelude" | "grammar" | "subjects">;
 
-/** The vocabulary of the accepted model over the profiled sources, every IRI under `base`. */
-export function vocabularyOf(accepted: Accepted, profiled: Profiled, base: string): Vocabulary {
-  const iri = irisOf(base);
-  const declared: DeclaredType[] = accepted.types.map((t) => ({
-    name: t.name,
-    iri: iri.type(t.name),
-    fields: [
-      ...t.fields.map((f) => {
-        const type = FOSSIL_TYPE[f.primitive];
-        return { name: f.name, iri: iri.field(f.name), type: f.optional ? `Option<${type}>` : type };
-      }),
-      ...accepted.edges.filter((e) => e.from === t.name).map((e) => ({ name: e.name, iri: iri.field(e.name), type: edgeType(e) })),
-    ],
-  }));
-  const used = new Set([...accepted.types.map((t) => t.source), ...accepted.edges.map((e) => e.on)]);
-  const sources = profiled.sources
-    .filter((s) => used.has(s.name))
-    .map((s) => {
-      const delimiter = delimiterOf(s.option);
-      return { name: s.name, format: s.format, reference: s.key, columns: s.columns.map((c) => c.name), ...(delimiter ? { delimiter } : {}) };
-    });
-  return { declared, sources };
-}
-
-/** A type's `@subject`: its IRI prefix and its identity's columns. */
-export function subjectOf(type: AcceptedType, base: string): string {
-  return `${irisOf(base).thing(type.name)}${type.identity.map((c) => `{${type.source}.${c}}`).join("-")}`;
+/** The accepted model declared by fossil (`vocabularyOf`, `grammarFor`, `subjectOf`), every IRI under `base`. */
+export async function declare(accepted: Accepted, profiled: Profiled, { base, signal }: { base: string; signal?: AbortSignal }): Promise<Declared> {
+  const vocabulary = await vocabularyOf(accepted, sourcesOf(profiled), base, { signal });
+  const [{ prelude, grammar }, subjects] = await Promise.all([
+    grammarFor(vocabulary, { signal }),
+    Promise.all(accepted.types.map(async (t) => [t.name, await subjectOf(t, base, { signal })] as const)),
+  ]);
+  return { vocabulary, prelude, grammar, subjects: Object.fromEntries(subjects) };
 }
 
 /**
- * The request, computed: the vocabulary, fossil's prelude and grammar for it, and each type's
- * subject. `check` is fossil's checker, which a test hands an engine double.
+ * The RML mapping fossil makes of `prelude`'s types — the `mapping.ttl` a run will write beside the
+ * graph, before any run — as rudof models it: what `withMapping` describes a join graph by.
  */
-export async function mappingInput(
-  accepted: Accepted,
-  profiled: Profiled,
-  { base, check, signal }: { base: string; check: Check; signal?: AbortSignal },
-): Promise<MappingInput> {
-  const vocabulary = vocabularyOf(accepted, profiled, base);
-  const { prelude, grammar } = await grammarFor(vocabulary, { signal });
-  const subjects = Object.fromEntries(accepted.types.map((t) => [t.name, subjectOf(t, base)]));
-  return { accepted, vocabulary, prelude, grammar, subjects, check };
+export async function mappingOf(prelude: string, { host, signal }: { host: Host; signal?: AbortSignal }): Promise<MappingModel> {
+  const program = await openProgram("declared.fossil", { host, text: prelude, signal });
+  try {
+    return (await parseMapping(await program.mapping())).model();
+  } finally {
+    program.close();
+  }
 }
 
 /** The whole program: the prelude, then the mappings. */

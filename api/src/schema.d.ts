@@ -271,9 +271,8 @@ export interface paths {
         /**
          * The runner's one report, taken from the runner alone: `running` renews the
          *     lease — a run no report has renewed for the lease (60 s) is swept as
-         *     `graph/abandoned`; an end records how the run ended, and dates it.
-         *     `completed` stores the run report verbatim, unread. The answer says
-         *     whether someone asked the run to stop.
+         *     `graph/abandoned`; an end records how the run ended, and dates it. The
+         *     answer says whether someone asked the run to stop.
          */
         post: operations["report_status"];
         delete?: never;
@@ -561,61 +560,6 @@ export interface components {
             name?: null | components["schemas"]["ResourceName"];
             script?: string | null;
         };
-        /**
-         * @description The body of every 4xx/5xx, and the payload of an SSE `error` frame — the
-         *     shape fossil's problems have: a code, its fixed title, a detail for a
-         *     person that nothing parses, and the data the code carries.
-         */
-        ErrorBody: {
-            code: components["schemas"]["ErrorCode"];
-            data: components["schemas"]["ErrorData"];
-            detail: string;
-            title: string;
-        };
-        /**
-         * @description Every error the server answers with. Closed: a code the server does not
-         *     declare here cannot be sent, and the web keys its copy by this enum.
-         *
-         *     One grammar with fossil's and kanzo-ui's codes, `area/kind`, so one registry
-         *     in the web keys all three. The areas are keasy's own and never one of
-         *     fossil's (`storage`, `engine`, `run`, …): a code means one thing. Each
-         *     variant is its wire name spelled in Rust, `area/kind-x` as `AreaKindX`, so
-         *     the code a test asserts and the variant a handler names are one word.
-         *
-         *     Every refusal the server writes is an [`ErrorBody`] with one of these.
-         * @enum {string}
-         */
-        ErrorCode: "auth/session-required" | "auth/keys-unavailable" | "rbac/no-membership" | "rbac/insufficient-role" | "rbac/forbidden" | "request/rate-limited" | "request/invalid" | "request/malformed" | "request/method-not-allowed" | "request/too-large" | "route/not-found" | "server/internal" | "server/silent" | "server/not-ready" | "graph/not-found" | "graph/not-draft" | "graph/not-completed" | "graph/not-running" | "graph/ended" | "graph/still-running" | "graph/already-running" | "graph/abandoned" | "graph/interrupted" | "graph/invalid-destination" | "graph/no-destination" | "graph/folder-taken" | "conversation/not-found" | "conversation/built" | "secret/not-found" | "connection/not-found" | "resource/already-exists" | "resource/in-use" | "connection/overlaps" | "probe/failed" | "store/refused" | "store/silent" | "rules/refused";
-        /** @description What a refusal carries beside its words. */
-        ErrorData: {
-            /**
-             * Format: int64
-             * @description How long a deadline waited before it fired, in milliseconds: set on
-             *     the `*\/silent` codes, and only on them.
-             */
-            after?: number | null;
-            /**
-             * Format: int64
-             * @description The column on `line`, as the parser counts it.
-             */
-            column?: number | null;
-            /**
-             * @description What the refusal is about: what still uses a secret or connection,
-             *     or the connections a rotation would break.
-             */
-            dependents?: string[];
-            /**
-             * @description The request field the refusal is about, so a form can say it on that
-             *     field: `folder`, `name`.
-             */
-            field?: string | null;
-            /**
-             * Format: int64
-             * @description Where in the field's text the refusal is, when its parser says: the
-             *     1-based line and column (in characters) its own message prints.
-             */
-            line?: number | null;
-        };
         /** @description One object under a connection's prefix. */
         FileEntry: {
             path: string;
@@ -677,15 +621,6 @@ export interface components {
              *     **opaque** — the web branches on its `code`, the server never does.
              */
             problem?: unknown;
-            /**
-             * @description What the last run reported, verbatim and **opaque**: fossil's run report
-             *     (`RunReport`, `{dest, dropped}`). keasy stores it, hands it back and
-             *     never reads a field of it — the last time a host re-typed this struct,
-             *     it ended up asking for `vertex/<Type>.parquet`, a file the layout pass
-             *     deletes. What the corpus holds is the corpus's to say: a reader opens
-             *     it and asks its `fossil_tables` and `fossil_columns`.
-             */
-            report?: unknown;
             runner?: null | components["schemas"]["Actor"];
             /** @description The program every run of the graph runs. */
             script?: string | null;
@@ -715,8 +650,6 @@ export interface components {
              *     fills in when the problem carries none.
              */
             problem?: unknown;
-            /** @description fossil's run report (on `completed`), stored verbatim and never read. */
-            report?: unknown;
             /**
              * @description `running` (renews the lease), or the end: `completed`, `failed` or
              *     `cancelled`.
@@ -730,6 +663,61 @@ export interface components {
         Operation: "list" | "write" | "delete";
         /** @enum {string} */
         Outcome: "pass" | "fail" | "skip";
+        /**
+         * @description Every 4xx/5xx the server writes, and every problem it stores:
+         *     `application/problem+json` (RFC 9457), with the extension members
+         *     `@kanzo-tech/kernel`'s `Problem.from` reads back (§3.2) — `code`, its
+         *     discriminator, and `data`, what the code carries.
+         */
+        Problem: {
+            code: components["schemas"]["ServerCode"];
+            data: components["schemas"]["ProblemData"];
+            /** @description This occurrence, for a person; nothing parses it (§3.1.4). */
+            detail: string;
+            /**
+             * Format: int32
+             * @description The HTTP status of the response that carries it (§3.1.2); absent from a
+             *     problem that is stored, never answered.
+             */
+            status?: number | null;
+            /** @description The code's title, the same for every occurrence (§3.1.3). */
+            title: string;
+            /**
+             * @description The registry's base followed by `code`: derived from it, never set apart
+             *     (§3.1.1).
+             */
+            type: string;
+        };
+        /** @description What a problem carries beside its words. */
+        ProblemData: {
+            /**
+             * Format: int64
+             * @description How long a deadline waited before it fired, in milliseconds: set on
+             *     the `*\/silent` codes, and only on them.
+             */
+            after?: number | null;
+            /**
+             * Format: int64
+             * @description The column on `line`, as the parser counts it.
+             */
+            column?: number | null;
+            /**
+             * @description What the refusal is about: what still uses a secret or connection,
+             *     or the connections a rotation would break.
+             */
+            dependents?: string[];
+            /**
+             * @description The request field the refusal is about, so a form can say it on that
+             *     field: `folder`, `name`.
+             */
+            field?: string | null;
+            /**
+             * Format: int64
+             * @description Where in the field's text the refusal is, when its parser says: the
+             *     1-based line and column (in characters) its own message prints.
+             */
+            line?: number | null;
+        };
         /**
          * @description Who created a resource and when, and who changed it last and when — absent
          *     until someone has.
@@ -859,6 +847,13 @@ export interface components {
             used_by: string[];
             validation?: null | components["schemas"]["ValidationReport"];
         };
+        /**
+         * @description Every code the server answers with. Closed: a code `problems.bnf` does not
+         *     declare cannot be sent. Each variant is its wire name spelled in Rust,
+         *     `area/kind-x` as `AreaKindX`.
+         * @enum {string}
+         */
+        ServerCode: "auth/session-required" | "auth/keys-unavailable" | "rbac/no-membership" | "rbac/insufficient-role" | "rbac/forbidden" | "request/rate-limited" | "request/invalid" | "request/malformed" | "request/method-not-allowed" | "request/too-large" | "route/not-found" | "server/internal" | "server/silent" | "server/not-ready" | "graph/not-found" | "graph/not-draft" | "graph/not-completed" | "graph/not-running" | "graph/ended" | "graph/still-running" | "graph/already-running" | "graph/abandoned" | "graph/interrupted" | "graph/invalid-destination" | "graph/no-destination" | "graph/folder-taken" | "conversation/not-found" | "conversation/built" | "secret/not-found" | "connection/not-found" | "resource/already-exists" | "resource/in-use" | "connection/overlaps" | "probe/failed" | "store/refused" | "store/silent" | "rules/refused";
         StorageCredentialsRequest: {
             access: components["schemas"]["Access"];
             scope: components["schemas"]["Scope"];
@@ -930,7 +925,7 @@ export interface components {
                 [name: string]: unknown;
             };
             content: {
-                "application/json": components["schemas"]["ErrorBody"];
+                "application/problem+json": components["schemas"]["Problem"];
             };
         };
         /** @description The server failed */
@@ -939,7 +934,7 @@ export interface components {
                 [name: string]: unknown;
             };
             content: {
-                "application/json": components["schemas"]["ErrorBody"];
+                "application/problem+json": components["schemas"]["Problem"];
             };
         };
         /** @description The identity provider's keys are unreachable */
@@ -948,7 +943,7 @@ export interface components {
                 [name: string]: unknown;
             };
             content: {
-                "application/json": components["schemas"]["ErrorBody"];
+                "application/problem+json": components["schemas"]["Problem"];
             };
         };
         /** @description The caller exceeded their request rate */
@@ -957,7 +952,7 @@ export interface components {
                 [name: string]: unknown;
             };
             content: {
-                "application/json": components["schemas"]["ErrorBody"];
+                "application/problem+json": components["schemas"]["Problem"];
             };
         };
         /** @description No verified bearer token */
@@ -966,7 +961,7 @@ export interface components {
                 [name: string]: unknown;
             };
             content: {
-                "application/json": components["schemas"]["ErrorBody"];
+                "application/problem+json": components["schemas"]["Problem"];
             };
         };
     };
@@ -1017,7 +1012,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
         };
@@ -1090,7 +1085,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A sink by anyone but an admin, or on a secret the caller may not use */
@@ -1099,7 +1094,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A connection of that name, or a second sink */
@@ -1108,7 +1103,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The connection did not validate */
@@ -1117,7 +1112,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The store did not answer the probe in time */
@@ -1126,7 +1121,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
         };
@@ -1158,7 +1153,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
         };
@@ -1188,7 +1183,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No such connection */
@@ -1197,7 +1192,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Graphs wrote their output to it; `dependents` names them */
@@ -1206,7 +1201,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
         };
@@ -1242,7 +1237,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No such connection */
@@ -1251,7 +1246,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The connection did not validate */
@@ -1260,7 +1255,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The store did not answer the probe in time */
@@ -1269,7 +1264,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
         };
@@ -1309,7 +1304,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No such connection */
@@ -1318,7 +1313,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The store refused the listing */
@@ -1327,7 +1322,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The store did not answer in time */
@@ -1336,7 +1331,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
         };
@@ -1368,7 +1363,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No such connection */
@@ -1377,7 +1372,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The store did not answer the probe in time */
@@ -1386,7 +1381,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
         };
@@ -1418,7 +1413,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
         };
@@ -1463,7 +1458,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Neither its owner nor an admin (`rbac/forbidden`) */
@@ -1472,7 +1467,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A graph was built from it (`conversation/built`): carry on in another id */
@@ -1481,7 +1476,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The messages are heavier than a conversation may be */
@@ -1490,7 +1485,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
         };
@@ -1543,7 +1538,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The conversation is someone else's (`rbac/forbidden`) */
@@ -1552,7 +1547,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
         };
@@ -1584,7 +1579,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
         };
@@ -1614,7 +1609,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Graph not found */
@@ -1623,7 +1618,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Graph is still running */
@@ -1632,7 +1627,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
         };
@@ -1668,7 +1663,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Neither its owner nor an admin (`rbac/forbidden`) */
@@ -1677,7 +1672,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Graph not found */
@@ -1686,7 +1681,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Not a draft: `graph/not-draft` */
@@ -1695,7 +1690,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
         };
@@ -1727,7 +1722,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
         };
@@ -1763,7 +1758,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Graph not found */
@@ -1772,7 +1767,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The spec is larger than a dashboard may be */
@@ -1781,7 +1776,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
         };
@@ -1813,7 +1808,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
         };
@@ -1849,7 +1844,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Graph not found */
@@ -1858,7 +1853,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The shapes graph is larger than a graph's rules may be */
@@ -1867,7 +1862,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description rudof refused the shapes graph: `rules/refused`, placed by `line` and `column` when it is not Turtle */
@@ -1876,7 +1871,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
         };
@@ -1908,7 +1903,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Graph not found */
@@ -1917,7 +1912,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description It runs already (`graph/already-running`) */
@@ -1926,7 +1921,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
         };
@@ -1962,7 +1957,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Not the graph's runner (`rbac/forbidden`) */
@@ -1971,7 +1966,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Graph not found */
@@ -1980,7 +1975,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Nothing runs (`graph/not-running`), or the run has ended (`graph/ended`): the sweep's `graph/abandoned` among them */
@@ -1989,7 +1984,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
         };
@@ -2021,7 +2016,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Graph not found */
@@ -2030,7 +2025,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Nothing runs (`graph/not-running`), or the run has ended (`graph/ended`) */
@@ -2039,7 +2034,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
         };
@@ -2075,7 +2070,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Neither its owner nor an admin (`rbac/forbidden`) */
@@ -2084,7 +2079,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Graph not found */
@@ -2093,7 +2088,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Not a draft (`graph/not-draft`), or another graph writes to that folder already (`graph/folder-taken`; the graph stays a draft, unchanged) */
@@ -2102,7 +2097,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
         };
@@ -2155,7 +2150,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A secret of that name exists */
@@ -2164,7 +2159,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The secret did not validate */
@@ -2173,7 +2168,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The store did not answer the probe in time */
@@ -2182,7 +2177,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
         };
@@ -2214,7 +2209,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
         };
@@ -2244,7 +2239,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No such secret */
@@ -2253,7 +2248,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description Connections still use it; `dependents` names them */
@@ -2262,7 +2257,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
         };
@@ -2298,7 +2293,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No such secret */
@@ -2307,7 +2302,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A connection using it would not validate with the new spec; `dependents` names them */
@@ -2316,7 +2311,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The store did not answer the probe in time */
@@ -2325,7 +2320,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
         };
@@ -2357,7 +2352,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The store did not answer the probe in time */
@@ -2366,7 +2361,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
         };
@@ -2399,7 +2394,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A source read below editor; a graph written below editor, or by anyone but its runner */
@@ -2408,7 +2403,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description No such connection, or no such graph */
@@ -2417,7 +2412,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description A graph read before it completed (`graph/not-completed`), or written before it runs (`graph/not-running`) or after it ended (`graph/ended`) */
@@ -2426,7 +2421,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The store refused to vend */
@@ -2435,7 +2430,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description The store, or the identity service before it, did not answer in time */
@@ -2444,7 +2439,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorBody"];
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
         };

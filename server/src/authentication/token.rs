@@ -160,17 +160,13 @@ pub enum TokenError {
 
 impl From<TokenError> for crate::error::Refusal {
     fn from(e: TokenError) -> Self {
-        use crate::error::{ErrorCode, Refusal};
-        use axum::http::StatusCode;
+        use crate::error::{Refusal, ServerCode};
         match e {
-            TokenError::Missing | TokenError::Invalid | TokenError::Foreign => Refusal::new(
-                StatusCode::UNAUTHORIZED,
-                ErrorCode::AuthSessionRequired,
-                "Authentication required",
-            ),
+            TokenError::Missing | TokenError::Invalid | TokenError::Foreign => {
+                Refusal::new(ServerCode::AuthSessionRequired, "Authentication required")
+            }
             TokenError::KeysUnavailable => Refusal::new(
-                StatusCode::SERVICE_UNAVAILABLE,
-                ErrorCode::AuthKeysUnavailable,
+                ServerCode::AuthKeysUnavailable,
                 "The identity provider is unreachable",
             ),
         }

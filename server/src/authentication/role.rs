@@ -11,12 +11,11 @@
 use std::ops::Deref;
 
 use axum::extract::FromRequestParts;
-use axum::http::StatusCode;
 use axum::http::request::Parts;
 
 use super::middleware::AuthenticatedUser;
 use crate::domain::Actor;
-use crate::error::{ErrorCode, Refusal};
+use crate::error::{Refusal, ServerCode};
 
 /// A role this application declares on its Keycloak client.
 #[derive(
@@ -89,21 +88,15 @@ pub enum RbacError {
 impl From<RbacError> for Refusal {
     fn from(e: RbacError) -> Self {
         match e {
-            RbacError::AuthRequired => Refusal::new(
-                StatusCode::UNAUTHORIZED,
-                ErrorCode::AuthSessionRequired,
-                "Authentication required",
-            ),
-            RbacError::NoMembership => Refusal::new(
-                StatusCode::FORBIDDEN,
-                ErrorCode::RbacNoMembership,
-                "No role in this workspace",
-            ),
-            RbacError::InsufficientRole => Refusal::new(
-                StatusCode::FORBIDDEN,
-                ErrorCode::RbacInsufficientRole,
-                "Insufficient permissions",
-            ),
+            RbacError::AuthRequired => {
+                Refusal::new(ServerCode::AuthSessionRequired, "Authentication required")
+            }
+            RbacError::NoMembership => {
+                Refusal::new(ServerCode::RbacNoMembership, "No role in this workspace")
+            }
+            RbacError::InsufficientRole => {
+                Refusal::new(ServerCode::RbacInsufficientRole, "Insufficient permissions")
+            }
         }
     }
 }
@@ -205,6 +198,7 @@ mod tests {
     use axum::Router;
     use axum::body::Body;
     use axum::http::Request;
+    use axum::http::StatusCode;
     use axum::middleware::Next;
     use axum::routing::get;
     use tower::ServiceExt;

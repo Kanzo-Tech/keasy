@@ -1,8 +1,8 @@
 import { type Code, CODES, type Foreign, helpUrl, isCode, isFossilError } from "@fossil-lang/types";
-import type { ProblemCode } from "@kanzo-tech/kernel";
+import { isProblem } from "@kanzo-tech/kernel";
 import { type ProblemDescription, toast } from "@kanzo-tech/ui";
 
-import { ApiError, type ErrorCode } from "@keasy/api";
+import type { RefusalCode } from "@keasy/api";
 import { schemaOf } from "@/lib/api/spec";
 import { lower, WORDS } from "@/lib/vocabulary";
 
@@ -53,12 +53,10 @@ const reasonOf = (data: unknown) => (data as { reason?: unknown } | undefined)?.
 const signIn = { label: "Sign in again", href: "/api/auth/sign_out?rd=%2F" };
 
 /**
- * kanzo-ui's own failures, in the same grammar — its sign-in, its graph, its engine, its model
- * calls — as the kernel's registry names them, so a code it renames is a type error here.
+ * Keyed by every code there is — the server's and the kernel's registry (kanzo-ui's sign-in, graph,
+ * engine and model calls), the browser's own and fossil's — so a code renamed is a type error here.
  */
-type KanzoCode = ProblemCode;
-
-const registry: Partial<Record<ErrorCode | ClientCode | Code | KanzoCode, Copy>> = {
+const registry: Partial<Record<RefusalCode | ClientCode | Code, Copy>> = {
   "session/absent": { title: "You are signed out.", link: signIn },
   "token/refused": {
     title: "Your session has ended.",
@@ -134,10 +132,10 @@ const registry: Partial<Record<ErrorCode | ClientCode | Code | KanzoCode, Copy>>
 };
 
 /**
- * The codes the server owns, whose titles are its own (`server/src/error.rs`, `ErrorCode::title`):
- * the registry above re-words none of them.
+ * The codes the server owns, whose titles are its own (`server/problems.bnf`): the registry above
+ * re-words none of them.
  */
-const SERVER_CODES: ReadonlySet<string> = new Set(schemaOf("ErrorCode").enum);
+const SERVER_CODES: ReadonlySet<string> = new Set(schemaOf("ServerCode").enum);
 
 /**
  * What a failure is called: keasy's words for a code it re-words, else the server's own title for a
@@ -164,8 +162,8 @@ export function pageOf(code: string): string | undefined {
 }
 
 /**
- * A failure by the fields every coded error here shares — fossil's `FossilError`, the server's
- * `ApiError`, kanzo-ui's `AuthError`, `GraphError`, `EngineError` and `LlmError` — which is what
+ * A failure by the fields every coded error here shares — fossil's `FossilError`, the kernel's
+ * `Problem` the server's refusals are read as, kanzo-ui's `AuthError`, `GraphError`, `EngineError` and `LlmError` — which is what
  * kanzo-ui's `Problem` reads. `detail` is a stored problem's word for `message`.
  */
 export interface Coded {
@@ -185,7 +183,7 @@ const isCoded = (err: unknown): err is Coded =>
  * `LlmError` (`llm/unavailable`) included; anything else is `uncoded`, in its own words, its cause
  * kept — a model that failed to load or to answer.
  */
-export function coded(err: unknown, uncoded: ClientCode | ErrorCode = "web/unknown"): Coded {
+export function coded(err: unknown, uncoded: ClientCode | RefusalCode = "web/unknown"): Coded {
   if (isCoded(err)) return err;
   return {
     code: uncoded,
@@ -241,9 +239,9 @@ export interface FieldProblem {
 
 /** The field a server refusal names (`data.field`) and what to say there; `null` when it names none. */
 export function fieldProblem(error: unknown): FieldProblem | null {
-  if (!(error instanceof ApiError)) return null;
-  const field = error.data?.field;
-  if (!field) return null;
+  if (!isProblem(error)) return null;
+  const field = (error.data as { field?: unknown } | undefined)?.field;
+  if (typeof field !== "string" || !field) return null;
   return { field, message: descriptionOf(error.code)?.title ?? error.message };
 }
 

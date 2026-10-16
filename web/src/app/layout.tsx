@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { Geist, Geist_Mono, Inter, JetBrains_Mono } from "next/font/google";
 import { Toaster } from "@kanzo-tech/ui";
 import { currentBranding } from "@/lib/branding";
@@ -35,7 +36,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const branding = await currentBranding();
+  const [branding, nonce] = await Promise.all([currentBranding(), headers().then((h) => h.get("x-nonce") ?? undefined)]);
   return (
     <html
       lang="en"
@@ -49,7 +50,7 @@ export default async function RootLayout({
         </head>
       )}
       <body className="h-full font-sans antialiased">
-        <Providers branding={branding}>
+        <Providers branding={branding} nonce={nonce}>
           {children}
           <Toaster />
         </Providers>

@@ -164,13 +164,12 @@ export function startRun(graph: Schemas["Graph"], { profiled }: { profiled?: Pro
   const ended = (async (): Promise<RunOutcome> => {
     try {
       // `run` reads every document and source the program names through the host, writes the
-      // graph under the graph, and answers its report or throws its `FossilError` — in fossil's own
-      // worker, so the page paints and its Stop is pressable while it does. The
-      // report crosses untouched — `GraphStatusReport.report` is opaque JSON on the server — and is
-      // asked again for as long as the lease is ours.
-      const { report } = await runInto(program, { host, into: { job: graphId }, profiled, signal: run.signal });
+      // graph under the graph, or throws its `FossilError` — in fossil's own worker, so the page
+      // paints and its Stop is pressable while it does. What the graph holds, the graph says: keasy
+      // records only that the run completed, and asks again for as long as the lease is ours.
+      await runInto(program, { host, into: { job: graphId }, profiled, signal: run.signal });
       ran = true;
-      await held.report(() => reportStatus(graphId, { status: "completed", report }));
+      await held.report(() => reportStatus(graphId, { status: "completed" }));
       return { status: "completed" };
     } catch (err) {
       if (ran) {

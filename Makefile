@@ -26,8 +26,10 @@ clean: ## Nuclear reset: remove containers, volumes, images
 
 # ── The API contract ───────────────────────────────────────────────────────
 # The server's routes publish the spec; `api/` (@keasy/api) holds it and the
-# types generated from it. CI fails when a committed copy is stale.
-api: ## Regenerate api/openapi.json and api/src/schema.d.ts from the server's routes
+# types generated from it. The codes they refuse with are server/problems.bnf's,
+# generated into server/src/problems.rs first. CI fails when a committed copy is stale.
+api: ## Regenerate server/src/problems.rs, api/openapi.json and api/src/schema.d.ts
+	cd server && cargo xtask problems
 	UPDATE_EXPECT=1 cargo test --quiet --manifest-path server/Cargo.toml --test api openapi
 	pnpm --filter @keasy/api generate
 

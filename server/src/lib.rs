@@ -8,6 +8,7 @@ pub mod database;
 pub mod domain;
 pub mod error;
 pub mod graphs;
+pub mod problems;
 pub mod routes;
 pub mod startup;
 pub mod storage_client;

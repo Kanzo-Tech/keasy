@@ -3,7 +3,6 @@
 
 use axum::Json;
 use axum::extract::{Path, State};
-use axum::http::StatusCode;
 use serde::Deserialize;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
@@ -11,7 +10,7 @@ use utoipa_axum::routes;
 use crate::authentication::permission::Action;
 use crate::authentication::role::{Editor, Reader};
 use crate::domain::Dashboard;
-use crate::error::{ErrorBody, ErrorCode, Refusal};
+use crate::error::{Problem, Refusal, ServerCode};
 use crate::graphs::{any, dashboards};
 use crate::startup::AppState;
 
@@ -30,7 +29,7 @@ pub struct PutDashboardRequest {
     params(("id" = String, Path, description = "Graph ID")),
     responses(
         (status = 200, description = "The graph's saved dashboard, or null when none is saved", body = Option<Dashboard>),
-        (status = 404, description = "Graph not found", body = ErrorBody),
+        (status = 404, description = "Graph not found", body = Problem, content_type = "application/problem+json"),
     )
 )]
 pub async fn get_dashboard(
@@ -47,9 +46,9 @@ pub async fn get_dashboard(
     request_body = PutDashboardRequest,
     responses(
         (status = 200, description = "Dashboard saved", body = Dashboard),
-        (status = 400, description = "The spec is not a JSON object", body = ErrorBody),
-        (status = 404, description = "Graph not found", body = ErrorBody),
-        (status = 413, description = "The spec is larger than a dashboard may be", body = ErrorBody),
+        (status = 400, description = "The spec is not a JSON object", body = Problem, content_type = "application/problem+json"),
+        (status = 404, description = "Graph not found", body = Problem, content_type = "application/problem+json"),
+        (status = 413, description = "The spec is larger than a dashboard may be", body = Problem, content_type = "application/problem+json"),
     )
 )]
 /// The dashboard is the graph's: who may change the graph may save it.
@@ -68,8 +67,7 @@ pub async fn put_dashboard(
         .unwrap_or(usize::MAX);
     if size > MAX_SPEC_BYTES {
         return Err(Refusal::new(
-            StatusCode::PAYLOAD_TOO_LARGE,
-            ErrorCode::RequestTooLarge,
+            ServerCode::RequestTooLarge,
             format!("A dashboard spec is at most {MAX_SPEC_BYTES} bytes; this one is {size}"),
         ));
     }

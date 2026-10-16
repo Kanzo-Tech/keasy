@@ -12,7 +12,7 @@ A step marked ⇧ waits for a library release, and keasy deletes in the same cha
 |---|---|
 | ⇧ **The Ask evaluation set to kanzo-ui** ([assistant](assistant.md#order)) | kanzo-ui taking the set |
 | ⇧ **kanzo-ui**: `Structure`, the conversation's keeping, library hooks on keasy's `QueryClient` ([below](#what-the-libraries-take)) | a kanzo-ui release |
-| **`joinGraphOf` stays**, with why and what would reverse it on [the assistant page](assistant.md#the-three-tasks) | `@fossil-lang/types` exporting the `Primitive` table |
+| **`joinGraphOf`'s tables stay**, described by fossil's mapping; why and what would reverse it on [the assistant page](assistant.md#the-three-tasks) | a `JoinGraph` from a mapping in kanzo-ui, and `@fossil-lang/types` exporting the `Primitive` table |
 | **Azure's signer**: keasy's minimal user-delegation SAS signer ([below](#azure-has-one-credential-a-user-delegation-sas-through-the-azure-sdk)) | the Azure SDK's SAS builder |
 | **The two module stores** (`lib/fossil/build.ts`, `use-browser-graph-runner.ts`) stay `useSyncExternalStore`: a build's state names its graph before it ends, and a live run holds its Stop and its ending, neither of which a mutation's state carries | nothing; a state a mutation can carry reopens it |
 | **Field labels and file icons**: credential field labels are still the property names (utoipa 5 has no `title` on a field, only on a type); the source picker picks an icon by extension (the file's `reader` names a format, not whether it is a table) | utoipa; fossil |

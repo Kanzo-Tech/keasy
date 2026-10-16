@@ -14,6 +14,7 @@ RUN rustup toolchain install && cargo install cargo-watch
 # Manifests only: `src/` is bind-mounted, and deps compile once at runtime into
 # the persistent `server-target` + `cargo-registry` volumes (docker-compose.yml).
 COPY Cargo.toml Cargo.lock ./
+COPY xtask ./xtask
 
 EXPOSE 8080
 CMD ["cargo", "watch", "-x", "run"]

@@ -1,9 +1,9 @@
 import { QueryClient, QueryObserver } from "@tanstack/react-query";
 import { describe, expect, it, vi } from "vitest";
 
-import { ApiError } from "@/lib/api/client";
+import { Problem } from "@kanzo-tech/kernel";
 
-const notFound = new ApiError({ code: "graph/not-found", title: "Not found", detail: "No such graph", data: {} }, 404);
+const notFound = new Problem("graph/not-found", "No such graph", {}, { status: 404, title: "Not found" });
 
 vi.mock("@kanzo-tech/mosaic/engine", () => ({ engine: async () => ({}) }));
 vi.mock("@kanzo-tech/ui/analytics", () => ({ MosaicProvider: () => null }));

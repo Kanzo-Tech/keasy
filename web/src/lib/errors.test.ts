@@ -1,7 +1,6 @@
 import { FossilError, isFossilError } from "@fossil-lang/types";
 import { Problem } from "@kanzo-tech/kernel";
 import { describe, expect, it } from "vitest";
-import { ApiError } from "@/lib/api/client";
 import { coded, descriptionOf, fieldProblem, pageOf, wireOf } from "./errors";
 
 const overBudget = () =>
@@ -60,7 +59,7 @@ describe("a failure, kept as JSON", () => {
   });
 
   it("is the server's body for a refusal, and has no page", () => {
-    const err = new ApiError({ code: "resource/in-use", title: "Still in use", detail: "used by sink", data: { dependents: ["sink"] } }, 409);
+    const err = new Problem("resource/in-use", "used by sink", { dependents: ["sink"] }, { status: 409, title: "Still in use" });
     expect(wireOf(err)).toEqual({ code: "resource/in-use", title: "Still in use", detail: "used by sink", data: { dependents: ["sink"] } });
     expect(pageOf("resource/in-use")).toBeUndefined();
   });
@@ -72,13 +71,13 @@ describe("a failure, kept as JSON", () => {
 
 describe("a failure's cause", () => {
   it("is kept one level down, coded when it can be", () => {
-    const store = new ApiError({ code: "store/silent", title: "The store did not answer in time", detail: "STS", data: { after: 10_000 } }, 504);
+    const store = new Problem("store/silent", "STS", { after: 10_000 }, { status: 504, title: "The store did not answer in time" });
     const shown = wireOf(new Error("could not open the graph", { cause: store }));
     expect(shown).toMatchObject({ code: "web/unknown", cause: { code: "store/silent", data: { after: 10_000 } } });
   });
 
   it("is a foreign error's own words when it has no code", () => {
-    expect(wireOf(new ApiError({ code: "store/refused", title: "t", detail: "d", data: {} }, 502, { cause: new TypeError("Failed to fetch") })).cause).toEqual({
+    expect(wireOf(new Problem("store/refused", "d", {}, { status: 502, title: "t", cause: new TypeError("Failed to fetch") })).cause).toEqual({
       name: "TypeError",
       detail: "Failed to fetch",
     });
@@ -111,16 +110,16 @@ describe("a library's coded failure", () => {
 
 describe("a host failure fossil wrapped", () => {
   it("keeps keasy's code and data under fossil's", () => {
-    const silent = new ApiError({ code: "store/silent", title: "The store did not answer in time", detail: "STS", data: { after: 10_000 } }, 504);
+    const silent = new Problem("store/silent", "STS", { after: 10_000 }, { status: 504, title: "The store did not answer in time" });
     const wrapped = FossilError.of("storage/host-refused", { scope: "graph x" }, { cause: silent });
     expect(wireOf(wrapped)).toMatchObject({
       code: "storage/host-refused",
-      cause: { name: "ApiError", code: "store/silent", data: { after: 10_000 } },
+      cause: { name: "Problem", code: "store/silent", data: { after: 10_000 } },
     });
   });
 
   it("keeps keasy's code in a stored problem, a level further down", () => {
-    const missing = new ApiError({ code: "graph/not-found", title: "Graph not found", detail: "No such graph", data: {} }, 404);
+    const missing = new Problem("graph/not-found", "No such graph", {}, { status: 404, title: "Graph not found" });
     const refused = FossilError.of("storage/host-refused", { scope: "graph x" }, { cause: missing });
     const unread = FossilError.of("document/unread", { documents: ["people.csv"] }, { cause: refused.problem });
     const stored = JSON.parse(JSON.stringify(unread.problem)) as typeof unread.problem;
@@ -133,18 +132,18 @@ describe("a host failure fossil wrapped", () => {
 
 describe("a refusal about one field", () => {
   it("names the field and says it in the server's words", () => {
-    const taken = new ApiError({ code: "graph/folder-taken", title: "Folder taken", detail: "people is held", data: { field: "folder" } }, 409);
+    const taken = new Problem("graph/folder-taken", "people is held", { field: "folder" }, { status: 409, title: "Folder taken" });
     expect(fieldProblem(taken)).toEqual({ field: "folder", message: "people is held" });
   });
 
   it("falls back to the server's detail for a code keasy has no words for", () => {
-    const misspelled = new ApiError({ code: "request/invalid", title: "Invalid", detail: "a name cannot hold '/'", data: { field: "name" } }, 400);
+    const misspelled = new Problem("request/invalid", "a name cannot hold '/'", { field: "name" }, { status: 400, title: "Invalid" });
     expect(fieldProblem(misspelled)).toEqual({ field: "name", message: "a name cannot hold '/'" });
   });
 
   it("is null for a refusal about no field, or a failure that is not the server's", () => {
-    expect(fieldProblem(new ApiError({ code: "server/internal", title: "t", detail: "d", data: {} }, 500))).toBeNull();
-    expect(fieldProblem(new ApiError({ code: "request/invalid", title: "t", detail: "d", data: { field: null } }, 400))).toBeNull();
+    expect(fieldProblem(new Problem("server/internal", "d", {}, { status: 500, title: "t" }))).toBeNull();
+    expect(fieldProblem(new Problem("request/invalid", "d", { field: null }, { status: 400, title: "t" }))).toBeNull();
     expect(fieldProblem(new Error("boom"))).toBeNull();
   });
 });

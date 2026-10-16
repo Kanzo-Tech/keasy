@@ -1,4 +1,4 @@
-import type { ProblemCode } from "@kanzo-tech/kernel";
+import { Problem, type ProblemBody, type ProblemCode, isProblem } from "@kanzo-tech/kernel";
 import createFetchClient, { type Middleware } from "openapi-fetch";
 import type { Readable, Writable, components, paths } from "./schema";
 
@@ -9,34 +9,13 @@ type Components = components["schemas"];
 export type Schemas = { [K in keyof Components]: Readable<Components[K]> };
 /** Every schema as a request body carries it: read-only fields are absent. */
 export type Inputs = { [K in keyof Components]: Writable<Components[K]> };
-export type ErrorCode = Schemas["ErrorCode"];
-export type ErrorBody = Schemas["ErrorBody"];
 
 /**
- * Who names a refusal: the server, in an `ErrorBody`, or the forwarder in front of it
- * (`@kanzo-tech/auth`), in a problem under its own code — `api/unreachable` when the server did not
- * answer at all.
+ * Every code a refusal carries: the server's own (`server/problems.bnf`), or the kernel's registry,
+ * under which the forwarder in front of it (`@kanzo-tech/auth`) refuses — `api/unreachable` when the
+ * server did not answer at all.
  */
-export type RefusalCode = ErrorCode | ProblemCode;
-
-/** A refusal, as the server's `ErrorBody` or the forwarder's problem states it: `message` is its `detail`. */
-export class ApiError extends Error {
-  readonly code: RefusalCode;
-  readonly title: string;
-  readonly data: ErrorBody["data"];
-
-  constructor(
-    body: Pick<ErrorBody, "title" | "detail" | "data"> & { code: RefusalCode },
-    readonly status?: number,
-    options?: ErrorOptions,
-  ) {
-    super(body.detail, options);
-    this.name = "ApiError";
-    this.code = body.code;
-    this.title = body.title;
-    this.data = body.data;
-  }
-}
+export type RefusalCode = Schemas["ServerCode"] | ProblemCode;
 
 /**
  * A non-2xx answer that names no code — a refusal the forwarder gives none (a cross-site request, a
@@ -59,25 +38,26 @@ export class HttpError extends Error {
  * is a refusal or a misconfiguration, and the same request meets it again.
  */
 export function retryable(err: unknown): boolean {
-  const status = err instanceof ApiError || err instanceof HttpError ? err.status : undefined;
+  const status = isProblem(err) || err instanceof HttpError ? (err as { status?: number }).status : undefined;
   if (status === undefined) return true;
   return status === 408 || status === 429 || status >= 500;
 }
 
 /**
- * Read the `ErrorBody` a non-2xx response carries — the server's, or the forwarder's problem, the same
- * members under its own code — or, where it names none, an {@link HttpError}.
+ * Read the problem (`application/problem+json`) a non-2xx response carries — the server's, or the
+ * forwarder's — through the kernel's one parser, at the response's own status; or, where it names
+ * no code, an {@link HttpError}.
  */
-export async function apiError(response: Response): Promise<ApiError | HttpError> {
+export async function apiError(response: Response): Promise<Problem | HttpError> {
   const text = await response.clone().text();
-  let body: ErrorBody | null = null;
+  let body: ProblemBody | null = null;
   try {
-    const parsed = JSON.parse(text) as Partial<ErrorBody> | null;
-    if (parsed && typeof parsed.code === "string") body = parsed as ErrorBody;
+    const parsed = JSON.parse(text) as Partial<ProblemBody> | null;
+    if (parsed && typeof parsed.code === "string") body = parsed as ProblemBody;
   } catch {
     // Not JSON: neither the server nor the forwarder answered with a code, and its words are the message.
   }
-  if (body) return new ApiError(body, response.status);
+  if (body) return Problem.from({ ...body, status: response.status });
   return new HttpError(text.trim().slice(0, 300) || `${response.status} ${response.statusText}`.trim(), response.status);
 }
 
@@ -88,7 +68,7 @@ const errors: Middleware = {
 };
 
 /**
- * A typed client for the keasy API. Every non-2xx throws an {@link ApiError};
+ * A typed client for the keasy API. Every non-2xx throws a kernel `Problem` (or an {@link HttpError});
  * the host injects `fetch` to attach its own credentials.
  */
 export function createApiClient(options: { baseUrl: string; fetch?: typeof fetch }) {

@@ -6,7 +6,9 @@ FROM rust:1-bookworm AS builder
 WORKDIR /src/server
 COPY rust-toolchain.toml ./
 RUN rustup toolchain install
+# The workspace names xtask, so its manifest is part of the manifests.
 COPY Cargo.toml Cargo.lock ./
+COPY xtask ./xtask
 RUN mkdir src && echo 'fn main() {}' > src/main.rs && cargo build --release && rm -rf src
 COPY src ./src
 RUN touch src/main.rs && cargo build --release

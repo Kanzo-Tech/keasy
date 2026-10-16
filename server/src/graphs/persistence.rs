@@ -6,12 +6,11 @@ use crate::database::{
     DbError, DbResult, constraint, created_columns, enum_column, json_column_opt, owner_columns,
 };
 use crate::domain::{Actor, Graph};
-use crate::error::{ErrorBody, ErrorCode};
+use crate::error::{Problem, ServerCode};
 
 const COLUMNS: &str = "id, name, status, created_at, started_at, completed_at, heartbeat_at, \
                        runner, runner_name, cancel_requested, problem, owner, owner_name, \
-                       created_by, created_by_name, sink_connection, folder, script, report, \
-                       conversation";
+                       created_by, created_by_name, sink_connection, folder, script, conversation";
 
 /// What the schema refused about `graph`, said in its terms.
 fn refused(graph: &Graph, e: rusqlite::Error) -> DbError {
@@ -33,7 +32,7 @@ pub fn insert(conn: &Connection, graph: &Graph) -> DbResult<()> {
         &format!(
             "INSERT INTO graphs ({COLUMNS})
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17,
-                     ?18, ?19, ?20)"
+                     ?18, ?19)"
         ),
         params![
             graph.id,
@@ -58,11 +57,6 @@ pub fn insert(conn: &Connection, graph: &Graph) -> DbResult<()> {
             graph.sink_connection,
             graph.folder,
             graph.script,
-            graph
-                .report
-                .as_ref()
-                .map(serde_json::to_string)
-                .transpose()?,
             graph.conversation,
         ],
     )
@@ -89,10 +83,10 @@ pub fn write(conn: &Connection, graph: &Graph, was: &Graph) -> DbResult<bool> {
     let written = conn
         .execute(
             "UPDATE graphs SET name = ?1, status = ?2, started_at = ?3, completed_at = ?4,
-                             problem = ?5, script = ?6, report = ?7, folder = ?8,
-                             heartbeat_at = ?10, runner = ?11, runner_name = ?12,
-                             cancel_requested = ?13
-             WHERE id = ?9 AND status = ?14 AND runner IS ?15",
+                             problem = ?5, script = ?6, folder = ?7,
+                             heartbeat_at = ?9, runner = ?10, runner_name = ?11,
+                             cancel_requested = ?12
+             WHERE id = ?8 AND status = ?13 AND runner IS ?14",
             params![
                 graph.name,
                 graph.status.as_ref(),
@@ -104,11 +98,6 @@ pub fn write(conn: &Connection, graph: &Graph, was: &Graph) -> DbResult<bool> {
                     .map(serde_json::to_string)
                     .transpose()?,
                 graph.script,
-                graph
-                    .report
-                    .as_ref()
-                    .map(serde_json::to_string)
-                    .transpose()?,
                 graph.folder,
                 graph.id,
                 graph.heartbeat_at,
@@ -136,13 +125,12 @@ pub const LEASE: std::time::Duration = std::time::Duration::from_secs(60);
 /// Run before every read of graphs rather than on a schedule: a tab that closed
 /// cannot say so, and the next person to look is the only one who can notice.
 pub fn sweep(conn: &Connection, now: jiff::Timestamp) -> DbResult<usize> {
-    let problem = serde_json::to_string(&ErrorBody::new(
-        ErrorCode::GraphAbandoned,
+    let problem = serde_json::to_string(&Problem::new(
+        ServerCode::GraphAbandoned,
         format!(
             "Nothing ran this graph for {} s: the tab that ran it closed",
             LEASE.as_secs()
         ),
-        Vec::new(),
     ))?;
     Ok(conn.execute(
         "UPDATE graphs SET status = 'failed', completed_at = ?1, problem = ?2, cancel_requested = 0
@@ -219,7 +207,6 @@ fn row_to_graph(row: &rusqlite::Row<'_>) -> rusqlite::Result<Graph> {
         folder: row.get("folder")?,
         output: None,
         script: row.get("script")?,
-        report: json_column_opt(row, "report")?,
         conversation: row.get("conversation")?,
         can: Default::default(),
         can_stop: false,
@@ -319,11 +306,11 @@ mod tests {
 
         assert!(
             conn.execute(
-                "UPDATE graphs SET status = 'draft', report = 'not json'",
+                "UPDATE graphs SET status = 'draft', problem = 'not json'",
                 []
             )
             .is_err(),
-            "a report that is not JSON is never stored"
+            "a problem that is not JSON is never stored"
         );
     }
 

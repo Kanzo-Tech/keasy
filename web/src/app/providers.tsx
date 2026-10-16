@@ -48,15 +48,19 @@ function themeLook(branding: Branding) {
 
 export function Providers({
   branding,
+  nonce,
   children,
 }: {
   branding: Branding;
+  /** The request's CSP nonce (`lib/auth/server.ts`), which admits the theme script. */
+  nonce: string | undefined;
   children: React.ReactNode;
 }) {
   const look = useMemo(() => themeLook(branding), [branding]);
 
   useServerInsertedHTML(() => (
     <script
+      nonce={nonce}
       dangerouslySetInnerHTML={{
         __html: themeScript({ defaultTheme: look.defaultTheme, policy: look.policy }),
       }}

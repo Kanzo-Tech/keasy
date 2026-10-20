@@ -206,7 +206,6 @@ pub(crate) mod tests {
         .unwrap();
         let target = StorageTarget {
             url: "s3://b/output/".into(),
-            kind: Default::default(),
             direction: crate::domain::Direction::Sink,
         };
         insert(conn, &connection(name, &credential, target), &user()).unwrap();
@@ -250,7 +249,6 @@ pub(crate) mod tests {
         crate::database::apply_schema(&conn).unwrap();
         let bucket = || StorageTarget {
             url: "s3://b/".into(),
-            kind: Default::default(),
             direction: Default::default(),
         };
         let err = insert(&conn, &connection("bucket", "minio", bucket()), &user()).unwrap_err();

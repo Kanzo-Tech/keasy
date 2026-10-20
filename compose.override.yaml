@@ -67,7 +67,7 @@ services:
       RUST_LOG: debug
       KEASY_ORG_ALIAS: acme
       KEASY_WORKSPACE_NAME: Acme Corporation
-      # The dev S3 credential, its data and shapes sources and the sink, in the API's own request
+      # The dev S3 credential, a source per example (its data and its shapes) and the sink, in the API's own request
       # format.
       KEASY_BOOTSTRAP_FILE: /etc/keasy/bootstrap.json
       # The dev store answers S3 and STS on one port, as the AWS SDKs read it.

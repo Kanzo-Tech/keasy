@@ -37,15 +37,15 @@ export class RowMenu extends ComponentHarness {
 }
 
 /**
- * **Connections** — the page's table of storage connections, data or vocabulary: searched by name,
+ * **Connections** — the page's table of storage connections: searched by name,
  * each row with its ⋯ menu (Test, Delete) for an editor, and none for a reader.
  */
 export class ConnectionsPage extends ComponentHarness {
   static readonly by: By = { css: "body" };
 
-  /** Opens the tab of `kind`'s connections, once its search is up. */
-  static async open(page: Page, env: HarnessEnvironment, kind: "data" | "vocab" = "data"): Promise<ConnectionsPage> {
-    await page.goto(`/connections?type=${kind}`);
+  /** Opens the page, once its search is up. */
+  static async open(page: Page, env: HarnessEnvironment): Promise<ConnectionsPage> {
+    await page.goto("/connections");
     const connections = await env.getHarness(ConnectionsPage);
     await connections.locatorFor({ role: "textbox", name: /Search connections/ }, "the connections have no search")();
     return connections;

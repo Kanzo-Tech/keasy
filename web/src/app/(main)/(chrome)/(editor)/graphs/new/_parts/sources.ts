@@ -36,11 +36,24 @@ export interface SourceFile {
   reader: string;
   /** Its size in bytes, as the listing gave it. */
   size: number;
+  /** It is a vocabulary — a ShEx, SHACL or OWL file, read as a schema — and not data. */
+  vocabulary: boolean;
   children?: never;
 }
 
-/** What a program reads a connection's files as: a vocabulary's are schemas, the rest data. */
-const roleOf = (c: StorageConnection) => (c.kind === "vocab" ? "schema" : "data");
+/**
+ * The format that reads `path`, and whether the file is a vocabulary: one no data format reads and a
+ * schema format does (`shapes.shex`). A connection is a location and nothing more; what a file in it
+ * is, its format says (docs/design/assistant.md, *A dataset's vocabulary is a file beside it*). An
+ * extension two formats share — a `.ttl` is `rdf` as data and `shacl` as a schema — is read as data:
+ * telling the two apart takes the file's content, which a listing does not have.
+ */
+function readerOf(path: string, formats: readonly Format[]) {
+  const data = formatFor(path, "data", formats);
+  if (data) return { format: data, vocabulary: false };
+  const schema = formatFor(path, "schema", formats);
+  return schema ? { format: schema, vocabulary: true } : undefined;
+}
 
 /** A connection, unopened. */
 export function connectionNode(c: StorageConnection): SourceBranch {
@@ -62,7 +75,6 @@ export async function childrenOf(
 ): Promise<SourceNode[]> {
   const c = parent.connection;
   const { under } = parent;
-  const role = roleOf(c);
   const at = `@${c.name}/`;
   const folders = new Map<string, SourceBranch>();
   const files: SourceFile[] = [];
@@ -70,8 +82,8 @@ export async function childrenOf(
     const ref = reference(c, path);
     if (!ref.startsWith(at + under)) continue;
     const rest = ref.slice(at.length + under.length);
-    const format = formatFor(rest, role, formats);
-    if (!format) continue;
+    const read = readerOf(rest, formats);
+    if (!read) continue;
     const slash = rest.indexOf("/");
     if (slash >= 0) {
       const folder = `${under}${rest.slice(0, slash + 1)}`;
@@ -83,9 +95,10 @@ export async function childrenOf(
         id: `${c.name}:${path}`,
         name: rest,
         kind: "file",
-        reader: format.name,
-        line: `${await bindingName(rest, { signal })} := io.${format.name}("${ref}")`,
+        reader: read.format.name,
+        line: `${await bindingName(rest, { signal })} := io.${read.format.name}("${ref}")`,
         size,
+        vocabulary: read.vocabulary,
       });
     }
   }

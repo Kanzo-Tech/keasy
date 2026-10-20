@@ -1,10 +1,9 @@
 "use client";
 
-import { use, useMemo } from "react";
-import { BookOpen, Database } from "lucide-react";
-import { Badge, SectionBody, SectionRoot, Tabs, TabsList, TabsTrigger, toast } from "@kanzo-tech/ui";
+import { useMemo } from "react";
+import { Database } from "lucide-react";
+import { Badge, SectionBody, SectionRoot, toast } from "@kanzo-tech/ui";
 import { actionsColumn, type ColumnDef, sortableHeader } from "@kanzo-tech/ui/table";
-import { useRouter } from "@kanzo-tech/navigation/next";
 import { useSession } from "@kanzo-tech/auth";
 import { BlockedMenuItem } from "@/components/blocked";
 import { CreatedBy } from "@/components/provenance";
@@ -14,19 +13,14 @@ import { $api, connectionsQuery } from "@/lib/api/client";
 import type { Connection } from "@/lib/connections";
 import { blocked } from "@/lib/permissions";
 
-/** A tab: a storage connection's kind. */
-type Tab = "data" | "vocab";
-
 const CHANGES = ["/v1/connections", "/v1/secrets"] as const;
 
-export default function ConnectionsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ type?: Tab }>;
-}) {
-  const router = useRouter();
-  const { type: tab = "data" } = use(searchParams);
-  const noun = { data: "data", vocab: "vocabulary" }[tab];
+/**
+ * The storage connections a program reads from. A connection is a location and nothing more: what a
+ * file in it is — data or a vocabulary — its format says (docs/design/assistant.md, *A dataset's
+ * vocabulary is a file beside it*).
+ */
+export default function ConnectionsPage() {
   const editor = useSession().can("editor");
 
   const { mutate: remove } = $api.useMutation("delete", "/v1/connections/{name}", {
@@ -99,35 +93,22 @@ export default function ConnectionsPage({
   return (
     <SectionRoot>
       <SectionBody className="overflow-hidden" scale="page">
-        <Tabs onValueChange={(details) => router.push(`/connections?type=${details.value}`)} value={tab}>
-          <TabsList>
-            <TabsTrigger value="data">
-              <Database />
-              Data
-            </TabsTrigger>
-            <TabsTrigger value="vocab">
-              <BookOpen />
-              Vocabulary
-            </TabsTrigger>
-          </TabsList>
-          <ResourceList
-            columns={columns}
-            create={editor ? { label: "Create connection", href: `/connections/new?type=${tab}` } : undefined}
-            empty={{
-              icon: { data: <Database />, vocab: <BookOpen /> }[tab],
-              title: `No ${noun} connections`,
-              description: `Create a ${noun} connection to get started.`,
-            }}
-            href={(c) => `/connections/${encodeURIComponent(c.name)}`}
-            key={tab}
-            noun="connections"
-            query={{
-              ...connectionsQuery,
-              // The sink is the admin's, on Workspace storage.
-              select: (all) => all.filter((c) => c.target.kind === tab && c.target.direction === "source"),
-            }}
-          />
-        </Tabs>
+        <ResourceList
+          columns={columns}
+          create={editor ? { label: "Create connection", href: "/connections/new" } : undefined}
+          empty={{
+            icon: <Database />,
+            title: "No connections",
+            description: "Create a connection to get started.",
+          }}
+          href={(c) => `/connections/${encodeURIComponent(c.name)}`}
+          noun="connections"
+          query={{
+            ...connectionsQuery,
+            // The sink is the admin's, on Workspace storage.
+            select: (all) => all.filter((c) => c.target.direction === "source"),
+          }}
+        />
       </SectionBody>
     </SectionRoot>
   );

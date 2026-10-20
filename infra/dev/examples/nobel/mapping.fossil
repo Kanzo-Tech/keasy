@@ -13,14 +13,14 @@
 // award is placed at its first affiliation's city, which fetch.sh picks, so the
 // award's row carries it and `Affiliated` writes none.
 
-type { Laureate, LaureateAward, Category, University, Country } := io.shex("@Nobel laureates shapes/shapes.shex")
+type { Laureate, LaureateAward, Category, University, Country } := io.shex("@Nobel laureates/shapes/shapes.shex")
 
-LaureateRow    := io.json("@Nobel laureates/laureates.json")
-AwardRow       := io.json("@Nobel laureates/awards.json")
-CategoryRow    := io.json("@Nobel laureates/categories.json")
-InstitutionRow := io.json("@Nobel laureates/institutions.json")
-AffiliationRow := io.json("@Nobel laureates/affiliations.json")
-CountryRow     := io.json("@Nobel laureates/countries.json")
+LaureateRow    := io.json("@Nobel laureates/data/laureates.json")
+AwardRow       := io.json("@Nobel laureates/data/awards.json")
+CategoryRow    := io.json("@Nobel laureates/data/categories.json")
+InstitutionRow := io.json("@Nobel laureates/data/institutions.json")
+AffiliationRow := io.json("@Nobel laureates/data/affiliations.json")
+CountryRow     := io.json("@Nobel laureates/data/countries.json")
 
 Countries : Country from CountryRow
     @subject = "https://nobel.example/country/{CountryRow.id}"

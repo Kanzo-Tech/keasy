@@ -23,8 +23,6 @@ import { ProblemView } from "@/components/problem-view";
 import type { SourceNode } from "./sources";
 import { useSources } from "./use-sources";
 
-const KIND = { data: { icon: Database, label: "data" }, vocab: { icon: BookMarked, label: "vocabulary" } } as const;
-
 /**
  * The files a program can read, by connection and folder, each folder listed when it is opened —
  * Ark's lazy tree over the connection's files. Drag a file into the program, or Insert it at the
@@ -88,13 +86,12 @@ function Source({
   onInsert: (text: string) => void;
 }) {
   if (node.kind !== "file") {
-    const kind = node.kind === "connection" ? KIND[node.connection.kind] : undefined;
+    const connection = node.kind === "connection";
     return (
       <TreeViewNode indexPath={indexPath} node={node}>
         <TreeViewBranch>
-          <TreeViewBranchItem expandedIcon={kind?.icon} icon={kind?.icon}>
-            <span className={kind ? "font-mono" : undefined}>{node.name}</span>
-            {kind && <span className="text-faint text-xs">{kind.label}</span>}
+          <TreeViewBranchItem expandedIcon={connection ? Database : undefined} icon={connection ? Database : undefined}>
+            <span className={connection ? "font-mono" : undefined}>{node.name}</span>
           </TreeViewBranchItem>
           {node.children === undefined && node.problem !== undefined && <ProblemView error={node.problem} />}
           <TreeViewBranchContent>
@@ -118,8 +115,8 @@ function Source({
           e.dataTransfer.setData("text/plain", line);
         }}
       >
-        <TreeViewItem icon={FileText}>{node.name}</TreeViewItem>
-        <span className="text-faint text-xs">io.{node.reader}</span>
+        <TreeViewItem icon={node.vocabulary ? BookMarked : FileText}>{node.name}</TreeViewItem>
+        <span className="text-faint text-xs">{node.vocabulary ? "vocabulary · " : ""}io.{node.reader}</span>
         <Button
           className="font-sans opacity-0 group-hover/source:opacity-100 group-data-focus/source:opacity-100"
           onClick={(e) => {

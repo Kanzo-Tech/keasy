@@ -5,8 +5,7 @@ intent; the guided chat and its three Tasks, `model`, `mapping` and `requirement
 profile (below); the conversation kept, the preview run in memory, and the build. **Decided
 2026-10-20, not built:** [a conversation beside its graph](#a-conversation-beside-its-graph) — one **+**
 and file cards, a dataset's dictionary travelling with it, a panel with *Your graph*, *Data* and
-*Preview*, questions answered in either place, a shell of its own, the schema drawn with React Flow and
-ELK — and [`model`'s structure taken from the profile](#model--structure-from-the-profile-names-from-the-model).
+*Preview*, questions answered in either place, a shell of its own, the schema and the program drawn on one diagram with React Flow and ELK — and [`model`'s structure taken from the profile](#model--structure-from-the-profile-names-from-the-model).
 They replace the single thread of 2026-10-14 and its checkpoints, each where it is described. The pattern this rests on — a *Task*: a small model in the browser fills a small artefact under a JSON Schema, a deterministic oracle checks it, a bounded loop repairs
 it or asks the person — and its API, its model and its decisions are kanzo-ui's, on
 [Tasks](https://kanzo-tech.github.io/ui/docs/design/tasks). fossil's half — `fossil-profile` in place
@@ -191,20 +190,47 @@ composes it — `ShellMain` for the conversation, the panel in `ShellAside`/`She
 layout part. *What would reverse it:* people lost without the app's navigation — then the sidebar stays,
 folded to its icons.
 
-### *Your graph* is drawn as a schema, not as data
+### One diagram, two views
 
 *Your graph* draws kinds of thing and their links — five to thirty boxes with labelled edges, a **?**
 that opens a popover, a click that renames — never the data's vertices. That is not the job of
 `@kanzo-tech/graph`, whose cosmos.gl canvas draws thousands to millions of points on the GPU and is
-weakest where this view lives: labels, anchored popovers, keyboard focus. **Proposed:** React Flow
-(`@xyflow/react`) for the view — nodes are DOM, so kanzo-ui's `Popover`, `Badge` and buttons go inside
-them, with zoom, fit and selection given — and ELK (`elkjs`, layered, in a worker) for a layout that
-stays put as answers change. Both are MIT. They are large (React Flow about 50 kB, ELK far more), so
-they are **optional peers behind a subpath of their own in kanzo-ui** — `@kanzo-tech/graph/schema` —
-never the root barrel, as `/table` and `/analytics` are. The same part gives Discover a *Schema* view
-of a built graph. *What would reverse it:* ELK's weight in a page that never draws more than a handful
-of kinds — then a layered layout of keasy's or kanzo-ui's own, over SVG, and React Flow stays; or React
-Flow's — then ELK over SVG, and zoom and selection written by hand.
+weakest where this view lives: labels, anchored popovers, keyboard focus. And it is not the only
+diagram wanted: **a Fossil program is a graph too** — files and their columns, the rules that map them,
+the kinds of thing and fields they make — and the studio should draw it beside its text.
+
+**One part, generic, in kanzo-ui: `@kanzo-tech/graph/diagram`** — a thin layer over React Flow
+(`@xyflow/react`) and ELK (`elkjs`, layered, in a worker): nodes are DOM, so kanzo-ui's `Popover`,
+`Badge` and buttons go inside them; ports, labelled edges, zoom, fit, selection and keyboard focus are
+given; the layout stays put as answers change. It knows nothing of Fossil or RDF. Both libraries are
+MIT and large (React Flow about 50 kB, ELK far more), so they are **optional peers behind the subpath**,
+never the root barrel, as `/table` and `/analytics` are.
+
+**Two views on it, both read from the same thing: the RML mapping fossil makes of a program**
+(`program.mapping()`, read by rudof's `Mapping.model()` — what `withMapping` already reads, U2):
+
+| View | Draws | From the mapping | Where |
+|---|---|---|---|
+| **Schema** | kinds of thing and their links (*Award —won by→ Person*) | classes and predicates | the assistant's *Your graph*; a *Schema* view in Discover |
+| **Program** | files → columns → mapping rules → kinds and fields, left to right | logical sources, triples maps, subject and predicate maps, joins | the studio, beside the editor; *details* in the assistant |
+
+**Why the mapping, and not Fossil's text:** it is already the program's structure, made by fossil for
+every program, and already read in the page; a second parser of Fossil in TypeScript would be a second
+reference that drifts, and whatever fossil compiles is drawn.
+
+**In the studio, the editor and the *Program* view are linked**: a node hovered lights its lines, a
+line under the cursor lights its node. That needs, from fossil, the source span of each rule beside
+the mapping — fossil's IDE already has them for its outline. Read-only first. **Editing on the
+diagram comes later and always goes through the program**: a rename, a field left out, a key changed
+is a change to the Fossil text, checked by fossil like any other — never a second model of the program.
+The references: dbt's lineage, RMLEditor's and Matey's mapping diagrams, and visual data tools whose
+code stays the source of truth.
+
+*What would reverse it:* what a person wants to see of a program that RML does not say — filters,
+transforms, joins RML expresses badly — then the *Program* view reads fossil's own operator algebra
+(its MIR) instead of the mapping, and *Schema* stays on the mapping. Or ELK's weight for pages that
+never draw more than a handful of kinds — then a layered layout of kanzo-ui's own over SVG, behind
+the same subpath.
 
 ### The model badge in the page's header
 
@@ -264,7 +290,7 @@ conversation stays open, and a graph's record is that state rather than the conv
 ### What is kanzo-ui's, and what is keasy's
 
 **From kanzo-ui**: the panel beside a `Conversation` (`@kanzo-tech/ai`), the schema view
-(`@kanzo-tech/graph/schema`, [above](#your-graph-is-drawn-as-a-schema-not-as-data)), `Shell`'s parts,
+(`@kanzo-tech/graph/diagram` and its *Schema* and *Program* views, [above](#one-diagram-two-views)), `Shell`'s parts,
 and the `Command` and `TreeView` the **+**'s connection list is made of — all but the first two exist.
 
 **keasy's**: the **+** and its file cards over the connections' listings; a connection's dictionary and
@@ -705,6 +731,5 @@ model double answering at a model's pace, and is rewritten with each step.
 
 **The order of what was decided on 2026-10-20**, each useful alone: (1) `model`'s structure from the
 profile and the honest failure — it mends what the owner hit, with no new layout; (2) the shell and
-the panel with *Data* and *Preview*, the thread's results moving into it; (3) *Your graph* on kanzo-ui's
-schema view, and questions on the graph; (4) the **+** and file cards; (5) a connection's dictionary,
-and terms from it in `model`. The `nobel-assistant` demo follows each step.
+the panel with *Data* and *Preview*, the thread's results moving into it; (3) kanzo-ui's `graph/diagram` with its *Schema* view, *Your graph* on it, and questions on the graph; (4) the **+** and file cards; (5) a connection's dictionary,
+and terms from it in `model`; (6) the *Program* view in the studio, linked to the editor, once fossil gives each rule's span. The `nobel-assistant` demo follows each step.

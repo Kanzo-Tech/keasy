@@ -47,9 +47,18 @@ with kanzo-ui's chat parts (`Conversation`, `Message`) as Ask's panel is.
 **The person's replies are choices, chips or questions — never free-form instructions.** What they send
 or write is drawn as their message (the files with *what is it about?*, a question); a choice made on a
 decision's options is not said again as a reply — it stays selected where it was made, which is where
-it is changed, by picking another. A thing said twice reads as two things. Free text goes in only where
-it is a question, or the optional *what is it about?*; the composer's field is off otherwise, and says
-in its placeholder what the thread waits on.
+it is changed, by picking another. A thing said twice reads as two things.
+
+**The composer's field is always on, and what is typed in it is a question about the data** —
+*Ask anything about your data*. Before the first message it is the optional *what is it about?*,
+sent with the files; after it, every line is a question: Ask answers it in the *Preview* tab over the
+first 200 rows, and it is kept as one of the questions the graph must answer
+([competency questions](#what-is-kanzo-uis-and-what-is-keasys)). Typed text that is not a question —
+*call Laureate Person* — is not read as an instruction: the reply says where that is changed, a
+link to the thing on the graph. Decided 2026-10-20 over a field that was off except while the thread
+waited on a question, which in a conversation drawn as Claude's reads as broken. *What would reverse
+it:* people who type instructions more often than questions — then the reply that points to the
+graph is the wrong door, and an instruction is a Task's input, under its schema, like the rest.
 
 **A default taken is said once, with one door to its options: *I assumed: id · Change*.** The line is
 what was taken, and *Change* opens the question under it; the options are not drawn beside it. This

@@ -4,7 +4,7 @@ Status: a direction. Built: the model in the page, served from keasy's own origi
 intent; the guided chat and its three Tasks, `model`, `mapping` and `requirements`, over fossil's
 profile (below); the conversation kept, the preview run in memory, and the build. **Decided
 2026-10-20, not built:** [a conversation beside its graph](#a-conversation-beside-its-graph) — one **+**
-and file cards, a dataset's schema as a file beside it, a panel with *Your graph*, *Data* and
+and file cards, a dataset's vocabulary as a file beside it, a panel with *Your graph*, *Data* and
 *Preview*, questions answered in either place, a shell of its own, the schema and the program drawn on one diagram with React Flow and ELK — and [`model`'s structure taken from the profile](#model--structure-from-the-profile-names-from-the-model).
 They replace the single thread of 2026-10-14 and its checkpoints, each where it is described. The pattern this rests on — a *Task*: a small model in the browser fills a small artefact under a JSON Schema, a deterministic oracle checks it, a bounded loop repairs
 it or asks the person — and its API, its model and its decisions are kanzo-ui's, on
@@ -76,13 +76,13 @@ of the built thread (2026-10-20) is that evidence: the summary of the files scro
 first message, the decisions and what they changed were screens apart, and the composer's two rows of
 pills read as clutter.
 
-![The composer: one +, file cards, a schema that comes with its data](assistant/composer.png)
+![The composer: one +, file cards, a vocabulary that comes with its data](assistant/composer.png)
 
 **The person never needs to know RDF, ShEx, SHACL or any particular vocabulary.** Every word the
 assistant shows is the person's or the data's: *Award · 1,018*, *won by*, *date of birth*. IRIs,
 shapes and the program are one click away, under *details* and **Open in the editor**, for whoever
 wants them, and nowhere else. This was already the rule for *what's in your data*; it now holds for
-the whole assistant, the schemas included.
+the whole assistant, the vocabularies included.
 
 ### One +, as Claude's
 
@@ -99,53 +99,54 @@ technology, not about their data. *What would reverse it:* people who cannot fin
 **+**, in a user test, where a pill per connection showed them — then the connections come back as
 pills, still one row, and the cards stay.
 
-### A dataset's schema is a file beside it
+### A dataset's vocabulary is a file beside it
 
-A schema — the kinds of thing a graph should have, their fields and the words for them, a ShEx, SHACL
-or OWL file underneath — is not the workspace's, set up once by an admin: it is **a dataset's**. The
-Nobel schema goes with the Nobel files, and another dataset in the same workspace has its own or none.
-So it is **a file like any other, recognised by its content**, and nothing else marks it:
+A vocabulary — the kinds of thing a graph should have, their fields and the words for them, a ShEx,
+SHACL or OWL file underneath — is not the workspace's, set up once by an admin: it is **a dataset's**.
+The Nobel vocabulary goes with the Nobel files, and another dataset in the same workspace has its own
+or none. So it is **a file like any other, recognised by its content**, and nothing else marks it:
 
-- **Picking files from a connection brings the schema files that connection holds**, as one card of
-  their own, *Nobel schema · comes with Nobel laureates*, which the person may remove. The data and
-  its schema are one connection: `s3://…/nobel/` holds `data/` and `shapes.shex`.
-- **A schema file attached on its own** — uploaded, or picked from any connection — is recognised the
-  same way and used for the files beside it. This is how one schema serves several datasets: it is
-  picked where it lives. The card says *schema*; the person never says so.
-- **A graph built before keeps its words**: *From an existing graph* brings its schema with it.
+- **Picking files from a connection brings the vocabulary files that connection holds**, as one card
+  of their own, *Nobel vocabulary · comes with Nobel laureates*, which the person may remove. The data
+  and its vocabulary are one connection: `s3://…/nobel/` holds `data/` and `shapes.shex`.
+- **A vocabulary file attached on its own** — uploaded, or picked from any connection — is recognised
+  the same way and used for the files beside it. This is how one vocabulary serves several datasets:
+  it is picked where it lives. The card says *vocabulary*; the person never says so.
+- **A graph built before keeps its words**: *From an existing graph* brings its vocabulary with it.
 
-What the schema does is unchanged from the person's side: the assistant uses its words where they
+What the vocabulary does is unchanged from the person's side: the assistant uses its words where they
 fit (*Person*, *date of birth*) and asks, in plain words, about what is not in it (*"motivation" isn't
-in your schema. What is it?*).
+in your vocabulary. What is it?*).
 
 **What goes: the Vocabulary kind of connection** (`ConnectionKind::Vocab`, the *Vocabulary* tab on
-Connections, the studio's *vocabulary* label) — a second way of saying what a file's content already
-says. A connection is a storage location and nothing more; the studio reads a file as a schema or as
-data by its format, as the **+** does. This was option (a) of 2026-10-20, a schema found by its content
-inside the data's connection, taken over (b), a data connection naming a Vocabulary connection: (b)
-kept the kind, added a link to it, and still needed recognition by content for a file attached on its
-own — three ways of saying one thing where (a) has one. And every dataset keasy has (Nobel,
-OpenFlights, SNB) has exactly one schema, beside its data under its own prefix, serving no other —
-the evidence (b)'s own reversal named.
+Connections, the studio's *vocabulary* label on a connection) — a second way of saying what a file's
+content already says. A connection is a storage location and nothing more; the studio reads a file as
+a vocabulary or as data by its format, as the **+** does. This was option (a) of 2026-10-20, a
+vocabulary found by its content inside the data's connection, taken over (b), a data connection naming
+a Vocabulary connection: (b) kept the kind, added a link to it, and still needed recognition by content
+for a file attached on its own — three ways of saying one thing where (a) has one. And every dataset
+keasy has (Nobel, OpenFlights, SNB) has exactly one vocabulary, beside its data under its own prefix,
+serving no other — the evidence (b)'s own reversal named.
 
-**Why *schema*, and not *dictionary* or *vocabulary*.** A *data dictionary*, to the people this is
-for, describes the columns of the files they have; this describes the graph they want — the opposite
-direction. *Vocabulary* names only the words, and the file is the structure too. *Schema* is the
-word a data person already uses for exactly that, and it is the word *Your graph* is drawn as
-([the *Schema* view](#one-diagram-two-views)): a schema attached is the one the graph starts from.
-*Model* would be the other candidate and is taken twice, by the model in the page and the `model` Task.
+**Why *vocabulary*** (the owner's call, 2026-10-20). It is the word of the hub it is heading for —
+LOV, *Linked Open Vocabularies* — and of the connections keasy already has, so the person learns it
+once. *Dictionary* was set aside first: a *data dictionary*, to the people this is for, describes the
+columns of the files they have, and this describes the graph they want — the opposite direction.
+*Schema* was the other candidate, the word *Your graph* is drawn as; it stays the name of that view,
+which draws whatever the graph is, from a vocabulary or not. *What would reverse it:* people in a user
+test who read *vocabulary* as a list of words and do not expect it to shape their graph.
 
-**Where it is going: Alejandría**, a hub of schemas shared and versioned on their own — LOV, with
-search over terms and a schema proposed for files that bring none. It is the catalogue (b) would have
-grown connections into, which is why (b) is not a step towards it: a schema that comes with its data
-stays a file beside it, and one from the hub is a source the **+** lists, *From Alejandría*. The
-candidate terms `model` ranks ([below](#model--structure-from-the-profile-names-from-the-model)) are
-then a search of the hub. The person's word is the hub's word too, decided once for both.
+**Where it is going: Alejandría**, a hub of vocabularies shared and versioned on their own — LOV, with
+search over terms and a vocabulary proposed for files that bring none. It is the catalogue (b) would
+have grown connections into, which is why (b) is not a step towards it: a vocabulary that comes with
+its data stays a file beside it, and one from the hub is a source the **+** lists, *From Alejandría*.
+The candidate terms `model` ranks ([below](#model--structure-from-the-profile-names-from-the-model))
+are then a search of the hub.
 
-*What would reverse it:* schemas that serve many datasets before Alejandría exists — then they are
-picked by hand from where they live until it does. Or
-people who do not find a schema that came with their files, because a card among file cards reads as
-data — then it gets a row of its own above them, still with no choice to make.
+*What would reverse it:* vocabularies that serve many datasets before Alejandría exists — then they
+are picked by hand from where they live until it does. Or people who do not find a vocabulary that
+came with their files, because a card among file cards reads as data — then it gets a row of its own
+above them, still with no choice to make.
 
 ### The panel: *Your graph*, *Data*, *Preview*
 
@@ -314,7 +315,7 @@ conversation stays open, and a graph's record is that state rather than the conv
 (`@kanzo-tech/graph/diagram` and its *Schema* and *Program* views, [above](#one-diagram-two-views)), `Shell`'s parts,
 and the `Command` and `TreeView` the **+**'s connection list is made of — all but the first two exist.
 
-**keasy's**: the **+** and its file cards over the connections' listings; the recognising of a schema
+**keasy's**: the **+** and its file cards over the connections' listings; the recognising of a vocabulary
 file and bringing it with its connection's files; the panel's three tabs and what each reads; the one state of the
 questions, answered in either place; the edits on the panel said as the person's messages; closing
 the conversation on build.
@@ -376,19 +377,19 @@ Task gave up with the oracles' words in a problem titled *The model call failed*
   `model/unbacked-edge` cannot fire.
 - **The model names, and picks words.** Contract: `{ types: [{ source, name, term? }], edges: [{ id,
   label }], fields: [{ source, column, name, term? }] }`, every `source`, `column` and edge `id` an enum
-  of the structure's. With a schema, `term` is an enum of the candidates keasy found for that
+  of the structure's. With a vocabulary, `term` is an enum of the candidates keasy found for that
   source or column — by label, synonym and the column's sample values — and the model ranks them or
   says none; without one, there is no `term`. Oracles: unique names, no word of Fossil's.
 - **Decisions, from the structure and the profile, never the model:** a source with several candidate
   keys that no edge lands on (`key/<source>`, safe default); a source that is a bridge *or* a thing
   counted on its own (`count/<edge>`, blocks — each counts differently); a column with no term in the
-  schema (*"motivation" isn't in your schema. What is it?* — keep it as is, say what it is, or
+  vocabulary (*"motivation" isn't in your vocabulary. What is it?* — keep it as is, say what it is, or
   leave it out; safe default: keep it). Each is asked in plain words, in the conversation and on the
   graph ([above](#questions-in-two-places-one-state)).
 - **A failure says what it is.** The Task's attempts spent is a problem of its own, not `llm/failed`:
   what was tried, and why it did not hold, under a title that does not blame the model call.
 - IRIs are unchanged: keasy's, computed by fossil (`vocabularyOf`, `subjectOf`), never the model's; a
-  term from a schema is the schema's IRI.
+  term from a vocabulary is the vocabulary's IRI.
 - *What would reverse it:* data whose links are not exact inclusions — dirty keys, a partial relation —
   where the profile finds no edge a person sees at once; then the profile reports approximate
   inclusions with their share, and those become decisions.
@@ -752,5 +753,5 @@ model double answering at a model's pace, and is rewritten with each step.
 
 **The order of what was decided on 2026-10-20**, each useful alone: (1) `model`'s structure from the
 profile and the honest failure — it mends what the owner hit, with no new layout; (2) the shell and
-the panel with *Data* and *Preview*, the thread's results moving into it; (3) kanzo-ui's `graph/diagram` with its *Schema* view, *Your graph* on it, and questions on the graph; (4) the **+** and file cards; (5) schema files recognised by content, the Vocabulary kind of connection removed,
-and terms from the schema in `model`; (6) the *Program* view in the studio, linked to the editor, once fossil gives each rule's span. The `nobel-assistant` demo follows each step.
+the panel with *Data* and *Preview*, the thread's results moving into it; (3) kanzo-ui's `graph/diagram` with its *Schema* view, *Your graph* on it, and questions on the graph; (4) the **+** and file cards; (5) vocabulary files recognised by content, the Vocabulary kind of connection removed,
+and terms from the vocabulary in `model`; (6) the *Program* view in the studio, linked to the editor, once fossil gives each rule's span. The `nobel-assistant` demo follows each step.

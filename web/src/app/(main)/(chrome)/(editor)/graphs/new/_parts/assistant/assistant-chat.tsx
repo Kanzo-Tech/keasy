@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Link } from "@kanzo-tech/navigation/next";
 import {
   Conversation,
@@ -12,10 +12,21 @@ import {
   PromptInputTextarea,
   PromptInputToolbar,
 } from "@kanzo-tech/ai";
-import { Button, Resizable, ResizablePanel, ResizableResizeTrigger, ShellAside } from "@kanzo-tech/ui";
+import {
+  Button,
+  Resizable,
+  ResizablePanel,
+  ResizableResizeTrigger,
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetHeader,
+  SheetTrigger,
+  ShellAside,
+} from "@kanzo-tech/ui";
 import { HeaderEnd } from "@/app/(main)/_parts/header-end";
 import type { AssistantMessage, FileReference } from "@/lib/assistant-conversation";
-import { converse, graphName, messagesOf, NO_REPLIES, placeholderOf, type Replies, type Turn, type Waiting } from "./conversation";
+import { converse, graphName, isChange, messagesOf, NO_REPLIES, placeholderOf, type Replies, type Turn, type Waiting } from "./conversation";
 import { type AssistantData, blocks, type BuildProgress, type Question } from "./model";
 import { AssistantPanel, type PanelTab } from "./panel";
 import type { Preview } from "./preview-tab";
@@ -26,6 +37,7 @@ import {
   AskTurn,
   AssumedTurn,
   BuildTurn,
+  ChangeTurn,
   CheckpointTurn,
   DecideTurn,
   Reply,
@@ -133,8 +145,11 @@ export function AssistantChat(props: AssistantChatProps) {
     onSave?.(JSON.parse(transcript) as AssistantMessage[]);
   }, [replied, settling, transcript, onSave]);
 
+  // The last typed line that asked the graph to change: answered once, where it was typed, and not kept.
+  const [change, setChange] = useState<string | null>(null);
   const ask = (id: string, text: string) => {
     const t = text.trim();
+    setChange(null);
     if (!t || questions.some((q) => q.text === t)) return;
     onQuestionsChange([...questions, { id, text: t, answerable: null }]);
     setTab("preview");
@@ -150,9 +165,12 @@ export function AssistantChat(props: AssistantChatProps) {
   };
 
   const open = (props.decisions ?? []).filter(blocks);
+  const narrow = useNarrow();
+  const [sheet, setSheet] = useState(false);
   const thread = useRef<HTMLUListElement>(null);
-  // The build's wait leads to the first decision it waits on.
+  // The build's wait leads to the first decision it waits on — out of the sheet, on a phone.
   const toOpen = () => {
+    setSheet(false);
     const id = open[0]?.decision.id;
     const turn = id ? thread.current?.querySelector(`[data-decision="${CSS.escape(id)}"]`) : null;
     turn?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -236,6 +254,18 @@ export function AssistantChat(props: AssistantChatProps) {
               </div>
             )}
             {turns.map((turn, index) => draw(turn, index))}
+            {change !== null && !closed && (
+              <>
+                <Reply>{change}</Reply>
+                <ChangeTurn
+                  onData={() => {
+                    setTab("data");
+                    if (narrow) setSheet(true);
+                  }}
+                  text={change}
+                />
+              </>
+            )}
             {props.failures.map((f) => (
               <TaskFailed failure={f} key={f.task} />
             ))}
@@ -249,7 +279,7 @@ export function AssistantChat(props: AssistantChatProps) {
         <ClosedBar name={name} />
       ) : (
         <Composer
-          onAsk={(text) => ask(`written-${++written}`, text)}
+          onAsk={(text) => (isChange(text) ? setChange(text.trim()) : ask(`written-${++written}`, text))}
           onPick={props.onPick}
           onClear={props.onClear}
           onSend={(text) => reply({ about: text })}
@@ -263,11 +293,42 @@ export function AssistantChat(props: AssistantChatProps) {
     </div>
   );
 
+  const panel = (
+    <AssistantPanel
+      done={props.build !== null || props.built === true}
+      onBuild={buildNow}
+      onEditor={onAdvanced}
+      onOpen={toOpen}
+      onTab={setTab}
+      open={open.length}
+      preview={props.preview}
+      program={props.program}
+      questions={questions}
+      relations={props.understanding.relations}
+      tab={tab}
+      things={props.understanding.things}
+    />
+  );
+
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <HeaderEnd>{props.status}</HeaderEnd>
       {!sent ? (
         chat
+      ) : narrow ? (
+        // A phone has no beside: the panel is a sheet over the conversation, opened from a bar.
+        <Sheet onOpenChange={(d) => setSheet(d.open)} open={sheet}>
+          <SheetTrigger asChild>
+            <Button className="mx-3 mt-2 shrink-0 justify-start" variant="outline">
+              {barOf(props.understanding.things.length, open.length)}
+            </Button>
+          </SheetTrigger>
+          {chat}
+          <SheetContent className="h-[85dvh]" placement="bottom">
+            <SheetHeader title="Your graph" />
+            <SheetBody className="flex min-h-0 flex-1 flex-col p-0">{panel}</SheetBody>
+          </SheetContent>
+        </Sheet>
       ) : (
         <Resizable
           className="min-h-0 flex-1"
@@ -283,20 +344,7 @@ export function AssistantChat(props: AssistantChatProps) {
           <ResizableResizeTrigger id="conversation:panel" withHandle />
           <ResizablePanel className="flex min-h-0 min-w-0 flex-col" id="panel">
             <ShellAside aria-label="Your graph" className="size-full min-h-0 border-s-0" side="end">
-              <AssistantPanel
-                done={props.build !== null || props.built === true}
-                onBuild={buildNow}
-                onEditor={onAdvanced}
-                onOpen={toOpen}
-                onTab={setTab}
-                open={open.length}
-                preview={props.preview}
-                program={props.program}
-                questions={questions}
-                relations={props.understanding.relations}
-                tab={tab}
-                things={props.understanding.things}
-              />
+              {panel}
             </ShellAside>
           </ResizablePanel>
         </Resizable>
@@ -304,6 +352,27 @@ export function AssistantChat(props: AssistantChatProps) {
     </div>
   );
 }
+
+/** The phone's bar to the panel: *Your graph · 5 kinds · 1 open question*. */
+export function barOf(kinds: number, open: number): string {
+  const parts = ["Your graph", kinds === 1 ? "1 kind" : `${kinds} kinds`];
+  if (open > 0) parts.push(open === 1 ? "1 open question" : `${open} open questions`);
+  return parts.join(" · ");
+}
+
+/** Narrower than the panel and the conversation fit side by side: below `md`, as the app's own sidebar turns. */
+const NARROW = "(max-width: 767px)";
+const subscribe = (change: () => void) => {
+  const query = window.matchMedia(NARROW);
+  query.addEventListener("change", change);
+  return () => query.removeEventListener("change", change);
+};
+const useNarrow = () =>
+  useSyncExternalStore(
+    subscribe,
+    () => window.matchMedia(NARROW).matches,
+    () => false,
+  );
 
 const ABOUT_EXAMPLE = "e.g. Nobel prizes and the people who won them";
 

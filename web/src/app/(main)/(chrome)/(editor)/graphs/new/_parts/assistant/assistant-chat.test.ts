@@ -310,6 +310,36 @@ describe("the assistant, as a conversation", () => {
     expect(host.querySelector("textarea")?.value).toBe("");
   });
 
+  it("does not take typed text that changes the graph as a question, and says where that is changed", async () => {
+    const { host } = mount({ selected: new Set(["nobel:laureates.csv"]), decisions: [] });
+    await through(host);
+    write(host, "call Laureate Person");
+    await act(async () => send(host).click());
+    expect(host.querySelector("[data-question]")).toBeNull();
+    expect(replies(host).at(-1)).toBe("call Laureate Person");
+    expect(host.querySelector("[data-change]")?.textContent).toContain("changes your graph rather than asking your data");
+    await act(async () => button(host, "Data")!.click());
+    expect(host.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe("Data");
+    // The next question is a question, and the reply to the change goes.
+    write(host, "Who won twice?");
+    await act(async () => send(host).click());
+    expect(host.querySelector("[data-change]")).toBeNull();
+    expect(host.querySelector("[data-question]")?.textContent).toBe("Who won twice?");
+  });
+
+  it("on a phone, puts the panel in a sheet opened from a bar that says what is in it", async () => {
+    const matchMedia = window.matchMedia;
+    window.matchMedia = ((query: string) => ({ ...matchMedia.call(window, query), matches: true, addEventListener() {}, removeEventListener() {} })) as typeof matchMedia;
+    try {
+      const { host } = mount({ selected: new Set(["nobel:laureates.csv"]), decisions: [award] });
+      await through(host);
+      expect(host.querySelector('[aria-label="Your graph"]')).toBeNull();
+      expect(button(host, "Your graph · 1 kind · 1 open question")).toBeDefined();
+    } finally {
+      window.matchMedia = matchMedia;
+    }
+  });
+
   it("marks with a checkpoint where the conversation turns to asking the data, once the preview answers", async () => {
     const { host, render } = mount({
       selected: new Set(["nobel:laureates.csv"]),

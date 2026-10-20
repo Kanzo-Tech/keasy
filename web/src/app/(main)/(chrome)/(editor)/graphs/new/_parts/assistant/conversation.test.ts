@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { toStored } from "@/lib/assistant-conversation";
-import { converse, graphName, messagesOf, NO_REPLIES, placeholderOf, type Replies, restore } from "./conversation";
+import { converse, graphName, isChange, messagesOf, NO_REPLIES, placeholderOf, type Replies, restore } from "./conversation";
 import { blocks, type DecisionItem } from "./model";
 
 /** No safe default: whether a shared Nobel is one award or two has two right answers. */
@@ -172,5 +172,15 @@ describe("what is kept of the conversation", () => {
     expect(restore([])).toEqual({ replies: NO_REPLIES, files: [], chosen: {}, questions: [], program: null });
     const unsent = messagesOf(converse({ selected: new Set(), reading: null, decisions: null, questions: [] }, NO_REPLIES).turns, { files: [], program: null });
     expect(restore(unsent).replies).toEqual(NO_REPLIES);
+  });
+});
+
+describe("typed text that changes the graph", () => {
+  it("is told from a question by its first word, and a question mark always makes it a question", () => {
+    expect(isChange("call Laureate Person")).toBe(true);
+    expect(isChange("Rename awards to prizes.")).toBe(true);
+    expect(isChange("Who has won more than one Nobel?")).toBe(false);
+    expect(isChange("How many laureates are women")).toBe(false);
+    expect(isChange("remove share?")).toBe(false);
   });
 });

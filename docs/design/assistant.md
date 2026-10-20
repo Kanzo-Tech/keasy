@@ -286,47 +286,43 @@ shell's, through `HeaderEnd` as Discover's controls do. The trail reads *Dashboa
 graph*, and once the conversation has built a graph, the graph's name in its place
 (`/graphs/new/assistant?graph=<id>`, as `?draft=` names a recipe). **The assistant's top bar goes**: its *Graphs*
 and *New graph* repeated the breadcrumbs beside it, and its other button, **Advanced**, becomes an
-action on the step that writes the program — **Open in the editor**, which leaves for the studio with
+action on the panel, beside **Build the graph**, once there is a program — **Open in the editor**, which leaves for the studio with
 the program and the picked files as its sources, as Advanced did. An action on the thing it acts on is
 found there; one in a bar is found by those who look for a bar. *What would reverse it:* a header that
 cannot hold the badge — on a phone, where the trail takes its width — then the badge goes in the
 composer's toolbar, as Ask's does.
 
-### Steps while it works
+### One line while it works
 
-Each piece of work is **a step with its state**, in a list headed *What I am doing*: *Read 6 files ·
-1,026 awards, 1,012 laureates*, *Proposed the types*, *To decide before building: 1, with no safe
-answer*, *Write the program*, *Run the preview*. A step is done, under way (or waiting on the person)
-or still to come, and **the steps still to come are on the list from the start**, so the person reads
-what is left as well as what is done. A step's state is derived each time from what the conversation
-already knows (`steps.ts`: the reading, the `model` Task, the decisions, the program, the preview, the
-build) and is not kept; a Task's problem is said where it stopped, with **Retry**, as before. The
-`requirements` Task is not a step: while it runs, the `Suggestions` show as pending pills where the
-questions will be. There are three lists in the thread — reading and proposing, writing and running,
-and building — and the work to come on the first moves to the second once the questions are asked.
+**The thread says what the assistant is doing now, in one line, and the panel holds what it found.**
+While work runs, the last line of the thread is that work with `Working`'s spinner — *Reading 6
+files*, *Naming the kinds of thing*, *Writing the program*, *Running the preview*, *Building the
+graph* — and it goes when the work is done: the result is already in the panel (*Data*, *Your
+graph*, *Preview*), and the assistant's next message says what changed in it, in a sentence. A Task's
+problem stays where the line was, with **Retry**. The line is derived each time from what the
+conversation already knows (`steps.ts`: the reading, the `model` Task, the program, the preview, the
+build) and is not kept. While `requirements` runs, the `Suggestions` show as pending pills where the
+questions will be, as before.
 
-**The list is AI Elements' `ChainOfThought` in shape, not `Tool`.** A step takes `icon`, `label`,
-`description` and a `status` of `complete`, `active` or `pending`, in `chain-of-thought.tsx` — a thin
-local component, a candidate for `@kanzo-tech/ai` in kanzo-ui 0.47 so that replacing it is an import
-swap. `Tool` was the first choice and is not the right one: it is a bordered, collapsible card bound
-to an AI SDK tool part, with a badge for its state, and cannot say what has not started. The icons are
-the library's: `Working`'s spinner for a step under way, so there is still one vocabulary for busy.
-*What would reverse it:* steps that carry what a plain line cannot — a Task's attempts and its oracles'
-diagnostics, opened on request — then a step that has them is a `Tool`, and the plain line stays for
-the rest.
-
-*What would reverse it (steps at all):* people in a user test who cannot say what the assistant was
-doing from its steps — then a step is a sentence again, with its bar.
+Decided 2026-10-20 over a list headed *What I am doing* — every step done, under way and to come, in
+three lists down the thread (AI Elements' `ChainOfThought` in shape, `chain-of-thought.tsx`). With the
+panel beside the thread the list said twice what the panel shows (*Read 6 files · 1,026 awards*
+beside *Data*), and what is left to do is the panel's too: an open **?**, the *Preview* not yet run,
+**Build the graph** saying what it waits on. `chain-of-thought.tsx` goes, and it is no longer a
+candidate for `@kanzo-tech/ai`. *What would reverse it:* people in a user test who cannot say what is
+left before they can build — then the steps to come come back, as one list in the panel, not in the
+thread. Or a Task whose attempts and oracles' diagnostics are wanted on request — then its line opens
+as AI SDK's `Tool` does, and the rest stay plain.
 
 ### Building closes the conversation
 
 **Built 2026-10-14.** **Build the graph**, from the *Preview* tab or the conversation, adds the person's message,
-then its steps, then *Your graph is ready* in a tinted panel with **Ask your data**, **Open the graph**
+then its line while it builds, then *Your graph is ready* in a tinted panel with **Ask your data**, **Open the graph**
 and the person's questions as links to Discover. The graph is named after the connections its files were
 read through (*Nobel laureates*), since the conversation has no other name to give it. The composer is
 replaced by *This conversation built <graph> and stays as it was built · Start a new one from here*,
 which opens a new assistant, clean. A conversation opened after its build, by its id, is
-the same thread read to its end under the same bar, with nothing to answer, choose or save. The build's step says *Built the
+the same thread read to its end under the same bar, with nothing to answer, choose or save. The build's line says *Built the
 graph from every row* and no count: the run does not return one, and node and edge counts wait for it. This is the storage rule already — a conversation a graph was
 built from is that graph's record ([below](#the-conversation-is-kept)) — now said in the UI where it
 applies, instead of as a note above the first message when a built one is opened and a save that
@@ -353,7 +349,7 @@ oracles check them, and each turn is a Task's output or the person's pick from i
 types is an instruction to the model.
 
 Shapes, mapping and program are generated and verified in the background (`requirements`, `model`,
-`mapping`, then `emit`, as one `defineFlow`). **Open in the editor**, on the step that writes the
+`mapping`, then `emit`, as one `defineFlow`). **Open in the editor**, on the panel once there is a
 program, keeps ShEx and the Fossil editor under the same checks.
 
 **Competency questions are Ask's questions.** "Done" is each selected question answered by Ask over
@@ -390,7 +386,7 @@ interpretation. Every Task is pure — no React, no engine of its own — and li
 few sample rows — in place of introspect's `DESCRIBE`. *Here's what's in your data* is drawn from
 it before any model is asked: one thing per file, its count when the profile read every row
 (`sampled` false; a sampled count is not said), and what it holds. *What would reverse it:* a file
-whose profile takes too long for the reading step; then the step reads `depth: "types"` first and
+whose profile takes too long for the reading line; then the reading takes `depth: "types"` first and
 the rest in the background, the way fossil's profile already splits.
 
 ### `model` — structure from the profile, names from the model
@@ -440,7 +436,7 @@ Task gave up with the oracles' words in a problem titled *The model call failed*
   line (`mapping/<fossil code>`); every accepted type has a mapping (`mapping/unmapped`); each
   mapping's `@subject` is the one keasy computed (`mapping/subject`). Three attempts, then the
   diagnostics are the answer.
-- **What it fills**: the program — prelude and mappings — which **Open in the editor**, on its step,
+- **What it fills**: the program — prelude and mappings — which **Open in the editor**, on the panel,
   opens. The chat never shows Fossil. It runs once the person has asked all they wanted: the page has one model, and the
   question chips are what the person is waiting on until then. *What would reverse it:* a preview
   that must start sooner for the first answer to land under a minute — then it runs as soon as the
@@ -504,7 +500,7 @@ graph; [cleanup](cleanup.md)). Three of the Tasks' pieces re-derived what a libr
   catalogue states; it goes when `@fossil-lang/types` exports the table.
 
 **Failure is said, not swallowed.** A Task that throws, or whose oracles still refuse after its
-attempts, fails its step with its problem (`llm/failed` when it has no code of its own) and **Retry**
+attempts, fails where its line was, with its problem (`llm/failed` when it has no code of its own) and **Retry**
 on it; nothing downstream runs on a refused artefact.
 
 ## The preview is in the panel
@@ -536,7 +532,7 @@ whole graph. A failed run is said with its problem and a retry (`rerun`).
 
 **The whole graph is built once, when the person asks** — *Build the graph*: `useBuild(program,
 profiled, { conversation })` (`graphs/new/_parts/use-build.ts`) makes it as the studio does, a draft
-submitted and run under its job (`into: { job }`), and `lib/fossil/build.ts` is the machine its step
+submitted and run under its job (`into: { job }`), and `lib/fossil/build.ts` is the machine its line
 reads, `building` → `done` or `failed`. A build outlives the assistant's page; the last message's links
 carry the person's question to Discover as `?q=`, and Ask sends it once the model is ready and takes it
 off the URL as it does, so nothing asks it twice.
@@ -550,7 +546,7 @@ the graph holds.
 
 **Build the graph** builds the current program, and saves the conversation first and
 builds under the id that save answers, so a graph always names the conversation as it stood when it
-was asked for. Its step reads `building`, `failed` with
+was asked for. Its line reads `building`, `failed` with
 its problem and **Retry**, and `done`, after which *Your graph is ready* carries **Ask your data**,
 **Open the graph** and a link per question, `askHref(graphId, question)`. Nothing is changed after a
 build in the conversation it closed: a decision changed is a new conversation, and building there makes a new graph.
@@ -586,14 +582,14 @@ of the conversation it came from. `useAssistantConversation(id?)`
 kind, and its id is the kind and what it is about (`decide:<decision>`, `asked:<question>`,
 `preview`), so a save of a message already there replaces it and a new result adds one.
 The person's messages are `user` messages (`sent`, `decided`, `asked`, `asked-all`, `build-reply`): the
-first carries `data-files` and `data-about` together, as the composer sends them, and the steps are
+first carries `data-files` and `data-about` together, as the composer sends them, and the working line is
 not kept — they are said again from what the conversation knows; `data-decision` on a decision answered (`option: null` while it is asked;
 the last word on each wins), and `data-question` per question kept. The preview message carries
 `data-program`: the program it ran and the option each decision stood at. With the preview moving to the
 panel ([above](#the-preview-is-in-the-panel)) it is still kept this way, as the conversation's last word
 on what was previewed. `restore` reads the same parts back, and the thread starts where it stood: the
 files read again without listing their folders (a file whose connection is gone is said, as a problem
-of the reading step), the last choices taken again, an assumption left to its default,
+of the reading), the last choices taken again, an assumption left to its default,
 the questions kept, and its program previewed until the mapping writes it again. The `model` Task is
 asked again, from the profile, so a decision is raised again by its id. *What would reverse it:* a
 model that raises other

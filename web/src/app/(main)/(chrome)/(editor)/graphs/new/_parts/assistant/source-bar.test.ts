@@ -31,38 +31,54 @@ afterEach(() => {
   document.body.innerHTML = "";
 });
 
-function mount(selected: string[], onPick = vi.fn(), onClear = vi.fn()) {
+function mount(selected: string[], onPick = vi.fn(), onDrop = vi.fn()) {
   const host = document.body.appendChild(document.createElement("div"));
   const root = createRoot(host);
-  act(() => root.render(createElement(SourceBar, { connections: [connection], list, selected: new Set(selected), onPick, onClear })));
+  act(() => root.render(createElement(SourceBar, { connections: [connection], list, selected: new Set(selected), onPick, onDrop })));
   mounted.push(root);
-  return { host, onPick, onClear };
+  return { host, onPick, onDrop };
 }
 
-const open = async () => {
-  await act(async () => document.querySelector<HTMLElement>('[data-connection="nobel"] button')!.click());
-  await act(async () => {});
-};
+const settle = () => act(async () => {});
+const item = (text: string) =>
+  [...document.querySelectorAll<HTMLElement>('[data-slot="command-item"]')].find((i) => i.textContent?.includes(text))!;
 
-describe("the pills above the composer", () => {
-  it("is a pill per connection, + @name while nothing is picked, and the count with a cross once something is", () => {
-    expect(mount([]).host.querySelector("[data-connection]")?.textContent).toBe("@nobel");
-    const picked = mount(["nobel:laureates.csv"]);
-    expect(picked.host.querySelectorAll("[data-connection]")[0]?.textContent).toContain("@nobel · 1 file");
-    expect(picked.host.querySelector('[aria-label="Remove @nobel"]')).not.toBeNull();
+/** The + opened, and the connection opened in it: its files listed. */
+async function openNobel() {
+  await act(async () => document.querySelector<HTMLElement>('[aria-label="Add files"]')!.click());
+  await settle();
+  await act(async () => item("nobel").click());
+  await settle();
+}
+
+describe("the + above the composer, and the file cards", () => {
+  it("is one +, and each picked file a card; past three, the rest of a connection is one card", () => {
+    expect(mount([]).host.querySelectorAll("[data-file-card]")).toHaveLength(0);
+    const ids = ["a.csv", "b.csv", "c.csv", "d.csv", "e.csv"].map((p) => `nobel:${p}`);
+    const { host, onDrop } = mount(ids);
+    const cards = [...host.querySelectorAll("[data-file-card]")];
+    expect(cards.map((c) => c.textContent)).toEqual(["a.csv", "b.csv", "c.csv", "+2 more files · nobel"]);
+    act(() => host.querySelector<HTMLElement>('[aria-label="Remove a.csv"]')!.click());
+    expect(onDrop).toHaveBeenCalledWith(["nobel:a.csv"]);
+    act(() => host.querySelector<HTMLElement>('[aria-label="Remove +2 more files · nobel"]')!.click());
+    expect(onDrop).toHaveBeenLastCalledWith(["nobel:d.csv", "nobel:e.csv"]);
   });
 
-  it("opens a menu of what the connection lists: Select all, each file checkable with its size, a submenu for a folder", async () => {
+  it("lists the connections, then a connection's files, every folder's included, each picked or dropped", async () => {
     const { onPick } = mount(["nobel:awards.csv"]);
-    await open();
-    const items = [...document.querySelectorAll('[role="menuitemcheckbox"]')];
-    expect(items.map((i) => i.textContent)).toEqual([expect.stringContaining("laureates.csv"), expect.stringContaining("awards.csv")]);
-    expect(items.map((i) => i.getAttribute("aria-checked"))).toEqual(["false", "true"]);
-    expect(document.body.textContent).toContain("Select all");
-    expect(document.body.textContent).toContain("prizes/");
-    // A folder is listed only when its submenu is, not before.
-    expect(list.mock.calls.map(([node]) => node.under)).toEqual([""]);
-    await act(async () => (items[0] as HTMLElement).click());
+    await openNobel();
+    const files = [...document.querySelectorAll('[data-slot="command-item"]')].filter((i) => i.textContent?.includes(".csv"));
+    expect(files.map((i) => i.textContent)).toEqual([
+      expect.stringContaining("prizes/peace.csv"),
+      expect.stringContaining("laureates.csv"),
+      expect.stringContaining("awards.csv"),
+    ]);
+    expect(files.map((i) => i.hasAttribute("data-picked"))).toEqual([false, false, true]);
+    await act(async () => item("laureates.csv").click());
     expect(onPick).toHaveBeenCalledWith([laureates], true);
+    await act(async () => item("awards.csv").click());
+    expect(onPick).toHaveBeenLastCalledWith([awards], false);
+    await act(async () => item("Select all").click());
+    expect(onPick).toHaveBeenLastCalledWith([nested, laureates, awards], true);
   });
 });

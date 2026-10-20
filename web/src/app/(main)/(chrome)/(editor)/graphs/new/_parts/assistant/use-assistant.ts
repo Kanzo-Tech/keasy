@@ -141,7 +141,8 @@ export interface Assistant extends AssistantData {
   /** Pick `files`, or drop them: what a pill's menu does. */
   pick: (files: readonly SourceFile[], on: boolean) => void;
   /** Drop every file of a connection: the cross on its pill. */
-  clear: (connection: string) => void;
+  /** Drops picked files by id. */
+  drop: (ids: readonly string[]) => void;
   /** The person's pick of a decision's option. */
   choose: (decision: string, option: string) => void;
   /** The picked files as the program's binding lines: what Open in the editor opens the editor with. */
@@ -196,8 +197,8 @@ export function useAssistant({
       }),
     [],
   );
-  const clear = useCallback(
-    (connection: string) => setChosenFiles((prev) => new Map([...prev].filter(([id]) => !id.startsWith(`${connection}:`)))),
+  const drop = useCallback(
+    (ids: readonly string[]) => setChosenFiles((prev) => new Map([...prev].filter(([id]) => !ids.includes(id)))),
     [],
   );
   const [chosen, setChosen] = useState<Record<string, string>>(() => ({ ...seed?.chosen }));
@@ -351,7 +352,7 @@ export function useAssistant({
     failures,
     questions: questions.map((q) => ({ ...q, answerable: answerable(q) })),
     pick,
-    clear,
+    drop,
     choose: (decision, option) => setChosen((prev) => ({ ...prev, [decision]: option })),
     // The mapping's program once it holds; until then the picked files' bindings.
     program: mapped.data ?? picked.map((f) => f.line).join("\n"),

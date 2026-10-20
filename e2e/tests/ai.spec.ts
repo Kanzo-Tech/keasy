@@ -34,11 +34,11 @@ const PEOPLE = readFileSync(new URL("../fixtures/data/people.csv", import.meta.u
 const MODEL = "You design what a person's data is about";
 const REQUIREMENTS = "You suggest questions a person could ask";
 
-/** What the model proposes over the people fixture: one type, which raises no decision that blocks. */
-const PERSON = {
-  types: [{ name: "Person", source: "people", key: "person_id", fields: [{ name: "name", column: "name" }, { name: "city", column: "city" }] }],
-  edges: [],
-};
+/**
+ * What the model names over the people fixture: its one thing, which raises no decision that blocks.
+ * The structure is the profile's; a field it leaves unnamed keeps its column's name.
+ */
+const PERSON = { types: { people: "Person" }, edges: {}, fields: { "people.signed_up_on": "signedUpOn" } };
 
 /**
  * The guided chat's questions turn, over the suite's source: the people file picked from its pill and

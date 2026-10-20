@@ -8,11 +8,12 @@ import { lower, WORDS } from "@/lib/vocabulary";
 
 /**
  * Failures the browser names itself, in the same `area/kind` grammar as fossil's and the server's: a
- * query the engine refused, a model call that failed uncoded, a graph whose files do not read as
- * Apache GraphAr, and anything uncoded. A failure the server names too keeps the server's code
+ * query the engine refused, a model call that failed uncoded, a Task whose answer its oracles still
+ * refused when its attempts were spent (in its own words: what it wrote and why it did not hold), a
+ * graph whose files do not read as Apache GraphAr, and anything uncoded. A failure the server names too keeps the server's code
  * (`rules/refused`, rudof refusing a rules document).
  */
-export type ClientCode = "query/failed" | "llm/failed" | "graph/unreadable" | "web/unknown";
+export type ClientCode = "query/failed" | "llm/failed" | "task/unheld" | "graph/unreadable" | "web/unknown";
 
 /** A failure the browser raises itself, coded so it reaches the screen by the same path as the others. */
 export class ClientError extends Error {

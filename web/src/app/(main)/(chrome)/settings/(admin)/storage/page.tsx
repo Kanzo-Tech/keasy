@@ -105,7 +105,7 @@ function Form({ credentials, sink }: { credentials: Credential[]; sink?: Connect
   } as const;
   const create = $api.useMutation("post", "/v1/connections", { meta });
   const update = $api.useMutation("patch", "/v1/connections/{name}", { meta });
-  const target = { url: url.trim(), kind: "data" as const, direction: "sink" as const };
+  const target = { url: url.trim(), direction: "sink" as const };
 
   const save = () =>
     sink

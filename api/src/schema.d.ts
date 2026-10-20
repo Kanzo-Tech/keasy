@@ -470,8 +470,6 @@ export interface components {
             operation: components["schemas"]["Operation"];
             result: components["schemas"]["Outcome"];
         };
-        /** @enum {string} */
-        ConnectionKind: "data" | "vocab";
         ConnectionView: components["schemas"]["Provenance"] & {
             /**
              * @description What the caller may do to it: test it (any editor; the sink, an admin),
@@ -860,7 +858,6 @@ export interface components {
         };
         StorageTarget: {
             direction?: components["schemas"]["Direction"];
-            kind?: components["schemas"]["ConnectionKind"];
             /**
              * Format: uri
              * @description The prefix the connection is: `s3://bucket/prefix/` or `az://container/prefix/`.

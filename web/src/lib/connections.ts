@@ -58,7 +58,7 @@ export interface StorageConnection extends Required<Schemas["StorageTarget"]> {
 
 /** The storage connections among `all`, sources and sink alike. */
 export function storageConnections(all: Connection[]): StorageConnection[] {
-  return all.map((c) => ({ kind: "data", direction: "source", ...c.target, name: c.name, secret: c.secret }));
+  return all.map((c) => ({ direction: "source", ...c.target, name: c.name, secret: c.secret }));
 }
 
 /**

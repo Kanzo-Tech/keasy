@@ -287,6 +287,7 @@ export function AssistantChat(props: AssistantChatProps) {
           list={props.list}
           placeholder={placeholderOf(waiting, previewed)}
           selected={props.selected}
+          vocabularies={props.vocabularies}
           waiting={waiting}
         />
       )}
@@ -411,6 +412,7 @@ function Composer({
   connections,
   list,
   selected,
+  vocabularies,
   onPick,
   onDrop,
   onSend,
@@ -418,7 +420,7 @@ function Composer({
 }: {
   waiting: Waiting;
   placeholder: string;
-} & Pick<SourceBarProps, "connections" | "list" | "selected" | "onPick" | "onDrop"> & {
+} & Pick<SourceBarProps, "connections" | "list" | "selected" | "vocabularies" | "onPick" | "onDrop"> & {
     onSend: (about: string) => void;
     onAsk: (text: string) => void;
   }) {
@@ -442,7 +444,16 @@ function Composer({
           send();
         }}
       >
-        {first && <SourceBar connections={connections} list={list} onDrop={onDrop} onPick={onPick} selected={selected} />}
+        {first && (
+          <SourceBar
+            connections={connections}
+            list={list}
+            onDrop={onDrop}
+            onPick={onPick}
+            selected={selected}
+            vocabularies={vocabularies}
+          />
+        )}
         <PromptInputTextarea
           aria-label={first ? "What is this data about?" : "Your question"}
           className="min-h-14"

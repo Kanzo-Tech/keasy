@@ -57,7 +57,7 @@ reverses the rule that said an assumption's options are always in place, with no
 they were a second door to the options of the decision it assumed for, and nobody read them as one —
 the artifact the thread was designed in (*Asistente en un hilo*) draws the line alone, and a grid of
 radios under every assumption turned a line into a form. A decision with no safe answer is the
-opposite case and keeps its options in the open, because the thread waits on it. *What would reverse
+opposite case and keeps its options in the open, because the build waits on it. *What would reverse
 it:* people who change an assumption and do not find *Change* — a line that reads as plain text —
 then the options are in place again, and the line is their heading.
 *What would reverse the whole rule:* a transcript read away from its options — exported, or shown
@@ -172,7 +172,8 @@ question*.
 ![A question marked on the graph, answered in the conversation](assistant/question-on-graph.png)
 
 **No question blocks.** Each has a default the graph and the preview already use, and an answer only
-changes them. **A question has one door: the conversation**, as one-click options under the message
+changes them — a question with no safe answer included: its default is what the rows say, and only
+**Build the graph** waits on it ([below](#assumptions-instead-of-blocks)). **A question has one door: the conversation**, as one-click options under the message
 that raised it. On the graph, the thing a question is about carries a **?**, and clicking it scrolls
 the conversation to that question and lights it — it opens no popover and offers no options of its own.
 Answered, the **?** goes, and the graph and the preview change.
@@ -279,7 +280,7 @@ composer's toolbar, as Ask's does.
 ### Steps while it works
 
 Each piece of work is **a step with its state**, in a list headed *What I am doing*: *Read 6 files ·
-1,026 awards, 1,012 laureates*, *Proposed the types*, *Waiting for you: 1 left to decide, with no safe
+1,026 awards, 1,012 laureates*, *Proposed the types*, *To decide before building: 1, with no safe
 answer*, *Write the program*, *Run the preview*. A step is done, under way (or waiting on the person)
 or still to come, and **the steps still to come are on the list from the start**, so the person reads
 what is left as well as what is done. A step's state is derived each time from what the conversation
@@ -346,8 +347,15 @@ the shapes, not the mapping, and the person confirms them before they are frozen
 test and the code do not come from the same source.
 
 **Assumptions instead of blocks.** A decision with a safe default — *is "share" a fraction of the
-prize or an amount?* — is taken, said as an assumption, and changed later. Only what has no safe
-answer — *when two people share a Nobel, is it one award or two?* — waits for the person.
+prize or an amount?* — is taken, said as an assumption, and changed later. A decision with **no safe
+answer** — *when two people share a Nobel, is it one award or two?* — blocks nothing either: the graph
+and the *Preview* take what the rows say (one award per row of `awards.csv`), the question stays open
+with its **?**, and only **Build the graph** waits on it, saying *1 question with no safe answer* and
+leading to it. The preview is cheap to run again and is where the answer is judged; the build is the
+one thing that is not, so it is the one thing that waits. Decided 2026-10-20 over a question that held
+the thread until answered, which put the first answer — time to smile — behind the person's reply.
+*What would reverse it:* people who build without reading the question, because a disabled button
+is easy to read as broken — then the build takes the default too and says which, as an assumption.
 
 **What would reverse it:** an evaluation where people finish faster, or with fewer corrections after
 the fact, in a wizard than in the guided chat — then the turns become screens again, over the same
@@ -391,7 +399,8 @@ Task gave up with the oracles' words in a problem titled *The model call failed*
   says none; without one, there is no `term`. Oracles: unique names, no word of Fossil's.
 - **Decisions, from the structure and the profile, never the model:** a source with several candidate
   keys that no edge lands on (`key/<source>`, safe default); a source that is a bridge *or* a thing
-  counted on its own (`count/<edge>`, blocks — each counts differently); a column with no term in the
+  counted on its own (`count/<edge>`, no safe default — each counts differently, so it holds the
+  build, never the preview); a column with no term in the
   vocabulary (*"motivation" isn't in your vocabulary. What is it?* — keep it as is, say what it is, or
   leave it out; safe default: keep it). Each is asked in plain words, in the conversation, and marked
   on the graph ([above](#questions-in-the-conversation-marked-on-the-graph)).

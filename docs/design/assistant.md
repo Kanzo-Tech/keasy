@@ -55,7 +55,13 @@ sent with the files; after it, every line is a question: Ask answers it in the *
 first 200 rows, and it is kept as one of the questions the graph must answer
 ([competency questions](#what-is-kanzo-uis-and-what-is-keasys)). Typed text that is not a question —
 *call Laureate Person* — is not read as an instruction: the reply says where that is changed, a
-link to the thing on the graph. Decided 2026-10-20 over a field that was off except while the thread
+link to the thing on the graph. **A checkpoint says when the conversation turns to the data.** Once the *Preview* has its first
+answers, a divider crosses the thread — *Your data is ready to ask · first 200 rows* — and the
+field's placeholder becomes *Ask anything about your data*. Above it the assistant is reading and
+proposing; below it the person is asking. A question typed before it is kept and answered as the
+divider lands, so the field never refuses. It is a marker in the thread, not a state to go back to:
+the checkpoints of 2026-10-14, points to cut the thread back to, stay gone
+([below](#questions-in-the-conversation-marked-on-the-graph)). Decided 2026-10-20 over a field that was off except while the thread
 waited on a question, which in a conversation drawn as Claude's reads as broken. *What would reverse
 it:* people who type instructions more often than questions — then the reply that points to the
 graph is the wrong door, and an instruction is a Task's input, under its schema, like the rest.

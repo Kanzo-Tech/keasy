@@ -1,9 +1,11 @@
 /**
- * **The `model` Task** — docs/design/assistant.md, *The three Tasks*. The model proposes the things
- * the data is about, named in the person's words: a type per thing, the file it stands on, the
- * column that identifies it, the columns it keeps, and the edges between types — each picked from
- * the profile's closed lists, never invented. The oracles hold each pick to a fact of the profile;
- * what the profile cannot settle is a `Decision`, raised here and never by the model.
+ * **The `model` Task** — docs/design/assistant.md, *`model` — structure from the profile, names from
+ * the model*. The structure is fossil's profile, computed and never proposed: a thing per file with a
+ * key, that key its first candidate (or the one an inclusion lands on), an edge per inclusion that
+ * lands on a key, and a file with no key of its own whose two inclusions link two things a bridge —
+ * an edge across it, not a thing. Valid by construction. The model only names: each thing, each
+ * field, each edge, in the person's words, every slot a property of its schema. What the profile
+ * cannot settle is a `Decision`, raised here and never by the model.
  *
  * IRIs are not here: `mapping` computes them from the workspace and the names.
  */
@@ -14,9 +16,78 @@ import type { Relation } from "../model";
 import { type Inclusion, type Profiled, rowsOf, type Source, sourceNamed, valuesOf } from "./profile";
 import { splitWords } from "@kanzo-tech/relations";
 
+// ── The structure, from the profile ─────────────────────────────────────────
+
+/** A thing the data holds: a file with a key. */
+export interface StructureType {
+  source: string;
+  key: string;
+  /** The columns it keeps as fields: all but its key and the ones its edges leave from. */
+  columns: string[];
+}
+
+/** An edge: `from` and `to` are sources, `via` the inclusion landing on `to`'s key, `across` a bridge. */
+export interface StructureEdge {
+  via: string;
+  from: string;
+  to: string;
+  across?: string;
+}
+
+export interface Structure {
+  types: StructureType[];
+  edges: StructureEdge[];
+}
+
+/**
+ * The structure the profile states. A file with a candidate key is a thing, keyed by the key an
+ * inclusion lands on when one does (an edge fixes its key), else by its first; an inclusion between
+ * two things on that key is an edge; a file with no key whose two inclusions land on things' keys is
+ * a bridge between them. A file that is neither is left out: nothing identifies one of its rows.
+ */
+export function structureOf(profiled: Profiled): Structure {
+  const keyOf = new Map<string, string>();
+  for (const source of profiled.sources) {
+    if (source.keys.length === 0) continue;
+    const landed = profiled.inclusions.find((i) => i.to.source === source.name && source.keys.includes(i.to.column));
+    keyOf.set(source.name, landed?.to.column ?? source.keys[0]!);
+  }
+  const lands = (i: Inclusion) => keyOf.get(i.to.source) === i.to.column;
+  const edges: StructureEdge[] = profiled.inclusions
+    .filter((i) => keyOf.has(i.from.source) && lands(i))
+    .map((i) => ({ via: i.id, from: i.from.source, to: i.to.source }));
+  for (const source of profiled.sources) {
+    if (keyOf.has(source.name)) continue;
+    const out = profiled.inclusions.filter((i) => i.from.source === source.name && lands(i));
+    if (out.length !== 2) continue;
+    const [back, via] = out as [Inclusion, Inclusion];
+    edges.push({ via: via.id, from: back.to.source, to: via.to.source, across: source.name });
+  }
+  const types = profiled.sources.flatMap((source): StructureType[] => {
+    const key = keyOf.get(source.name);
+    if (key === undefined) return [];
+    const leaving = profiled.inclusions.filter((i) => i.from.source === source.name && edges.some((e) => e.via === i.id)).map((i) => i.from.column);
+    return [{ source: source.name, key, columns: source.columns.map((c) => c.name).filter((c) => c !== key && !leaving.includes(c)) }];
+  });
+  return { types, edges };
+}
+
+/** A field's slot in {@link Names}: `laureates.born`. */
+export const fieldSlot = (source: string, column: string) => `${source}.${column}`;
+
 // ── The artefact ────────────────────────────────────────────────────────────
 
-/** A thing, as the model proposes it. */
+/** What the model writes: a name for every slot of the structure, and nothing else. */
+export interface Names {
+  /** Each thing's name, by its source: singular, PascalCase, in the person's words. */
+  types: Record<string, string>;
+  /** Each edge's name, by the inclusion it rides: what its `to` is to its `from`. */
+  edges: Record<string, string>;
+  /** Each field's name, by {@link fieldSlot}. */
+  fields: Record<string, string>;
+}
+
+/** A thing, named. */
 export interface DraftType {
   /** In the person's words, singular: `Laureate`. */
   name: string;
@@ -38,7 +109,7 @@ export interface DraftEdge {
   via: string;
 }
 
-/** What the model writes. */
+/** The structure with its names: what the decisions, `accept` and the person read. */
 export interface Draft {
   types: DraftType[];
   edges: DraftEdge[];
@@ -48,6 +119,20 @@ export interface ModelInput {
   profiled: Profiled;
   /** *What is it about?*, as the person answered it; `""` when skipped. */
   about: string;
+}
+
+/** The structure, named. A slot the names leave out keeps its file's or column's own name. */
+export function draftOf(structure: Structure, names: Names): Draft {
+  const typeName = (source: string) => names.types[source] ?? source;
+  return {
+    types: structure.types.map((t) => ({
+      name: typeName(t.source),
+      source: t.source,
+      key: t.key,
+      fields: t.columns.map((column) => ({ name: names.fields[fieldSlot(t.source, column)] ?? column, column })),
+    })),
+    edges: structure.edges.map((e) => ({ name: names.edges[e.via] ?? e.to, from: typeName(e.from), to: typeName(e.to), via: e.via })),
+  };
 }
 
 // ── What a draft says, read against the profile ─────────────────────────────
@@ -132,155 +217,109 @@ export function defaultsOf(profiled: Profiled): Record<string, { assume: string 
 
 // ── The oracles ─────────────────────────────────────────────────────────────
 
-/** Every field's column is a column of its type's own file. */
-function columnsExist(draft: Draft, input: ModelInput): Finding[] {
-  return draft.types.flatMap((type, t) => {
-    const source = sourceNamed(input.profiled, type.source);
-    const columns = source?.columns.map((c) => c.name) ?? [];
-    return type.fields.flatMap((field, f) =>
-      columns.includes(field.column)
-        ? []
-        : [
-            {
-              code: "model/foreign-column",
-              at: `/types/${t}/fields/${f}/column`,
-              message: `${type.name}.${field.name}: ${field.column} is not a column of ${type.source}, whose columns are ${columns.join(", ")}.`,
-            },
-          ],
-    );
-  });
-}
-
-/** Every type's key is a candidate key of its file: unique and never empty, as the profile read it. */
-function keysUnique(draft: Draft, input: ModelInput): Finding[] {
-  return draft.types.flatMap((type, t) => {
-    const keys = sourceNamed(input.profiled, type.source)?.keys ?? [];
-    if (keys.includes(type.key)) return [];
-    const which = keys.length > 0 ? `its candidate keys are ${keys.join(", ")}` : `it has no column unique in every row`;
-    return [{ code: "model/not-a-key", at: `/types/${t}/key`, message: `${type.name}: ${type.key} does not identify a row of ${type.source}; ${which}.` }];
-  });
-}
-
-/** Every edge names types the draft has, and an inclusion that lands on its `to`'s key. */
-function edgesBacked(draft: Draft, input: ModelInput): Finding[] {
-  const names = draft.types.map((t) => t.name);
-  return draft.edges.flatMap((edge, e): Finding[] => {
-    const unknown = [edge.from, edge.to].filter((n) => !names.includes(n));
-    if (unknown.length > 0) {
-      return [{ code: "model/unknown-type", at: `/edges/${e}`, message: `${edge.name}: ${unknown.join(", ")} is not a type you proposed (${names.join(", ")}).` }];
-    }
-    if (backing(edge, draft, input.profiled)) return [];
-    const to = draft.types.find((t) => t.name === edge.to)!;
-    return [
-      {
-        code: "model/unbacked-edge",
-        at: `/edges/${e}/via`,
-        message: `${edge.from} ${edge.name} ${edge.to}: ${edge.via} does not link them — it must land on ${to.source}.${to.key} and leave from ${edge.from}'s file, or from a file no type stands on that also links to ${edge.from}.`,
-      },
-    ];
-  });
-}
-
 const RESERVED = ["from", "and", "or", "not", "true", "false", "null"];
 
-/** No two types share a name, nor two fields or edges of one type, and none is a word of Fossil's. */
-function namesDistinct(draft: Draft): Finding[] {
-  const findings: Finding[] = [];
-  const seen = new Set<string>();
-  for (const [t, type] of draft.types.entries()) {
-    if (seen.has(type.name)) findings.push({ code: "model/duplicate-name", at: `/types/${t}/name`, message: `Two types are called ${type.name}.` });
-    seen.add(type.name);
-    const own = [...type.fields.map((f) => f.name), ...draft.edges.filter((e) => e.from === type.name).map((e) => e.name)];
-    for (const name of new Set(own)) {
-      if (own.filter((n) => n === name).length > 1) findings.push({ code: "model/duplicate-name", at: `/types/${t}`, message: `${type.name} has two fields or edges called ${name}.` });
-      if (RESERVED.includes(name)) findings.push({ code: "model/duplicate-name", at: `/types/${t}`, message: `${type.name}.${name}: "${name}" is a reserved word; name it otherwise.` });
+/** A JSON Pointer's segment: `~` and `/` escaped. */
+const segment = (key: string) => key.replace(/~/g, "~0").replace(/\//g, "~1");
+
+/** No two things share a name, nor two fields or edges of one thing, and none is a word of Fossil's. */
+function namesDistinct(structure: Structure) {
+  return (names: Names): Finding[] => {
+    const findings: Finding[] = [];
+    const draft = draftOf(structure, names);
+    const seen = new Map<string, string>();
+    for (const { source, name } of draft.types) {
+      const twin = seen.get(name);
+      if (twin) findings.push({ code: "model/duplicate-name", at: `/types/${segment(source)}`, message: `${source} and ${twin} are both called ${name}.` });
+      seen.set(name, source);
     }
-  }
-  return findings;
+    for (const type of draft.types) {
+      const members = [
+        ...type.fields.map((f) => ({ at: `/fields/${segment(fieldSlot(type.source, f.column))}`, name: f.name })),
+        ...draft.edges.filter((e) => e.from === type.name).map((e) => ({ at: `/edges/${segment(e.via)}`, name: e.name })),
+      ];
+      const owner = type.name;
+      const taken = new Set<string>();
+      for (const { at, name } of members) {
+        if (taken.has(name)) findings.push({ code: "model/duplicate-name", at, message: `${owner} has two fields or edges called ${name}.` });
+        if (RESERVED.includes(name)) findings.push({ code: "model/duplicate-name", at, message: `${owner}.${name}: "${name}" is a reserved word; name it otherwise.` });
+        taken.add(name);
+      }
+    }
+    return findings;
+  };
 }
 
 /** The decisions the draft raises, each as the oracles' question for the person. */
-const ambiguities = (draft: Draft, input: ModelInput): Finding[] => decisionsOf(draft, input.profiled).map((decision) => ({ decision }));
+const ambiguities = (structure: Structure) => (names: Names, input: ModelInput): Finding[] =>
+  decisionsOf(draftOf(structure, names), input.profiled).map((decision) => ({ decision }));
 
 // ── The Task ────────────────────────────────────────────────────────────────
 
 const MODEL = `You design what a person's data is about, as things and the links between them.
-Propose one type per kind of thing in the files: a singular name in the person's words (PascalCase), the file it stands on (source), the column that identifies one (key, one of that file's candidate keys), and the columns worth keeping as fields, each under a short camelCase name.
-Link two types with an edge only through an inclusion listed: "via" is its id, "to" the type whose file and key it lands on, "from" the type whose file it leaves. A file that only links two others is not a type: link across it, with "via" its inclusion into "to".
-Use only the files, columns and inclusions listed.`;
+The things and links are already worked out from the files; you only name them, in the person's words.
+Name each thing with a singular noun in PascalCase, each field with a short camelCase name, and each link with a camelCase name for what the thing it reaches is to the thing it leaves from.
+Keep a column's own name where it already says what it is. Give every slot listed a name.`;
 
-/** One source as the model reads it: its columns and types, its keys and two real rows. */
-function described(source: Source): string {
-  const rows = source.sample.slice(0, 2).map((r) => `  e.g. ${r.map((v) => v ?? "—").join(" · ")}`);
-  const count = source.rows === null ? "" : ` (${source.rows} rows)`;
-  return [
-    `- ${source.name}${count}: ${source.columns.map((c) => `${c.name} (${c.primitive})`).join(", ")}`,
-    `  candidate keys: ${source.keys.length > 0 ? source.keys.join(", ") : "none"}`,
-    ...rows,
-  ].join("\n");
+/** Two real rows of a source, every cell as text. */
+const examples = (source: Source) => source.sample.slice(0, 2).map((r) => `  e.g. ${r.map((v) => v ?? "—").join(" · ")}`);
+
+/** The structure as the model reads it: each thing with its fields' types and two real rows, then each link. */
+function described(structure: Structure, profiled: Profiled): string[] {
+  const things = structure.types.flatMap((t) => {
+    const source = sourceNamed(profiled, t.source)!;
+    const count = source.rows === null ? "" : ` (${source.rows} rows)`;
+    const primitive = (column: string) => source.columns.find((c) => c.name === column)!.primitive;
+    return [
+      `- types.${t.source}${count}: one per ${t.key}; fields: ${t.columns.map((c) => `${c} (${primitive(c)})`).join(", ") || "none"}`,
+      `  columns: ${source.columns.map((c) => c.name).join(", ")}`,
+      ...examples(source),
+    ];
+  });
+  const links = structure.edges.map(
+    (e) => `- edges["${e.via}"]: from ${e.from} to ${e.to}${e.across ? `, across ${e.across}, a file that only links them` : ""}`,
+  );
+  return ["Things (name each, and each of its fields as fields[\"<thing>.<column>\"]):", ...things, links.length > 0 ? "Links (name each):" : "No links.", ...links];
 }
 
 const NAME = "^[A-Z][A-Za-z0-9]*$";
 const MEMBER = "^[a-z][A-Za-z0-9]*$";
 
-/** The artefact's schema: every file, column and inclusion an enum of the profile's. */
-function draftSchema(profiled: Profiled) {
-  const sources = profiled.sources.map((s) => s.name);
-  const columns = [...new Set(profiled.sources.flatMap((s) => s.columns.map((c) => c.name)))];
-  const inclusions = profiled.inclusions.map((i) => i.id);
-  const object = (properties: Record<string, unknown>, required: string[]) => ({ type: "object", properties, required, additionalProperties: false });
-  return jsonSchema<Draft>({
-    ...object(
-      {
-        types: {
-          type: "array",
-          minItems: 1,
-          items: object(
-            {
-              name: { type: "string", pattern: NAME },
-              source: { type: "string", enum: sources },
-              key: { type: "string", enum: columns },
-              fields: { type: "array", items: object({ name: { type: "string", pattern: MEMBER }, column: { type: "string", enum: columns } }, ["name", "column"]) },
-            },
-            ["name", "source", "key", "fields"],
-          ),
-        },
-        edges:
-          inclusions.length > 0
-            ? {
-                type: "array",
-                items: object(
-                  { name: { type: "string", pattern: MEMBER }, from: { type: "string", pattern: NAME }, to: { type: "string", pattern: NAME }, via: { type: "string", enum: inclusions } },
-                  ["name", "from", "to", "via"],
-                ),
-              }
-            : { type: "array", maxItems: 0, items: {} },
-      },
-      ["types", "edges"],
-    ),
+/** The artefact's schema: one required property per slot of the structure, and no other. */
+function namesSchema(structure: Structure) {
+  const slots = (keys: string[], pattern: string) => ({
+    type: "object",
+    properties: Object.fromEntries(keys.map((k) => [k, { type: "string", pattern }])),
+    required: keys,
+    additionalProperties: false,
+  });
+  return jsonSchema<Names>({
+    type: "object",
+    properties: {
+      types: slots(structure.types.map((t) => t.source), NAME),
+      edges: slots(structure.edges.map((e) => e.via), MEMBER),
+      fields: slots(structure.types.flatMap((t) => t.columns.map((c) => fieldSlot(t.source, c))), MEMBER),
+    },
+    required: ["types", "edges", "fields"],
+    additionalProperties: false,
   } as Parameters<typeof jsonSchema>[0]);
 }
 
 /**
  * The Task, for one profile: its safe defaults are the profile's, so the decisions they settle are
- * taken as assumptions and the rest stop it as a question.
+ * taken as assumptions and the rest stop it as a question. Its answer is {@link Names}; the draft
+ * the rest reads is `draftOf(structureOf(profiled), names)`.
  */
 export function modelTask(profiled: Profiled) {
-  return defineTask<ModelInput, Draft, Profiled>({
+  const structure = structureOf(profiled);
+  return defineTask<ModelInput, Names, Profiled>({
     name: "model",
     context: (input) => input.profiled,
     instructions: MODEL,
-    prompt: (input, p) =>
-      [
-        `What the data is about: ${input.about.trim() || "(not said)"}`,
-        "Files:",
-        ...p.sources.map(described),
-        p.inclusions.length > 0 ? "Inclusions (every value of the first column is a value of the second):" : "No inclusions: there are no edges.",
-        ...p.inclusions.map((i) => `- ${i.id}`),
-      ].join("\n"),
-    output: (_, p) => draftSchema(p),
+    prompt: (input, p) => [`What the data is about: ${input.about.trim() || "(not said)"}`, ...described(structure, p)].join("\n"),
+    output: () => namesSchema(structure),
     target: () => ({ set: "" }),
-    verify: [columnsExist, keysUnique, edgesBacked, namesDistinct, ambiguities],
+    verify: [namesDistinct(structure), ambiguities(structure)],
     decide: defaultsOf(profiled),
   });
 }

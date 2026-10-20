@@ -7,7 +7,7 @@
 import { scriptedModel } from "@kanzo-tech/llm/testing";
 import { promptOf } from "@kanzo-tech/testing";
 import type { Engine, Input, Primitive, Profile } from "@fossil-lang/types";
-import type { Draft } from "./model";
+import { type Draft, draftOf, type Names, structureOf } from "./model";
 import { profiledOf } from "./profile";
 
 const BASE = "https://data.example/nobel/";
@@ -89,19 +89,25 @@ export const INPUTS: Input[] = ["laureates", "awards", "institutions", "affiliat
 
 export const NOBEL = profiledOf(PROFILE, INPUTS);
 
-/** What a good model proposes over it. */
-export const DRAFT: Draft = {
-  types: [
-    { name: "Laureate", source: "laureates", key: "id", fields: [{ name: "name", column: "name" }, { name: "gender", column: "gender" }, { name: "born", column: "born" }] },
-    { name: "Award", source: "awards", key: "id", fields: [{ name: "year", column: "year" }, { name: "category", column: "category" }, { name: "share", column: "share" }] },
-    { name: "Institution", source: "institutions", key: "id", fields: [{ name: "name", column: "name" }, { name: "city", column: "city" }] },
-    { name: "Country", source: "countries", key: "code", fields: [{ name: "name", column: "name" }] },
-  ],
-  edges: [
-    { name: "laureate", from: "Award", to: "Laureate", via: "awards.laureate_id → laureates.id" },
-    { name: "affiliation", from: "Laureate", to: "Institution", via: "affiliations.institution_id → institutions.id" },
-  ],
+/** What a good model names over it: every slot of the structure the profile states. */
+export const NAMES: Names = {
+  types: { laureates: "Laureate", awards: "Award", institutions: "Institution", countries: "Country" },
+  edges: { "awards.laureate_id → laureates.id": "laureate", "affiliations.institution_id → institutions.id": "affiliation" },
+  fields: {
+    "laureates.name": "name",
+    "laureates.gender": "gender",
+    "laureates.born": "born",
+    "awards.year": "year",
+    "awards.category": "category",
+    "awards.share": "share",
+    "institutions.name": "name",
+    "institutions.city": "city",
+    "countries.name": "name",
+  },
 };
+
+/** The structure with those names. */
+export const DRAFT: Draft = draftOf(structureOf(NOBEL), NAMES);
 
 /**
  * `@kanzo-tech/llm/testing`'s model, answering each call with the next of `replies` — an object as

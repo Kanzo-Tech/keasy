@@ -135,8 +135,15 @@ word a data person already uses for exactly that, and it is the word *Your graph
 ([the *Schema* view](#one-diagram-two-views)): a schema attached is the one the graph starts from.
 *Model* would be the other candidate and is taken twice, by the model in the page and the `model` Task.
 
-*What would reverse it:* schemas that serve many datasets and are versioned on their own — then they
-leave connections for a catalogue of their own, and that catalogue is a source the **+** lists. Or
+**Where it is going: Alejandría**, a hub of schemas shared and versioned on their own — LOV, with
+search over terms and a schema proposed for files that bring none. It is the catalogue (b) would have
+grown connections into, which is why (b) is not a step towards it: a schema that comes with its data
+stays a file beside it, and one from the hub is a source the **+** lists, *From Alejandría*. The
+candidate terms `model` ranks ([below](#model--structure-from-the-profile-names-from-the-model)) are
+then a search of the hub. The person's word is the hub's word too, decided once for both.
+
+*What would reverse it:* schemas that serve many datasets before Alejandría exists — then they are
+picked by hand from where they live until it does. Or
 people who do not find a schema that came with their files, because a card among file cards reads as
 data — then it gets a row of its own above them, still with no choice to make.
 

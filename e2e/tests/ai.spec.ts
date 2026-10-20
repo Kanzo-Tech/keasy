@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { expect, type Page } from "@playwright/test";
 import type { HarnessEnvironment } from "@kanzo-tech/testing";
 
-import { api, SOURCE } from "../support/stack/api";
+import { api } from "../support/stack/api";
 import { AskPanel, DiscoverPage } from "../support/app";
 import { test } from "../support/fixtures";
 import { promptsOf, scriptModel } from "../support/model";

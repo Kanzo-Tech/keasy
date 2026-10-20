@@ -2,13 +2,12 @@
 
 Status: a direction. Built: the model in the page, served from keasy's own origin and preloaded with
 intent; the guided chat and its three Tasks, `model`, `mapping` and `requirements`, over fossil's
-profile (below); the conversation kept, and the preview run in memory and shown in the chat, the chat
-wired to both and to the build; and the chat as one thread ([below](#one-thread-top-to-bottom)): the
-sources picked on pills above the composer and sent with what they are about as the first message, the
-Tasks drawn as steps, the details pinned above the thread, the model badge in the app's header, and the
-conversation closed by its build. **Decided, not built:** every result a new message at the end with a
-checkpoint per preview that restores and cuts the thread, node and edge counts in the build's step, a
-composer under the preview; each says so where it is described. The pattern this rests on — a *Task*: a small model in the browser fills a small artefact under a JSON Schema, a deterministic oracle checks it, a bounded loop repairs
+profile (below); the conversation kept, the preview run in memory, and the build. **Decided
+2026-10-20, not built:** [a conversation beside its graph](#a-conversation-beside-its-graph) — one **+**
+and file cards, a dataset's dictionary travelling with it, a panel with *Your graph*, *Data* and
+*Preview*, questions answered in either place, a shell of its own, the schema drawn with React Flow and
+ELK — and [`model`'s structure taken from the profile](#model--structure-from-the-profile-names-from-the-model).
+They replace the single thread of 2026-10-14 and its checkpoints, each where it is described. The pattern this rests on — a *Task*: a small model in the browser fills a small artefact under a JSON Schema, a deterministic oracle checks it, a bounded loop repairs
 it or asks the person — and its API, its model and its decisions are kanzo-ui's, on
 [Tasks](https://kanzo-tech.github.io/ui/docs/design/tasks). fossil's half — `fossil-profile` in place
 of introspect, and a mapping spec from which Fossil is emitted — is on
@@ -66,75 +65,146 @@ then the options are in place again, and the line is their heading.
 where they cannot be drawn — where the choice has to be said in words; then a decision answered is a
 reply again.
 
-## One thread, top to bottom
+## A conversation beside its graph
 
-**Decided 2026-10-13, built 2026-10-14 except where a section says otherwise.** The whole of the assistant is one thread read from top to bottom:
-what the person sends, the steps the assistant takes for it, and each result as a message after them,
-in the order it happens. The references are ChatGPT's data analysis and Julius, which put a result —
-a table, a chart — in the thread under the step that made it, rather than in a panel beside it;
-Claude's connectors, for picking what a conversation reads; and AI Elements' `Tool` and `Checkpoint`,
-for drawing a step and a point to return to. What it replaces is said in each rule: the separate turn
-that picked the files from a tree, the assistant's own top bar, the messages that changed in place,
-and the note above a built conversation.
+**Decided 2026-10-20, not built.** The assistant is two things side by side, as Claude is: **the
+conversation on the left**, and **the graph it is making on the right**, in a panel the size of an
+artifact's. It replaces the single thread decided on 2026-10-14, which put every result — what is in
+the data, the preview — in the thread under the step that made it, after ChatGPT's data analysis and
+Julius. That rule named its own reversal: *a preview unreadable inside the thread, or a decision and
+the answers it changed screens apart, sends the assistant back to a split layout*. The owner's review
+of the built thread (2026-10-20) is that evidence: the summary of the files scrolled away under the
+first message, the decisions and what they changed were screens apart, and the composer's two rows of
+pills read as clutter.
 
-The thread, for the Nobel files:
+![The composer: one +, file cards, a dictionary that comes with its data](assistant/composer.png)
 
-1. **The composer, with the sources on it.** The person picks files on the pills above the field, says
-   *what is it about?* (or nothing), and sends both as their first message.
-2. **Steps** — *Read the files*, *Propose the types*, and what comes after them, still to do.
-3. ***Here's what's in your data*** — the things with real counts and what each holds, and how they
-   hang together as lines with one real row: *award: laureate, category and year;
-   e.g. Marie Curie · Physics · 1903*. Never shape, IRI, predicate or cardinality. Under it, what was
-   assumed, each as *I assumed: id · Change* — the option taken, and its options behind *Change*. They
-   come before the decision that blocks, so the first thing the person is asked is the last thing said.
-4. **The one decision with no safe answer**, as kanzo-ui's `Question`: its question and its options. It
-   blocks what comes after it; an assumption blocks nothing.
-5. ***What would you like to know?*** — the questions already answerable from these files, as
-   `Suggestions`, and the composer for one's own; each question kept says whether these files can
-   answer it. *That's all, show me a preview* ends it.
-6. **Steps** — *Wrote the program · Open in the editor*, *Ran it over the first 200 rows of each file*
-   — then **the preview**: each question kept, answered over the first 200 rows with Ask's cards, two
-   to a row, a footnote that the whole graph counts every row, and **Build the graph**. (A checkpoint
-   above it is decided and not built, [below](#checkpoints).)
-7. **The build** — the person's *Build the graph*, its steps (*Kept this conversation*, *Built the graph
-   from every row*), then *Your graph is ready* in a tinted panel with **Ask your data**, **Open the
-   graph** and the person's questions — and the composer gives way to the conversation's close.
+**The person never needs to know RDF, ShEx, SHACL or any particular vocabulary.** Every word the
+assistant shows is the person's or the data's: *Award · 1,018*, *won by*, *date of birth*. IRIs,
+shapes and the program are one click away, under *details* and **Open in the editor**, for whoever
+wants them, and nowhere else. This was already the rule for *what's in your data*; it now holds for
+the whole assistant, the dictionaries included.
 
-### Sources in the composer, as Claude's connectors
+### One +, as Claude's
 
-Above the composer's field, **one pill per readable connection** — *+ @OpenFlights*, *+ @Nobel laureates* —
-the connections `use-assistant.ts` already reads (`readable`: data, not the sink). A pill opens a small
-menu anchored to it, as Claude's connector does: the connection's name with **Select all**, then each
-readable file as a checkable item with its size. What is picked stays on the pill — *@Nobel laureates ·
-6 files ×*, the cross clearing it. There are no attachment cards, no dialog and no file search. The
-first message sends the picked files and *what is it about?* together, so the person's first act is
-the one Claude's and ChatGPT's composers ask for — say what you want, with what you want it over — and
-the assistant has both before its first step.
+The composer has one **+**, as Claude's does: *Upload files*, *From a connection* — the connections as
+one list, each opening to its files with a search over them — and *From an existing graph*. What is
+picked is drawn as **file cards** above the field: *awards.csv · 1,018 rows*, *+4 more files · Nobel
+laureates*. There is no row of pills per connection and no split between data and vocabularies. The
+first message sends the cards and the sentence the person typed, together, as before.
 
-What goes: the *Which data do you want to explore?* turn, its `SourcePicker` tree in the thread
-(folders opened one by one, a folder's box picking what is listed under it), its *Read these files*
-reply, and the separate *what is it about?* turn after it. The tree was a second surface inside a
-message — a form posted into the chat — and the reply under it said again what the tree already
-showed. The menu lists what the connection's listing returns, and a folder it returns is a submenu
-that lists itself when it is opened — a folder is never opened for the person. **Select all** takes
-every file under the connection, folders included. The pill's cross and **Select all** are keasy's own
-elements: `Menu`'s checkable items and `PromptInputHeader` are kanzo-ui 0.46's, and neither has a
-chip with a cross. *What would reverse it:* a connection whose
-readable files do not fit a menu — hundreds, or folders that only make sense as folders — then the
-pill's menu opens a submenu per folder, and a search over it is Claude's next step, not a dialog.
-Or more connections than fit above the field: then one *+ Add sources* pill lists them, each a
-submenu, as Claude's *+* does.
+What goes: the pills above the field (one per readable connection, each with a menu of checkable
+files), and the *Data* / *Vocabularies* rows a first sketch of this page drew. Two kinds of pill asked
+the person to know which of their files were data and which were a vocabulary — a question about the
+technology, not about their data. *What would reverse it:* people who cannot find their files behind a
+**+**, in a user test, where a pill per connection showed them — then the connections come back as
+pills, still one row, and the cards stay.
 
-### The details, pinned above the thread
+### A dataset's dictionary travels with it
 
-Once the first message is sent, a block is pinned above the conversation, outside its scroll: the
-sentence the person said the data is about, and *Used 6 files*, which opens to the files by their
-connection and path. The steps scroll with the thread and never move it, and the person can always
-read what the thread was made from without going back up to its first message. It is AI Elements'
-`Sources` in shape (`Sources`, `SourcesTrigger` with a `count`, `SourcesContent`, `Source`), a thin
-local component in `sources.tsx`, and a candidate for `@kanzo-tech/ai` in kanzo-ui 0.47. *What would
-reverse it:* a thread short enough that the first message is always in view — then the block is a
-repeat of it, and goes.
+A vocabulary is not the workspace's, set up once by an admin: it is **a dataset's** — the Nobel
+dictionary goes with the Nobel files, and another dataset in the same workspace has its own or none.
+So it travels with the data:
+
+- **A data connection may name its dictionary**, a connection of kind Vocabulary, in the connection's
+  settings (*Dictionary: Nobel laureates shapes*). Picking files from it brings the dictionary as a
+  card of its own, *Nobel dictionary · comes with Nobel laureates*, which the person may remove.
+  One dictionary can serve several datasets.
+- **A dictionary file attached on its own** — uploaded, or picked from any connection — is recognised
+  by its content (ShEx, SHACL, OWL/RDF) and used for the files beside it. The card says *dictionary*;
+  the person never says so.
+- **A graph built before keeps its words**: *From an existing graph* brings its dictionary with it.
+
+What the dictionary does is unchanged from the person's side: the assistant uses its words where they
+fit (*Person*, *date of birth*) and asks, in plain words, about what is not in it (*"motivation" isn't
+in your dictionary. What is it?*).
+
+Decided on 2026-10-20 as the owner's option (b) — the data connection names its vocabulary connection,
+which is what keasy already has (connections of kind Vocabulary) with one link added — over (a), a
+dictionary folder inside the data connection found by its content. **The owner is not fully convinced,
+and this is the least settled rule on the page.** *What would reverse it:* datasets whose dictionary
+never serves another — then (a), a folder beside the data, is simpler and the link goes. Or
+dictionaries that span datasets and are versioned on their own — then they leave connections for a
+catalogue of their own.
+
+### The panel: *Your graph*, *Data*, *Preview*
+
+![The conversation, and the graph it makes beside it](assistant/panel.png)
+
+The panel has three tabs, and is on screen from the first message to the build:
+
+- **Your graph** — the kinds of thing with their counts, and how they are linked (*Award · 1,018 —won
+  by→ Person · 962*), drawn as a small graph; what is still open is marked **?** on the thing it is
+  about. Under it, the thing in focus with its fields in plain words and an example from the rows.
+- **Data** — what the files hold: each file with its rows and columns, the columns that identify a row,
+  and the links between files. This is fossil's profile, and it is *what's in your data* — the summary
+  the owner wanted at the top of the conversation, always visible, now beside it.
+- **Preview** — Ask's answers over the first 200 rows of each file ([below](#the-preview-is-in-the-panel)).
+
+It is `@kanzo-tech/ai`'s part to be, as Claude's artifact pane is a part of Claude: a panel beside a
+`Conversation`, its tabs keasy's. *What would reverse it:* a phone, where there is no beside — there
+the panel is a sheet over the conversation, opened from a bar that says *Your graph · 5 kinds · 1 open
+question*.
+
+### Questions in two places, one state
+
+![A question answered on the graph, recorded in the conversation](assistant/question-on-graph.png)
+
+**No question blocks.** Each has a default the graph and the preview already use, and an answer only
+changes them. A question is asked **in the conversation**, as one-click options under the message that
+raised it, and **on the graph**, where clicking the **?** opens the same question beside the thing it is
+about. There is one state: answered in either place, the other shows it — in the conversation as
+*→ Use the name — answered on the graph · undo*, in place, not as a new reply.
+
+An edit made on the panel — a kind of thing renamed, a field left out, two kinds merged — is said in
+the conversation as the person's own short message (*Renamed Laureate to Person*), so the model reads
+it before what it does next, and the conversation stays the record of what was decided.
+
+This replaces the checkpoints decided on 2026-10-14, never built: with the preview in the panel and
+every answer undoable where it is shown, there is no thread to cut back. *What would reverse it:*
+people who change several answers and want an earlier state as a whole — then a checkpoint returns,
+as a named state of the panel rather than a point in a thread.
+
+### Time to smile, in order
+
+![The preview: answers over the first rows, before any question is answered](assistant/preview.png)
+
+What the person sees, and when, for the Nobel files (design targets, as above):
+
+| When | In the panel | From |
+|---|---|---|
+| ~2 s | *Data*: each file, its rows, columns, keys and links | fossil's profile — no model |
+| ~3 s | *Your graph*: the kinds of thing by file, the links, the counts | fossil's profile ([`model`](#model--structure-from-the-profile-names-from-the-model)) |
+| as the model writes | names in the person's words; the open questions | the model |
+| seconds after | *Preview*: two or three answers over 200 rows | the page's engine |
+
+The smile is the *Preview*: real answers about one's own data, before a single question is answered.
+Each answer runs the preview again — 200 rows, seconds — and never the graph: **Build the graph**, at
+the end, is the one run over every row.
+
+### A shell of its own
+
+The assistant gets **a focused shell**, as Claude's conversation is one: the app's sidebar folded away
+behind *← Graphs*, a thin header with the graph's name and the model's badge, and the page's width for
+the conversation and the panel, the panel resizable. It is kanzo-ui's `Shell` composed as Discover
+composes it — `ShellMain` for the conversation, the panel in `ShellAside`/`ShellDock` — and no new
+layout part. *What would reverse it:* people lost without the app's navigation — then the sidebar stays,
+folded to its icons.
+
+### *Your graph* is drawn as a schema, not as data
+
+*Your graph* draws kinds of thing and their links — five to thirty boxes with labelled edges, a **?**
+that opens a popover, a click that renames — never the data's vertices. That is not the job of
+`@kanzo-tech/graph`, whose cosmos.gl canvas draws thousands to millions of points on the GPU and is
+weakest where this view lives: labels, anchored popovers, keyboard focus. **Proposed:** React Flow
+(`@xyflow/react`) for the view — nodes are DOM, so kanzo-ui's `Popover`, `Badge` and buttons go inside
+them, with zoom, fit and selection given — and ELK (`elkjs`, layered, in a worker) for a layout that
+stays put as answers change. Both are MIT. They are large (React Flow about 50 kB, ELK far more), so
+they are **optional peers behind a subpath of their own in kanzo-ui** — `@kanzo-tech/graph/schema` —
+never the root barrel, as `/table` and `/analytics` are. The same part gives Discover a *Schema* view
+of a built graph. *What would reverse it:* ELK's weight in a page that never draws more than a handful
+of kinds — then a layered layout of keasy's or kanzo-ui's own, over SVG, and React Flow stays; or React
+Flow's — then ELK over SVG, and zoom and selection written by hand.
 
 ### The model badge in the page's header
 
@@ -175,63 +245,32 @@ the rest.
 *What would reverse it (steps at all):* people in a user test who cannot say what the assistant was
 doing from its steps — then a step is a sentence again, with its bar.
 
-### Each result is a new message at the end
-
-**Decided, not built.** Today the preview is still one message that is replaced in place under *Updating…*, dimmed and inert, as the section on the preview says. Every result is **a message added at the end, in the order it happens**, and **nothing transforms in
-place**: *what's in your data* with what it assumed, the one decision, the suggested questions, the
-preview, the build. A decision changed — on its `Question`, or behind an assumption's *Change* — stays
-selected where it was made, and what it causes is new: the steps that write the program again and run
-the preview again, and a new preview message after them. The preview that changed under *Updating…*,
-dimmed and inert until the new graph replaced it, goes: two previews are two messages, and the
-earlier one still says what the earlier program answered. This is how ChatGPT's data analysis and
-Julius read: a result is under the step that made it, and a new run is a new result below, never the
-old one rewritten — so the thread is the order things happened in, which is what makes it a record.
-*What would reverse it:* a preview that proves unreadable inside the thread — Ask's cards too narrow
-in the column, or a decision and the answers it changed screens apart — then the assistant goes back to
-a split layout, the chat beside a panel that holds the current preview.
-
-### Checkpoints
-
-**Decided, not built** — it waits on the thread above being append-only. **One checkpoint per preview run** — each time the program changes and runs again — drawn with
-`@kanzo-tech/ai`'s `Checkpoint` (AI Elements' part, being added to kanzo-ui) above its preview, with
-**Restore**. **Restoring cuts the thread there**, as AI Elements' `Checkpoint` example and v0 do:
-every message after the checkpoint is removed, from the screen and from the stored conversation, and
-the program and the decisions return to what they were at that point — so the checkpoint's preview is
-the last message again, and the thread goes on from it. The current checkpoint is therefore always the
-last one, and **building builds from it**. A checkpoint is what makes changing a decision safe to try —
-a wrong turn is one click back, not a decision to remember and undo — and the cut keeps the thread one
-line of what led to the build, rather than every branch tried and abandoned, which is what a record of
-a graph needs. *What would reverse it:* restoring never used — every person going forward by changing
-decisions again — then checkpoints go, and the last preview is the one built. Or people who restore
-and then want back what the cut removed — then a restore keeps the messages after it, collapsed under
-the checkpoint, instead of removing them.
-
 ### Building closes the conversation
 
-**Built 2026-10-14**, except what the checkpoint gives. **Build the graph** adds the person's message,
+**Built 2026-10-14.** **Build the graph**, from the *Preview* tab or the conversation, adds the person's message,
 then its steps, then *Your graph is ready* in a tinted panel with **Ask your data**, **Open the graph**
 and the person's questions as links to Discover. The graph is named after the connections its files were
 read through (*Nobel laureates*), since the conversation has no other name to give it. The composer is
 replaced by *This conversation built <graph> and stays as it was built · Start a new one from here*,
-which opens a new assistant, clean — *from the current checkpoint* waits on the checkpoints, and until
-then a new conversation does not carry this one's. A conversation opened after its build, by its id, is
+which opens a new assistant, clean. A conversation opened after its build, by its id, is
 the same thread read to its end under the same bar, with nothing to answer, choose or save. The build's step says *Built the
 graph from every row* and no count: the run does not return one, and node and edge counts wait for it. This is the storage rule already — a conversation a graph was
 built from is that graph's record ([below](#the-conversation-is-kept)) — now said in the UI where it
 applies, instead of as a note above the first message when a built one is opened and a save that
 quietly forked. *What would reverse it:* people who build and then keep refining in the same place,
-for whom the new conversation reads as a wall — then a build is a checkpoint marked built and the
-conversation stays open, and a graph's record is that checkpoint rather than the conversation.
+for whom the new conversation reads as a wall — then a build is a state of the panel marked built and the
+conversation stays open, and a graph's record is that state rather than the conversation.
 
 ### What is kanzo-ui's, and what is keasy's
 
-**From kanzo-ui** (a kanzo-ui PR adds them): `Checkpoint` in `@kanzo-tech/ai`, with its restore action;
-a slot above `PromptInput`'s field, for the pills; and checkable items in `@kanzo-tech/ui`'s `Menu`
-(Ark's checkbox items), for the files in a pill's menu. `Tool` is there already.
+**From kanzo-ui**: the panel beside a `Conversation` (`@kanzo-tech/ai`), the schema view
+(`@kanzo-tech/graph/schema`, [above](#your-graph-is-drawn-as-a-schema-not-as-data)), `Shell`'s parts,
+and the `Command` and `TreeView` the **+**'s connection list is made of — all but the first two exist.
 
-**keasy's**: the pills and their menus, over the connections' listings; the order of the messages
-(`converse`, now an append-only thread); closing the conversation on build; the Tasks' runs as `Tool`
-parts; and the checkpoints — what each holds, and what restoring one sets back, cuts and runs.
+**keasy's**: the **+** and its file cards over the connections' listings; a connection's dictionary and
+the recognising of a dictionary file; the panel's three tabs and what each reads; the one state of the
+questions, answered in either place; the edits on the panel said as the person's messages; closing
+the conversation on build.
 
 Why a conversation rather than screens: it is **one presentation with Ask**, which is where the person
 goes next, so the hand-off is the same surface continuing; **the transcript keeps what was decided**,
@@ -274,37 +313,38 @@ it before any model is asked: one thing per file, its count when the profile rea
 whose profile takes too long for the reading step; then the step reads `depth: "types"` first and
 the rest in the background, the way fossil's profile already splits.
 
-### `model` — propose, then decide
+### `model` — structure from the profile, names from the model
 
-- **Context**: the profile, as closed lists — the sources by their binding, each one's columns, its
-  candidate keys, and every inclusion by an id (`awards.laureate_id → laureates.id`) — and the
-  person's *what is it about?* sentence.
-- **Contract**: `{ types: [{ name, source, key, fields: [{ name, column }] }], edges: [{ name, from,
-  to, via }] }`, whose `source`, `key`, `column` and `via` are enums of the profile's names. Names are
-  the model's, in the person's words, held to an identifier's pattern; nothing else is.
-- **Oracles**: every field's column is a column of its type's source (`model/foreign-column`); a
-  type's key is a candidate key of its source (`model/not-a-key`); every edge is backed by an
-  inclusion — its `via` lands on the `to` type's source at its key, and leaves from the `from`
-  type's source or from a source no type stands on whose other inclusion lands on the `from` type
-  (`model/unbacked-edge`); an edge names types the artefact has (`model/unknown-type`); no two types
-  share a name, nor two fields of one type, and none is a word of Fossil's (`model/duplicate-name`). Each is fixable: sent back at its JSON Pointer.
-- **Decisions**, raised from the profile and the accepted artefact, never by the model: a type
-  whose file has more than one candidate key, and that no edge lands on (an edge fixes the key it
-  lands on), asks which identifies the thing, and assumes the profile's first (`key/<source>`, a safe
-  default: any candidate identifies); an edge through a source no type stands on — a
-  many-to-many inclusion pair, *affiliations* between laureates and institutions — asks whether each
-  row is a link, or a thing counted on its own (`count/<edge>`: *is a row only that link, or a thing
-  counted on its own?*), and blocks, because each answer counts differently and neither is
-  safe.
-- **What it fills**: `understanding.relations` — one line per type, *award: laureate,
-  category and year*, with a real example from the sample rows, the edge's end looked up across
-  sources through its inclusion — and `decisions`. IRIs are keasy's: a type is
-  `<origin>/vocab/<Type>`, a field `<origin>/vocab/<field>`, a subject
-  `<origin>/id/<type>/{<source>.<key>}`, computed by fossil from the workspace's origin and the names
-  (`vocabularyOf`, `subjectOf` of `@fossil-lang/wasm`), never written by the model.
-- *What would reverse it:* a small model that names and links types worse with the profile's
-  closed lists than a person does by hand, over the examples — then the types are drawn from the
-  sources one to one, and only the names are asked.
+**Decided 2026-10-20, not built.** The rule this replaces named its reversal: *a small model that names
+and links types worse with the profile's closed lists than a person does by hand — then the types are
+drawn from the sources one to one, and only the names are asked*. The owner's run over the Nobel files
+(2026-10-20, Qwen3-4B in the page) is that evidence: every attempt keyed *Affiliation* on `award`, which
+repeats, and linked an award to an institution through `affiliations` the wrong way round, and the
+Task gave up with the oracles' words in a problem titled *The model call failed*.
+
+- **The structure is fossil's, computed, never proposed.** One kind of thing per source; its key the
+  profile's candidate key (the first, when there are several — a safe default); an edge per inclusion
+  that lands on a key; a source whose only columns are two inclusions is a **bridge** — an edge between
+  the two kinds it links, not a kind of its own. Valid by construction, so `model/not-a-key` and
+  `model/unbacked-edge` cannot fire.
+- **The model names, and picks words.** Contract: `{ types: [{ source, name, term? }], edges: [{ id,
+  label }], fields: [{ source, column, name, term? }] }`, every `source`, `column` and edge `id` an enum
+  of the structure's. With a dictionary, `term` is an enum of the candidates keasy found for that
+  source or column — by label, synonym and the column's sample values — and the model ranks them or
+  says none; without one, there is no `term`. Oracles: unique names, no word of Fossil's.
+- **Decisions, from the structure and the profile, never the model:** a source with several candidate
+  keys that no edge lands on (`key/<source>`, safe default); a source that is a bridge *or* a thing
+  counted on its own (`count/<edge>`, blocks — each counts differently); a column with no term in the
+  dictionary (*"motivation" isn't in your dictionary. What is it?* — keep it as is, say what it is, or
+  leave it out; safe default: keep it). Each is asked in plain words, in the conversation and on the
+  graph ([above](#questions-in-two-places-one-state)).
+- **A failure says what it is.** The Task's attempts spent is a problem of its own, not `llm/failed`:
+  what was tried, and why it did not hold, under a title that does not blame the model call.
+- IRIs are unchanged: keasy's, computed by fossil (`vocabularyOf`, `subjectOf`), never the model's; a
+  term from a dictionary is the dictionary's IRI.
+- *What would reverse it:* data whose links are not exact inclusions — dirty keys, a partial relation —
+  where the profile finds no edge a person sees at once; then the profile reports approximate
+  inclusions with their share, and those become decisions.
 
 ### `mapping` — Fossil under a grammar, checked by fossil
 
@@ -386,7 +426,7 @@ graph; [cleanup](cleanup.md)). Three of the Tasks' pieces re-derived what a libr
 attempts, fails its step with its problem (`llm/failed` when it has no code of its own) and **Retry**
 on it; nothing downstream runs on a refused artefact.
 
-## The preview is in the chat
+## The preview is in the panel
 
 **Built 2026-10-13.** Once there is a program, it runs over the first 200 rows
 of each source **into memory** — fossil's `run(program, { host, into: "memory", limit: 200 })`, in
@@ -404,13 +444,11 @@ over it, `useGraphAsk()` (`lib/fossil/ask.ts`) is Ask as Discover's panel runs i
 questions are answered in the chat with `AnswerCard`s over the sample. One door to fossil's executor,
 `lib/fossil/executor.ts`, maps `{ job }` and `"memory"` onto `run`'s `into`.
 
-**How the thread reads it** (`assistant-flow.tsx`, `preview-turn.tsx`). The preview runs the `mapping`
-Task's program and nothing before it: *Write the program* is the step it waits on, then *Run the
-preview*. A decision changed is a model accepted again, so the mapping writes the program again, and
-its run is a new checkpoint and a new preview message at the end; the one before stays where it was,
-answering what its program answered. Today's preview turn is one message that changes in place — the
-last answers dimmed and inert under *Updating…* until the new graph replaces them — and that goes with
-the thread ([each result is a new message](#each-result-is-a-new-message-at-the-end)). Each kept question is sent to `useGraphAsk()`'s chat in turn — one at a time, as a chat
+**How the panel reads it** (decided 2026-10-20, not built). The preview is the panel's *Preview* tab and
+runs as soon as there is a program — over the defaults, before any question is answered, which is what
+makes time to smile seconds and not minutes. A decision changed writes the program again and the tab
+shows the new answers in place, the last ones kept on screen while it runs. Today it is a message in the
+thread (`preview-turn.tsx`); that goes with the thread. Each kept question is sent to `useGraphAsk()`'s chat in turn — one at a time, as a chat
 answers, and only once the model is ready — and drawn as Ask's panel draws it, an `AnswerCard` with
 its `AskChips`. There is no composer under them: a tie Ask asks back is answered in Discover, over the
 whole graph. A failed run is said with its problem and a retry (`rerun`).
@@ -422,20 +460,19 @@ reads, `building` → `done` or `failed`. A build outlives the assistant's page;
 carry the person's question to Discover as `?q=`, and Ask sends it once the model is ready and takes it
 off the URL as it does, so nothing asks it twice.
 
-**Why in the chat, and not in Discover.** The preview is where the decisions are judged: the person
+**Why in the panel, and not in Discover.** The preview is where the decisions are judged: the person
 sees answers over their own rows next to the question that shaped them, changes a decision and sees
 the answer change, before anything is written — 200 rows in memory cost seconds, so running it again
 is cheap where building the graph again is not. And Discover only ever shows a whole graph, the
 graph's own output under its id: no second graph beside it to switch from, nothing that is not what
 the graph holds.
 
-**Build the graph** builds the current checkpoint's program, and saves the conversation first and
+**Build the graph** builds the current program, and saves the conversation first and
 builds under the id that save answers, so a graph always names the conversation as it stood when it
 was asked for. Its step reads `building`, `failed` with
 its problem and **Retry**, and `done`, after which *Your graph is ready* carries **Ask your data**,
 **Open the graph** and a link per question, `askHref(graphId, question)`. Nothing is changed after a
-build in the conversation it closed: a decision changed is a new conversation started from the
-checkpoint, and building there makes a new graph.
+build in the conversation it closed: a decision changed is a new conversation, and building there makes a new graph.
 
 *What would reverse it:* people who never look at the preview and go straight to building — then the
 preview runs behind the build, and the chat goes to Discover as soon as the graph is made. Or a
@@ -464,18 +501,18 @@ of the conversation it came from. `useAssistantConversation(id?)`
 (`lib/assistant-conversation.ts`) is the web's side: `{ id, messages, save, decisions }`, over
 `@kanzo-tech/ai`'s `useKeptChat`.
 
-**One message per turn** (`conversation.ts`'s `messagesOf`; checkpoints below are decided, not built, and
-a preview is one message until they are): each carries a `data-turn` with its
+**One message per turn** (`conversation.ts`'s `messagesOf`): each carries a `data-turn` with its
 kind, and its id is the kind and what it is about (`decide:<decision>`, `asked:<question>`,
-`preview:<checkpoint>`), so a save of a message already there replaces it and a new result adds one.
+`preview`), so a save of a message already there replaces it and a new result adds one.
 The person's messages are `user` messages (`sent`, `decided`, `asked`, `asked-all`, `build-reply`): the
 first carries `data-files` and `data-about` together, as the composer sends them, and the steps are
 not kept — they are said again from what the conversation knows; `data-decision` on a decision answered (`option: null` while it is asked;
-the last word on each wins), and `data-question` per question kept. Each preview message carries its
-checkpoint, `data-checkpoint`: the program it ran and the option each decision stood at; the last is
-the current one, since restoring cuts what came after it. `restore` reads the same parts back, and the thread starts where it stood: the
+the last word on each wins), and `data-question` per question kept. The preview message carries
+`data-program`: the program it ran and the option each decision stood at. With the preview moving to the
+panel ([above](#the-preview-is-in-the-panel)) it is still kept this way, as the conversation's last word
+on what was previewed. `restore` reads the same parts back, and the thread starts where it stood: the
 files read again without listing their folders (a file whose connection is gone is said, as a problem
-of the reading step), the current checkpoint's choices taken again, an assumption left to its default,
+of the reading step), the last choices taken again, an assumption left to its default,
 the questions kept, and its program previewed until the mapping writes it again. The `model` Task is
 asked again, from the profile, so a decision is raised again by its id. *What would reverse it:* a
 model that raises other
@@ -484,8 +521,7 @@ structure, and reopening skips the Task.
 
 **Saved whole after each reply, not appended.** The array is small — structure only, below — and
 whole is what the AI SDK hands back on finish; the thread grows at its end, but a decision's last word
-changes a message already saved and a restore removes every message after its checkpoint, which an
-append cannot say; and a
+changes a message already saved, which an append cannot say; and a
 save sent twice, or retried after a timeout, is one save. *What
 would reverse it:* conversations long enough that a reply's save is felt — then messages get rows of
 their own, as the chatbot template's do, and a save sends what changed.
@@ -498,7 +534,7 @@ them are not said yet and a save would drop them. The id saved under goes on the
 **A conversation a graph was built from is that graph's record**, as a submitted graph's script is
 (`graph/not-draft`): a save over it is refused (`conversation/built`). The thread says so where it
 applies: building closes it, and its composer gives way to *This conversation built <graph> and stays
-as it was built · Start a new one from here* — a new conversation from the current checkpoint, so a
+as it was built · Start a new one from here* — a new conversation, so a
 change rebuilds as a new graph with a conversation of its own, and the first graph still lists what it
 was built with. Opened by its id, a built conversation is that same closed thread, read-only: it
 answers nothing, takes no choice and is never saved, so it does not fork. The note above the first
@@ -507,8 +543,8 @@ message of a built conversation, and the save that quietly carried on in a new o
 **What is stored, and what is not.** The premise is that the person's data never leaves the browser,
 and a saved conversation is no exception. Stored: the messages' kinds and ids, the options offered in
 keasy's words, the person's choices, what they typed — their questions and the *what is it about?*
-sentence —, the files they picked as locations (connection and path), and each checkpoint's program
-and choices. Not stored:
+sentence —, the files they picked as locations (connection and path), and the previewed program
+and its choices. Not stored:
 sample rows, example values, counts, column statistics, an answer's rows, the assistant's prose (which
 quotes a row: *e.g. Marie Curie · Physics · 1903*), a file's contents, and an option's `detail`. They
 are recomputed from the profile when the conversation is opened again. One function holds it,
@@ -662,10 +698,13 @@ replaced the wizard on 2026-10-13 — "Assistant" in the new-graph picker opens 
 BFF's `/api/ai` forward and their configuration went the same day. The phases are on
 [Tasks](https://kanzo-tech.github.io/ui/docs/design/tasks#phases).
 
-The thread is built (2026-10-14) on kanzo-ui 0.46's slot above `PromptInput`'s field and checkable
-`Menu` items; what is left of it is the append-only thread with `Checkpoint` and its restore, the build's
-counts, and a composer under the preview. The `nobel-assistant` demo (`e2e/demos/nobel-assistant.demo.ts`) keeps what it
-has — its subtitles at the top, and the model double answering at a model's pace — and is rewritten to
-the thread's flow with it: the files picked on *@Nobel laureates*' pill and sent with *what is it
-about?*, the steps, each result below the last, a decision changed and a checkpoint restored, and the
-build closing the conversation.
+The thread built on 2026-10-14 is what the conversation beside its graph replaces; its pills, its
+details pinned above the thread and its preview message go as each step below lands. The
+`nobel-assistant` demo (`e2e/demos/nobel-assistant.demo.ts`) keeps its subtitles at the top and the
+model double answering at a model's pace, and is rewritten with each step.
+
+**The order of what was decided on 2026-10-20**, each useful alone: (1) `model`'s structure from the
+profile and the honest failure — it mends what the owner hit, with no new layout; (2) the shell and
+the panel with *Data* and *Preview*, the thread's results moving into it; (3) *Your graph* on kanzo-ui's
+schema view, and questions on the graph; (4) the **+** and file cards; (5) a connection's dictionary,
+and terms from it in `model`. The `nobel-assistant` demo follows each step.

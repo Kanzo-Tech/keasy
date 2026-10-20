@@ -12,7 +12,6 @@ import { useGraphAsk } from "@/lib/fossil/ask";
 import { type AttachedGraph, GraphScope } from "@/lib/fossil/graph";
 import type { PreviewState } from "@/lib/fossil/preview";
 import type { Question } from "./model";
-import { Said } from "./turns";
 
 /** How many rows of each file the preview reads: `run`'s `limit` for `into: "memory"`. */
 export const ROWS = 200;
@@ -20,33 +19,30 @@ export const ROWS = 200;
 export type Preview = PreviewState & { rerun: () => void };
 
 /**
- * *Here is your data over 200 rows* — the preview, in the chat (docs/design/assistant.md, *the
- * preview is in the chat*): each question the person kept, answered over it with Ask's cards. A
- * decision changed runs it again: the answers it replaces stay on screen, dimmed under *Updating…*
- * beside the heading, until the new ones land — and stay dimmed if the run fails.
+ * The panel's *Preview* (docs/design/assistant.md, *the preview is in the panel*): each question the
+ * person kept, answered over the first rows with Ask's cards. It runs as soon as there is a program,
+ * over the defaults. A decision changed runs it again: the answers it replaces stay on screen, dimmed
+ * under *Updating…*, until the new ones land — and stay dimmed if the run fails.
  */
-export function PreviewTurn({ preview, questions }: { preview: Preview; questions: readonly Question[] }) {
+export function PreviewTab({ preview, questions }: { preview: Preview; questions: readonly Question[] }) {
   const graph = preview.state === "idle" ? null : preview.graph;
-  // Nothing to show until there is a graph or a failure: the steps say what is under way.
-  if (!graph && preview.state !== "failed") return null;
   const stale = graph !== null && preview.state !== "ready";
   return (
-    <Said label="Preview">
-      {graph && (
-        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 font-medium text-base">
-          <span className="flex items-center gap-2">
-            <Sparkles aria-hidden className="size-4 text-primary" />
-            Here is your data over its first {ROWS} rows
+    <section aria-label="Preview" className="flex flex-col gap-3">
+      <p className="flex flex-wrap items-center gap-x-3 gap-y-1 font-medium">
+        <span className="flex items-center gap-2">
+          <Sparkles aria-hidden className="size-4 text-primary" />
+          Your data over its first {ROWS} rows
+        </span>
+        {preview.state === "running" && graph && (
+          <span className="flex items-center gap-1.5 font-normal text-muted-foreground text-sm" role="status">
+            <Spinner aria-hidden />
+            Updating…
           </span>
-          {preview.state === "running" && (
-            <span className="flex items-center gap-1.5 font-normal text-muted-foreground text-sm" role="status">
-              <Spinner aria-hidden />
-              Updating…
-            </span>
-          )}
-        </p>
-      )}
+        )}
+      </p>
       {preview.state === "failed" && <ProblemView error={preview.problem} onRetry={preview.rerun} />}
+      {!graph && preview.state !== "failed" && <Working>Writing the program and running it over the first rows…</Working>}
       {graph && (
         // The answers being replaced: still there to read, but plainly not the ones to act on.
         <div
@@ -63,7 +59,7 @@ export function PreviewTurn({ preview, questions }: { preview: Preview; question
           These are the first {ROWS} rows of each file. The whole graph counts every row.
         </p>
       )}
-    </Said>
+    </section>
   );
 }
 
@@ -79,7 +75,7 @@ function Working({ children }: { children: React.ReactNode }) {
 /** The questions answered over `graph`, each one Ask's turn: a new graph is a new chat, asked again. */
 function Answers({ graph, questions }: { graph: AttachedGraph; questions: readonly Question[] }) {
   if (questions.length === 0) {
-    return <p className="text-muted-foreground">You kept no questions. Build the graph and ask it anything in Discover.</p>;
+    return <p className="text-muted-foreground">Ask a question in the conversation, and it is answered here.</p>;
   }
   return (
     <Boundary fallback={<Working>Reading the preview…</Working>}>
@@ -109,12 +105,11 @@ function Asked({ questions }: { questions: readonly Question[] }) {
 
   const streaming = status === "streaming" || status === "submitted";
   const parts = askParts({ graph, send: (message) => void sendMessage(message) });
-  // A question and its answer are one cell of the grid: two answers side by side, each under the
-  // question that asked it.
+  // A question and its answer are one cell: each answer under the question that asked it.
   return (
     <div className="flex flex-col gap-3" data-preview-answers="">
       {!ready && <Working>Preparing the model to answer your questions…</Working>}
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3">
         {messages.map((message, index) =>
           message.role === "user" ? (
             <section className="flex flex-col gap-2 rounded-box border bg-card p-3.5" key={message.id}>

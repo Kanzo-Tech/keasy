@@ -60,8 +60,9 @@ export interface Relation {
 
 /**
  * A question the data raised, as options and never free text — kanzo-ui's `Decision`, MCP's
- * elicitation. One with `assumed` had a safe default: it is taken and shown as an assumption, and
- * blocks nothing. One without blocks until it is chosen.
+ * elicitation. One with `assumed` had a safe default: it is taken and shown as an assumption. One
+ * without is asked, and blocks nothing either: the graph and the preview use its first option until
+ * it is chosen, and only the build waits on it.
  */
 export interface DecisionItem {
   decision: Decision;
@@ -114,5 +115,5 @@ export interface TaskFailure {
 /** The option a decision stands at: the person's, else the default taken. */
 export const optionOf = (item: DecisionItem): string | null => item.chosen ?? item.assumed;
 
-/** A decision that stops the flow: no safe default, and nobody has chosen. */
+/** A decision the build waits on: no safe default, and nobody has chosen. */
 export const blocks = (item: DecisionItem): boolean => optionOf(item) === null;

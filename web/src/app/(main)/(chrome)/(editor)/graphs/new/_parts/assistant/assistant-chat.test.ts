@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { type AssistantMessage, toStored } from "@/lib/assistant-conversation";
 import { AssistantChat, type AssistantChatProps } from "./assistant-chat";
-import { holdsLine } from "./turns";
+import { holdsLine } from "./panel";
 import type { DecisionItem, Question } from "./model";
 import type { Seed } from "./use-assistant";
 import type { SourceFile } from "../sources";
@@ -136,7 +136,7 @@ afterEach(() => {
 
 /** The chat with its questions kept, as the host keeps them. */
 function Harness(props: AssistantChatProps) {
-  const [questions, setQuestions] = useState<Question[]>([]);
+  const [questions, setQuestions] = useState<Question[]>([...props.questions]);
   return createElement(AssistantChat, { ...props, questions, onQuestionsChange: setQuestions });
 }
 
@@ -181,6 +181,8 @@ describe("the assistant, as a conversation", () => {
     expect(send(host).disabled).toBe(true);
     // One pill per readable connection, empty until something is picked.
     expect(host.querySelector('[data-connection="nobel"]')?.textContent).toBe("@nobel");
+    // The chat alone: the panel opens with the first message.
+    expect(host.querySelector('[aria-label="Your graph"]')).toBeNull();
   });
 
   it("shows what was picked on its pill, and clears it with the cross", async () => {
@@ -191,7 +193,7 @@ describe("the assistant, as a conversation", () => {
     expect(onClear).toHaveBeenCalledWith("nobel");
   });
 
-  it("the first message is the files as a chip above what they are about, and the files are read under it", async () => {
+  it("the first message is the files as a chip above what they are about, and one line says they are read", async () => {
     const onReplies = vi.fn();
     const { host, render } = mount({ selected: new Set(["nobel:laureates.csv", "nobel:awards.csv"]), onReplies,
       reading: { done: 0, total: 2 },
@@ -200,48 +202,60 @@ describe("the assistant, as a conversation", () => {
     await through(host, "Nobel prizes");
     expect(replies(host)).toEqual(["@nobel · 2 filesNobel prizes"]);
     expect(host.querySelector("textarea")?.disabled).toBe(true);
-    // The details are pinned above the thread.
-    expect(host.querySelector("[data-details]")?.textContent).toContain("Used 2 files");
-    expect(host.querySelector("[data-details]")?.textContent).toContain("Nobel prizes");
+    expect(host.querySelector("textarea")?.placeholder).toBe("Reading your files…");
     render({ reading: { done: 1, total: 2 } });
-    expect(host.querySelector('[aria-label="What I am doing"]')?.textContent).toContain("Reading 2 files…");
-    expect(onReplies).toHaveBeenLastCalledWith({ about: "Nobel prizes", asked: false, built: false });
+    expect(host.querySelector("[data-working]")?.textContent).toBe("Reading 2 files");
+    expect(onReplies).toHaveBeenLastCalledWith({ about: "Nobel prizes", built: false });
   });
 
-  it("lists what was read as steps, the work to come already on them", async () => {
+  it("puts what was found in the panel beside the conversation, and the thread points to it", async () => {
     const { host } = mount({ selected: new Set(["nobel:laureates.csv"]), decisions: [] });
     await through(host);
-    const steps = [...host.querySelectorAll('[aria-label="What I am doing"] li')];
-    expect(steps.map((li) => li.getAttribute("data-status"))).toEqual(["complete", "complete", "pending", "pending"]);
-    expect(steps[0].textContent).toContain("Read the file");
-    expect(steps[0].textContent).toContain("1,018 laureates");
-    expect(steps.at(-1)?.textContent).toBe("Run the preview");
+    const panel = host.querySelector('[aria-label="Your graph"]')!;
+    expect(panel.querySelector('[data-thing="laureates"]')?.textContent).toContain("Laureates");
+    expect(panel.textContent).toContain("Each one holds name, gender and birth date.");
+    expect(panel.textContent).toContain("Each award has a laureate, a category and a year.");
+    // The thread says it in a line; the counts are the panel's.
+    expect(host.textContent).toContain("Kinds of thing: 1. What each one holds is under Data, beside this.");
+    // The program is written next, and the line says so.
+    expect(host.querySelector("[data-working]")?.textContent).toBe("Writing the program");
   });
 
-  it("keeps the composer in view, off, while a decision is waited on", async () => {
-    const { host } = mount({ selected: new Set(["nobel:laureates.csv"]), decisions: [award] });
+  it("keeps the composer on while a decision is open: nothing is blocked but the build", async () => {
+    const { host } = mount({ selected: new Set(["nobel:laureates.csv"]), decisions: [award], program: "program" });
     await through(host);
     const field = host.querySelector("textarea")!;
-    expect(field.disabled).toBe(true);
-    expect(field.placeholder).toBe("Answer above, or ask your own question…");
-    expect(send(host).disabled).toBe(true);
-    expect(host.querySelector('[aria-label="What I am doing"]')?.textContent).toContain("Waiting for you: 1 left to decide, with no safe answer");
+    expect(field.disabled).toBe(false);
+    expect(field.placeholder).toBe("Ask anything about your data; I'll answer once the preview is ready");
+    expect(button(host, "Build the graph")?.disabled).toBe(true);
+    expect(host.querySelector("[data-waits]")?.textContent).toBe("The build waits on 1 question with no safe answer");
+  });
+
+  it("the build's wait leads to the decision it waits on, in the conversation", async () => {
+    const scrolled = vi.fn();
+    Element.prototype.scrollIntoView = scrolled;
+    const { host } = mount({ selected: new Set(["nobel:laureates.csv"]), decisions: [award], program: "program" });
+    await through(host);
+    await act(async () => button(host, "1 question with no safe answer")!.click());
+    expect(scrolled).toHaveBeenCalledTimes(1);
+    expect(scrolled.mock.contexts[0]).toBe(host.querySelector('[data-decision="award-key"]'));
   });
 
   it("each decision is a turn of its own, counted, and picking an option emits its id", async () => {
     const onChoose = vi.fn();
     const { host } = mount({ selected: new Set(["nobel:laureates.csv"]), decisions: [award, country], onChoose });
     await through(host);
-    expect(host.textContent).toContain("Decisions with no safe answer: 2. They are yours to decide.");
+    expect(host.textContent).toContain("Decisions with no safe answer: 2. They are yours to decide");
     expect(host.textContent).toContain("Decision 1 of 2");
-    expect(host.textContent).not.toContain(country.decision.question);
-    const radios = [...host.querySelectorAll<HTMLInputElement>('input[type="radio"]')];
+    // None waits on another: both are asked at once.
+    expect(host.textContent).toContain("Decision 2 of 2");
+    const radios = [...host.querySelector('[data-decision="award-key"]')!.querySelectorAll<HTMLInputElement>('input[type="radio"]')];
     expect(radios.map((r) => r.value)).toEqual(["two", "one"]);
     await act(async () => radios[1].click());
     expect(onChoose).toHaveBeenCalledWith("award-key", "one");
   });
 
-  it("a chosen option is said once, selected in its turn, and the next decision follows it", async () => {
+  it("a chosen option is said once, selected in its turn, and changed there", async () => {
     const onChoose = vi.fn();
     const { host } = mount({
       selected: new Set(["nobel:laureates.csv"]),
@@ -252,15 +266,13 @@ describe("the assistant, as a conversation", () => {
     expect(replies(host)).not.toContain("One, shared");
     const options = host.querySelector(`[data-decision="award-key"]`)!.querySelectorAll<HTMLInputElement>('input[type="radio"]');
     expect([...options].find((r) => r.checked)?.value).toBe("one");
-    expect(host.textContent).toContain("Decision 2 of 2");
-    // Picking the other option in its turn is how it changes.
     await act(async () => [...options].find((r) => r.value === "two")!.click());
     expect(onChoose).toHaveBeenCalledWith("award-key", "two");
   });
 
   it("an assumption is said as what was taken, its options behind Change, and blocks nothing", async () => {
     const onChoose = vi.fn();
-    const { host } = mount({ selected: new Set(["nobel:laureates.csv"]), decisions: [share], onChoose });
+    const { host } = mount({ selected: new Set(["nobel:laureates.csv"]), decisions: [share], onChoose, program: "program" });
     await through(host);
     const note = host.querySelector('[data-assumption="share"]');
     expect(note?.textContent).toContain("I assumed: A fraction of the prize");
@@ -270,45 +282,82 @@ describe("the assistant, as a conversation", () => {
     expect(host.querySelector('[data-decision="share"] [data-slot="question-prompt"]')?.textContent).toBe(share.decision.question);
     const radios = [...host.querySelectorAll<HTMLInputElement>('input[type="radio"]')];
     expect(radios.find((r) => r.checked)?.value).toBe("fraction");
-    // It blocks nothing: the questions are already asked.
+    // It blocks nothing, the build included.
     expect(host.textContent).toContain("What would you like to know?");
+    expect(button(host, "Build the graph")?.disabled).toBe(false);
     await act(async () => radios.find((r) => r.value === "amount")!.click());
     expect(onChoose).toHaveBeenCalledWith("share", "amount");
   });
 
-  it("a question on offer becomes the person's, with whether it can be answered", async () => {
+  it("a question on offer becomes the person's, with whether it can be answered, and the panel turns to Preview", async () => {
     const { host } = mount({ selected: new Set(["nobel:laureates.csv"]), decisions: [] });
     await through(host);
+    expect(host.textContent).toContain("Take one of these, or ask your own below. I’ll answer each one under Preview");
     await act(async () => button(host, "Who has won more than one Nobel?")!.click());
     const asked = [...host.querySelectorAll("[data-reply]")].at(-1)!;
     expect(asked.querySelector("[data-question]")?.textContent).toBe("Who has won more than one Nobel?");
     expect(asked.textContent).toContain("Not checked yet");
+    expect(host.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe("Preview");
   });
 
-  it("says in each turn what is on screen: how to answer only while it can be answered", async () => {
-    const { host } = mount({ selected: new Set(["nobel:laureates.csv"]), decisions: [], offers: [] });
+  it("takes a question written in the composer at any time", async () => {
+    const { host } = mount({ selected: new Set(["nobel:laureates.csv"]), decisions: [award], offers: [] });
     await through(host);
-    expect(host.textContent).toContain("Write your questions below");
-    expect(host.querySelector("textarea")?.placeholder).toBe("Ask your own question…");
-    await act(async () => button(host, "Skip, show me a preview")!.click());
-    // The composer is gone: nothing says to write below it any more.
-    expect(host.querySelector("textarea")).toBeNull();
-    expect(host.textContent).not.toContain("below");
-    expect(host.textContent).toContain("When you are ready, I’ll build the whole graph");
+    expect(host.textContent).toContain("Ask your own below");
+    write(host, "Which country has the most laureates?");
+    await act(async () => send(host).click());
+    expect(host.querySelector("[data-question]")?.textContent).toBe("Which country has the most laureates?");
+    expect(host.querySelector("textarea")?.value).toBe("");
   });
 
-  it("says what the questions under it are once they are asked", async () => {
+  it("does not take typed text that changes the graph as a question, and says where that is changed", async () => {
     const { host } = mount({ selected: new Set(["nobel:laureates.csv"]), decisions: [] });
     await through(host);
-    expect(host.textContent).toContain("Take one of these, or write your own below");
-    await act(async () => button(host, "Who has won more than one Nobel?")!.click());
-    await act(async () => button(host, "That's all, show me a preview")!.click());
-    expect(host.textContent).not.toContain("below");
-    expect(host.textContent).toContain("Your question, and whether these files can answer it:");
-    expect(host.textContent).toContain("When the answers look right, I’ll build the whole graph");
+    write(host, "call Laureate Person");
+    await act(async () => send(host).click());
+    expect(host.querySelector("[data-question]")).toBeNull();
+    expect(replies(host).at(-1)).toBe("call Laureate Person");
+    expect(host.querySelector("[data-change]")?.textContent).toContain("changes your graph rather than asking your data");
+    await act(async () => button(host, "Data")!.click());
+    expect(host.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe("Data");
+    // The next question is a question, and the reply to the change goes.
+    write(host, "Who won twice?");
+    await act(async () => send(host).click());
+    expect(host.querySelector("[data-change]")).toBeNull();
+    expect(host.querySelector("[data-question]")?.textContent).toBe("Who won twice?");
   });
 
-  it("answers each question kept over the preview, in the chat, once the person has asked all", async () => {
+  it("on a phone, puts the panel in a sheet opened from a bar that says what is in it", async () => {
+    const matchMedia = window.matchMedia;
+    window.matchMedia = ((query: string) => ({ ...matchMedia.call(window, query), matches: true, addEventListener() {}, removeEventListener() {} })) as typeof matchMedia;
+    try {
+      const { host } = mount({ selected: new Set(["nobel:laureates.csv"]), decisions: [award] });
+      await through(host);
+      expect(host.querySelector('[aria-label="Your graph"]')).toBeNull();
+      expect(button(host, "Your graph · 1 kind · 1 open question")).toBeDefined();
+    } finally {
+      window.matchMedia = matchMedia;
+    }
+  });
+
+  it("marks with a checkpoint where the conversation turns to asking the data, once the preview answers", async () => {
+    const { host, render } = mount({
+      selected: new Set(["nobel:laureates.csv"]),
+      decisions: [],
+      program: "program",
+      preview: { state: "running", graph: null, rerun: () => {} },
+    });
+    await through(host);
+    expect(host.querySelector("[data-checkpoint]")).toBeNull();
+    expect(host.querySelector("[data-working]")?.textContent).toBe("Running the preview");
+    render({ program: "program", preview: { state: "ready", graph: { name: "preview-1" } as never, rerun: () => {} } });
+    expect(host.querySelector("[data-checkpoint]")?.textContent).toBe("Your data is ready to ask · first 200 rows");
+    expect(host.querySelector("[data-working]")).toBeNull();
+    expect(host.querySelector("textarea")?.placeholder).toBe("Ask anything about your data");
+    expect(host.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe("Preview");
+  });
+
+  it("answers each question kept over the preview, in the panel", async () => {
     ask.sendMessage.mockClear();
     const { host } = mount({
       selected: new Set(["nobel:laureates.csv"]),
@@ -317,14 +366,12 @@ describe("the assistant, as a conversation", () => {
       preview: { state: "ready", graph: { name: "preview-1" } as never, rerun: () => {} },
     });
     await through(host);
+    expect(host.querySelector('[aria-label="Preview"]')?.textContent).toContain("Ask a question in the conversation, and it is answered here.");
     await act(async () => button(host, "Who has won more than one Nobel?")!.click());
-    expect(ask.sendMessage).not.toHaveBeenCalled();
-    await act(async () => button(host, "That's all, show me a preview")!.click());
-    expect(host.textContent).toContain("Here is your data over its first 200 rows");
     expect(ask.sendMessage).toHaveBeenCalledWith({ text: "Who has won more than one Nobel?" });
   });
 
-  it("says the preview's state: running, and failed with its problem and a retry", async () => {
+  it("says a failed preview with its problem and a retry", async () => {
     const rerun = vi.fn();
     const { host, render } = mount({
       selected: new Set(["nobel:laureates.csv"]),
@@ -333,10 +380,9 @@ describe("the assistant, as a conversation", () => {
       preview: { state: "running", graph: null, rerun },
     });
     await through(host);
-    await act(async () => button(host, "Skip, show me a preview")!.click());
-    expect(host.textContent).toContain("Running it over the first 200 rows of each file…");
-    expect(host.textContent).toContain("Wrote the program");
-    render({ preview: { state: "failed", problem: new Error("The run stopped"), graph: null, rerun } });
+    await act(async () => host.querySelector<HTMLElement>('[role="tab"][data-value="preview"]')!.click());
+    expect(host.querySelector('[aria-label="Preview"]')?.textContent).toContain("Writing the program and running it over the first rows…");
+    render({ program: "program", preview: { state: "failed", problem: new Error("The run stopped"), graph: null, rerun } });
     await act(async () => button(host, "Try again")!.click());
     expect(rerun).toHaveBeenCalled();
   });
@@ -351,38 +397,45 @@ describe("the assistant, as a conversation", () => {
     });
     await through(host);
     await act(async () => button(host, "Who has won more than one Nobel?")!.click());
-    await act(async () => button(host, "That's all, show me a preview")!.click());
     const answers = () => host.querySelector("[data-preview-answers]")!.parentElement!;
     expect(answers().hasAttribute("data-stale")).toBe(false);
     render({ program: "program", preview: { state: "running", graph, rerun: () => {} } });
     expect(answers().hasAttribute("data-stale")).toBe(true);
     expect(answers().getAttribute("aria-busy")).toBe("true");
     const heading = host.querySelector('[aria-label="Preview"] p')!;
-    expect(heading.textContent).toContain("Here is your data over its first 200 rows");
+    expect(heading.textContent).toContain("Your data over its first 200 rows");
     expect(heading.querySelector('[role="status"]')?.textContent).toBe("Updating…");
     render({ program: "program", preview: { state: "ready", graph: { name: "preview-2" } as never, rerun: () => {} } });
     expect(answers().hasAttribute("data-stale")).toBe(false);
     expect(host.textContent).not.toContain("Updating…");
   });
 
+  it("opens the program in the editor from the panel, once there is one", async () => {
+    const onAdvanced = vi.fn();
+    const { host, render } = mount({ selected: new Set(["nobel:laureates.csv"]), decisions: [], onAdvanced });
+    await through(host);
+    expect(button(host, "Open in the editor")?.disabled).toBe(true);
+    render({ program: "program" });
+    await act(async () => button(host, "Open in the editor")!.click());
+    expect(onAdvanced).toHaveBeenCalledTimes(1);
+  });
+
   it("builds the graph only on request, from the transcript with the person's message in it, and says how far it is", async () => {
     const onBuild = vi.fn();
     const { host, render } = mount({ selected: new Set(["nobel:laureates.csv"]), decisions: [], onBuild });
     await through(host);
-    await act(async () => button(host, "Skip, show me a preview")!.click());
     // No program yet: nothing to build.
     expect(button(host, "Build the graph")?.disabled).toBe(true);
-    expect(host.textContent).toContain("or change a decision above, and the preview runs again");
     render({ program: "program" });
     await act(async () => button(host, "Build the graph")!.click());
     expect(onBuild).toHaveBeenCalledTimes(1);
     const kinds = (onBuild.mock.calls[0][0] as AssistantMessage[]).map((m) => m.id);
-    expect(kinds.slice(-4)).toEqual(["asked-all", "preview", "build-reply", "build"]);
+    expect(kinds.slice(-3)).toEqual(["ask", "build-reply", "build"]);
     expect(replies(host).at(-1)).toBe("Build the graph");
-    expect(host.textContent).toContain("Keeping this conversation…");
     render({ program: "program", build: { state: "building", graphId: "g1" } });
-    expect(host.textContent).toContain("Kept this conversation");
-    expect(host.textContent).toContain("Building the graph from every row…");
+    expect(host.querySelector("[data-working]")?.textContent).toBe("Building the graph from every row");
+    // Asked for once: the panel has nothing more to build.
+    expect(button(host, "Build the graph")).toBeUndefined();
   });
 
   it("once built, closes the conversation and hands off to Ask or the graph, with the person's questions as prompts", async () => {
@@ -392,10 +445,9 @@ describe("the assistant, as a conversation", () => {
       decisions: [],
       program: "program",
       build: { state: "done", graphId: "g1" },
+      initial: { about: "", built: false },
+      questions: [{ id: "q1", text: "Who has won more than one Nobel?", answerable: true }],
     });
-    await through(host);
-    await act(async () => button(host, "Who has won more than one Nobel?")!.click());
-    await act(async () => button(host, "That's all, show me a preview")!.click());
     const panel = host.querySelector("[data-built-panel]")!;
     expect(panel.textContent).toContain("Your graph is ready to explore.");
     expect([...panel.querySelectorAll("a")].map((a) => a.getAttribute("href"))).toEqual([
@@ -403,7 +455,6 @@ describe("the assistant, as a conversation", () => {
       "/graphs/g1",
       `/graphs/g1/discover?panel=ask&q=${encodeURIComponent("Who has won more than one Nobel?")}`,
     ]);
-    expect(host.textContent).toContain("Built the graph from every row");
     // The composer gives way to the close.
     expect(host.querySelector("textarea")).toBeNull();
     const closed = host.querySelector("[data-closed]")!;
@@ -436,7 +487,7 @@ describe("the assistant, as a conversation", () => {
 
   it("does not save a conversation only read, nor while what follows a reply is not said yet", async () => {
     const onSave = vi.fn();
-    mount({ selected: new Set(["nobel:laureates.csv"]), decisions: [], onSave, initial: { about: "", asked: true, built: false } });
+    mount({ selected: new Set(["nobel:laureates.csv"]), decisions: [], onSave, initial: { about: "", built: false } });
     expect(onSave).not.toHaveBeenCalled();
     const reading = mount({ selected: new Set(["nobel:laureates.csv"]), reading: { done: 0, total: 1 }, onSave });
     await through(reading.host);
@@ -470,7 +521,7 @@ describe("the assistant, as a conversation", () => {
     const onReplies = vi.fn();
     const { host } = mount({ selected: new Set(["nobel:laureates.csv"]), onReplies });
     await through(host);
-    expect(onReplies).toHaveBeenLastCalledWith({ about: "", asked: false, built: false });
+    expect(onReplies).toHaveBeenLastCalledWith({ about: "", built: false });
   });
 });
 
@@ -499,12 +550,12 @@ function useFakeAssistant({ seed, questions }: { seed: Seed; questions: Question
   };
 }
 
-/** A conversation kept: one file, the award decision taken as *two*, one question, all asked. */
+/** A conversation kept: one file, the award decision taken as *two*, and one question. */
 function keptConversation(): AssistantMessage[] {
   const question = { id: "q1", text: "Who has won more than one Nobel?", answerable: true };
   const { turns } = converse(
     { selected: new Set(["nobel:laureates.csv"]), reading: null, decisions: [{ ...award, chosen: "two" }], questions: [question] },
-    { ...NO_REPLIES, about: "Nobel prizes", asked: true },
+    { ...NO_REPLIES, about: "Nobel prizes" },
   );
   return messagesOf(turns, { files: [{ connection: "nobel", path: "laureates.csv" }], program: "program two" });
 }
@@ -526,11 +577,9 @@ describe("the assistant, wired", () => {
     expect(replies(host)).toEqual([
       "@nobel · 1 fileNobel prizes",
       expect.stringContaining("Who has won more than one Nobel?"),
-      "That's all. Show me.",
     ]);
     expect(doubles.useAssistant.mock.lastCall![0]).toMatchObject({
       about: "Nobel prizes",
-      asked: true,
       seed: { files: [{ connection: "nobel", path: "laureates.csv" }], chosen: { "award-key": "two" }, program: "program two" },
     });
     expect(doubles.usePreview.mock.lastCall![0]).toBe("program two");

@@ -9,10 +9,10 @@
  * of the picked files, read once over all of them (`tasks/profile.ts`) — before any model is asked;
  * and then the Tasks of docs/design/assistant.md, in order, on the page's model (`useModel`):
  * `model` once the files are read and *what is it about?* is answered — the relations and the
- * decisions; `requirements` once its decisions are taken — the question chips (`useTask`), and
- * whether each question kept is answerable; `mapping` once the person has asked all they wanted —
- * the program **Open in the editor** opens, and the preview and the build run. A Task that fails is in
- * `failures`, with its retry.
+ * decisions; then, over the model accepted with each open decision at its first option meanwhile,
+ * `requirements` — the question chips (`useTask`), and whether each question kept is answerable —
+ * and `mapping` — the program **Open in the editor** opens, and the preview and the build run. A Task
+ * that fails is in `failures`, with its retry.
  *
  * A conversation kept is started again from its `seed`: the files picked, the person's choices and
  * the program last written — everything else is read and asked again, from the files.
@@ -163,7 +163,6 @@ export function useAssistant({
   connections,
   formats,
   about,
-  asked,
   questions,
   seed,
 }: {
@@ -171,8 +170,6 @@ export function useAssistant({
   formats: readonly Format[];
   /** *What is it about?*: `undefined` until answered, `""` when skipped. */
   about: string | undefined;
-  /** The person has asked all they wanted. */
-  asked: boolean;
   /** The questions the person kept, whose `answerable` this answers. */
   questions: readonly Question[];
   /** A kept conversation to start from. */
@@ -265,17 +262,13 @@ export function useAssistant({
   });
   const draft = drafted.data ?? null;
   const decisions = useMemo(() => (draft && profiled ? decisionItems(draft, profiled, chosen) : null), [draft, profiled, chosen]);
-  const accepted = useMemo(
-    () => (draft && profiled && decisions ? accept(draft, profiled, (id) => standing(decisions, id)) : null),
-    [draft, profiled, decisions],
-  );
-  // Said before the decisions are taken: each one still open read at its first option meanwhile.
-  const relations = useMemo(() => {
+  // Each decision still open read at its first option meanwhile: nothing waits on it but the build.
+  const accepted = useMemo(() => {
     if (!draft || !profiled || !decisions) return null;
     const first = (id: string) => decisions.find((d) => d.decision.id === id)?.decision.options[0]?.id ?? null;
-    const shown = accepted ?? accept(draft, profiled, (id) => standing(decisions, id) ?? first(id));
-    return shown ? relationsOf(shown, profiled) : null;
-  }, [draft, profiled, decisions, accepted]);
+    return accept(draft, profiled, (id) => standing(decisions, id) ?? first(id));
+  }, [draft, profiled, decisions]);
+  const relations = useMemo(() => (accepted && profiled ? relationsOf(accepted, profiled) : null), [accepted, profiled]);
   const acceptedKey = accepted ? JSON.stringify(accepted) : null;
 
   // ── fossil declares the accepted model, and the graph it will be is described by fossil's mapping of it ──
@@ -320,7 +313,7 @@ export function useAssistant({
     return marked[typed.indexOf(q)]?.data ?? null;
   };
 
-  // ── mapping: the program, once the person has asked all they wanted ──
+  // ── mapping: the program, as soon as the model is accepted ──
   const mapped = useQuery({
     queryKey: ["assistant", "mapping", acceptedKey],
     queryFn: async ({ signal }) => {
@@ -332,7 +325,7 @@ export function useAssistant({
         check.close();
       }
     },
-    enabled: accepted !== null && declared.data !== undefined && asked,
+    enabled: accepted !== null && declared.data !== undefined,
     retry: false,
     staleTime: Infinity,
     // A decision changed is a program written again: the last one stays the preview's meanwhile.

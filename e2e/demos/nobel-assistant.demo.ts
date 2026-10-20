@@ -112,8 +112,8 @@ function script(origin: string): ModelTurn[] {
 /** How fast the double answers: a beat before the first word, then a short one a word. */
 const PACE = { wait: 1_200, perWord: 25 };
 
-/** The connection's pill above the composer: *+ @Nobel laureates*, then *@Nobel laureates · 6 files*. */
-const pill = (page: Page) => page.locator(`[data-connection="${CONNECTION}"]`).getByRole("button", { name: new RegExp(`^@${CONNECTION}`) });
+/** The composer's +, which lists the connections and then a connection's files. */
+const plus = (page: Page) => page.getByRole("button", { name: "Add files" });
 
 /** The preview's answers, once each kept question has its card and none is being replaced. */
 async function answered(page: Page): Promise<number> {
@@ -124,7 +124,7 @@ async function answered(page: Page): Promise<number> {
 
 /**
  * The guided assistant over the Nobel example, as one thread, from the files to Ask: the files picked on
- * the connection's pill above the composer (*Select all*), what they are about typed and sent with them,
+ * the composer's + (*Select all* in the connection's files), what they are about typed and sent with them,
  * what is in them under the panel's *Data*, two of the questions on offer taken and answered under its
  * *Preview* over the first 200 rows while the one decision with no safe answer is still open, that
  * decision answered, then the whole graph built (*Build the graph*) and asked in Discover.
@@ -148,8 +148,8 @@ demo("nobel-assistant", "The guided assistant: the Nobel files to a preview in t
     // At a model's pace, so each turn arrives on camera rather than all at once.
     await scriptModel(page, { turns: script(origin), pace: PACE });
     await page.goto("/graphs/new/assistant");
-    // The connection is a pill above the composer's field, before anything is picked.
-    await expect(pill(page)).toBeVisible();
+    // The composer's +, before anything is picked.
+    await expect(plus(page)).toBeVisible();
     return { page };
   },
 
@@ -157,12 +157,14 @@ demo("nobel-assistant", "The guided assistant: the Nobel files to a preview in t
     {
       subtitle: "Pick the files on the composer",
       async action() {
-        // The pill opens a menu of what the connection lists; it stays open while files are ticked.
-        await pill(page).click();
-        await page.getByRole("menuitem", { name: "Select all" }).click();
+        // The + lists the connections; the connection opens to its files, and stays open while they are picked.
+        await plus(page).click();
+        await page.getByRole("option", { name: CONNECTION, exact: true }).click();
+        await page.getByRole("option", { name: "Select all" }).click();
         await page.keyboard.press("Escape");
       },
-      check: () => expect(pill(page)).toContainText(`${FILES.length} files`),
+      // Three cards, then the rest of the connection as one.
+      check: () => expect(page.locator("[data-file-card]").last()).toContainText(`+${FILES.length - 3} more files`),
     },
     {
       subtitle: "Say what it is about, and send",

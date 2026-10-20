@@ -5,7 +5,7 @@ import { createContext, use, useEffect, useMemo, type ReactNode } from "react";
 import { queryOptions, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { engine, type Engine } from "@kanzo-tech/mosaic/engine";
 import type { TableExpr } from "@kanzo-tech/mosaic";
-import { readJoinGraph, withMapping, type JoinGraph } from "@kanzo-tech/relations";
+import { readJoinGraph, withMapping, type JoinGraph, type MappingModel } from "@kanzo-tech/relations";
 import { MosaicProvider, useMosaic } from "@kanzo-tech/ui/analytics";
 import { settled } from "@/lib/api/settled";
 import { toastError } from "@/lib/errors";
@@ -149,6 +149,15 @@ export function GraphScope({ graph, children }: { graph: AttachedGraph; children
       </MosaicProvider>
     </GraphContext>
   );
+}
+
+/**
+ * What the graph's mapping states, as `withMapping` and `GraphRoot` read it (rudof's `Mapping.model()`):
+ * `undefined` until it is read, and if it cannot be, so the graph draws without waiting on rudof.
+ */
+export function useMappingModel(): MappingModel | undefined {
+  const { data } = useQuery(mappingQuery(useAttachedGraph()));
+  return useMemo(() => data?.model(), [data]);
 }
 
 export function useAttachedGraph(): AttachedGraph {

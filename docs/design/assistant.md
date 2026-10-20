@@ -400,12 +400,12 @@ Task gave up with the oracles' words in a problem titled *The model call failed*
 
 - **The structure is fossil's, computed, never proposed.** One kind of thing per source; its key the
   profile's candidate key (the first, when there are several — a safe default); an edge per inclusion
-  that lands on a key; a source whose only columns are two inclusions is a **bridge** — an edge between
+  that lands on a key; a source with no key of its own whose two inclusions land on things is a **bridge** — an edge between
   the two kinds it links, not a kind of its own. Valid by construction, so `model/not-a-key` and
   `model/unbacked-edge` cannot fire.
-- **The model names, and picks words.** Contract: `{ types: [{ source, name, term? }], edges: [{ id,
-  label }], fields: [{ source, column, name, term? }] }`, every `source`, `column` and edge `id` an enum
-  of the structure's. With a vocabulary, `term` is an enum of the candidates keasy found for that
+- **The model names, and picks words.** Contract: `{ types, edges, fields }`, each an object with one
+  required property per slot of the structure — a thing by its source, an edge by its inclusion, a
+  field by `source.column` — and no other, so a slot is never missed nor invented. With a vocabulary, `term` is an enum of the candidates keasy found for that
   source or column — by label, synonym and the column's sample values — and the model ranks them or
   says none; without one, there is no `term`. Oracles: unique names, no word of Fossil's.
 - **Decisions, from the structure and the profile, never the model:** a source with several candidate

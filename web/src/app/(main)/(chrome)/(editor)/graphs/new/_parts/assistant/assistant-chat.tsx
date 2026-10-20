@@ -59,9 +59,9 @@ export interface AssistantChatProps extends AssistantData {
   onAdvanced: () => void;
   /** The mapping is writing the program again: a decision changed. */
   writing: boolean;
-  /** At the end of the app's header: whether the model the Tasks ask is ready on this device. */
+  /** At the end of the app's header: whether the model that reads typed questions is ready on this device. */
   status?: ReactNode;
-  /** Each change of what the person has replied: what the hook's Tasks wait on. */
+  /** Each change of what the person has replied: what the hook's steps wait on. */
   onReplies?: (replies: Replies) => void;
   /** The picked files as locations: what the conversation keeps of them. */
   files: readonly FileReference[];
@@ -131,13 +131,13 @@ export function AssistantChat(props: AssistantChatProps) {
   const closed = conversation.closed || props.built === true;
 
   // The transcript as it is kept, saved whenever it changes after a reply — but not while the files
-  // are read or the `model` Task answers, when the turns after them are not said yet and a save
+  // are read or the model is drafted from them, when the turns after them are not said yet and a save
   // would drop them.
   const messages = messagesOf(turns, { files: props.files, program: props.program });
   const transcript = JSON.stringify(messages);
   const settling =
     waiting === "reading" ||
-    (replies.about !== undefined && props.decisions === null && !props.failures.some((f) => f.task === "model"));
+    (replies.about !== undefined && props.decisions === null);
   const last = useRef<string | null>(null);
   useEffect(() => {
     if (!replied || settling || transcript === last.current) return;
@@ -239,20 +239,38 @@ export function AssistantChat(props: AssistantChatProps) {
 
   const name = graphName(props.files);
   const sent = replies.about !== undefined;
-  const chat = (
+  const composer = closed ? (
+    <ClosedBar name={name} />
+  ) : (
+    <Composer
+      onAsk={(text) => (isChange(text) ? setChange(text.trim()) : ask(`written-${++written}`, text))}
+      onPick={props.onPick}
+      onDrop={props.onDrop}
+      onSend={(text) => reply({ about: text })}
+      connections={props.connections}
+      list={props.list}
+      placeholder={placeholderOf(waiting, previewed)}
+      selected={props.selected}
+      vocabularies={props.vocabularies}
+      waiting={waiting}
+    />
+  );
+  // Nothing sent yet: the question and the composer together in the middle, as Claude opens.
+  const empty = !sent && props.failures.length === 0;
+  const chat = empty ? (
+    <div className="flex min-h-0 flex-1 flex-col justify-center gap-6 pb-[12vh]" data-empty="">
+      <div className="mx-auto flex w-full max-w-3xl flex-col items-center gap-2 px-4 text-center">
+        <h2 className="font-semibold text-2xl tracking-tight">What would you like to explore?</h2>
+        <p className="text-muted-foreground">Add files with the +, and say what they are about.</p>
+      </div>
+      {composer}
+    </div>
+  ) : (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       {/* A turn added takes the pin back, as Conversation's own does; reading back up releases it. */}
       <Conversation>
         <ConversationContent className="py-8">
           <MessageList className="gap-5" ref={thread}>
-            {turns.length === 0 && (
-              <div className="flex flex-col gap-1.5" data-empty="">
-                <h2 className="font-semibold text-xl">What would you like to explore?</h2>
-                <p className="text-muted-foreground">
-                  Add a connection&rsquo;s files from the badges below, and say what they are about if you like.
-                </p>
-              </div>
-            )}
             {turns.map((turn, index) => draw(turn, index))}
             {change !== null && !closed && (
               <>
@@ -275,22 +293,7 @@ export function AssistantChat(props: AssistantChatProps) {
         <ConversationScrollButton className="inset-x-auto end-4" />
       </Conversation>
 
-      {closed ? (
-        <ClosedBar name={name} />
-      ) : (
-        <Composer
-          onAsk={(text) => (isChange(text) ? setChange(text.trim()) : ask(`written-${++written}`, text))}
-          onPick={props.onPick}
-          onDrop={props.onDrop}
-          onSend={(text) => reply({ about: text })}
-          connections={props.connections}
-          list={props.list}
-          placeholder={placeholderOf(waiting, previewed)}
-          selected={props.selected}
-          vocabularies={props.vocabularies}
-          waiting={waiting}
-        />
-      )}
+      {composer}
     </div>
   );
 

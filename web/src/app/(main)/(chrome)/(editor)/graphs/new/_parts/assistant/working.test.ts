@@ -26,7 +26,6 @@ describe("the line while the assistant works", () => {
 
   it("is gone when nothing runs, and where a Task stopped: its problem is said there", () => {
     expect(workingOf(read)).toBeNull();
-    expect(workingOf({ ...read, decisions: null, failures: [{ task: "model", problem: null, retry: () => {} }] })).toBeNull();
     expect(workingOf({ ...read, program: null, failures: [{ task: "mapping", problem: null, retry: () => {} }] })).toBeNull();
   });
 });

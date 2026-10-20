@@ -5,28 +5,26 @@
  * The turns compute nothing; everything they show is answered here.
  *
  * What it answers, from real data: the tree, from the connections' listings (`useSources`, the
- * studio's); one thing per file with its count and columns, from fossil's profile
- * of the picked files, read once over all of them (`tasks/profile.ts`) — before any model is asked;
- * and then the Tasks of docs/design/assistant.md, in order, on the page's model (`useModel`):
- * `model` once the files are read and *what is it about?* is answered — the relations and the
- * decisions; then, over the model accepted with each open decision at its first option meanwhile,
- * `requirements` — the question chips (`useTask`), and whether each question kept is answerable —
- * and `mapping` — the program **Open in the editor** opens, and the preview and the build run. A Task
- * that fails is in `failures`, with its retry.
+ * studio's); once the first message is sent, one thing per file with its count and columns, from
+ * fossil's profile of the picked files, read once over all of them (`tasks/profile.ts`); and then the
+ * steps of docs/design/assistant.md, in order, none of them a model's: the model, named from the
+ * files' own words — the relations and the decisions; then, over the model accepted with each open
+ * decision at its first option meanwhile, the question chips, and the program fossil checks —
+ * which **Open in the editor** opens, and the preview and the build run. The page's model
+ * (`useModel`) is asked one thing only: whether a question the person typed can be answered, as Ask
+ * will be. A step that fails is in `failures`, with its retry.
  *
  * A conversation kept is started again from its `seed`: the files picked, the person's choices and
  * the program last written — everything else is read and asked again, from the files.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 // eslint-disable-next-line no-restricted-imports -- one listing per opened folder, the profile of the picked files and each Task's answer; each failure is shown in its place, beside the rest
 import { keepPreviousData, useQueries, useQuery } from "@tanstack/react-query";
-import { useTask } from "@kanzo-tech/ai";
-import { type Proposal, runTask } from "@kanzo-tech/ai/task";
 import type { Format, Profiled as Described } from "@fossil-lang/types";
 import { inputs, profile } from "@fossil-lang/wasm";
 import { engine } from "@kanzo-tech/mosaic/engine";
-import { type JoinGraph, splitWords } from "@kanzo-tech/relations";
+import { splitWords } from "@kanzo-tech/relations";
 import type { FileReference } from "@/lib/assistant-conversation";
 import type { StorageConnection } from "@/lib/connections";
 import { ClientError } from "@/lib/errors";
@@ -35,10 +33,10 @@ import { childrenOf, connectionNode, type SourceBranch, type SourceFile, type So
 import { listChildren } from "../use-sources";
 import { useModel } from "@/lib/ai";
 import { type AssistantData, type DecisionItem, optionOf, type Question, type QuestionOffer, type TaskFailure, type Thing } from "./model";
-import { declare, fossilCheck, mapping, mappingOf, programOf } from "./tasks/mapping";
-import { accept, type Accepted, decisionsOf, defaultsOf, type Draft, draftOf, modelTask, relationsOf, structureOf } from "./tasks/model";
+import { declare, fossilCheck, mappingOf, writeProgram } from "./tasks/mapping";
+import { accept, decisionsOf, defaultsOf, type Draft, draftOf, namesOf, relationsOf, structureOf } from "./tasks/model";
 import { type Profiled, profiledOf, thingName } from "./tasks/profile";
-import { isAnswerable, joinGraphOf, requirements } from "./tasks/requirements";
+import { isAnswerable, joinGraphOf, offersOf } from "./tasks/requirements";
 
 /** The rows the profile keeps of each file: enough for one row of each relation to be found across files. */
 const SHOWN = 50;
@@ -104,22 +102,6 @@ function decisionItems(draft: Draft, profiled: Profiled, chosen: Readonly<Record
   }));
 }
 
-/** What each Task writes, as a failure names it. */
-const WRITES: Record<string, string> = { model: "The names", requirements: "The questions", mapping: "The program" };
-
-/**
- * A proposal's value, once its oracles held it. What they still said after the last attempt is the
- * failure — `task/unheld`, what was tried and why it did not hold, not a model call that failed.
- */
-export function held<A>({ task, value, verdict, attempts }: Proposal<A>): A {
-  if (!("diagnostics" in verdict)) return value;
-  const tries = attempts === 1 ? "1 attempt" : `${attempts} attempts`;
-  throw new ClientError("task/unheld", `${WRITES[task] ?? `The ${task}`} did not hold after ${tries}.`, verdict.diagnostics.map((d) => d.message).join(" "));
-}
-
-const NO_MODEL: Accepted = { types: [], edges: [] };
-const NO_GRAPH: JoinGraph = { types: [], edges: [] };
-
 /** The option the decision `id` stands at: the person's pick, else its default. */
 function standing(items: readonly DecisionItem[], id: string): string | null {
   const item = items.find((d) => d.decision.id === id);
@@ -140,8 +122,7 @@ export interface Assistant extends AssistantData {
   questions: Question[];
   /** Pick `files`, or drop them: what a pill's menu does. */
   pick: (files: readonly SourceFile[], on: boolean) => void;
-  /** Drop every file of a connection: the cross on its pill. */
-  /** Drops picked files by id. */
+  /** Drops picked files by id: a card's cross. */
   drop: (ids: readonly string[]) => void;
   /** The person's pick of a decision's option. */
   choose: (decision: string, option: string) => void;
@@ -235,7 +216,8 @@ export function useAssistant({
       });
       return { profiled: profiledOf(described.profile, sources), undescribed: described.undescribed, described };
     },
-    enabled: picked.length > 0,
+    // Nothing is read until the first message is sent: picking files is not asking.
+    enabled: picked.length > 0 && about !== undefined,
     retry: false,
     staleTime: Infinity,
   });
@@ -253,18 +235,12 @@ export function useAssistant({
 
   const model = useModel();
 
-  // ── model: the types, once the files are read and what it is about is said ──
-  const drafted = useQuery({
-    queryKey: ["assistant", "model", lines, about],
-    queryFn: async ({ signal }) => {
-      const names = held(await runTask(modelTask(profiled!), { profiled: profiled!, about: about ?? "" }, { model, signal }));
-      return draftOf(structureOf(profiled!), names);
-    },
-    enabled: profiled !== null && profiled.sources.length > 0 && about !== undefined,
-    retry: false,
-    staleTime: Infinity,
-  });
-  const draft = drafted.data ?? null;
+  // ── model: the types and their names, from the files alone, once they are read ──
+  const draft = useMemo(() => {
+    if (profiled === null || profiled.sources.length === 0) return null;
+    const structure = structureOf(profiled);
+    return draftOf(structure, namesOf(structure));
+  }, [profiled]);
   const decisions = useMemo(() => (draft && profiled ? decisionItems(draft, profiled, chosen) : null), [draft, profiled, chosen]);
   // Each decision still open read at its first option meanwhile: nothing waits on it but the build.
   const accepted = useMemo(() => {
@@ -289,16 +265,13 @@ export function useAssistant({
   const graph = accepted ? (declared.data?.graph ?? null) : null;
 
   // ── requirements: questions to start from, once the model is accepted ──
-  const offered = useTask(requirements, { accepted: accepted ?? NO_MODEL, graph: graph ?? NO_GRAPH, about: about ?? "" }, { model });
-  const propose = useRef(offered.propose);
-  propose.current = offered.propose;
-  useEffect(() => {
-    if (graph !== null) propose.current();
-  }, [graph]);
-  const offers: QuestionOffer[] | null =
-    accepted && offered.state === "ready"
-      ? offered.proposals.map((p) => ({ id: p.id, text: p.value.text, rationale: `Reads ${p.value.fields.map(splitWords).join(", ")}` }))
-      : null;
+  const offers: QuestionOffer[] | null = useMemo(
+    () =>
+      accepted && graph
+        ? offersOf(accepted, graph).map((r, i) => ({ id: `offer-${i}`, text: r.text, rationale: `Reads ${r.fields.map(splitWords).join(", ")}` }))
+        : null,
+    [accepted, graph],
+  );
   // A chip is answerable by construction: the resolver reached it before it was offered.
   const offeredTexts = new Set((offers ?? []).map((o) => o.text));
   const typed = questions.filter((q) => !offeredTexts.has(q.text));
@@ -323,8 +296,7 @@ export function useAssistant({
     queryFn: async ({ signal }) => {
       const check = fossilCheck({ host, engine: await engine({ signal }) });
       try {
-        const input = { accepted: accepted!, ...declared.data!.declaration, check };
-        return programOf(input, held(await runTask(mapping, input, { model, signal })));
+        return await writeProgram({ accepted: accepted!, ...declared.data!.declaration, check }, signal);
       } finally {
         check.close();
       }
@@ -337,9 +309,7 @@ export function useAssistant({
   });
 
   const failures: TaskFailure[] = [
-    ...(drafted.isError ? [{ task: "model" as const, problem: drafted.error, retry: () => void drafted.refetch() }] : []),
-    ...(declared.isError ? [{ task: "requirements" as const, problem: declared.error, retry: () => void declared.refetch() }] : []),
-    ...(offered.state === "failed" ? [{ task: "requirements" as const, problem: offered.error, retry: () => offered.propose() }] : []),
+    ...(declared.isError ? [{ task: "mapping" as const, problem: declared.error, retry: () => void declared.refetch() }] : []),
     ...(mapped.isError ? [{ task: "mapping" as const, problem: mapped.error, retry: () => void mapped.refetch() }] : []),
   ];
 
@@ -348,7 +318,7 @@ export function useAssistant({
     list,
     selected,
     vocabularies,
-    reading: picked.length > 0 && read.isPending ? { done: 0, total: picked.length } : null,
+    reading: picked.length > 0 && about !== undefined && read.isPending ? { done: 0, total: picked.length } : null,
     problems,
     understanding: { things: profiled ? thingsOf(profiled, picked) : [], relations },
     offers,

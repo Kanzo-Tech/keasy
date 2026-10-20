@@ -1,7 +1,8 @@
 /**
  * The assistant's conversation as data: which turns are said, in order, from what the hook answers
  * (`AssistantData`) and what the person has replied. Nothing is drawn here: the transcript is derived
- * again on every change, so a pick changed above re-reads everything below it. What is kept of it is
+ * again on every change, so a pick changed above re-reads everything below it. What the assistant
+ * found is the panel's (*Data*, *Preview*); the thread is what was said and decided. What is kept of it is
  * its structure (`messagesOf`), and a conversation kept is opened again from that (`restore`) — the
  * counts, rows and sentences are the profile's to say again (docs/design/assistant.md, *the
  * conversation is kept*).
@@ -17,16 +18,11 @@ export interface Replies {
    * sent, `""` when nothing was said about them.
    */
   about: string | undefined;
-  /** The person has asked all they wanted, and the graph may be built. */
-  asked: boolean;
   /** The person asked for the graph: *Build the graph* is their message. */
   built: boolean;
 }
 
-export const NO_REPLIES: Replies = { about: undefined, asked: false, built: false };
-
-/** Which of the work a list of steps is: reading and proposing, writing and running, or building. */
-export type StepsGroup = "read" | "run" | "build";
+export const NO_REPLIES: Replies = { about: undefined, built: false };
 
 /** The files a connection contributed to the first message, as its chip counts them. */
 export interface SentSource {
@@ -37,20 +33,23 @@ export interface SentSource {
 /** One turn of the transcript: the assistant's (`said`) or the person's reply. */
 export type Turn =
   | { kind: "sent"; sources: SentSource[]; about: string }
-  | { kind: "steps"; group: StepsGroup }
   | { kind: "understood" }
   | { kind: "decide"; item: DecisionItem; index: number; of: number }
   | { kind: "decided"; item: DecisionItem }
   | { kind: "assumed"; item: DecisionItem }
+  /** What would you like to know? Kept with the program written by then, which the preview runs. */
   | { kind: "ask" }
+  /** The preview has answers: below it the person is asking their data. */
+  | { kind: "checkpoint" }
   | { kind: "asked"; question: Question }
-  | { kind: "asked-all"; questions: number }
-  | { kind: "preview" }
   | { kind: "build" }
   | { kind: "build-reply" };
 
-/** What the conversation waits on: the reply the turn at its end asks for, `null` once it is over. */
-export type Waiting = "send" | "reading" | "decide" | "ask" | null;
+/**
+ * What the composer takes: the first message, nothing while the files are read, then a question at
+ * any time — `null` once the conversation is closed.
+ */
+export type Waiting = "send" | "reading" | "ask" | null;
 
 export interface Conversation {
   turns: Turn[];
@@ -59,7 +58,7 @@ export interface Conversation {
   closed: boolean;
 }
 
-/** A decision with no safe default: asked as a turn of its own, never assumed. */
+/** A decision with no safe default: asked as a turn of its own, never assumed; the build waits on it. */
 const isOpen = (item: DecisionItem) => item.assumed === null;
 
 /** The files picked, counted by the connection they are read through (an id is `<connection>:<path>`). */
@@ -82,10 +81,17 @@ export function graphName(files: readonly FileReference[]): string {
   return names.length > 0 ? names.join(", ") : "New graph";
 }
 
-/** The transcript so far, and the reply it waits on. */
+/**
+ * The transcript so far, and what the composer takes. Nothing blocks it: a decision with no safe
+ * default is asked as a turn, and the preview and the graph use its first option meanwhile; only the
+ * build waits on it. Once the preview has answers (`previewed`) a checkpoint says the conversation
+ * has turned to asking the data, and the questions follow it.
+ */
 export function converse(
   data: Pick<AssistantData, "selected" | "reading" | "decisions"> & {
     questions: readonly Question[];
+    /** The preview has answered at least once. */
+    previewed?: boolean;
     /** The build's progress, when one has been asked for in this tab. */
     build?: BuildProgress | null;
   },
@@ -95,40 +101,37 @@ export function converse(
   const stop = (waiting: Waiting, closed = false): Conversation => ({ turns, waiting, closed });
 
   if (replies.about === undefined) return stop("send");
-  turns.push({ kind: "sent", sources: sourcesOf(data.selected), about: replies.about }, { kind: "steps", group: "read" });
+  turns.push({ kind: "sent", sources: sourcesOf(data.selected), about: replies.about });
   if (data.reading !== null) return stop("reading");
 
   turns.push({ kind: "understood" });
   const decisions = data.decisions ?? [];
-  // A default taken is said under what was understood, as a line: it blocks nothing.
+  // A default taken is said under what was understood, as a line.
   for (const item of decisions.filter((d) => !isOpen(d))) turns.push({ kind: "assumed", item });
   const open = decisions.filter(isOpen);
   for (const [index, item] of open.entries()) {
     turns.push({ kind: "decide", item, index, of: open.length });
-    if (item.chosen === null) return stop("decide");
-    turns.push({ kind: "decided", item });
+    if (item.chosen !== null) turns.push({ kind: "decided", item });
   }
 
-  turns.push({ kind: "ask" }, ...data.questions.map((question) => ({ kind: "asked" as const, question })));
-  if (!replies.asked) return stop("ask");
-  turns.push({ kind: "asked-all", questions: data.questions.length }, { kind: "steps", group: "run" }, { kind: "preview" });
-  if (!replies.built && !data.build) {
-    turns.push({ kind: "build" });
-    return stop(null);
-  }
-  turns.push({ kind: "build-reply" }, { kind: "steps", group: "build" }, { kind: "build" });
-  return stop(null, data.build?.state === "done");
+  turns.push({ kind: "ask" });
+  if (data.previewed) turns.push({ kind: "checkpoint" });
+  turns.push(...data.questions.map((question) => ({ kind: "asked" as const, question })));
+  if (!replies.built && !data.build) return stop("ask");
+  turns.push({ kind: "build-reply" }, { kind: "build" });
+  const closed = data.build?.state === "done";
+  return stop(closed ? null : "ask", closed);
 }
 
-/** Why the reply cannot be given yet, in the person's words: what the composer says in its place. */
-export function waitingFor(waiting: Waiting): string | null {
+/** What the composer's field says, by what it takes. */
+export function placeholderOf(waiting: Waiting, previewed: boolean): string {
   switch (waiting) {
     case "reading":
       return "Reading your files…";
-    case "decide":
-      return "Answer above, or ask your own question…";
+    case "ask":
+      return previewed ? "Ask anything about your data" : "Ask anything about your data; I'll answer once the preview is ready";
     default:
-      return null;
+      return "";
   }
 }
 
@@ -143,7 +146,7 @@ type Part = AssistantMessage["parts"][number];
 const data = <K extends keyof StoredParts>(name: K, value: StoredParts[K]) => ({ type: `data-${name}`, data: value }) as Part;
 
 /** The person's turns; every other kind is the assistant's. */
-const PERSON = new Set<Turn["kind"]>(["sent", "decided", "asked", "asked-all", "build-reply"]);
+const PERSON = new Set<Turn["kind"]>(["sent", "decided", "asked", "build-reply"]);
 
 /** A decision as it stands at `item`: the option taken, and whether it was taken without asking. */
 const decisionPart = (item: DecisionItem, option: string | null) =>
@@ -179,7 +182,7 @@ function partsOf(turn: Turn, { files, program }: { files: readonly FileReference
       const { id, text, answerable } = turn.question;
       return [data("question", { id, text, answerable })];
     }
-    case "preview":
+    case "ask":
       return program === null ? [] : [data("program", { program })];
     default:
       return [];
@@ -189,14 +192,13 @@ function partsOf(turn: Turn, { files, program }: { files: readonly FileReference
 /**
  * The transcript as it is kept: a message per turn, each with its kind and what the person picked,
  * chose or typed — the files as locations, the decisions with the option taken, the questions, the
- * program. Nothing the turns show of the data: no count, no row, no sentence.
+ * program previewed. Nothing the turns show of the data: no count, no row, no sentence.
  */
 export function messagesOf(
   turns: readonly Turn[],
   kept: { files: readonly FileReference[]; program: string | null },
 ): AssistantMessage[] {
-  // Steps are drawn from the state at hand and said again, so they are not kept.
-  return turns.filter((turn) => turn.kind !== "steps").map((turn) => ({
+  return turns.map((turn) => ({
     id: messageId(turn),
     role: PERSON.has(turn.kind) ? "user" : "assistant",
     parts: [data("turn", { kind: turn.kind }), ...partsOf(turn, kept)],
@@ -216,8 +218,7 @@ export interface Restored {
 
 /**
  * Where a kept conversation stood: the files picked, what it is about, the person's choices (an
- * assumption stays the default's to make again), the questions kept, whether they had asked all they
- * wanted, and the program. The last word on each wins, as the conversation said it.
+ * assumption stays the default's to make again), the questions kept, and the program. The last word on each wins, as the conversation said it.
  */
 export function restore(messages: readonly AssistantMessage[]): Restored {
   const kinds = new Set<string>();
@@ -254,7 +255,7 @@ export function restore(messages: readonly AssistantMessage[]): Restored {
   const sent = files.length > 0 && kinds.has("sent");
   // Asking for the graph is not restored: a conversation reopened is not mid-build.
   return {
-    replies: { about: sent ? (about ?? "") : undefined, asked: sent && kinds.has("asked-all"), built: false },
+    replies: { about: sent ? (about ?? "") : undefined, built: false },
     files,
     chosen,
     questions: [...questions.values()],

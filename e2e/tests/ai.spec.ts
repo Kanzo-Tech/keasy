@@ -27,49 +27,6 @@ const question = (words: string) => `Question: ${words}`;
 /** The rows of the people fixture: what a count of Person reads. */
 const PEOPLE = readFileSync(new URL("../fixtures/data/people.csv", import.meta.url), "utf8").trim().split("\n").length - 1;
 
-/**
- * The `model` Task's call and the `requirements` Task's, by their instructions' first words
- * (`web/…/assistant/tasks/model.ts` and `requirements.ts`).
- */
-const MODEL = "You design what a person's data is about";
-const REQUIREMENTS = "You suggest questions a person could ask";
-
-/**
- * What the model names over the people fixture: its one thing, which raises no decision that blocks.
- * The structure is the profile's; a field it leaves unnamed keeps its column's name.
- */
-const PERSON = { types: { people: "Person" }, edges: {}, fields: { "people.signed_up_on": "signedUpOn" } };
-
-/**
- * The guided chat's questions turn, over the suite's source: the people file picked through the + and
- * sent with nothing said about it, and the types the double proposes accepted — where the
- * `requirements` Task is asked for its chips.
- */
-async function askForRequirements(page: Page) {
-  await page.goto("/graphs/new");
-  await page.getByText("Assistant", { exact: true }).click();
-  await expect(page).toHaveURL(/\/graphs\/new\/assistant(\?conversation=[\w-]+)?$/);
-  // In the dev stack TanStack's devtools button floats over the chat's corner.
-  await page.addStyleTag({ content: ".tsqd-parent-container { display: none !important; }" });
-  // The + lists the connections, and a connection its files, each picked on select.
-  await page.getByRole("button", { name: "Add files" }).click();
-  await page.getByRole("option", { name: SOURCE, exact: true }).click();
-  await page.getByRole("option", { name: /^people\.csv/ }).click();
-  await page.keyboard.press("Escape");
-  // What is picked is a card above the field.
-  await expect(page.locator("[data-file-card]")).toHaveText(["people.csv"]);
-  // Nothing said about what the files are: the send goes with the sources alone.
-  await page.getByRole("button", { name: "Send" }).click();
-  // The profile is read on the page's engine, then the double's types are accepted.
-  await expect(page.getByText("What would you like to know?")).toBeVisible({ timeout: 60_000 });
-}
-
-/** The failure is the questions turn's: the `requirements` Task's, said where the chat stopped. */
-async function failedOnQuestions(page: Page) {
-  await expect(page.locator('[data-task="requirements"]')).toBeVisible();
-  await expect(page.getByRole("button", { name: "Who bought the most?" })).toHaveCount(0);
-}
-
 test("11 a browser without WebGPU fails the answer in Ask as llm/unavailable", async ({ page, env, builtGraph }) => {
   await withoutWebGPU(page);
   await (await askPanel(page, env, builtGraph)).send("How many people are there?");
@@ -106,33 +63,6 @@ test("13 a model that stops writing mid-answer can be stopped, and the next ques
   const answers = await panel.composer();
   await answers.ask(words);
   expect(await answers.rows()).toEqual([{ Count: String(PEOPLE) }]);
-});
-
-test("14 a model that fails mid-answer is a failure, not a short answer", async ({ page }) => {
-  // One whole question, then the engine fails: what was written is not taken for the whole list.
-  const one = JSON.stringify({ text: "Who bought the most?", of: "Person", fields: ["Person.name"] });
-  await scriptModel(page, {
-    turns: [
-      { when: MODEL, reply: { text: JSON.stringify(PERSON) } },
-      { when: REQUIREMENTS, reply: { after: `{"elements":[${one},{"text":"How many`, fail: "The GPU device was lost" } },
-    ],
-  });
-  await askForRequirements(page);
-  await expectProblem(page, "llm/failed", { within: 20_000 });
-  await failedOnQuestions(page);
-});
-
-test("15 a structured answer that does not parse fails the step of the assistant, not as no suggestions", async ({ page }) => {
-  // The questions are asked for as JSON; prose instead fails the call, and says so.
-  await scriptModel(page, {
-    turns: [
-      { when: MODEL, reply: { text: JSON.stringify(PERSON) } },
-      { when: REQUIREMENTS, reply: { text: "You should look at the people table." } },
-    ],
-  });
-  await askForRequirements(page);
-  await expectProblem(page, "llm/failed", { within: 20_000 });
-  await failedOnQuestions(page);
 });
 
 test("16 an answer the spec does not admit is refused in the reply, and the model reads why", async ({ page, env, builtGraph }) => {

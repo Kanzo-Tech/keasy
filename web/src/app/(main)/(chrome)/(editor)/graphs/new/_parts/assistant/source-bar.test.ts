@@ -46,10 +46,9 @@ function mount(selected: string[], onPick = vi.fn(), onDrop = vi.fn(), vocabular
 }
 
 const settle = () => act(async () => {});
-const item = (text: string) =>
-  [...document.querySelectorAll<HTMLElement>('[data-slot="command-item"]')].find((i) => i.textContent?.includes(text))!;
+const item = (text: string) => [...document.querySelectorAll<HTMLElement>('[role^="menuitem"]')].find((i) => i.textContent?.includes(text))!;
 
-/** The + opened, and the connection opened in it: its files listed. */
+/** The + opened, and the connection's submenu opened in it: its files listed. */
 async function openNobel() {
   await act(async () => document.querySelector<HTMLElement>('[aria-label="Add files"]')!.click());
   await settle();
@@ -57,8 +56,8 @@ async function openNobel() {
   await settle();
 }
 
-describe("the + above the composer, and the file cards", () => {
-  it("is one +, and each picked file a card; past three, the rest of a connection is one card", () => {
+describe("the + above the composer's field, and the file cards beside it", () => {
+  it("draws each picked file as a card; past three, the rest of a connection is one card", () => {
     expect(mount([]).host.querySelectorAll("[data-file-card]")).toHaveLength(0);
     const ids = ["a.csv", "b.csv", "c.csv", "d.csv", "e.csv"].map((p) => `nobel:${p}`);
     const { host, onDrop } = mount(ids);
@@ -70,17 +69,17 @@ describe("the + above the composer, and the file cards", () => {
     expect(onDrop).toHaveBeenLastCalledWith(["nobel:d.csv", "nobel:e.csv"]);
   });
 
-  it("lists the connections, then a connection's files, every folder's included, each picked or dropped", async () => {
+  it("is a menu of the connections, each a submenu of its files, every folder's included, checked when picked", async () => {
     const { onPick } = mount(["nobel:awards.csv"]);
     await openNobel();
-    const files = [...document.querySelectorAll('[data-slot="command-item"]')].filter((i) => /\.(csv|shex)/.test(i.textContent ?? ""));
+    const files = [...document.querySelectorAll('[role="menuitemcheckbox"]')].filter((i) => i.getAttribute("data-value") !== "all");
     expect(files.map((i) => i.textContent)).toEqual([
       expect.stringContaining("prizes/peace.csv"),
       expect.stringContaining("laureates.csv"),
       expect.stringContaining("awards.csv"),
       expect.stringContaining("shapes.shex"),
     ]);
-    expect(files.map((i) => i.hasAttribute("data-picked"))).toEqual([false, false, true, false]);
+    expect(files.map((i) => i.getAttribute("aria-checked"))).toEqual(["false", "false", "true", "false"]);
     // Data picked brings the connection's vocabulary with it.
     await act(async () => item("laureates.csv").click());
     expect(onPick).toHaveBeenCalledWith([laureates, shapes], true);

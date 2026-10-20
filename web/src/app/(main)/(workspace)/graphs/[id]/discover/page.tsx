@@ -52,7 +52,7 @@ import type { AnswerAdded } from "@kanzo-tech/ai/data";
 import { HeaderEnd } from "@/app/(main)/_parts/header-end";
 import { AskPanel } from "./_parts/ask-panel";
 import { DashboardStoreProvider } from "./_parts/dashboard-store";
-import { GraphProvider, useAttachedGraph, useJoinGraph } from "@/lib/fossil/graph";
+import { GraphProvider, useAttachedGraph, useJoinGraph, useMappingModel } from "@/lib/fossil/graph";
 import { GraphInfo } from "./_parts/graph-info";
 import { GraphSettings } from "./_parts/graph-settings";
 import { RulesBadge } from "./_parts/rules-badge";
@@ -179,6 +179,8 @@ function DiscoverFooter() {
 
 function Workspace() {
   const { name } = useAttachedGraph();
+  // The Timeline offers a year stored as a number (`xsd:gYear` over an `int32`) by its datatype here.
+  const mapping = useMappingModel();
   const { engine, selection } = useMosaic();
   const { look, sim, placement, timeline } = useGraphPrefs();
   const graph = useJoinGraph();
@@ -210,6 +212,7 @@ function Workspace() {
       filterBy={selection}
       from={name}
       look={look}
+      mapping={mapping}
       sim={sim}
       onFailure={(error) => {
         // A canvas that cannot draw shows why in its own region; a selection or search that failed

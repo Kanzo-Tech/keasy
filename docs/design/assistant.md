@@ -5,7 +5,7 @@ intent; the guided chat and its three Tasks, `model`, `mapping` and `requirement
 profile (below); the conversation kept, the preview run in memory, and the build. **Decided
 2026-10-20, not built:** [a conversation beside its graph](#a-conversation-beside-its-graph) — one **+**
 and file cards, a dataset's vocabulary as a file beside it, a panel with *Your graph*, *Data* and
-*Preview*, questions answered in either place, a shell of its own, the schema and the program drawn on one diagram with React Flow and ELK — and [`model`'s structure taken from the profile](#model--structure-from-the-profile-names-from-the-model).
+*Preview*, questions marked on the graph and answered in the conversation, a shell of its own, the schema and the program drawn on one diagram with React Flow and ELK — and [`model`'s structure taken from the profile](#model--structure-from-the-profile-names-from-the-model).
 They replace the single thread of 2026-10-14 and its checkpoints, each where it is described. The pattern this rests on — a *Task*: a small model in the browser fills a small artefact under a JSON Schema, a deterministic oracle checks it, a bounded loop repairs
 it or asks the person — and its API, its model and its decisions are kanzo-ui's, on
 [Tasks](https://kanzo-tech.github.io/ui/docs/design/tasks). fossil's half — `fossil-profile` in place
@@ -167,15 +167,24 @@ It is `@kanzo-tech/ai`'s part to be, as Claude's artifact pane is a part of Clau
 the panel is a sheet over the conversation, opened from a bar that says *Your graph · 5 kinds · 1 open
 question*.
 
-### Questions in two places, one state
+### Questions in the conversation, marked on the graph
 
-![A question answered on the graph, recorded in the conversation](assistant/question-on-graph.png)
+![A question marked on the graph, answered in the conversation](assistant/question-on-graph.png)
 
 **No question blocks.** Each has a default the graph and the preview already use, and an answer only
-changes them. A question is asked **in the conversation**, as one-click options under the message that
-raised it, and **on the graph**, where clicking the **?** opens the same question beside the thing it is
-about. There is one state: answered in either place, the other shows it — in the conversation as
-*→ Use the name — answered on the graph · undo*, in place, not as a new reply.
+changes them. **A question has one door: the conversation**, as one-click options under the message
+that raised it. On the graph, the thing a question is about carries a **?**, and clicking it scrolls
+the conversation to that question and lights it — it opens no popover and offers no options of its own.
+Answered, the **?** goes, and the graph and the preview change.
+
+Decided 2026-10-20 over a question asked in both places with one state between them, as the first
+draft of this page had it: the same options in a popover on the graph, an answer there said in the
+conversation as *→ Use the name — answered on the graph · undo*. It was two doors to one decision,
+which is what this page already refused for an assumption (*one door to its options*, above), and it
+needed the two kept in step. The graph says *where* a question is; the conversation is where it is
+answered and where it is recorded. *What would reverse it:* people in a user test who click the **?**
+and expect to answer there — then the popover comes back, and the conversation's options become the
+record of that answer rather than a second place to give it.
 
 An edit made on the panel — a kind of thing renamed, a field left out, two kinds merged — is said in
 the conversation as the person's own short message (*Renamed Laureate to Person*), so the model reads
@@ -215,7 +224,7 @@ folded to its icons.
 ### One diagram, two views
 
 *Your graph* draws kinds of thing and their links — five to thirty boxes with labelled edges, a **?**
-that opens a popover, a click that renames — never the data's vertices. That is not the job of
+that leads to its question, a click that renames — never the data's vertices. That is not the job of
 `@kanzo-tech/graph`, whose cosmos.gl canvas draws thousands to millions of points on the GPU and is
 weakest where this view lives: labels, anchored popovers, keyboard focus. And it is not the only
 diagram wanted: **a Fossil program is a graph too** — files and their columns, the rules that map them,
@@ -316,8 +325,8 @@ conversation stays open, and a graph's record is that state rather than the conv
 and the `Command` and `TreeView` the **+**'s connection list is made of — all but the first two exist.
 
 **keasy's**: the **+** and its file cards over the connections' listings; the recognising of a vocabulary
-file and bringing it with its connection's files; the panel's three tabs and what each reads; the one state of the
-questions, answered in either place; the edits on the panel said as the person's messages; closing
+file and bringing it with its connection's files; the panel's three tabs and what each reads; a question's **?** on
+the graph leading to it in the conversation; the edits on the panel said as the person's messages; closing
 the conversation on build.
 
 Why a conversation rather than screens: it is **one presentation with Ask**, which is where the person
@@ -384,8 +393,8 @@ Task gave up with the oracles' words in a problem titled *The model call failed*
   keys that no edge lands on (`key/<source>`, safe default); a source that is a bridge *or* a thing
   counted on its own (`count/<edge>`, blocks — each counts differently); a column with no term in the
   vocabulary (*"motivation" isn't in your vocabulary. What is it?* — keep it as is, say what it is, or
-  leave it out; safe default: keep it). Each is asked in plain words, in the conversation and on the
-  graph ([above](#questions-in-two-places-one-state)).
+  leave it out; safe default: keep it). Each is asked in plain words, in the conversation, and marked
+  on the graph ([above](#questions-in-the-conversation-marked-on-the-graph)).
 - **A failure says what it is.** The Task's attempts spent is a problem of its own, not `llm/failed`:
   what was tried, and why it did not hold, under a title that does not blame the model call.
 - IRIs are unchanged: keasy's, computed by fossil (`vocabularyOf`, `subjectOf`), never the model's; a
@@ -753,5 +762,5 @@ model double answering at a model's pace, and is rewritten with each step.
 
 **The order of what was decided on 2026-10-20**, each useful alone: (1) `model`'s structure from the
 profile and the honest failure — it mends what the owner hit, with no new layout; (2) the shell and
-the panel with *Data* and *Preview*, the thread's results moving into it; (3) kanzo-ui's `graph/diagram` with its *Schema* view, *Your graph* on it, and questions on the graph; (4) the **+** and file cards; (5) vocabulary files recognised by content, the Vocabulary kind of connection removed,
+the panel with *Data* and *Preview*, the thread's results moving into it; (3) kanzo-ui's `graph/diagram` with its *Schema* view, *Your graph* on it, and each question's **?** on it; (4) the **+** and file cards; (5) vocabulary files recognised by content, the Vocabulary kind of connection removed,
 and terms from the vocabulary in `model`; (6) the *Program* view in the studio, linked to the editor, once fossil gives each rule's span. The `nobel-assistant` demo follows each step.

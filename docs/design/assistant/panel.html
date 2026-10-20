@@ -1,0 +1,63 @@
+<!doctype html><html><head><meta charset="utf-8"><style>*{box-sizing:border-box}body{margin:0;width:1440px;height:900px;font-family:Inter,"Helvetica Neue",Arial,sans-serif;background:#f6f6f4;color:#1c1c1a;display:flex;font-size:14px}
+.side{width:232px;background:#f9f9f7;border-right:1px solid #e5e5e1;padding:18px 10px}
+.org{display:flex;gap:10px;align-items:center;padding:8px;margin-bottom:22px}.logo{width:28px;height:28px;border-radius:6px;background:#2f6b3f}
+.org b{display:block}.org span{font-size:12px;color:#777}
+.nav{padding:9px 10px;border-radius:6px;color:#333;margin-bottom:2px}.nav.on{background:#e7ebe6}
+.main{flex:1;display:flex;flex-direction:column;position:relative}
+.top{height:48px;border-bottom:1px solid #e5e5e1;display:flex;align-items:center;justify-content:space-between;padding:0 18px;background:#fff}
+.crumb{color:#777}.crumb b{color:#222;font-weight:500}
+.badge{font-size:12px;color:#2f6b3f;border:1px solid #b9d3bf;background:#edf5ef;border-radius:999px;padding:3px 10px}
+.cols{flex:1;display:flex}
+.chat{flex:1;position:relative;padding:24px 54px}
+.panel{width:520px;background:#fff;border-left:1px solid #e5e5e1;position:relative}
+.you{margin-left:auto;width:fit-content;background:#ecece8;border-radius:12px;padding:10px 14px;text-align:right;font-size:15px}
+.you small{display:block;font-size:12px;color:#777;margin-top:2px}
+p{line-height:1.6;font-size:15px;margin:14px 0}
+.q{margin:10px 0 0;font-size:15px;padding:6px 8px;border-radius:8px}.q.lit{background:#fff7dc;box-shadow:0 0 0 1px #f0d68a}
+.q small{color:#888;font-size:12px}
+.opts{display:flex;gap:6px;margin:8px 0 6px}.opt{border:1px solid #d9d9d4;background:#fff;border-radius:8px;padding:8px 12px;font-size:14px}
+.comp{position:absolute;left:54px;right:54px;bottom:24px;background:#fff;border:1px solid #e1e1dc;border-radius:16px;padding:12px 14px;height:92px}
+.comp .ph{color:#888}.plus{position:absolute;left:14px;bottom:12px;width:32px;height:32px;border:1px solid #d5d5d0;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#555}
+.send{position:absolute;right:14px;bottom:12px;width:36px;height:32px;border-radius:999px;background:#2f6b3f;color:#fff;display:flex;align-items:center;justify-content:center}
+.tabs{display:flex;gap:16px;padding:0 18px;border-bottom:1px solid #eee;height:44px;align-items:center}.tabs span{color:#777;padding:12px 0}.tabs .on{color:#111;font-weight:600;border-bottom:2px solid #111}
+.sum{font-size:12px;color:#777;padding:14px 18px 8px}
+.g{margin:0 18px;height:250px;border:1px solid #eee;border-radius:10px;background:#fafaf8;position:relative}
+.node{position:absolute;border:1px solid #bbb;background:#fff;border-radius:999px;padding:6px 16px;font-size:12px;transform:translateX(-50%);white-space:nowrap}
+.node.focus{border-color:#2f6b3f;background:#eef5ef}.node.open{border:1px dashed #d9a520;background:#fffaea}
+.qm{display:inline-flex;margin-left:6px;width:16px;height:16px;border-radius:50%;background:#d9a520;color:#fff;font-size:11px;font-weight:700;align-items:center;justify-content:center}
+svg{position:absolute;inset:0}.el{position:absolute;font-size:11px;color:#777}
+.fields{padding:16px 18px;font-size:13px}.fields b{font-size:13px}.fields table{margin-top:8px;border-collapse:collapse}.fields td{padding:4px 0;color:#777;width:140px}.fields td+td{color:#222;width:auto}
+.foot{font-size:12px;color:#777;margin-top:10px}.foot u{color:#444}
+.note{position:absolute;width:300px;background:#1f1f1d;color:#f3f3f0;font-size:13px;line-height:1.45;border-radius:6px;padding:10px 12px;z-index:5}
+.n{display:inline-flex;width:18px;height:18px;border-radius:50%;background:#f0c43a;color:#222;font-size:11px;font-weight:700;align-items:center;justify-content:center;margin-right:6px}
+.cursor{position:absolute;font-size:18px}</style></head><body>
+<div class="side"><div class="org"><div class="logo"></div><div><b>Acme Corporation</b><span>Editor</span></div></div>
+<div class="nav">Dashboard</div><div class="nav on">Graphs</div><div class="nav">Connections</div></div>
+<div class="main"><div class="top"><div class="crumb">Graphs › <b>Nobel prizes</b></div><div class="badge">✓ Model ready</div></div>
+<div class="cols"><div class="chat">
+<div class="you">Nobel prizes and the people who won them<small>6 files · Nobel vocabulary</small></div>
+<p>I read the six files. They describe <b>awards</b>, the <b>people</b> who won them, their <b>institutions</b>, the prize <b>categories</b> and <b>countries</b>.</p>
+<p>I've laid them out as a graph on the right, using your vocabulary's words where they fit. Two things I can't tell from the data alone:</p>
+<div class="q "><b>1.</b> Is a category the same thing as its name? <small>Both "id" and "name" are unique.</small>
+<div class="opts"><span class="opt">Use the name — "Physics"</span><span class="opt">Keep the number</span></div></div>
+<div class="q"><b>2.</b> "motivation" isn't in your vocabulary. What is it?
+<div class="opts"><span class="opt">Why the prize was given</span><span class="opt">A free-text note</span><span class="opt">Leave it out</span></div></div>
+<div class="comp"><span class="ph">Reply…</span><div class="plus">+</div><div class="send">↑</div></div>
+<div class="note" style="left:54px;top:420px"><span class="n">4</span>Plain language only. The model asks what it can't decide; answers are one click, here and only here. No RDF, no IRIs, no "ShEx".</div>
+</div>
+<div class="panel"><div class="tabs"><span class="on">Your graph</span><span>Data</span><span>Preview</span></div>
+<div class="sum">5,214 rows in 6 files · 5 kinds of thing · 4 relationships · 2 open questions</div>
+<div class="g"><svg width="482" height="250"><g stroke="#ccc"><line x1="240" y1="68" x2="100" y2="160"/><line x1="240" y1="68" x2="240" y2="205"/><line x1="240" y1="68" x2="390" y2="160"/><line x1="100" y1="178" x2="100" y2="230"/></g></svg>
+<div class="node focus" style="left:240px;top:52px">Award · 1,018 <span class="qm">?</span></div>
+<div class="node" style="left:100px;top:152px">Person · 962</div>
+<div class="node" style="left:390px;top:152px">Institution · 364</div>
+<div class="node open" style="left:240px;top:196px">Category · 6 <span class="qm">?</span></div>
+<div class="el" style="left:140px;top:98px">won by</div><div class="el" style="left:248px;top:136px">in</div><div class="el" style="left:330px;top:98px">at</div>
+<div class="el" style="left:30px;top:232px">born in → Country · 252</div>
+
+</div>
+<div class="fields"><b>Award</b> <span style="color:#777">from awards.csv</span>
+<table><tr><td>year</td><td>1901, 1903…</td></tr><tr><td>share</td><td>1, 2, 4</td></tr><tr><td>motivation <span class="qm">?</span></td><td>"in recognition of…"</td></tr><tr><td>category</td><td>Physics, Peace…</td></tr></table>
+<div class="foot">Words from the Nobel vocabulary · <u>details</u></div></div>
+<div class="note" style="right:16px;bottom:24px"><span class="n">5</span>The data summary lives in a side panel like a Claude artifact, always visible and updated as you answer. A <b>?</b> marks what is still open. IRIs and shapes stay one click away under "details".</div>
+</div></div></div></body></html>

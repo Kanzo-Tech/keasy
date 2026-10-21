@@ -245,7 +245,7 @@ export function AskTurn({
   offers: readonly QuestionOffer[] | null;
   questions: readonly AskedQuestion[];
   live: boolean;
-  onAsk: (id: string, text: string) => void;
+  onAsk: (question: Pick<AskedQuestion, "id" | "text" | "spec">) => void;
 }) {
   const kept = new Set(questions.map((q) => q.text));
   const open = (offers ?? []).filter((o) => !kept.has(o.text));
@@ -259,7 +259,7 @@ export function AskTurn({
       {live && (offers === null || open.length > 0) && (
         <Suggestions pending={offers === null ? 3 : 0}>
           {open.map((o) => (
-            <Suggestion description={o.rationale} key={o.id} onSelect={(text) => onAsk(o.id, text)} value={o.text} />
+            <Suggestion description={o.rationale} key={o.id} onSelect={() => onAsk(o)} value={o.text} />
           ))}
         </Suggestions>
       )}
@@ -342,25 +342,6 @@ export function BuildTurn({
         </section>
       );
   }
-}
-
-/**
- * The reply to typed text that changes the graph: it is not taken as an instruction, and says where
- * that is changed — what each kind of thing holds and is called is under *Data*.
- */
-export function ChangeTurn({ text, onData }: { text: string; onData: () => void }) {
-  return (
-    <Said>
-      <p data-change="">
-        &ldquo;{text}&rdquo; changes your graph rather than asking your data, so I have not taken it as a question. What
-        each kind of thing is called and holds is under{" "}
-        <Button className="h-auto p-0 text-base" onClick={onData} variant="link">
-          Data
-        </Button>
-        ; the questions here are answered under <span className="font-medium">Preview</span>.
-      </p>
-    </Said>
-  );
 }
 
 const FAILED: Record<TaskFailure["task"], string> = {

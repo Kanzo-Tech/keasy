@@ -306,12 +306,13 @@ the rest in the background, the way fossil's profile already splits.
 - **Oracle**: Ask's own (`verify` of the `ask` Task) over the join graph the accepted model will be
   (`joinGraphOf`), described as a built one is (`withMapping`) by the mapping fossil makes of the
   declared types before any run — it holds every chip's spec, or the chip is not offered.
-- **Asked as its spec**: a chip taken is sent to the preview's Ask as its spec (`askEdit`), which
-  needs no model, so it is answered before the model has loaded; a kept question whose words are a
-  chip's is asked as that chip's spec again.
-- **A question the person types** is marked by Ask's own Task, `ask` from `@kanzo-tech/ai/data`, over
-  the same join graph: answerable when its spec holds or only asks the person a decision. This is the
-  one call to the model, and Ask makes the same one in Discover.
+- **Asked as its spec**: a chip taken is kept with its spec and sent to the preview's Ask as it
+  (`askEdit`), which needs no model, so it is answered before the model has loaded.
+- **A question the person types** is asked once, by the preview's Ask — Ask's own Task, `ask` from
+  `@kanzo-tech/ai/data`, the one call to the model, which Discover makes too. What Ask answered marks
+  it (answerable when it answers, or only asks the person a decision), and the spec Ask read it as is
+  kept on the question (`data-question`'s `spec`, as Ask's `askKeep` keeps a spec), so a question
+  reopened or asked over a new preview is asked again with no model.
 - *What would reverse it:* chips marked answerable here that Ask, over the built graph, cannot answer
   — then the chips wait for the preview and are checked on it.
 
@@ -415,14 +416,13 @@ What each stage replaces:
 - **7, offers are specs over the real graph** (built in #189 over the predicted one): each chip is
   Ask's spec, held by Ask's `verify`, asked with no model. `focus` reads *what is it about?* — which
   nothing reads today — and orders them, and when the words are a question it is asked (stage 8).
-- **8, one place asks, and keeps what it asked.** A typed question is put to Ask's Task twice today:
-  once by `isAnswerable` to mark it, again by the preview to answer it. It is asked once, by the
-  preview's Ask chat, and its answer is the mark. The chat is kept as Ask keeps one (`askKeep`:
-  specs, never rows), so a question reopened is asked as its spec again — not matched back to a chip
-  by its text, which is how #189 restores one. `Question`, `isAnswerable` and the `question` part go.
-- **The composer takes questions.** `isChange` sorts a typed line by its first verb (*rename*,
-  *drop*, …) to say that changes are made elsewhere. A line Ask cannot answer says so in Ask's own
-  words; the verb list goes.
+- **8, one place asks, and keeps what it asked** (built 2026-10-21). A typed question was put to
+  Ask's Task twice: once by `isAnswerable` to mark it, again by the preview to answer it. It is asked
+  once, by the preview's Ask, and its answer is the mark; the question keeps the spec Ask read it as,
+  so it is asked again with no model, never matched back to a chip by its words.
+- **The composer takes questions** (built 2026-10-21). `isChange` sorted a typed line by its first
+  verb (*rename*, *drop*, …) to say that changes are made elsewhere. A line Ask cannot answer says so
+  in Ask's own words; the verb list is gone.
 
 **What stays the model's:** reading the person's words — a typed question (Ask), *what is it about?*
 (`focus`), and a column's meaning against a ShEx (`align`). **What never is:** keys, structure,

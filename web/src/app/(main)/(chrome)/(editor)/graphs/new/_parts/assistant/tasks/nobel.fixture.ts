@@ -1,11 +1,9 @@
 /**
  * A small Nobel, as fossil's profile answers it — laureates, their awards, the institutions they
- * were at and the affiliations linking the two, and a countries file nothing points at — with a
- * model that answers each call with the next scripted reply. For the Tasks' tests only.
+ * were at and the affiliations linking the two, and a countries file nothing points at. For the
+ * steps' tests only.
  */
 
-import { scriptedModel } from "@kanzo-tech/llm/testing";
-import { promptOf } from "@kanzo-tech/testing";
 import type { Engine, Input, Primitive, Profile } from "@fossil-lang/types";
 import { type Draft, draftOf, type Names, structureOf } from "./model";
 import { profiledOf } from "./profile";
@@ -97,22 +95,6 @@ export const NAMES: Names = {
 
 /** The structure with those names. */
 export const DRAFT: Draft = draftOf(structureOf(NOBEL), NAMES);
-
-/**
- * `@kanzo-tech/llm/testing`'s model, answering each call with the next of `replies` — an object as
- * its JSON, a string as it is — and the last one after that, keeping every prompt it was asked.
- */
-export function scripted(...replies: unknown[]) {
-  const prompts: string[] = [];
-  const model = scriptedModel({
-    turns: (call, index) => {
-      prompts.push(promptOf(call));
-      const reply = replies[Math.min(index, replies.length - 1)];
-      return typeof reply === "string" ? { text: reply } : { object: reply };
-    },
-  });
-  return { model, prompts };
-}
 
 /** The DuckDB type a fixture column is described as; a file holds no language-tagged string. */
 const DUCKDB: Record<Exclude<Primitive, "lang_string">, string> = {

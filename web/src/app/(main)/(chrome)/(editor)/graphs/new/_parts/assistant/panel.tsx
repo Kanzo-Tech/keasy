@@ -16,7 +16,7 @@ import {
   TabsTrigger,
 } from "@kanzo-tech/ui";
 import type { Question, Relation, Thing } from "./model";
-import { type Preview, PreviewTab } from "./preview-tab";
+import { type Answered, type Preview, PreviewTab } from "./preview-tab";
 import { listed } from "./tasks/model";
 
 /** The panel's tabs: what the files hold, and the answers over the first rows. */
@@ -29,6 +29,8 @@ export interface AssistantPanelProps {
   relations: readonly Relation[] | null;
   preview: Preview;
   questions: readonly Question[];
+  /** What the preview's Ask answered to a question. */
+  onAnswered: Answered;
   /** There is a program: **Open in the editor** opens it, and the graph can be built from it. */
   program: string | null;
   /** Decisions with no safe answer still to take: the build waits on them. */
@@ -86,7 +88,7 @@ export function AssistantPanel(props: AssistantPanelProps) {
         <DataTab relations={props.relations} things={props.things} />
       </TabsContent>
       <TabsContent className="min-h-0 flex-1 overflow-auto p-4" value="preview">
-        <PreviewTab preview={props.preview} questions={props.questions} />
+        <PreviewTab onAnswered={props.onAnswered} preview={props.preview} questions={props.questions} />
       </TabsContent>
     </Tabs>
   );

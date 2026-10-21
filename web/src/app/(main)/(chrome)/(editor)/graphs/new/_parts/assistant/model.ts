@@ -37,9 +37,9 @@ export interface QuestionOffer {
 export interface Question {
   id: string;
   text: string;
-  /** Whether these files can answer it: `null` until an oracle has said. */
+  /** Whether these files can answer it: `null` until the preview's Ask has answered it. */
   answerable: boolean | null;
-  /** The spec of the offer it was taken from, asked as it is; none for a question the person typed. */
+  /** The spec it is asked as, with no model: a chip's, or the one Ask wrote when it answered it. */
   spec?: AskSpec;
 }
 

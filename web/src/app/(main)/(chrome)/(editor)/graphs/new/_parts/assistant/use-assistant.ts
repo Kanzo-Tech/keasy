@@ -24,7 +24,6 @@ import { keepPreviousData, useQueries, useQuery } from "@tanstack/react-query";
 import type { Format, Profiled as Described } from "@fossil-lang/types";
 import { inputs, profile } from "@fossil-lang/wasm";
 import { engine } from "@kanzo-tech/mosaic/engine";
-import { splitWords } from "@kanzo-tech/relations";
 import type { FileReference } from "@/lib/assistant-conversation";
 import type { StorageConnection } from "@/lib/connections";
 import { ClientError } from "@/lib/errors";
@@ -265,15 +264,17 @@ export function useAssistant({
   const graph = accepted ? (declared.data?.graph ?? null) : null;
 
   // ── requirements: questions to start from, once the model is accepted ──
-  const offers: QuestionOffer[] | null = useMemo(
-    () =>
-      accepted && graph
-        ? offersOf(accepted, graph).map((r, i) => ({ id: `offer-${i}`, text: r.text, rationale: `Reads ${r.fields.map(splitWords).join(", ")}` }))
-        : null,
-    [accepted, graph],
-  );
-  // A chip is answerable by construction: the resolver reached it before it was offered.
-  const offeredTexts = new Set((offers ?? []).map((o) => o.text));
+  const offered = useQuery({
+    queryKey: ["assistant", "offers", acceptedKey],
+    queryFn: async () => (await offersOf(accepted!, graph!)).map((r, i): QuestionOffer => ({ id: `offer-${i}`, ...r })),
+    enabled: graph !== null,
+    retry: false,
+    staleTime: Infinity,
+  });
+  const offers = accepted ? (offered.data ?? null) : null;
+  // A chip is answerable by construction: Ask's oracles held its spec before it was offered.
+  const offeredSpecs = new Map((offers ?? []).map((o) => [o.text, o.spec]));
+  const offeredTexts = new Set(offeredSpecs.keys());
   const typed = questions.filter((q) => !offeredTexts.has(q.text));
   const marked = useQueries({
     queries: typed.map((q) => ({
@@ -324,7 +325,8 @@ export function useAssistant({
     offers,
     decisions,
     failures,
-    questions: questions.map((q) => ({ ...q, answerable: answerable(q) })),
+    // A question taken from a chip is asked as the chip's spec — a kept one too, its spec written again.
+    questions: questions.map((q) => ({ ...q, answerable: answerable(q), spec: offeredSpecs.get(q.text) })),
     pick,
     drop,
     choose: (decision, option) => setChosen((prev) => ({ ...prev, [decision]: option })),

@@ -24,17 +24,19 @@ beforeAll(async () => {
 });
 
 describe("the questions on offer", () => {
-  it("are written from the model: the thing an edge reaches most, and a count by a field", () => {
-    expect(offersOf(accepted, graph)).toEqual([
-      { text: "Which laureate has the most awards?", of: "Award", fields: ["laureate.name"] },
-      { text: "How many laureates are there by born?", of: "Laureate", fields: ["born"] },
-      { text: "How many awards are there by category?", of: "Award", fields: ["category"] },
-      { text: "How many institutions are there by city?", of: "Institution", fields: ["city"] },
+  const count = (of: string, x: string, top?: number) => ({ of, show: { kind: "chart", type: "bar", x, y: { op: "count" } }, ...(top ? { top } : {}) });
+
+  it("are Ask's specs written from the model: a count by the thing an edge reaches, and a count by a field", async () => {
+    expect(await offersOf(accepted, graph)).toEqual([
+      { text: "Award count by laureate", spec: count("Award", "laureate.name", 10) },
+      { text: "Laureate count by born", spec: count("Laureate", "born") },
+      { text: "Award count by category", spec: count("Award", "category") },
+      { text: "Institution count by city", spec: count("Institution", "city") },
     ]);
   });
 
-  it("offer nothing Ask's resolver cannot reach", () => {
-    expect(offersOf(accepted, { types: [], edges: [] })).toEqual([]);
+  it("offer nothing Ask's oracles do not hold", async () => {
+    expect(await offersOf(accepted, { types: [], edges: [] })).toEqual([]);
   });
 });
 

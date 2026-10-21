@@ -1,5 +1,4 @@
 import { expect, type Page } from "@playwright/test";
-import type { ModelTurn } from "@kanzo-tech/testing";
 
 import { AskPanel } from "../support/app";
 import { chooseRadio } from "../support/app/controls";
@@ -16,24 +15,9 @@ const ABOUT = "Nobel prizes: who won them, in what, and where they worked";
 const LINK = "Each row of affiliations links award to institution. Is a row only that link, or a thing counted on its own?";
 const ONE = "Only a link: award → institution";
 
-/** Two of the questions on offer, written from the model (`offersOf`): the thing an edge reaches most. */
-const BY_CATEGORY = "Which category has the most awards?";
-const BY_LAUREATE = "Which laureate has the most awards?";
-
-/**
- * Every call of the flow: Ask's, per question — the one thing the assistant asks a model. The second
- * question's prompt carries the first, so it is looked for first.
- */
-const SCRIPT: ModelTurn[] = [
-  {
-    when: `Question: ${BY_LAUREATE}`,
-    reply: { text: JSON.stringify({ spec: { of: "Award", show: { kind: "chart", type: "bar", x: "laureate.name", y: { op: "count" } } } }) },
-  },
-  {
-    when: `Question: ${BY_CATEGORY}`,
-    reply: { text: JSON.stringify({ spec: { of: "Award", show: { kind: "chart", type: "bar", x: "category.name", y: { op: "count" } } } }) },
-  },
-];
+/** Two of the questions on offer, written from the model as Ask's specs (`offersOf`): asked with no model. */
+const BY_CATEGORY = "Award count by category";
+const BY_LAUREATE = "Award count by laureate";
 
 /** How fast the double answers: a beat before the first word, then a short one a word. */
 const PACE = { wait: 1_200, perWord: 25 };
@@ -55,8 +39,9 @@ async function answered(page: Page): Promise<number> {
  * *Preview* over the first 200 rows while the one decision with no safe answer is still open, that
  * decision answered, then the whole graph built (*Build the graph*) and asked in Discover.
  *
- * The model is a double (`support/model.ts`), as the e2e suite's is, and it answers Ask alone: the
- * names, the program and the questions on offer are written from fossil's profile. Everything else is
+ * The model is a double (`support/model.ts`), as the e2e suite's is, and nothing here asks it: the
+ * names, the program and the questions on offer are written from fossil's profile, and a question
+ * taken from the offer is asked as its spec. Everything else is
  * the stack's: the profile is fossil's over the files in the store, the program is checked by fossil,
  * the preview and the build are runs on the page's engine, and every answer is read from the graph.
  *
@@ -70,7 +55,7 @@ demo("nobel-assistant", "The guided assistant: the Nobel files to a preview in t
     // The double goes on the next load.
     await page.goto("/graphs");
     // At a model's pace, so each turn arrives on camera rather than all at once.
-    await scriptModel(page, { turns: SCRIPT, pace: PACE });
+    await scriptModel(page, { turns: [], pace: PACE });
     await page.goto("/graphs/new/assistant");
     // The composer's +, before anything is picked.
     await expect(plus(page)).toBeVisible();

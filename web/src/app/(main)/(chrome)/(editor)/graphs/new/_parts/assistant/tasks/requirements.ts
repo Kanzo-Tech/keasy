@@ -1,26 +1,23 @@
 /**
- * **The requirements** — docs/design/assistant.md, *The three Tasks*. The questions a person could
+ * **The requirements** — docs/design/assistant.md, *The three steps, and the one Task*. The questions a person could
  * ask of the graph the accepted model will be, offered as chips, and whether a question the person
- * typed can be answered. The chips are written from the model, not by a model — a count by a field,
- * the thing an edge reaches most — and each is kept only if Ask's resolver reaches every path it
- * reads (`affiliation.name`) over the join graph the accepted model will be. A typed question is put
- * through Ask's Task, `ask`, as Discover will put it: that is the one place a model reads it.
+ * typed can be answered. The chips are Ask's specs written from the model, not by a model — a count by
+ * a field, a count by the thing an edge reaches — each kept only if Ask's oracles hold it over the
+ * join graph the accepted model will be, and asked as that spec. A typed question is put through
+ * Ask's Task, `ask`, as Discover will put it: that is the one place a model reads it.
  */
 
 import type { LanguageModel } from "ai";
-import { type JoinGraph, JoinResolver, type MappingModel, splitWords, withMapping } from "@kanzo-tech/relations";
-import { ask } from "@kanzo-tech/ai/data";
-import { runTask } from "@kanzo-tech/ai/task";
+import { type JoinGraph, type MappingModel, splitWords, withMapping } from "@kanzo-tech/relations";
+import { ask, type AskSpec } from "@kanzo-tech/ai/data";
+import { runTask, verify } from "@kanzo-tech/ai/task";
 import type { Primitive } from "@fossil-lang/types";
 import type { Accepted } from "./model";
 
-/** A question on offer: what it counts and the paths it reads from there. */
+/** A question on offer: its words, and Ask's spec, which the preview asks with no model. */
 export interface Requirement {
   text: string;
-  /** The type it counts or describes. */
-  of: string;
-  /** The fields it reads, each a path from `of`: `category`, `laureate.affiliation.name`. */
-  fields: string[];
+  spec: AskSpec;
 }
 
 /** The DuckDB type a field of a primitive is read as, in the graph the accepted model will write. */
@@ -70,37 +67,41 @@ const OFFERED = 4;
 /** Fields a breakdown by is no answer: one value per thing. */
 const NAMING = /^(name|title|label|description|url|email|id)$/i;
 
-/** `Award` → `awards`, `Category` → `categories`. */
-function plural(type: string): string {
-  const words = splitWords(type).toLowerCase();
-  if (/[^aeiou]y$/.test(words)) return `${words.slice(0, -1)}ies`;
-  if (/(s|x|ch|sh)$/.test(words)) return `${words}es`;
-  return `${words}s`;
-}
+/** How many bars the thing an edge reaches most keeps. */
+const TOP = 10;
+
+/** A type's words opening a sentence: `Award`, `Flight route`. */
+const opening = (type: string) => splitWords(type).replace(/^./, (c) => c.toUpperCase());
+
+/** A count of `of` by `x`, as a bar chart: Ask's spec, with no condition. */
+const countBy = (of: string, x: string, top?: number): AskSpec => ({
+  of,
+  show: { kind: "chart", type: "bar", x, y: { op: "count" } },
+  ...(top === undefined ? {} : { top }),
+});
 
 /**
- * The questions to start from, written from `accepted`: for each edge one thing reaches, which of
- * them has the most (*Which laureate has the most awards?*), and for each type a count by its first
- * date or category-like field (*How many awards are there by year?*). Each kept only if `graph`'s
- * resolver reaches what it reads.
+ * The questions to start from, written from `accepted` as Ask's specs: for each edge one thing
+ * reaches, a count of the things by the one they reach (*Award count by laureate*), and for each type
+ * a count by its first date or category-like field (*Award count by category*). A name is said as
+ * given, never inflected. Each is kept only if Ask's own oracles hold it over `graph`, as the
+ * preview will ask it: its answer is known before it is asked, and no model reads it.
  */
-export function offersOf(accepted: Accepted, graph: JoinGraph): Requirement[] {
-  const resolver = new JoinResolver(graph);
-  const reaches = (r: Requirement) => r.fields.every((path) => !("code" in resolver.field({ root: r.of, path: [] }, path)));
+export async function offersOf(accepted: Accepted, graph: JoinGraph): Promise<Requirement[]> {
   const label = (type: string) => accepted.types.find((t) => t.name === type)?.fields.find((f) => NAMING.test(f.name) && f.primitive === "string")?.name;
   const offers: Requirement[] = [];
   for (const e of accepted.edges.filter((x) => !x.many)) {
     const named = label(e.to);
-    if (!named) continue;
-    offers.push({ text: `Which ${splitWords(e.to).toLowerCase()} has the most ${plural(e.from)}?`, of: e.from, fields: [`${e.name}.${named}`] });
+    if (named) offers.push({ text: `${opening(e.from)} count by ${splitWords(e.name).toLowerCase()}`, spec: countBy(e.from, `${e.name}.${named}`, TOP) });
   }
   for (const t of accepted.types) {
     const by =
       t.fields.find((f) => ["date", "g_year", "date_time"].includes(f.primitive)) ??
       t.fields.find((f) => f.primitive === "string" && !NAMING.test(f.name));
-    if (by) offers.push({ text: `How many ${plural(t.name)} are there by ${splitWords(by.name).toLowerCase()}?`, of: t.name, fields: [by.name] });
+    if (by) offers.push({ text: `${opening(t.name)} count by ${splitWords(by.name).toLowerCase()}`, spec: countBy(t.name, by.name) });
   }
-  return offers.filter(reaches).slice(0, OFFERED);
+  const held = await Promise.all(offers.map(async (o) => (await verify(ask, o.spec, { question: o.text, graph })).ok));
+  return offers.filter((_, i) => held[i]).slice(0, OFFERED);
 }
 
 // ── A question the person typed ─────────────────────────────────────────────

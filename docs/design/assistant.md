@@ -300,13 +300,15 @@ the rest in the background, the way fossil's profile already splits.
 
 ### `requirements` — questions the data can answer
 
-- **Written** (`offersOf`): for each edge one thing reaches, which of them has the most (*Which
-  laureate has the most awards?*), and for each type a count by its first date or category-like
-  field (*How many awards are there by category?*); four at most, as chips.
-- **Oracle**: Ask's resolver — `JoinResolver` from `@kanzo-tech/relations` over the join graph the
-  accepted model will be (`joinGraphOf`), described as a built one is (`withMapping`) by the mapping
-  fossil makes of the declared types before any run — reaches every path a chip reads, or the chip is
-  not offered.
+- **Written** (`offersOf`) as Ask's specs: for each edge one thing reaches, a count of the things by
+  the one they reach (*Award count by laureate*), and for each type a count by its first date or
+  category-like field (*Award count by category*); four at most, as chips. A name is said as given.
+- **Oracle**: Ask's own (`verify` of the `ask` Task) over the join graph the accepted model will be
+  (`joinGraphOf`), described as a built one is (`withMapping`) by the mapping fossil makes of the
+  declared types before any run — it holds every chip's spec, or the chip is not offered.
+- **Asked as its spec**: a chip taken is sent to the preview's Ask as its spec (`askEdit`), which
+  needs no model, so it is answered before the model has loaded; a kept question whose words are a
+  chip's is asked as that chip's spec again.
 - **A question the person types** is marked by Ask's own Task, `ask` from `@kanzo-tech/ai/data`, over
   the same join graph: answerable when its spec holds or only asks the person a decision. This is the
   one call to the model, and Ask makes the same one in Discover.
@@ -410,9 +412,10 @@ What follows, in four parts:
      workspace's IRIs, and the thread says which shape is left with nothing mapped onto it.
    - **Said**: each alignment is an assumption, *I assumed: laureates → Laureate · Change*, with the
      shapes or properties behind *Change*.
-3. **An offered question is a spec, not a sentence** (no model). `offersOf` writes Ask's spec
+3. **An offered question is a spec, not a sentence** (no model; built 2026-10-21, see `requirements`
+   above). `offersOf` writes Ask's spec
    (`{ of, where, show }`) for each chip, and the preview answers it with no model, as a chip under an
-   answer already is (`askEdit`). Today a chip is text, which the preview hands Ask's Task to turn
+   answer already is (`askEdit`). A chip was text, which the preview handed Ask's Task to turn
    back into the spec it came from: a model call that can only lose. The chip's words are the spec's,
    without inflection — *Award count by category*, *Top laureate by award count* — which deletes the
    `plural` that came back in `requirements.ts` against [the rule above](#the-three-steps-and-the-one-task).

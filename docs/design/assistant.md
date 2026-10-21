@@ -370,16 +370,43 @@ whose answer is fixed, and that no model is asked again. ChatGPT's data analysis
 other end — a large model writes free code and repairs it on its errors — which a model in the page
 cannot do, and which reproduces nothing.
 
-What follows, in three parts:
+**Two type providers, and the mapping between them.** A data file is a type provider of the
+sources: fossil's profile gives its columns, keys and inclusions. A ShEx (or SHACL) file picked with
+the data is a type provider of the targets: fossil's `Vocabulary.imports` gives each shape and the
+properties a mapping of it may write. Generating Fossil is mapping the first onto the second. With no
+ShEx there is no target but the one `vocabularyOf` declares from the files, and nothing to decide
+that the files do not already say. The references split the work the same way: Karma (USC/ISI), which
+writes R2RML from tables, and SemTab's column annotation take the structure from the data and ask a
+model only what a column *means* in the target, chosen from the target's own terms.
 
-1. **An offered question is a spec, not a sentence** (no model). `offersOf` writes Ask's spec
+What follows, in four parts:
+
+1. **Structure, from the data** (no model) — as now: a thing per file with a key, an edge per
+   inclusion, a link file a bridge (`structureOf`), and the program written from it (`mappingsOf`).
+2. **Meaning, from the ShEx** (one Task per source, `align`). When a ShEx is picked, each source is
+   mapped onto one of its shapes and each column onto one of that shape's properties, or onto none.
+   - **Code first**: a column whose words are a property's words (`birth_date` → `birthDate`), and a
+     file whose singular is a shape's name, are aligned with no model. The Task sees only what is
+     left.
+   - **The Task** is given one source — its columns, their types, three sample rows — and the shapes'
+     names with their properties, and returns a shape and a property per column. Sized by one
+     source and one ShEx, never by the dataset.
+   - **Oracle**: every name is in `imports` (a closed list), no property twice in one shape, the
+     program compiles, and the preview's 200 rows conform to the ShEx — fossil reports a violated
+     constraint as a diagnostic on the line of the `.shex` that declares it, which is the repair
+     loop's message.
+   - **Fallback**: a source the Task cannot align keeps the type `vocabularyOf` declares for it, and
+     the thread says which shape is left with nothing mapped onto it. Each alignment is an
+     assumption, said as *I assumed: laureates → Person · Change*, with the shape's or property's
+     options behind *Change*.
+3. **An offered question is a spec, not a sentence** (no model). `offersOf` writes Ask's spec
    (`{ of, where, show }`) for each chip, and the preview answers it with no model, as a chip under an
    answer already is (`askEdit`). Today a chip is text, which the preview hands Ask's Task to turn
    back into the spec it came from: a model call that can only lose. The chip's words are the spec's,
    without inflection — *Award count by category*, *Top laureate by award count* — which deletes the
    `plural` that came back in `requirements.ts` against [the rule above](#the-three-steps-and-the-one-task).
    This is Genie's trusted asset and Snowflake's verified query: the answer is known before it is asked.
-2. **What the person says the files are about is read by the model** (one Task, `focus`). Nothing
+4. **What the person says the files are about is read by the model** (one Task, `focus`). Nothing
    reads it today: the first message's text is drawn and dropped. `offersOf` widens to every
    candidate the resolver reaches (a few dozen at most, one line each), and the Task is given that
    list and the person's words, and returns:
@@ -391,21 +418,22 @@ What follows, in three parts:
    chips are `offersOf`'s first four, and nothing is said about it. The chips are drawn once, when
    `focus` answers or is skipped; they are not re-ordered after they are drawn (a message does not
    change in place).
-3. **A question the person types** is Ask's Task, as now.
 
-**What the model does not do: names, keys, structure, the program.** Each is checked only for being
-well formed, not for being right: a name the model proposes compiles whether or not it means the
-column, and a name is an identifier the vocabulary, the IRIs and a kept conversation hold. The
-files' own words are never wrong about which column they name, and the Data tab says them as given.
-*What would reverse it:* an evaluation over the four examples where people prefer the model's names
-(`born` → `birthDate`) to the files' own, together with a rename on the Data tab, so a wrong name
-costs one edit; then `names` is a Task again, one type per call, its oracle that each name maps to
-one column and is unique in its scope.
+A question the person types stays Ask's Task, as now.
 
-**How it is held.** `focus` is tested over the Nobel fixture with a scripted model (`support/model.ts`)
-that answers, refuses and goes silent, and the fallback is asserted in each case. Its quality is an
-evaluation, not a test: for each of the four examples, three sentences a person might write and the
-four chips a person would expect, scored by overlap, per model version.
+**What the model does not do: keys, structure, the program, or names with no ShEx.** Each is checked
+only for being well formed, not for being right, and the data says them better: a key is a candidate
+the profile measured, and a name the model invents compiles whether or not it means the column. With
+a ShEx the names are the ShEx's, and the model only picks among them. *What would reverse it:* an
+evaluation over the four examples where people prefer the model's names (`born` → `birthDate`) to the
+files' own, together with a rename on the Data tab, so a wrong name costs one edit.
+
+**How it is held.** `align` and `focus` are tested over the Nobel fixture with a scripted model (`support/model.ts`)
+that answers, refuses and goes silent, and the fallback is asserted in each case. Their quality is an
+evaluation, not a test, per model version: for `align`, each example's data against a ShEx written
+for it by hand, scored by the columns mapped as a person mapped them and the rows that conform; for
+`focus`, three sentences a person might write and the four chips a person would expect, scored by
+overlap.
 
 *What would reverse the whole section:* a model in the page whose context holds a large dataset's
 profile, and an evaluation where its program or its questions beat the computed ones; then a step

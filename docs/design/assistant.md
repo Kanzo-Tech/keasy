@@ -378,8 +378,12 @@ shape a mapping whose `@subject`, conversions (`parse.date`), references (`Laure
 the data decides, and whose shape and properties only a model can. The data alone cannot say what a
 thing *is*: the IRIs `vocabularyOf` declares today (`https://<origin>/vocab/Laureate`) mean nothing
 outside keasy, and the Nobel example's hand-written `shapes.shex` reaches for `nobel:`, FOAF,
-schema.org, Dublin Core, DBpedia and WGS 84 geo. **So the assistant always maps onto a ShEx, and
-delivers three things: the data, the model and the program.** The references split the work the same
+schema.org, Dublin Core, DBpedia and WGS 84 geo. **So the assistant has two inputs, the data and the
+model, and the model is the person's.** With a ShEx picked, the program maps onto it; with none, the
+program declares its own types (`type Laureate { … }`, what `vocabularyOf` writes today) under the
+workspace's IRIs, and the person changes them in the editor, where **Open in the editor** takes the
+program. The assistant does not write an ontology: choosing what a thing is called outside keasy is the
+person's, and a program is where they already write it. The references split the work the same
 way: Karma (USC/ISI), which writes R2RML from tables, and SemTab's column annotation take the
 structure from the data and ask a model only what a column *means*, chosen from a target's own terms.
 
@@ -387,30 +391,25 @@ What follows, in four parts:
 
 1. **Structure, from the data** (no model) — as now: a thing per file with a key, an edge per
    inclusion, a link file a bridge (`structureOf`), and the program written from it (`mappingsOf`).
-   It is also the skeleton of a model when the person brings none: a shape per thing, a property per
-   field with its `xsd` type and cardinality (`?` where some rows have none), a reference per edge.
-2. **The model: the person's, or one proposed** (one Task per type, `align`).
-   - **Brought**: a `.shex` picked with the +. Each source is mapped onto one of its shapes and each
-     column onto one of that shape's properties, or onto none.
-   - **Proposed**: no `.shex` picked. The skeleton above is written as a ShEx, and each shape and
-     property takes a term from a small catalogue of vocabularies — schema.org, FOAF, Dublin Core,
-     WGS 84 geo — or the workspace's own namespace where none fits. The ShEx is kept beside the data
-     (`shapes.shex`), the person's to edit, and the same path as a brought one follows.
+   With no ShEx picked, this is the whole program: its types declared from the data, under the
+   workspace's IRIs, for the person to edit.
+2. **Onto the person's model** (one Task per source, `align`, only when a `.shex` is picked with the
+   +). Each source is mapped onto one of its shapes and each column onto one of that shape's
+   properties, or onto none.
    - **Code first**: a column whose words are a term's words (`birth_date` → `birthDate`), and a file
      whose singular is a shape's or class's name, are aligned with no model. The Task sees only what
      is left.
-   - **The Task** is given one type — its columns, their types, three sample rows — and the candidate
-     terms (a brought ShEx's shapes and properties, or the catalogue's classes and the properties
-     whose range fits each column's type), and returns a term per shape and per column. Sized by one
-     type and one closed list, never by the dataset.
+   - **The Task** is given one source — its columns, their types, three sample rows — and the ShEx's
+     shapes with their properties, and returns a shape and a property per column. Sized by one source
+     and one closed list, never by the dataset.
    - **Oracle**: every term is in the list, no property twice in one shape, a property's range fits
      its column, the program compiles, and the preview's 200 rows conform to the ShEx — fossil reports
      a violated constraint as a diagnostic on the line of the `.shex` that declares it, which is the
      repair loop's message.
-   - **Fallback**: a type the Task cannot align keeps the workspace's own terms, and is said.
-   - **Said**: each term taken is an assumption, *I assumed: Laureate → foaf:Person · Change*, with
-     its options behind *Change*. The panel has a **Model** tab beside **Data**: the shapes and the
-     terms they took.
+   - **Fallback**: a source the Task cannot align keeps a type declared from its data, under the
+     workspace's IRIs, and the thread says which shape is left with nothing mapped onto it.
+   - **Said**: each alignment is an assumption, *I assumed: laureates → Laureate · Change*, with the
+     shapes or properties behind *Change*.
 3. **An offered question is a spec, not a sentence** (no model). `offersOf` writes Ask's spec
    (`{ of, where, show }`) for each chip, and the preview answers it with no model, as a chip under an
    answer already is (`askEdit`). Today a chip is text, which the preview hands Ask's Task to turn
@@ -437,14 +436,16 @@ A question the person types stays Ask's Task, as now.
 checked only for being well formed, not for being right, and the data says them better: a key is a
 candidate the profile measured, a conversion follows from a column's type and the property's range,
 and a term the model invents compiles whether or not it means the column. The model only picks from a
-closed list. *What would reverse it:* a type no vocabulary in the catalogue fits often enough that
-the workspace's own terms are the usual answer; then the catalogue grows, or the person's own
-vocabularies join it.
+closed list. Nor does it propose an ontology when none is
+picked. *What would reverse it:* people who keep the workspace's IRIs because writing a ShEx or editing
+the declared types is too far; then the assistant proposes one, a term per shape and property taken
+from a small catalogue (schema.org, FOAF, Dublin Core, WGS 84 geo) under the same oracle, kept beside
+the data as `shapes.shex`.
 
 **How it is held.** `align` and `focus` are tested over the Nobel fixture with a scripted model (`support/model.ts`)
 that answers, refuses and goes silent, and the fallback is asserted in each case. Their quality is an
 evaluation, not a test, per model version: for `align`, each example's data against its hand-written
-`shapes.shex`, brought and proposed, scored by the terms taken as a person took them and the rows
+`shapes.shex`, scored by the terms taken as a person took them and the rows
 that conform; for
 `focus`, three sentences a person might write and the four chips a person would expect, scored by
 overlap.

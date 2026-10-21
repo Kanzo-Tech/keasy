@@ -353,6 +353,64 @@ graph; [cleanup](cleanup.md)). Three of the Tasks' pieces re-derived what a libr
 attempts, fails its step with its problem (`llm/failed` when it has no code of its own) and **Retry**
 on it; nothing downstream runs on a refused artefact.
 
+## Where the model is asked
+
+**Proposed 2026-10-21, not decided.** The steps above are computed, and the page's model answers one
+thing. This says where else the model is worth its cost, and where it is not.
+
+**The rule: code lists, checks and runs; the model reads the person's words and picks from what code
+listed.** Every call is sized by one slice — a question, a list of candidates — never by the
+dataset, so it fits the 4B model's 4096 tokens on Nobel and on anything larger. Every call has an
+oracle, and its fallback is the computed answer: the model never blocks the thread and never fails a
+step. The references draw the line in the same place. ThoughtSpot's Spotter has the model translate a
+question into its search tokens and a deterministic engine write the SQL; the model never writes what
+runs. Snowflake's Cortex Analyst and Databricks' Genie answer over a semantic model that people (or
+keys declared in the catalogue) define, and keep *verified queries* or *trusted assets*: questions
+whose answer is fixed, and that no model is asked again. ChatGPT's data analysis and Julius are the
+other end — a large model writes free code and repairs it on its errors — which a model in the page
+cannot do, and which reproduces nothing.
+
+What follows, in three parts:
+
+1. **An offered question is a spec, not a sentence** (no model). `offersOf` writes Ask's spec
+   (`{ of, where, show }`) for each chip, and the preview answers it with no model, as a chip under an
+   answer already is (`askEdit`). Today a chip is text, which the preview hands Ask's Task to turn
+   back into the spec it came from: a model call that can only lose. The chip's words are the spec's,
+   without inflection — *Award count by category*, *Top laureate by award count* — which deletes the
+   `plural` that came back in `requirements.ts` against [the rule above](#the-three-steps-and-the-one-task).
+   This is Genie's trusted asset and Snowflake's verified query: the answer is known before it is asked.
+2. **What the person says the files are about is read by the model** (one Task, `focus`). Nothing
+   reads it today: the first message's text is drawn and dropped. `offersOf` widens to every
+   candidate the resolver reaches (a few dozen at most, one line each), and the Task is given that
+   list and the person's words, and returns:
+   - `order`: up to four candidates' ids, the ones the words ask about first. Oracle: each id is in
+     the list, none twice.
+   - `question`: the words as a question, when they are one (*which countries win the most?*). It
+     joins the kept questions as a typed one does, and Ask's Task marks it as it marks those.
+   With no words, a model not loaded yet, or an answer the oracle refuses after its repairs, the
+   chips are `offersOf`'s first four, and nothing is said about it. The chips are drawn once, when
+   `focus` answers or is skipped; they are not re-ordered after they are drawn (a message does not
+   change in place).
+3. **A question the person types** is Ask's Task, as now.
+
+**What the model does not do: names, keys, structure, the program.** Each is checked only for being
+well formed, not for being right: a name the model proposes compiles whether or not it means the
+column, and a name is an identifier the vocabulary, the IRIs and a kept conversation hold. The
+files' own words are never wrong about which column they name, and the Data tab says them as given.
+*What would reverse it:* an evaluation over the four examples where people prefer the model's names
+(`born` → `birthDate`) to the files' own, together with a rename on the Data tab, so a wrong name
+costs one edit; then `names` is a Task again, one type per call, its oracle that each name maps to
+one column and is unique in its scope.
+
+**How it is held.** `focus` is tested over the Nobel fixture with a scripted model (`support/model.ts`)
+that answers, refuses and goes silent, and the fallback is asserted in each case. Its quality is an
+evaluation, not a test: for each of the four examples, three sentences a person might write and the
+four chips a person would expect, scored by overlap, per model version.
+
+*What would reverse the whole section:* a model in the page whose context holds a large dataset's
+profile, and an evaluation where its program or its questions beat the computed ones; then a step
+becomes a Task again under the oracle it already has.
+
 ## The preview is in the chat
 
 **Built 2026-10-13.** Once there is a program, it runs over the first 200 rows

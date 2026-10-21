@@ -355,107 +355,90 @@ graph; [cleanup](cleanup.md)). Three of the Tasks' pieces re-derived what a libr
 attempts, fails its step with its problem (`llm/failed` when it has no code of its own) and **Retry**
 on it; nothing downstream runs on a refused artefact.
 
-## Where the model is asked
+## The pipeline
 
-**Proposed 2026-10-21, not decided.** The steps above are computed, and the page's model answers one
-thing. This says where else the model is worth its cost, and where it is not.
+**Proposed 2026-10-21, not decided.** What the assistant does today grew a step at a time, and it
+shows: the same graph is described four times, the program is written as text by string templates,
+a typed question is put to the model twice, and a typed line is sorted by its first verb. This is the
+pipeline it should be — one row per stage, each a function of the stages before it, each artefact
+checked by a deterministic oracle — and what each stage replaces.
 
 **The rule: code lists, checks and runs; the model reads the person's words and picks from what code
-listed.** Every call is sized by one slice — a question, a list of candidates — never by the
-dataset, so it fits the 4B model's 4096 tokens on Nobel and on anything larger. Every call has an
-oracle, and its fallback is the computed answer: the model never blocks the thread and never fails a
-step. The references draw the line in the same place. ThoughtSpot's Spotter has the model translate a
-question into its search tokens and a deterministic engine write the SQL; the model never writes what
-runs. Snowflake's Cortex Analyst and Databricks' Genie answer over a semantic model that people (or
-keys declared in the catalogue) define, and keep *verified queries* or *trusted assets*: questions
-whose answer is fixed, and that no model is asked again. ChatGPT's data analysis and Julius are the
-other end — a large model writes free code and repairs it on its errors — which a model in the page
-cannot do, and which reproduces nothing.
+listed.** Every model call is a kanzo-ui Task (`runTask`): a closed context sized by one slice (a
+question, one source, one list) — never the dataset, so it fits the 4B model's 4096 tokens on any
+dataset — a schema, oracles, a bounded repair, and a fallback that is the computed answer. Nothing
+else in the assistant calls the model. The references draw the line in the same place: ThoughtSpot's
+Spotter has the model translate a question into search tokens and a deterministic engine write the
+SQL; Snowflake's Cortex Analyst and Databricks' Genie answer over a semantic model people define and
+keep *verified queries* or *trusted assets* no model is asked again; Karma (USC/ISI) and SemTab's
+column annotation take a mapping's structure from the data and ask a model only what a column means,
+from the target's own terms.
 
-**Two dimensions: the data and the model.** A data file is a type provider of the sources: fossil's
-profile gives its columns, keys and inclusions. A ShEx (or SHACL) file is a type provider of the
-targets: fossil's `Vocabulary.imports` gives each shape and the properties a mapping of it may write.
-A Fossil program is the mapping between the two — `type { … } := io.shex(…)`, the sources, and per
-shape a mapping whose `@subject`, conversions (`parse.date`), references (`Laureate(col)`) and joins
-the data decides, and whose shape and properties only a model can. The data alone cannot say what a
-thing *is*: the IRIs `vocabularyOf` declares today (`https://<origin>/vocab/Laureate`) mean nothing
-outside keasy, and the Nobel example's hand-written `shapes.shex` reaches for `nobel:`, FOAF,
-schema.org, Dublin Core, DBpedia and WGS 84 geo. **So the assistant has two inputs, the data and the
-model, and the model is the person's.** With a ShEx picked, the program maps onto it; with none, the
-program declares its own types (`type Laureate { … }`, what `vocabularyOf` writes today) under the
-workspace's IRIs, and the person changes them in the editor, where **Open in the editor** takes the
-program. The assistant does not write an ontology: choosing what a thing is called outside keasy is the
-person's, and a program is where they already write it. The references split the work the same
-way: Karma (USC/ISI), which writes R2RML from tables, and SemTab's column annotation take the
-structure from the data and ask a model only what a column *means*, chosen from a target's own terms.
+**Two dimensions: the data and the model.** A data file is a type provider of the sources; a ShEx is
+a type provider of the targets (fossil's `Vocabulary.imports`: each shape, and the properties a
+mapping of it may write). A program is the mapping between the two. With a ShEx, the program maps
+onto it; with none, the program declares its own types under the workspace's IRIs, and the person
+changes them in the editor (**Open in the editor**). The assistant does not write an ontology.
 
-What follows, in four parts:
+| # | Stage | From | Artefact | Who | Oracle |
+|---|---|---|---|---|---|
+| 1 | **Pick** | the + | files, and a ShEx if one is picked | person | — |
+| 2 | **Profile** | 1, on send | fossil's `Profile`: columns, keys, inclusions, sample | fossil | — |
+| 3 | **Schema** | 2 + choices | one `Schema`: types with a key and typed fields, edges with what backs them; and the decisions it raises | code | valid by construction |
+| 4 | **Align** | 3 + ShEx | each source onto a shape, each column onto a property | code, then a Task for what is left | closed list; 6 |
+| 5 | **Program** | 3 (+ 4) | the Fossil program, emitted from a mapping spec | fossil | 6 |
+| 6 | **Preview** | 5 | the graph over 200 rows, attached, and its `JoinGraph` (`readJoinGraph`) | fossil + engine | compiles; rows conform to the ShEx |
+| 7 | **Offer** | 6 | Ask's specs over the preview's graph, ordered by what the person said | code, then the `focus` Task | Ask's `verify` |
+| 8 | **Ask** | 6 + a question | an answer card, kept as Ask's turn | Ask's Task, or none for a spec | Ask's oracles |
+| 9 | **Build** | 5 | the graph over every row | fossil | — |
 
-1. **Structure, from the data** (no model) — as now: a thing per file with a key, an edge per
-   inclusion, a link file a bridge (`structureOf`), and the program written from it (`mappingsOf`).
-   With no ShEx picked, this is the whole program: its types declared from the data, under the
-   workspace's IRIs, for the person to edit.
-2. **Onto the person's model** (one Task per source, `align`, only when a `.shex` is picked with the
-   +). Each source is mapped onto one of its shapes and each column onto one of that shape's
-   properties, or onto none.
-   - **Code first**: a column whose words are a term's words (`birth_date` → `birthDate`), and a file
-     whose singular is a shape's or class's name, are aligned with no model. The Task sees only what
-     is left.
-   - **The Task** is given one source — its columns, their types, three sample rows — and the ShEx's
-     shapes with their properties, and returns a shape and a property per column. Sized by one source
-     and one closed list, never by the dataset.
-   - **Oracle**: every term is in the list, no property twice in one shape, a property's range fits
-     its column, the program compiles, and the preview's 200 rows conform to the ShEx — fossil reports
-     a violated constraint as a diagnostic on the line of the `.shex` that declares it, which is the
-     repair loop's message.
-   - **Fallback**: a source the Task cannot align keeps a type declared from its data, under the
-     workspace's IRIs, and the thread says which shape is left with nothing mapped onto it.
-   - **Said**: each alignment is an assumption, *I assumed: laureates → Laureate · Change*, with the
-     shapes or properties behind *Change*.
-3. **An offered question is a spec, not a sentence** (no model; built 2026-10-21, see `requirements`
-   above). `offersOf` writes Ask's spec
-   (`{ of, where, show }`) for each chip, and the preview answers it with no model, as a chip under an
-   answer already is (`askEdit`). A chip was text, which the preview handed Ask's Task to turn
-   back into the spec it came from: a model call that can only lose. The chip's words are the spec's,
-   without inflection — *Award count by category*, *Top laureate by award count* — which deletes the
-   `plural` that came back in `requirements.ts` against [the rule above](#the-three-steps-and-the-one-task).
-   This is Genie's trusted asset and Snowflake's verified query: the answer is known before it is asked.
-4. **What the person says the files are about is read by the model** (one Task, `focus`). Nothing
-   reads it today: the first message's text is drawn and dropped. `offersOf` widens to every
-   candidate the resolver reaches (a few dozen at most, one line each), and the Task is given that
-   list and the person's words, and returns:
-   - `order`: up to four candidates' ids, the ones the words ask about first. Oracle: each id is in
-     the list, none twice.
-   - `question`: the words as a question, when they are one (*which countries win the most?*). It
-     joins the kept questions as a typed one does, and Ask's Task marks it as it marks those.
-   With no words, a model not loaded yet, or an answer the oracle refuses after its repairs, the
-   chips are `offersOf`'s first four, and nothing is said about it. The chips are drawn once, when
-   `focus` answers or is skipped; they are not re-ordered after they are drawn (a message does not
-   change in place).
+What each stage replaces:
 
-A question the person types stays Ask's Task, as now.
+- **3, one `Schema`.** `Structure`, `Draft` and `Accepted` are one model in three passes, and
+  `relationsOf` walks the sample rows a fourth time to show an example. One `Schema` — computed from
+  the profile and the person's choices (`schemaOf(profile, choices)`) — is what the decisions read,
+  the program is written from, and the Data tab says. Names are the files' own, said as given:
+  `singular` goes with `plural` (the rule [above](#the-three-steps-and-the-one-task) already forbids
+  inflection), so a type is its file's words in PascalCase (`laureates` → `Laureates`), for the
+  person to rename in the editor.
+- **5, fossil emits the program.** `mappingsOf` writes Fossil by string templates, and keeps
+  knowledge of fossil's grammar in keasy. fossil's own design has a host hand it a mapping spec and
+  emit the program from it ([Profile, and the mapping a model proposes](https://kanzo-tech.github.io/fossil-lang/docs/design/profile));
+  keasy builds the spec (data) and fossil writes the text. Until fossil exports that, `mappingsOf`
+  stays, as the one place that writes Fossil, and goes when it does.
+- **6–7, the preview's graph is the graph.** `joinGraphOf` predicts the graph from the schema, with
+  a table of DuckDB types and fossil's edge-table naming (`${from}_${name}_${to}`) copied into keasy
+  so the prediction matches. The preview runs anyway, and `readJoinGraph` reads the real one: the
+  offers are written over it (stage 7), and *Here's what's in your data* shows its rows. The
+  prediction, its type table and its naming go. The cost is that the chips wait for the preview, which
+  reads 200 rows.
+- **7, offers are specs over the real graph** (built in #189 over the predicted one): each chip is
+  Ask's spec, held by Ask's `verify`, asked with no model. `focus` reads *what is it about?* — which
+  nothing reads today — and orders them, and when the words are a question it is asked (stage 8).
+- **8, one place asks, and keeps what it asked.** A typed question is put to Ask's Task twice today:
+  once by `isAnswerable` to mark it, again by the preview to answer it. It is asked once, by the
+  preview's Ask chat, and its answer is the mark. The chat is kept as Ask keeps one (`askKeep`:
+  specs, never rows), so a question reopened is asked as its spec again — not matched back to a chip
+  by its text, which is how #189 restores one. `Question`, `isAnswerable` and the `question` part go.
+- **The composer takes questions.** `isChange` sorts a typed line by its first verb (*rename*,
+  *drop*, …) to say that changes are made elsewhere. A line Ask cannot answer says so in Ask's own
+  words; the verb list goes.
 
-**What the model does not do: keys, structure, conversions, joins, or invented terms.** Each is
-checked only for being well formed, not for being right, and the data says them better: a key is a
-candidate the profile measured, a conversion follows from a column's type and the property's range,
-and a term the model invents compiles whether or not it means the column. The model only picks from a
-closed list. Nor does it propose an ontology when none is
-picked. *What would reverse it:* people who keep the workspace's IRIs because writing a ShEx or editing
-the declared types is too far; then the assistant proposes one, a term per shape and property taken
-from a small catalogue (schema.org, FOAF, Dublin Core, WGS 84 geo) under the same oracle, kept beside
-the data as `shapes.shex`.
+**What stays the model's:** reading the person's words — a typed question (Ask), *what is it about?*
+(`focus`), and a column's meaning against a ShEx (`align`). **What never is:** keys, structure,
+conversions, joins, the program's text, or a term no list offered. *What would reverse it:* a model in
+the page whose context holds a large dataset's profile, and an evaluation where its schema or its
+program beats the computed one; then that stage is a Task under the oracle it already has.
 
-**How it is held.** `align` and `focus` are tested over the Nobel fixture with a scripted model (`support/model.ts`)
-that answers, refuses and goes silent, and the fallback is asserted in each case. Their quality is an
-evaluation, not a test, per model version: for `align`, each example's data against its hand-written
-`shapes.shex`, scored by the terms taken as a person took them and the rows
-that conform; for
-`focus`, three sentences a person might write and the four chips a person would expect, scored by
-overlap.
+**How it is held.** Each stage is a pure function with a test over the Nobel fixture; each Task is
+tested with a scripted model (`support/model.ts`) that answers, refuses and goes silent, with its
+fallback asserted. A Task's quality is an evaluation, per model version: for `align`, the four
+examples against their hand-written `shapes.shex`, scored by the terms taken as a person took them
+and the rows that conform; for `focus`, three sentences per example and the four chips a person
+would expect, scored by overlap.
 
-*What would reverse the whole section:* a model in the page whose context holds a large dataset's
-profile, and an evaluation where its program or its questions beat the computed ones; then a step
-becomes a Task again under the oracle it already has.
+**Order.** 8 first (it removes a model call and the text-matching), then 6–7 (it removes the
+prediction), then 3, then 4 and `focus`; 5 when fossil exports the emitter.
 
 ## The preview is in the chat
 

@@ -19,13 +19,13 @@ vi.mock("@kanzo-tech/navigation/next", () => ({
 
 // What the chat and the flow read from outside, each a double: the page's model, the preview's
 // graph and Ask over it, the preview and the build, the kept conversation, and the hook's Tasks.
-const ask = vi.hoisted(() => ({ sendMessage: vi.fn(async () => {}) }));
+const ask = vi.hoisted(() => ({ sendMessage: vi.fn(async () => {}), messages: [] as unknown[] }));
 const load = vi.hoisted(() => ({ state: "ready" }));
 vi.mock("@/lib/ai", () => ({ usePreloadModel: () => {}, useModelLoad: () => load }));
 vi.mock("@/components/model-status", () => ({ ModelStatus: () => null }));
 vi.mock("@/lib/fossil/graph", () => ({ GraphScope: ({ children }: { children: unknown }) => children }));
 vi.mock("@/lib/fossil/ask", () => ({
-  useGraphAsk: () => ({ chat: { messages: [], status: "ready", sendMessage: ask.sendMessage, error: undefined }, graph: {}, over: {} }),
+  useGraphAsk: () => ({ chat: { messages: ask.messages, status: "ready", sendMessage: ask.sendMessage, error: undefined }, graph: {}, over: {} }),
 }));
 const doubles = vi.hoisted(() => ({
   usePreview: vi.fn((program: string | null) => ({ state: program === null ? "idle" : "running", graph: null, rerun: () => {} })),
@@ -315,23 +315,6 @@ describe("the assistant, as a conversation", () => {
     expect(host.querySelector("textarea")?.value).toBe("");
   });
 
-  it("does not take typed text that changes the graph as a question, and says where that is changed", async () => {
-    const { host } = mount({ selected: new Set(["nobel:laureates.csv"]), decisions: [] });
-    await through(host);
-    write(host, "call Laureate Person");
-    await act(async () => send(host).click());
-    expect(host.querySelector("[data-question]")).toBeNull();
-    expect(replies(host).at(-1)).toBe("call Laureate Person");
-    expect(host.querySelector("[data-change]")?.textContent).toContain("changes your graph rather than asking your data");
-    await act(async () => button(host, "Data")!.click());
-    expect(host.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe("Data");
-    // The next question is a question, and the reply to the change goes.
-    write(host, "Who won twice?");
-    await act(async () => send(host).click());
-    expect(host.querySelector("[data-change]")).toBeNull();
-    expect(host.querySelector("[data-question]")?.textContent).toBe("Who won twice?");
-  });
-
   it("on a phone, puts the panel in a sheet opened from a bar that says what is in it", async () => {
     const matchMedia = window.matchMedia;
     window.matchMedia = ((query: string) => ({ ...matchMedia.call(window, query), matches: true, addEventListener() {}, removeEventListener() {} })) as typeof matchMedia;
@@ -372,8 +355,10 @@ describe("the assistant, as a conversation", () => {
     });
     await through(host);
     expect(host.querySelector('[aria-label="Preview"]')?.textContent).toContain("Ask a question in the conversation, and it is answered here.");
-    await act(async () => button(host, "Who has won more than one Nobel?")!.click());
-    expect(ask.sendMessage).toHaveBeenCalledWith({ text: "Who has won more than one Nobel?" });
+    write(host, "Who won twice?");
+    await act(async () => send(host).click());
+    // Typed, it is Ask's Task's to read; a chip is asked as its spec (below).
+    expect(ask.sendMessage).toHaveBeenCalledWith({ text: "Who won twice?" });
   });
 
   it("asks a question taken from a chip as its spec, with no model to wait for", async () => {
@@ -398,6 +383,32 @@ describe("the assistant, as a conversation", () => {
       expect(host.textContent).not.toContain("Preparing the model");
     } finally {
       load.state = "ready";
+    }
+  });
+
+  it("marks a typed question by what the preview's Ask answered, and keeps the spec it read it as", async () => {
+    const spec = { of: "Laureate", show: { kind: "table", columns: ["name"] } };
+    ask.messages = [
+      { id: "u", role: "user", parts: [{ type: "text", text: "Who won twice?" }] },
+      { id: "a", role: "assistant", parts: [{ type: "data-ask", data: { spec } }, { type: "data-answer", data: { spec } }] },
+    ];
+    try {
+      const onSave = vi.fn();
+      const { host } = mount({
+        selected: new Set(["nobel:laureates.csv"]),
+        decisions: [],
+        program: "program",
+        preview: { state: "ready", graph: { name: "preview-1" } as never, rerun: () => {} },
+        questions: [{ id: "q1", text: "Who won twice?", answerable: null }],
+        initial: { about: "", built: false },
+        onSave,
+      });
+      await through(host);
+      expect(host.querySelector("[data-question]")?.parentElement?.textContent).toContain("These files can answer it");
+      const saved = onSave.mock.lastCall![0] as AssistantMessage[];
+      expect(saved.flatMap((m) => m.parts)).toContainEqual({ type: "data-question", data: { id: "q1", text: "Who won twice?", spec } });
+    } finally {
+      ask.messages = [];
     }
   });
 
@@ -513,7 +524,7 @@ describe("the assistant, as a conversation", () => {
     for (const shown of ["1018", "Marie Curie", "Each award has"]) expect(text).not.toContain(shown);
     expect(saved.find((m) => m.id === "asked:q1")?.parts).toContainEqual({
       type: "data-question",
-      data: { id: "q1", text: "Who has won more than one Nobel?", answerable: null },
+      data: { id: "q1", text: "Who has won more than one Nobel?", spec: base.offers![0]!.spec },
     });
   });
 

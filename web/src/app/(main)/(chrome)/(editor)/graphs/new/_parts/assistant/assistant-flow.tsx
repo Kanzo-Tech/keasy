@@ -117,9 +117,9 @@ function Resumed({
   // What the person has replied, which the Tasks wait on; the chat keeps it and says each change.
   const [replies, setReplies] = useState<Replies>(seed.replies);
   const onReplies = useCallback((next: Replies) => setReplies(next), []);
-  // The questions kept; whether each can be answered is the hook's to say.
+  // The questions kept; whether each can be answered is the preview's Ask's to say.
   const [questions, setQuestions] = useState<Question[]>(seed.questions);
-  const assistant = useAssistant({ connections, formats, about: replies.about, questions, seed });
+  const assistant = useAssistant({ connections, formats, about: replies.about, seed });
 
   // The preview runs the mapping's program; while it writes the next one, the last stays on screen.
   const ran = usePreview(assistant.mapped, assistant.described);
@@ -178,7 +178,7 @@ function Resumed({
       onSave={onSave}
       preview={preview}
       program={assistant.mapped}
-      questions={assistant.questions}
+      questions={questions}
       status={<ModelStatus />}
     />
   );

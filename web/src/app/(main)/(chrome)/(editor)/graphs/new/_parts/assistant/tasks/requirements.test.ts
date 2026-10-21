@@ -6,8 +6,8 @@ import { initSync } from "@kanzo-tech/rudof-wasm";
 import { type JoinGraph, JoinResolver } from "@kanzo-tech/relations";
 import { declare, mappingOf } from "./mapping";
 import { accept } from "./model";
-import { isAnswerable, joinGraphOf, offersOf } from "./requirements";
-import { DRAFT, NOBEL, scripted } from "./nobel.fixture";
+import { joinGraphOf, offersOf } from "./requirements";
+import { DRAFT, NOBEL } from "./nobel.fixture";
 
 const accepted = accept(DRAFT, NOBEL, (id) => (id === "count/affiliations" ? "link" : "code"))!;
 const XSD = "http://www.w3.org/2001/XMLSchema#";
@@ -37,20 +37,6 @@ describe("the questions on offer", () => {
 
   it("offer nothing Ask's oracles do not hold", async () => {
     expect(await offersOf(accepted, { types: [], edges: [] })).toEqual([]);
-  });
-});
-
-describe("a question the person typed", () => {
-  it("is answerable when Ask's spec holds", async () => {
-    const spec = { of: "Award", show: { kind: "chart", type: "bar", x: "category", y: { op: "count" } } };
-    expect(await isAnswerable("Prizes by category?", graph, { model: scripted({ spec }).model })).toBe(true);
-  });
-
-  it("is not when Ask cannot reach what it reads, after Ask's own repairs", async () => {
-    const spec = { of: "Award", show: { kind: "chart", type: "bar", x: "country.name", y: { op: "count" } } };
-    const { model, prompts } = scripted({ spec });
-    expect(await isAnswerable("Prizes by country?", graph, { model })).toBe(false);
-    expect(prompts).toHaveLength(3);
   });
 });
 

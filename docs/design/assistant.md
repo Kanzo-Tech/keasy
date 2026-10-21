@@ -370,35 +370,47 @@ whose answer is fixed, and that no model is asked again. ChatGPT's data analysis
 other end — a large model writes free code and repairs it on its errors — which a model in the page
 cannot do, and which reproduces nothing.
 
-**Two type providers, and the mapping between them.** A data file is a type provider of the
-sources: fossil's profile gives its columns, keys and inclusions. A ShEx (or SHACL) file picked with
-the data is a type provider of the targets: fossil's `Vocabulary.imports` gives each shape and the
-properties a mapping of it may write. Generating Fossil is mapping the first onto the second. With no
-ShEx there is no target but the one `vocabularyOf` declares from the files, and nothing to decide
-that the files do not already say. The references split the work the same way: Karma (USC/ISI), which
-writes R2RML from tables, and SemTab's column annotation take the structure from the data and ask a
-model only what a column *means* in the target, chosen from the target's own terms.
+**Two dimensions: the data and the model.** A data file is a type provider of the sources: fossil's
+profile gives its columns, keys and inclusions. A ShEx (or SHACL) file is a type provider of the
+targets: fossil's `Vocabulary.imports` gives each shape and the properties a mapping of it may write.
+A Fossil program is the mapping between the two — `type { … } := io.shex(…)`, the sources, and per
+shape a mapping whose `@subject`, conversions (`parse.date`), references (`Laureate(col)`) and joins
+the data decides, and whose shape and properties only a model can. The data alone cannot say what a
+thing *is*: the IRIs `vocabularyOf` declares today (`https://<origin>/vocab/Laureate`) mean nothing
+outside keasy, and the Nobel example's hand-written `shapes.shex` reaches for `nobel:`, FOAF,
+schema.org, Dublin Core, DBpedia and WGS 84 geo. **So the assistant always maps onto a ShEx, and
+delivers three things: the data, the model and the program.** The references split the work the same
+way: Karma (USC/ISI), which writes R2RML from tables, and SemTab's column annotation take the
+structure from the data and ask a model only what a column *means*, chosen from a target's own terms.
 
 What follows, in four parts:
 
 1. **Structure, from the data** (no model) — as now: a thing per file with a key, an edge per
    inclusion, a link file a bridge (`structureOf`), and the program written from it (`mappingsOf`).
-2. **Meaning, from the ShEx** (one Task per source, `align`). When a ShEx is picked, each source is
-   mapped onto one of its shapes and each column onto one of that shape's properties, or onto none.
-   - **Code first**: a column whose words are a property's words (`birth_date` → `birthDate`), and a
-     file whose singular is a shape's name, are aligned with no model. The Task sees only what is
-     left.
-   - **The Task** is given one source — its columns, their types, three sample rows — and the shapes'
-     names with their properties, and returns a shape and a property per column. Sized by one
-     source and one ShEx, never by the dataset.
-   - **Oracle**: every name is in `imports` (a closed list), no property twice in one shape, the
-     program compiles, and the preview's 200 rows conform to the ShEx — fossil reports a violated
-     constraint as a diagnostic on the line of the `.shex` that declares it, which is the repair
-     loop's message.
-   - **Fallback**: a source the Task cannot align keeps the type `vocabularyOf` declares for it, and
-     the thread says which shape is left with nothing mapped onto it. Each alignment is an
-     assumption, said as *I assumed: laureates → Person · Change*, with the shape's or property's
-     options behind *Change*.
+   It is also the skeleton of a model when the person brings none: a shape per thing, a property per
+   field with its `xsd` type and cardinality (`?` where some rows have none), a reference per edge.
+2. **The model: the person's, or one proposed** (one Task per type, `align`).
+   - **Brought**: a `.shex` picked with the +. Each source is mapped onto one of its shapes and each
+     column onto one of that shape's properties, or onto none.
+   - **Proposed**: no `.shex` picked. The skeleton above is written as a ShEx, and each shape and
+     property takes a term from a small catalogue of vocabularies — schema.org, FOAF, Dublin Core,
+     WGS 84 geo — or the workspace's own namespace where none fits. The ShEx is kept beside the data
+     (`shapes.shex`), the person's to edit, and the same path as a brought one follows.
+   - **Code first**: a column whose words are a term's words (`birth_date` → `birthDate`), and a file
+     whose singular is a shape's or class's name, are aligned with no model. The Task sees only what
+     is left.
+   - **The Task** is given one type — its columns, their types, three sample rows — and the candidate
+     terms (a brought ShEx's shapes and properties, or the catalogue's classes and the properties
+     whose range fits each column's type), and returns a term per shape and per column. Sized by one
+     type and one closed list, never by the dataset.
+   - **Oracle**: every term is in the list, no property twice in one shape, a property's range fits
+     its column, the program compiles, and the preview's 200 rows conform to the ShEx — fossil reports
+     a violated constraint as a diagnostic on the line of the `.shex` that declares it, which is the
+     repair loop's message.
+   - **Fallback**: a type the Task cannot align keeps the workspace's own terms, and is said.
+   - **Said**: each term taken is an assumption, *I assumed: Laureate → foaf:Person · Change*, with
+     its options behind *Change*. The panel has a **Model** tab beside **Data**: the shapes and the
+     terms they took.
 3. **An offered question is a spec, not a sentence** (no model). `offersOf` writes Ask's spec
    (`{ of, where, show }`) for each chip, and the preview answers it with no model, as a chip under an
    answer already is (`askEdit`). Today a chip is text, which the preview hands Ask's Task to turn
@@ -421,17 +433,19 @@ What follows, in four parts:
 
 A question the person types stays Ask's Task, as now.
 
-**What the model does not do: keys, structure, the program, or names with no ShEx.** Each is checked
-only for being well formed, not for being right, and the data says them better: a key is a candidate
-the profile measured, and a name the model invents compiles whether or not it means the column. With
-a ShEx the names are the ShEx's, and the model only picks among them. *What would reverse it:* an
-evaluation over the four examples where people prefer the model's names (`born` → `birthDate`) to the
-files' own, together with a rename on the Data tab, so a wrong name costs one edit.
+**What the model does not do: keys, structure, conversions, joins, or invented terms.** Each is
+checked only for being well formed, not for being right, and the data says them better: a key is a
+candidate the profile measured, a conversion follows from a column's type and the property's range,
+and a term the model invents compiles whether or not it means the column. The model only picks from a
+closed list. *What would reverse it:* a type no vocabulary in the catalogue fits often enough that
+the workspace's own terms are the usual answer; then the catalogue grows, or the person's own
+vocabularies join it.
 
 **How it is held.** `align` and `focus` are tested over the Nobel fixture with a scripted model (`support/model.ts`)
 that answers, refuses and goes silent, and the fallback is asserted in each case. Their quality is an
-evaluation, not a test, per model version: for `align`, each example's data against a ShEx written
-for it by hand, scored by the columns mapped as a person mapped them and the rows that conform; for
+evaluation, not a test, per model version: for `align`, each example's data against its hand-written
+`shapes.shex`, brought and proposed, scored by the terms taken as a person took them and the rows
+that conform; for
 `focus`, three sentences a person might write and the four chips a person would expect, scored by
 overlap.
 

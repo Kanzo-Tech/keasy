@@ -108,14 +108,16 @@ demo("cpi-discovery", "CPI España, 15 proyectos: grafo, búsqueda, ficha, relac
 
   steps: ({ discover, graph, settings, timeline, picker, bar, rules }, { page }) => {
     const tile = async (title: string) => (await discover.dashboard()).tile(title);
-    /** La última respuesta de Ask, con su gráfico entero arriba del panel. */
+    /**
+     * La última respuesta de Ask entera a la vista. La conversación sigue sola el final mientras nadie
+     * la mueve, así que no se le hace scroll: si algo la soltó, su botón la devuelve al final.
+     */
     const reveal = async () => {
-      await page
-        .getByRole("complementary", { name: "Ask panel" })
-        .getByRole("article")
-        .last()
-        .evaluate((card) => card.scrollIntoView({ block: "start", behavior: "smooth" }));
-      await page.waitForTimeout(1_500);
+      await page.waitForTimeout(800);
+      const latest = page.getByRole("button", { name: "Scroll to the latest message" });
+      if (await latest.isVisible()) await latest.click();
+      await expect(latest).toBeHidden();
+      await page.waitForTimeout(1_200);
     };
     return [
       // ── 1. Qué hay ─────────────────────────────────────────────────────────

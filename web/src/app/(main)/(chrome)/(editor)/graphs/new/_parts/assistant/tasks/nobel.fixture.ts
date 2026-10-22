@@ -4,7 +4,7 @@
  * steps' tests only.
  */
 
-import type { Engine, Primitive, Profile } from "@fossil-lang/types";
+import type { DataType, Engine, Field, Primitive, Profile, Table } from "@fossil-lang/types";
 import { profiledOf } from "./profile";
 
 const BASE = "https://data.example/nobel/";
@@ -28,7 +28,7 @@ export const PROFILE: Profile = {
   sources: [
     source(
       "laureates.csv",
-      [["id", "integer"], ["name", "string"], ["gender", "string"], ["born", "date", 1]],
+      [["id", "integer"], ["name", "string"], ["gender", "string"], ["born", "time_date", 1]],
       ["id", "name"],
       [
         ["1", "Marie Curie", "female", "1867-11-07"],
@@ -78,35 +78,33 @@ export const PROFILE: Profile = {
 
 export const NOBEL = profiledOf(PROFILE);
 
-/** The DuckDB type a fixture column is described as; a file holds no language-tagged string. */
-const DUCKDB: Record<Exclude<Primitive, "lang_string">, string> = {
-  string: "VARCHAR",
-  integer: "BIGINT",
-  float: "DOUBLE",
-  bool: "BOOLEAN",
-  date: "DATE",
-  date_time: "TIMESTAMP",
-  time: "TIME",
-  g_year: "INTEGER",
-  any_uri: "VARCHAR",
+/** The Arrow type an engine answers a fixture column with, as apache-arrow numbers them (`Schema.fbs`). */
+const ARROW: Partial<Record<Primitive, DataType>> = {
+  string: { typeId: 5 },
+  integer: { typeId: 2, bitWidth: 64, isSigned: true },
+  float: { typeId: 3, precision: 2 },
+  bool: { typeId: 6 },
+  time_date: { typeId: 8, unit: 0 },
 };
 
+/** An answer of no row whose fields are `fields`. */
+const fieldsOf = (fields: Field[]): Table => ({ numRows: 0, schema: { fields }, getChild: () => null });
+
 /**
- * An engine that answers a `DESCRIBE` of a fixture file with its columns, as DuckDB would — all
- * fossil's `describe` asks at `depth: "types"`. Nothing else is answered.
+ * An engine that answers the query of a fixture file's columns with them, as DuckDB-WASM would —
+ * all fossil's `describe` asks at `depth: "types"` — and says every extension is loaded. Every
+ * other statement answers no row.
  */
 export const DESCRIBING: Engine = {
   async query(sql: string) {
+    if (sql.includes("duckdb_extensions()")) {
+      return { numRows: 1, schema: { fields: [{ name: "loaded", nullable: false, type: ARROW.bool! }] }, getChild: () => ({ length: 1, get: () => true, toArray: () => [true] }) };
+    }
     const described = PROFILE.sources.find((s) => sql.includes(s.descriptor.key));
-    if (!/^DESCRIBE/.test(sql) || !described) throw new Error(`The fixture engine answers no ${sql}`);
-    const header = ["column_name", "column_type", "null", "key", "default", "extra"];
-    const rows = described.descriptor.columns.map((c) => [c.name, DUCKDB[c.primitive as Exclude<Primitive, "lang_string">], "YES", null, null, null]);
-    return {
-      numRows: rows.length,
-      schema: { fields: header.map((name) => ({ name })) },
-      getChild: (name: string) => ({ get: (i: number) => rows[i]![header.indexOf(name)] }),
-    } as unknown as Awaited<ReturnType<Engine["query"]>>;
+    if (!described || !sql.endsWith(" LIMIT 0")) return fieldsOf([]);
+    return fieldsOf(described.descriptor.columns.map((c) => ({ name: c.name, nullable: true, type: ARROW[c.primitive]! })));
   },
-  registerFiles: async () => [],
+  registerFiles: async () => undefined,
+  registerFileBuffer: async () => undefined,
   dropFiles: async () => undefined,
-} as unknown as Engine;
+};

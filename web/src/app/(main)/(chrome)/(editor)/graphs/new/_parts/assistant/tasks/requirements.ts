@@ -20,15 +20,15 @@ export interface Requirement {
 /** The DuckDB type a field of a primitive is read as, in the graph the model will write. */
 const DUCKDB: Record<Primitive, string> = {
   string: "VARCHAR",
+  string_lang: "VARCHAR",
   integer: "BIGINT",
   float: "DOUBLE",
   bool: "BOOLEAN",
-  date: "DATE",
-  date_time: "TIMESTAMP",
-  time: "TIME",
-  g_year: "INTEGER",
-  any_uri: "VARCHAR",
-  lang_string: "VARCHAR",
+  time_year: "INTEGER",
+  time_date: "DATE",
+  time_date_time: "TIMESTAMP",
+  time_hour: "TIME",
+  uri: "VARCHAR",
 };
 
 /**
@@ -93,7 +93,7 @@ export async function offersOf(model: Model, graph: JoinGraph): Promise<Requirem
   }
   for (const t of model.types) {
     const by =
-      t.fields.find((f) => ["date", "g_year", "date_time"].includes(f.primitive)) ??
+      t.fields.find((f) => ["time_date", "time_year", "time_date_time"].includes(f.primitive)) ??
       t.fields.find((f) => f.primitive === "string" && !NAMING.test(f.name));
     if (by) offers.push({ text: `${opening(t.name)} count by ${splitWords(by.name).toLowerCase()}`, spec: countBy(t.name, by.name) });
   }

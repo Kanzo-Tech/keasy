@@ -10,7 +10,7 @@ describe("the profile, as the Tasks read it", () => {
       "affiliations.laureate_id → laureates.id",
       "affiliations.institution_id → institutions.id",
     ]);
-    expect(NOBEL.sources[0]!.columns.find((c) => c.name === "born")).toEqual({ name: "born", primitive: "date", nulls: 1, distinct: 3 });
+    expect(NOBEL.sources[0]!.columns.find((c) => c.name === "born")).toEqual({ name: "born", primitive: "time_date", nulls: 1, distinct: 3 });
   });
 
   it("says no count where the profile read a sample", () => {

@@ -78,6 +78,8 @@ const number = (text: string) => Number(text.replace(/,/g, ""));
 
 demo("cpi-discovery", "CPI España, 15 proyectos: grafo, búsqueda, ficha, relaciones, crossfilter, tiempo, Ask y reglas SHACL", {
   async arrange({ page, env }) {
+    // Sin GPU, teclear en el composer con una respuesta ya dibujada pasa de los 30 s por acción.
+    page.setDefaultTimeout(120_000);
     await scriptModel(page, { turns: TURNS });
     const id = await seedGraph(page, "cpi", { name: "CPI España · 15 proyectos" });
     await saveRules(page, id, "cpi");

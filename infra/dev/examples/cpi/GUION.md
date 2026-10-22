@@ -29,7 +29,7 @@ Se pierde una sola tripleta: un `hasContractTerm` que apunta a un nodo que no ex
 
 | # | Subtítulo | Qué pasa | Cifra comprobada |
 |---|---|---|---|
-| 1 | 15 proyectos de Compra Pública de Innovación, en un grafo | el grafo agrupado, ya asentado | `5.4K nodes · 9K edges` |
+| 1 | 15 proyectos de Compra Pública Innovadora, en un grafo | el grafo agrupado, ya asentado | `5.4K nodes · 9K edges` |
 | 2 | Retos, requisitos, criterios, ofertas: 5.449 piezas enlazadas | hover en la leyenda | 5.449 |
 | 3 | Abre un proyecto: SENDA, diagnóstico médico en la nube | paleta `type:CPIProject` + «senda» | ficha en Info · **póster** |
 | 4 | ¿Cuánta IA hay en estos expedientes? Busca «inteligencia» | `label:inteligencia` → Add to subset | 37 |

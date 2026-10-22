@@ -120,7 +120,7 @@ demo("cpi-discovery", "CPI España, 15 proyectos: grafo, búsqueda, ficha, relac
     return [
       // ── 1. Qué hay ─────────────────────────────────────────────────────────
       {
-        subtitle: "15 proyectos de Compra Pública de Innovación, en un grafo",
+        subtitle: "15 proyectos de Compra Pública Innovadora, en un grafo",
         check: async () => expect(await discover.counts()).toMatch(/5\.4K nodes · 9K edges/),
       },
       {

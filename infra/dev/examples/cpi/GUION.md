@@ -1,9 +1,10 @@
 # Demo CPI España · 15 proyectos — guion de grabación
 
-Una sola toma de Discover sobre el grafo del cliente: 18 pasos, unos 4 minutos y 1600×900,
-con subtítulos en castellano. El vídeo grabado está al lado (`cpi-discovery-light.mp4`), junto con el
-póster y los tiempos de cada subtítulo. Esta carpeta es el paquete:
-datos, mapping, reglas y `e2e/demos/cpi-discovery.demo.ts` para regrabarla en tu Mac.
+Una sola toma de Discover sobre el grafo del cliente, en 23 pasos, a 1600×900 y con subtítulos en
+castellano. Cuenta una historia: la de un comprador público que prepara su propia CPI y quiere
+saber qué hay, dónde aparece la IA, cómo se relacionan proyectos y áreas, cuándo pasó cada fase,
+qué responde a una pregunta y qué datos fallan. El layout agrupado por comunidades se asienta
+antes de grabar (`CPI_SETTLE`, 60 s por defecto), así que en cámara no se espera.
 
 ## El grafo
 
@@ -23,45 +24,64 @@ conviene conocer:
 
 Se pierde una sola tripleta: un `hasContractTerm` que apunta a un nodo que no existe.
 
+
 ## La toma
 
 | # | Subtítulo | Qué pasa | Cifra comprobada |
 |---|---|---|---|
-| 1 | 15 proyectos de CPI: 5.449 nodos y 9.034 relaciones | arranca el layout | `5.4K nodes · 9K edges` |
-| 2 | Agrupa el grafo en comunidades | Settings → Clustered, aristas ocultas | 5.449 |
-| 3 | Busca un proyecto y abre su ficha: SENDA | paleta `type:CPIProject` + «senda», Enter | ficha de SENDA en Info · **póster** |
-| 4 | Busca en todo el grafo: «inteligencia» | `label:inteligencia` → Add to subset | 37 |
-| 5 | 37 nodos de 15 tipos distintos: encuádralos | Frame | 37 |
-| 6 | Cuadro de mando: proyectos por área temática | Dashboard, relación `CPIProject > hasTheme > ThematicArea` | — |
-| 7 | Pulsa una barra: Inteligencia Artificial | pick | 5 |
-| 8 | El mismo filtro en el grafo: los 5 proyectos de IA | vista Graph + Frame | 5 |
-| 9 | Cada fase del expediente: consulta, licitación, adjudicación | relación `Phase` | — |
-| 10 | Solo las adjudicaciones | pick en *Count by kind* | 19 |
-| 11 | Arrastra en el tiempo: adjudicadas desde 2022 | brush en *awardDate* | 8–9 |
-| 12 | Línea de tiempo: cada fase en su fecha de publicación | Settings → Timeline `publicationDate` | — |
-| 13 | Reprodúcelas de 2017 a 2024 | brush y Play | > 0 |
-| 14 | 2021–2022: el pico de actividad | brush 2021–2022 + Frame | > 0 |
-| 15 | Reglas SHACL: comprueba el grafo entero | Check | `All 5,449 nodes checked · 5,330 conform` |
-| 16 | 55 criterios de adjudicación incumplen una regla | Show 55 de AwardCriterion + Frame | 55 |
-| 17 | 31 no declaran su ponderación | Show 31 | 31 |
-| 18 | Quédate con lo que cumple: 349 de las 468 entidades | Keep what conforms | 349 |
+| 1 | 15 proyectos de Compra Pública de Innovación, en un grafo | el grafo agrupado, ya asentado | `5.4K nodes · 9K edges` |
+| 2 | Retos, requisitos, criterios, ofertas: 5.449 piezas enlazadas | hover en la leyenda | 5.449 |
+| 3 | Abre un proyecto: SENDA, diagnóstico médico en la nube | paleta `type:CPIProject` + «senda» | ficha en Info · **póster** |
+| 4 | ¿Dónde piden inteligencia artificial los 15 expedientes? | `label:inteligencia` → Add to subset | 37 |
+| 5 | En 37 sitios: requisitos, criterios, objetivos, soluciones… | Frame | 37 |
+| 6 | Cuadro de mando: una fila por proyecto | Dashboard, relación `CPIProject` | 15 |
+| 7 | Relaciona tablas: cada proyecto con su área temática | añade el salto `>hasTheme>ThematicArea` | tile por área |
+| 8 | La IA es el área más repetida: pulsa la barra | pick | 5 |
+| 9 | El mismo filtro en el grafo: los 5 proyectos de IA | Graph + Frame | 5 |
+| 10 | Cada expediente pasa por fases: consulta, licitación, adjudicación | limpia, encuadra todo, relación `Phase` | tile *Count by kind* |
+| 11 | Solo las adjudicaciones: 19 | pick | 19 |
+| 12 | Arrastra en el tiempo: las adjudicadas desde 2022 | brush en *awardDate* | 8–9 |
+| 13 | Línea de tiempo: cada fase en su fecha de publicación | Graph, zoom out, timeline `publicationDate`, dock cerrado | — |
+| 14 | Reprodúcelas: de 2017 a 2024 | brush y Play hasta el final | > 0 |
+| 15 | Pregunta en lenguaje natural, sobre lo que tienes delante | Ask: «¿Qué tecnologías piden más las soluciones?» | — |
+| 16 | La respuesta es un gráfico, calculado sobre tus datos | respuesta: tecnologías por solución | INTELIGENCIA ARTIFICIAL, 7 |
+| 17 | ¿Quién se lleva más importe adjudicado? | Ask: suma de `awardedAmount` por organización | UTE FCC AQUALIA…, 16,99 M€ |
+| 18 | Filtra por la respuesta y míralo en el grafo | Filter to + Graph + Frame | > 0 |
+| 19 | Reglas de calidad SHACL sobre todo el grafo | Check | `All 5,449 nodes checked · 5,330 conform` |
+| 20 | Regla: todo criterio de adjudicación declara su ponderación | Show + Frame | 31 · **póster** |
+| 21 | Aviso: 26 criterios no dicen si son fórmula o juicio de valor | Show | 26 |
+| 22 | Aviso: 59 organizaciones sin tipo (empresa, universidad…) | Show + Frame | 59 |
+| 23 | Quédate solo con lo que cumple todas las reglas | Keep what conforms | 349 |
 
-Las reglas (`rules.ttl`) son tres: los **proyectos** necesitan promotor y título, y si no declaran
-ámbito territorial salta un aviso (1 violación y 4 avisos); los **criterios de adjudicación**
-necesitan ponderación, y si no dicen cómo se evalúan salta un aviso (31 y 26); las **organizaciones**
-reciben un aviso cuando no tienen tipo (59, de ellos las 46 agrupaciones). «Keep what conforms» se
-queda con los nodos revisados que cumplen, es decir, 468 − 119 = 349, y no con los 5.330 del grafo.
+## Las reglas, y qué buscan
+
+`rules.ttl` tiene tres, y cada subtítulo de la parte final dice el criterio en voz alta:
+
+- **Proyecto** (`CPIProject`): necesita promotor (`isPromotedBy`) y título; si no declara ámbito
+  territorial, aviso. Da 1 violación y 4 avisos.
+- **Criterio de adjudicación** (`AwardCriterion`): debe declarar su ponderación (`weight`, un número
+  ≥ 0), y si no dice cómo se evalúa (fórmula o juicio de valor), aviso. Da 31 violaciones y 26 avisos.
+- **Organización** (`Organization`): aviso si no tiene tipo (empresa, universidad, centro
+  tecnológico…). Da 59, entre ellos las 46 agrupaciones.
+
+«Keep what conforms» se queda con los nodos revisados que cumplen, es decir, 468 − 119 = 349, y no con
+los 5.330 del grafo.
+
+## Ask
+
+El modelo de Ask es un doble (`e2e/support/model.ts`), como en `nobel-ask`: a cada pregunta responde
+con la especificación que daría un buen modelo, y el resto es de la página: la relación que necesita
+la respuesta, las filas (DuckDB, bajo el filtro de la página) y el filtro. Así la toma sale igual cada
+vez y no necesita GPU.
 
 ## Qué no sale, y por qué
 
-- **Ask y el asistente.** El modelo corre en WebGPU y este contenedor no tiene GPU. En tu Mac
-  funcionan, y se puede añadir un paso de Ask con preguntas de verdad.
 - **Map placement.** Necesita dos columnas numéricas tipo coordenadas, y el grafo no tiene ninguna.
 - **Etiquetas en el grafo.** Keasy no le pasa `title` a `GraphRoot`, así que el lienzo etiqueta por
   IRI. Por eso la toma va con las etiquetas apagadas. Arreglarlo es un cambio de una línea en
-  `discover/page.tsx` (`title="label"` o la columna que nombre el tipo) y merece un PR aparte.
-- **Fluidez.** Grabé sin GPU, así que el paso 2 (el layout agrupado) tarda unos 50 s en pantalla. En
-  el Mac con Metal es cuestión de segundos.
+  `discover/page.tsx` y merece un PR aparte.
+- **Colores.** Van a los ocho primeros tipos; `convert.py` pone primero los importantes (proyecto,
+  fase, organización, participación, criterio, solución, requisito, área temática).
 
 ## Regrabar en tu Mac
 
@@ -74,4 +94,4 @@ make demo DEMO=cpi-discovery            # claro y oscuro; THEME=dark para uno so
 
 Si el cliente pasa otro TTL con el mismo vocabulario: `python3 infra/dev/examples/cpi/convert.py nuevo.ttl salida/` y
 copia `mapping.fossil`, `shapes/shapes.shex` y `data/` en `infra/dev/examples/cpi/`. Las cifras
-fijas de la demo (37, 5, 19, 55, 31, 349) habría que volver a leerlas.
+fijas de la demo (37, 5, 19, 31, 26, 59, 349) habría que volver a leerlas.

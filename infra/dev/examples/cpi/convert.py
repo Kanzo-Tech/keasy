@@ -95,7 +95,9 @@ NAMES = {"title", "prefLabel", "label", "altLabel", "identifier", "acronym", "cu
 os.makedirs(f"{out}/data", exist_ok=True); os.makedirs(f"{out}/shapes", exist_ok=True)
 pfx = lambda u: ("cpi:" + u[len(CPI):] if u.startswith(CPI) else "skos:" + u[len(SKOS):] if u.startswith(SKOS)
                  else "rdfs:" + u[len(RDFS):] if u.startswith(RDFS) else "demo:" + u[len(DEMO):])
-alltypes = sorted(set(T.values()))
+# The types the story is about first: the graph's colours go to the first eight.
+FIRST = ["CPIProject", "Phase", "Organization", "ProcedureParticipation", "AwardCriterion", "SolutionSpecification", "TenderRequirement", "ThematicArea"]
+alltypes = [t for t in FIRST if t in set(T.values())] + sorted(set(T.values()) - set(FIRST))
 shex = ["# CPI España, 15 projects — the shapes of the demo graph, from the integrated TTL (local, not in git).",
         f"PREFIX cpi:  <{CPI}>", f"PREFIX skos: <{SKOS}>", f"PREFIX rdfs: <{RDFS}>", f"PREFIX demo: <{DEMO}>", f"PREFIX xsd:  <{XSD}>", ""]
 fossil = ["// CPI España, 15 projects: the integrated TTL as JSON (one file per type, one per edge), onto shapes.shex.",
@@ -134,7 +136,7 @@ for t in alltypes:
         if kinds[p] == "xsd:date": expr = f'parse.date({R}.{f}, "%Y-%m-%d")'
         m.append(f"    {f.ljust(w)} = {expr}")
     maps.append("\n".join(m))
-for (st, p, ot) in sorted(edges):
+for (st, p, ot) in sorted(edges, key=lambda k: (alltypes.index(k[0]), k[1])):
     name = f"{st}_{local(p)}"; R = f"{name}Row"
     rows = [{"iri": s, "o": o} for s, o in sorted(edges[(st, p, ot)])]
     json.dump(rows, open(f"{out}/data/{name}.json", "w"), ensure_ascii=False, indent=0)

@@ -1,0 +1,1262 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/contract-terms/tender-001-term-001",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/iva-excluido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/contract-terms/tender-001-term-002",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/iva-incluido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/contract-terms/tender-001-term-003",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/fase-1"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/contract-terms/tender-001-term-004",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/fase-2"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/contract-terms/tender-001-term-005",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/fase-3"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/contract-terms/tender-001-term-006",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/fase-1"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/contract-terms/tender-001-term-007",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/fase-2"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/contract-terms/tender-001-term-008",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/fase-3"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/contract-terms/tender-001-term-013",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/cada-fase"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/contract-terms/tender-001-term-014",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/falta-leve"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/contract-terms/tender-001-term-015",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/falta-grave"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/contract-terms/tender-001-term-016",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/falta-muy-grave"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/contract-terms/tender-001-term-017",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/subcontratacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/contract-terms/tender-001-term-018",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/pagos-a-los-subcontratistas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/contract-terms/tender-001-term-021",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/fabricacion-de-los-prototipos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-001",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/valor-estimado-del-presente-contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-004",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/presupuesto-base-de-licitacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-010",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/revision-de-precios-ni-la-modificacion-del-contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-011",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/incumplimiento-de-las-obligaciones-especiales-de-ejecucion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-012",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/facturas-en-formato-electronico"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-013",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/periodo-de-ejecucion-del-contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-014",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/facturacion-del-proyecto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-015",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/fase-previa-de-analisis-de-requisitos-de-infraestructuras-e-integracion-con-sistemas-existentes"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-016",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/fase-de-diseno-y-conceptualizacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-017",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/fase-de-instalaciones"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-018",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/fase-de-desarrollo-y-despliegue"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-019",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/fase-de-validacion-y-pruebas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-020",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/fase-de-depuracion-de-fallos-y-cierre"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-021",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/fase-de-formacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-023",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/plazo-de-garantia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-024",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/resolucion-de-incidencias"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-025",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/costes-de-las-integraciones"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-026",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/mantenimiento-administracion-y-operacion-de-los-servidores-y-software-incluido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-027",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/subcontratacion-con-terceros"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-028",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/seguimiento-continuo-del-desarrollo-de-las-aplicaciones"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-029",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/incumplimientos-del-contratista"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-001",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/iva-excluido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-002",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/iva-incluido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-003",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/valor-estimado-del-contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-004",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/sistema-de-determinacion-del-precio"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-005",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/fase-i"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-006",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/fase-ii"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-007",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/plazo-aproximado-de-ejecucion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-009",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/fase-i"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-010",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/fase-de-despliegue"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-012",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/hito-1-diseno"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-013",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/hito-2-desarrollo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-014",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/hito-4-validacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-017",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/demora-en-ejecucion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-018",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/infraccion-de-las-condiciones-establecidas-para-la-subcontratacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-019",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/por-incumplimiento-de-compromiso-de-adscripcion-de-medios-personales-o-materiales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-020",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/por-incumplimiento-total-de-la-prestacion-es-objeto-del-contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-022",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/responsable-del-contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-023",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/vigencia-del-contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-025",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/i"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-026",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/ii"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-028",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/finalizacion-no-satisfactoria"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-029",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/finalizacion-exitosa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-033",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/averias-originadas-por-el-uso-habitual-de-la-plataforma"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-034",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/resto-de-casos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-003-term-001",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/i-v-a-excluido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-003-term-002",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/i-v-a-incluido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-003-term-005",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/i-v-a-21"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-003-term-007",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/resolucion-de-consultas-tecnicas-reparacion-y-mantenimiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-003-term-008",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/reunion-de-lanzamiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-003-term-009",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/hito-1"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-003-term-010",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/hito-2"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-004-term-001",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/i-v-a-excluido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-004-term-002",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/i-v-a-incluido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-004-term-005",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/i-v-a-21"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-004-term-007",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/resolucion-de-consultas-tecnicas-reparacion-y-mantenimiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-004-term-008",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/reunion-de-lanzamiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-004-term-009",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/hito-1"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-004-term-010",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/hito-2"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-term-001",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/i-v-a-excluido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-term-007",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/pago-final"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-term-011",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/informe-de-seguimiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-term-013",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/plazo-de-ejecucion-y-vigencia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-term-014",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/fase-de-despliegue"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-term-015",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/forma-de-pago"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-term-017",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/aplicacion-de-las-penalidades"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/contract-terms/tender-001-term-001",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/iva-incluido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/contract-terms/tender-001-term-004",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/fase-1"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/contract-terms/tender-001-term-005",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/fase-2"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/contract-terms/tender-001-term-010",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/hito-de-facturacion-1"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/contract-terms/tender-001-term-011",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/hito-de-facturacion-2"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/contract-terms/tender-001-term-012",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/hito-de-facturacion-3"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/contract-terms/tender-001-term-013",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/hito-de-facturacion-4"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/contract-terms/tender-001-term-014",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/finalizacion-satisfactoria"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/contract-terms/tender-001-term-017",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/condiciones-especiales-de-ejecucion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/contract-terms/tender-001-term-018",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/incumplimiento-del-alcance"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/contract-terms/tender-001-term-019",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/subcontratacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/contract-terms/tender-001-term-023",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/equipo-de-supervision-y-control"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/contract-terms/tender-001-term-024",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/hitos-de-facturacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/contract-terms/tender-001-term-027",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/fase-2"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/contract-terms/tender-001-term-001",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/presupuesto-base-de-licitacion-sin-iva"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/contract-terms/tender-001-term-002",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/importe-del-iva"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/contract-terms/tender-001-term-003",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/plazo-de-ejecucion-total-maximo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/contract-terms/tender-001-term-004",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/fase-i-diseno-de-la-solucion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/contract-terms/tender-001-term-005",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/fase-ii-desarrollo-de-un-prototipo-o-pruebas-de-la-solucion-propuesta"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/contract-terms/tender-001-term-006",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/numero-maximo-de-adjudicatarios-por-fase"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/contract-terms/tender-001-term-007",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/garantia-definitiva"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/contract-terms/tender-001-term-008",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/tipo-de-garantia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/contract-terms/tender-001-term-009",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/pagos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/contract-terms/tender-001-term-010",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/acta-de-certificacion-de-ejecucion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/contract-terms/tender-001-term-011",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/limite"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/contract-terms/tender-001-term-012",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/equipo-responsable-del-contrato-erc"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/contract-terms/tender-001-term-013",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/prototipo-resultante"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/contract-terms/tender-001-term-014",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/incumplimiento-muy-grave"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/contract-terms/tender-001-term-015",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/incumplimiento-grave"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/contract-terms/tender-001-term-016",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/incumplimiento-leve"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/contract-terms/tender-001-term-017",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/total-de-las-penalidades"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-001",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/valor-estimado-del-contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-002",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/presupuesto-base-de-licitacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-003",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/precio-del-contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-005",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/primer-pago"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-006",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/segundo-pago"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-007",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/ultimo-pago"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-008",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/revision-de-precios"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-009",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/plazo-durante-el-cual-debera-mantener-el-deber-de-respetar-el-caracter-confidencial-de-la-informacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-010",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/garantia-definitiva"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-011",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/incumplimiento-de-los-niveles-de-servicio-sla"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-012",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/incumplimiento-de-los-niveles-de-servicio-sla"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-013",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/retraso-en-la-entrega-de-hitos-del-proyecto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-014",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/incumplimiento-de-la-calidad-en-la-entrega"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-015",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/incumplimiento-de-los-estandares-de-interoperabilidad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-016",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/incumplimiento-en-la-implementacion-de-sistemas-de-inteligencia-artificial-ia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-017",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/incumplimiento-en-la-proteccion-de-datos-y-confidencialidad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-018",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/incumplimiento-en-la-actualizacion-y-mantenimiento-del-sistema"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-019",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/incumplimiento-en-la-formacion-y-capacitacion-del-personal"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-020",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/incumplimiento-en-la-formacion-y-capacitacion-del-personal"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-021",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/no-cumplimiento-de-los-kpis-de-impacto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-022",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/cesion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-023",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/subcontratacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-024",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/maximo-a-ofertar"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-025",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/maximo-a-ofertar"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-026",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/excluidas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-027",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/ejecucion-del-contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-032",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/resultados-derivados-de-la-prestacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-033",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/resultados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-034",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/derechos-de-propiedad-intelectual-e-industrial"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-035",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/resultados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-036",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/ejecucion-del-contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-040",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/modelo-de-control-y-seguimiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-041",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/reuniones-minimas-comprador-adjudicatario"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-044",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/resultados-derivados-de-la-prestacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-045",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/resultados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-046",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/derechos-de-propiedad-intelectual-e-industrial"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-047",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/resultados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-002-term-004",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/cumplimiento-defectuoso"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-002-term-008",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/ejecucion-del-contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-002-term-010",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/pago-fijo-mensual"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-002-term-011",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/pago-por-resultados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-002-term-013",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/pruebas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-002-term-016",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/precision-de-la-tecnica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-002-term-018",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/intervenciones-de-mantenimiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-002-term-019",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/equipo-de-seguimiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-002-term-020",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/reuniones-mensuales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-002-term-022",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/derechos-preexistentes"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-001",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/valor-estimado-del-contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-002",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/presupuesto-maximo-de-contratacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-003",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/plazo-de-ejecucion-del-contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-004",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/preaviso"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-005",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/forma"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-008",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/cuantia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-009",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/casos-especiales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-011",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/faltas-graves"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-012",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/faltas-leves"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-013",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/pruebas-y-analisis"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-015",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/entregas-sucesivas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-016",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/ejecucion-del-contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-019",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/pago-por-resultados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-021",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/revision"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-022",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/consumo-previsto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-026",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/duracion-de-la-tecnica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-027",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/intervenciones-de-mantenimiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/contract-terms/tender-001-term-001",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/presupuesto-de-licitacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/contract-terms/tender-001-term-002",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/valor-estimado-sin-iva"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/contract-terms/tender-001-term-003",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/importe-total-iva-incluido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/contract-terms/tender-001-term-004",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/duracion-del-contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/contract-terms/tender-001-term-005",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/inicio-del-contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/contract-terms/tender-001-term-007",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/prorroga"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/contract-terms/tender-001-term-008",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/modificacion-del-contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/contract-terms/tender-001-term-009",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/garantia-provisional"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/contract-terms/tender-001-term-010",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/garantia-definitiva"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/contract-terms/tender-001-term-011",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/plan-operativo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/contract-terms/tender-001-term-012",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/analisis-diseno"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/contract-terms/tender-001-term-013",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/implementacion-integraciones"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/contract-terms/tender-001-term-014",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/validacion-y-verificacion-implantacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/contract-terms/tender-001-term-015",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/de-documentacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/contract-terms/tender-001-term-016",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/pago"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/contract-terms/tender-001-term-017",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/abonar-el-prec-io"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/contract-terms/tender-001-term-018",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/revision-de-precios"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/contract-terms/tender-001-term-022",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/correccion-de-errores"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/contract-terms/tender-001-term-023",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/entregables"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/contract-terms/tender-001-term-024",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/equipo-de-seguimiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/contract-terms/tender-001-term-001",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/contract-terms/tender-001-term-002",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/contract-terms/tender-001-term-003",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/fase-1"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/contract-terms/tender-001-term-004",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/fase-2"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/contract-terms/tender-001-term-005",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/contract-terms/tender-001-term-006",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/fase-1"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/contract-terms/tender-001-term-007",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/plazo-de-ejecucion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/contract-terms/tender-001-term-011",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/fase-1"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/contract-terms/tender-001-term-012",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/fase-2"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/contract-terms/tender-001-term-013",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/contract-terms/tender-001-term-014",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/ejecucion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/contract-terms/tender-001-term-015",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/limite"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/contract-terms/tender-001-term-016",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/incumplimiento-del-alcance"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/contract-terms/tender-001-term-001",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/iva-excluido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/contract-terms/tender-001-term-002",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/importe-posible-prorroga-para-12-meses"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/contract-terms/tender-001-term-003",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/importe-del-posible-modificado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/contract-terms/tender-001-term-005",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/duracion-maxima"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/contract-terms/tender-001-term-007",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/servicios-de-soporte"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/contract-terms/tender-001-term-008",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/acuerdo-de-nivel-de-servicio-ans"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/contract-terms/tender-001-term-009",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/incumplimiento-severo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/contract-terms/tender-001-term-010",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/incumplimiento-menor"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/contract-terms/tender-001-term-011",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/incumplimiento-de-plazos-parciales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/contract-terms/tender-001-term-012",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/incumplimiento-del-plazo-total"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/contract-terms/tender-001-term-013",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/incumplimiento-dg-01-realizacion-acta-de-coordinacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/contract-terms/tender-001-term-014",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/incumplimiento-it-nn-realizacion-informe-de-seguimiento-trimestre-n"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/contract-terms/tender-001-term-016",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/supervision-de-los-trabajos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/contract-terms/tender-001-term-017",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/fase-de-transicion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/contract-terms/tender-001-term-018",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/fase-de-devolucion-del-servicio"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/contract-terms/tender-001-term-025",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/factura-trimestral"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/contract-terms/tender-001-term-001",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/fianza-provisional"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/contract-terms/tender-001-term-002",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/fianza-definitiva"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/contract-terms/tender-001-term-004",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/revision-de-precios"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/contract-terms/tender-001-term-006",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/control-de-calidad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/contract-terms/tender-001-term-008",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/clausula-penal"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/contract-terms/tender-002-term-001",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/precio-del-contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/contract-terms/tender-002-term-003",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/certificaciones-mensuales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/contract-terms/tender-002-term-005",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/fianza-definitiva"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/contract-terms/tender-002-term-008",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/redaccion-del-proyecto-constructivo-y-ejecucion-de-las-obras"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/contract-terms/tender-002-term-009",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/ejecucion-de-las-obras"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/contract-terms/tender-002-term-010",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/periodo-de-pruebas-necesarias-y-puesta-en-marcha"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/contract-terms/tender-002-term-012",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/licencias-y-o-autorizaciones"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/contract-terms/tender-002-term-013",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/controles-y-ensayos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/contract-terms/tender-002-term-015",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/total-de-la-unidad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-001",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/valor-estimado-del-contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-002",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/presupuesto-de-licitacion-iva-excluido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-003",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/presupuesto-de-licitacion-iva-incluido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-004",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/plazo-total-de-ejecucion-del-contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-005",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/plazo-de-ejecucion-de-este-contrato-podra-ampliarse"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-006",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/forma-de-pago"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-007",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/provisional"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-008",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/definitiva"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-009",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/complementaria"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-010",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/plazo-de-garantia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-011",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/demora-en-el-cumplimiento-de-los-plazos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-012",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/incumplimiento-de-las-obligaciones-esenciales-del-contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-013",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/responsable-del-contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-016",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/desarrollo-y-la-puesta-a-disposicion-de-productos-protegidos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-018",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/plazo-de-ejecucion-de-los-trabajos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-019",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/servicio-de-garantia-in-situ"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-020",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/hito-1"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-021",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/hito-2"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-022",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/hito-4"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-023",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/hito-6"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-024",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/partes-de-aceptacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-025",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/incumplimiento-de-los-plazos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/contract-terms/tender-001-term-001",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/sin-iva"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/contract-terms/tender-001-term-002",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/21"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/contract-terms/tender-001-term-003",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/total"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/contract-terms/tender-001-term-006",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/plazo-de-ejecucion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/contract-terms/tender-001-term-007",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/plazo-de-ejecucion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/contract-terms/tender-001-term-008",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/plazo-de-ejecucion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/contract-terms/tender-001-term-009",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/ejecucion-de-todos-los-servicios"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/contract-terms/tender-001-term-011",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/parciales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/contract-terms/tender-001-term-016",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/no-se-hubiese-formalizado-el-contrato-dentro-del-plazo-indicado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/contract-terms/tender-001-term-017",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/responsable-del-contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/contract-terms/tender-001-term-001",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/presupuesto-base-de-licitacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/contract-terms/tender-001-term-002",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/valor-estimado-de-la-contratacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/contract-terms/tender-001-term-003",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/plazo-de-ejecucion-de-la-totalidad-del-objeto-del-contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/contract-terms/tender-001-term-004",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/ampliacion-o-prorroga"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/contract-terms/tender-001-term-005",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/periodo-de-garantia-de-las-obras-asi-como-la-de-los-componentes-de-la-planta-desaladora"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/contract-terms/tender-001-term-006",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/garantia-provisional"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/contract-terms/tender-001-term-007",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/garantia-definitiva"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/contract-terms/tender-001-term-008",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/garantias-adicionales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/contract-terms/tender-001-term-009",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/memoria-tecnica-final-de-diseno"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/contract-terms/tender-001-term-010",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/acta-de-comprobacion-del-replanteo-de-la-obra"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/contract-terms/tender-001-term-011",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/proceso-de-obra-en-pozo-izquierdo-o-en-taller"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/contract-terms/tender-001-term-012",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/entrega-de-la-planta-totalmente-instalada-y-puesta-en-marcha"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/contract-terms/tender-001-term-013",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/penalidades-diarias-dias-naturales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/contract-terms/tender-001-term-014",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/pruebas-de-verificacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/contract-terms/tender-001-term-015",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/responsable-del-contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/contract-terms/tender-001-term-016",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/derechos-de-propiedad-intelectual-o-industrial-preexistentes"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/contract-terms/tender-001-term-017",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/licencia-de-uso"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/contract-terms/tender-001-term-001",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/presupuesto-maximo-de-licitacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/contract-terms/tender-001-term-002",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/valor-estimado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/contract-terms/tender-001-term-007",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/pago-del-precio"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/contract-terms/tender-001-term-008",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/hito-de-pago-1-hp1"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/contract-terms/tender-001-term-009",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/hito-de-pago-2-hp2"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/contract-terms/tender-001-term-012",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/condiciones-de-subcontratacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/contract-terms/tender-001-term-013",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/equipo-de-seguimiento-es"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/contract-terms/tender-001-term-014",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/total"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/contract-terms/tender-001-term-015",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/2024"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/contract-terms/tender-001-term-016",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/2025"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/contract-terms/tender-001-term-017",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/fecha-de-inicio-del-contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/contract-terms/tender-001-term-021",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/plataforma-base"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/contract-terms/tender-001-term-022",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/reuniones-de-seguimiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/contract-terms/tender-001-term-001",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/iva-excluido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/contract-terms/tender-001-term-002",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/dos-pruebas-de-concepto-fase-i"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/contract-terms/tender-001-term-003",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/posibilidad-de-ampliacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/contract-terms/tender-001-term-005",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/fase-1-exploracion-de-soluciones-estudio-de-viabilidad-y-prueba-de-concepto-del-sistema"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/contract-terms/tender-001-term-006",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/fase-2-desarrollo-experimental-del-sistema-experto-y-del-catalogo-prototipo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/contract-terms/tender-001-term-007",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/fase-3-desarrollo-del-piloto-demostrador-virtual"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/contract-terms/tender-001-term-008",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/cada-fase"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/contract-terms/tender-001-term-009",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/garantizar-el-cumplimiento-de-contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/contract-terms/tender-001-term-012",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/informe-justificativo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/contract-terms/tender-001-term-013",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/explotar-los-productos-desarrollados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/contract-terms/tender-001-term-014",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/derechos-de-propiedad-industrial-e-intelectual"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/contract-terms/tender-001-term-015",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/derechos-de-acceso"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/contract-terms/tender-001-term-016",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/falta-leve"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/contract-terms/tender-001-term-017",
+"o": "https://example.org/cpi-demo/id/vocab/contract-term-concept/falta-muy-grave"
+}
+]

@@ -1,0 +1,78 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/vocab/procedure-type/compra-publica-precomercial"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/vocab/procedure-type/abierto-sujeto-a-regulacion-armonizada-sara"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/vocab/procedure-type/procedimiento-abierto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/vocab/procedure-type/procedimiento-abierto-sujeto-a-regulacion-armonizada"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/vocab/procedure-type/procedimiento-de-compra-publica-precomercial-cpp"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/vocab/procedure-type/abierto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/vocab/procedure-type/procedimiento-abierto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/vocab/procedure-type/procedimiento-abierto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-003",
+"o": "https://example.org/cpi-demo/id/vocab/procedure-type/procedimiento-abierto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/vocab/procedure-type/abierto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/vocab/procedure-type/procedimiento-de-compra-publica-precomercial"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/vocab/procedure-type/procedimiento-abierto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/vocab/procedure-type/procedimiento-abierto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/vocab/procedure-type/procedimiento-abierto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/vocab/procedure-type/abierto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/vocab/procedure-type/abierto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/vocab/procedure-type/procedimiento-abierto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/vocab/procedure-type/procedimiento-de-licitacion-con-negociacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/vocab/procedure-type/dialogo-competitivo"
+}
+]

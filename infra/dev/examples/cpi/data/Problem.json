@@ -1,0 +1,517 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/problems/problem-001",
+"label": "la solución al problema que se plantea no está determinada en el momento de pub…",
+"description": "la solución al problema que se plantea no está determinada en el momento de publicar el anuncio de licitación."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/problems/problem-002",
+"label": "la barrera de comunicación a la que se enfrentan en su día a día las personas s…",
+"description": "la barrera de comunicación a la que se enfrentan en su día a día las personas sordas."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/problems/problem-003",
+"label": "Falta de comunicación con el entorno.",
+"description": "Falta de comunicación con el entorno."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/problems/problem-004",
+"label": "Imposibilidad de acceder a estudios superiores de forma presencial.",
+"description": "Imposibilidad de acceder a estudios superiores de forma presencial."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/problems/problem-005",
+"label": "Dificultad a la hora de acceder al mercado laboral.",
+"description": "Dificultad a la hora de acceder al mercado laboral."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/problems/problem-006",
+"label": "Se encuentran con barreras de comunicación con su médico.",
+"description": "Se encuentran con barreras de comunicación con su médico."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/problems/problem-007",
+"label": "problema de comunicación e interacción de las personas con discapacidad auditiv…",
+"description": "problema de comunicación e interacción de las personas con discapacidad auditiva severa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/problems/problem-008",
+"label": "Los problemas de comunicación y el acceso limitado a los servicios",
+"description": "Los problemas de comunicación y el acceso limitado a los servicios"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/problems/problem-009",
+"label": "impidiendo su plena participación social; politica; cultural y económica",
+"description": "impidiendo su plena participación social; politica; cultural y económica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/problems/problem-001",
+"label": "brecha digital",
+"description": "brecha digital"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/problems/problem-001",
+"label": "condiciones ergonómicas limitadas para el cirujano",
+"description": "condiciones ergonómicas limitadas para el cirujano"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/problems/problem-002",
+"label": "limitado acceso a la visión 3D al resto del equipo quirúrgico y de grabación de…",
+"description": "limitado acceso a la visión 3D al resto del equipo quirúrgico y de grabación de la imagen 3D del procedimiento quirúrgico llevado a cabo para su posterior reproducción"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/problems/problem-003",
+"label": "disponibilidad de herramientas de formación compatibles con tecnologías de visi…",
+"description": "disponibilidad de herramientas de formación compatibles con tecnologías de visión 3D, dispositivos móviles y servicios online"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/problems/problem-004",
+"label": "existen numerosos aspectos susceptibles de mejora como son su aplicación en rec…",
+"description": "existen numerosos aspectos susceptibles de mejora como son su aplicación en recientes abordajes laparoscópicos, progresos en la ergonomía del cirujano, uso de nuevas tecnologías de visión (3D, RA y RM) para todo el equipo quirúrgico y disponibilidad de plataformas portables de formación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/problems/problem-005",
+"label": "existen varias limitaciones pendientes de mejora para asegurar una adecuada apl…",
+"description": "existen varias limitaciones pendientes de mejora para asegurar una adecuada aplicación de la tecnología robótica al ámbito de la microcirugía"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/problems/problem-001",
+"label": "amenazas (en este caso concreto botnet 1 )",
+"description": "amenazas (en este caso concreto botnet 1 )"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/problems/problem-002",
+"label": "dominios .onion que no estén siendo indexados por fuentes públicas (tipo Ahmia)",
+"description": "dominios .onion que no estén siendo indexados por fuentes públicas (tipo Ahmia)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/problems/problem-003",
+"label": "El número elevado de conexiones a los Honeypots",
+"description": "El número elevado de conexiones a los Honeypots"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/problems/problem-004",
+"label": "la baja automatización de las tareas de detección, categorización y predicción…",
+"description": "la baja automatización de las tareas de detección, categorización y predicción de ciberataque"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/problems/problem-005",
+"label": "las preguntas distantes y complejas que rodean al \"quién\" y el \"por qué\" de un…",
+"description": "las preguntas distantes y complejas que rodean al \"quién\" y el \"por qué\" de un ataque"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/problems/problem-006",
+"label": "realmente no existen soluciones en el mercado que puedan cubrir la necesidad pl…",
+"description": "realmente no existen soluciones en el mercado que puedan cubrir la necesidad planteada"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/problems/problem-007",
+"label": "existe poco conocimiento profundo de la DeepWeb y",
+"description": "existe poco conocimiento profundo de la DeepWeb y"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/problems/problem-008",
+"label": "El número elevado de conexiones a los Honeypots y la baja automatización de las…",
+"description": "El número elevado de conexiones a los Honeypots y la baja automatización de las tareas de detección, categorización y predicción de ciberataque."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/problems/problem-009",
+"label": "Las labores de atribución de ciberincidentes resultan especialmente complejas",
+"description": "Las labores de atribución de ciberincidentes resultan especialmente complejas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/problems/problem-001",
+"label": "su estado de madurez tecnológica sigue siendo muy baja",
+"description": "su estado de madurez tecnológica sigue siendo muy baja"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/problems/problem-002",
+"label": "su aplicación a las tareas laparoscópicas más cercanas a entornos clínicos real…",
+"description": "su aplicación a las tareas laparoscópicas más cercanas a entornos clínicos reales sigue siendo un reto pendiente de alcanzar"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/problems/problem-003",
+"label": "la tecnología existente en el mercado, tal y cómo se está explotando, no es cap…",
+"description": "la tecnología existente en el mercado, tal y cómo se está explotando, no es capaz de cubrir con integridad el reto tecnológico planteado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/problems/problem-004",
+"label": "la creciente demanda de aplicaciones de Neurología no está siendo cubierta",
+"description": "la creciente demanda de aplicaciones de Neurología no está siendo cubierta"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/problems/problem-005",
+"label": "las limitadas prestaciones de los equipos de cuerpo completo disponibles en tér…",
+"description": "las limitadas prestaciones de los equipos de cuerpo completo disponibles en términos de especificaciones"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/problems/problem-006",
+"label": "Las imágenes obtenidas con radiación ionizante, tales como la técnica PET, no e…",
+"description": "Las imágenes obtenidas con radiación ionizante, tales como la técnica PET, no están exentas de riesgos para los pacientes dadas las elevadas dosis de contraste requeridas."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/problems/problem-007",
+"label": "Dichos PET cerebrales no reúnen las funcionalidades de sensibilidad y resolució…",
+"description": "Dichos PET cerebrales no reúnen las funcionalidades de sensibilidad y resolución espacial requeridas."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/problems/problem-008",
+"label": "Gran número de los vehículos se encuentran con características de construcción…",
+"description": "Gran número de los vehículos se encuentran con características de construcción anteriores a la nueva Orden INT/2573/2015 de fabricación, no respondiendo por lo tanto a los requisitos actuales de seguridad y equipamiento."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/problems/problem-009",
+"label": "Los costes de adquisición son muy elevados debido a la imposibilidad de fabrica…",
+"description": "Los costes de adquisición son muy elevados debido a la imposibilidad de fabricación de estos vehículos en serie."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/problems/problem-010",
+"label": "Las condiciones de transporte de los presos y de los escoltas, son francamente…",
+"description": "Las condiciones de transporte de los presos y de los escoltas, son francamente mejorables en cuanto a espacio, luminosidad, seguridad y confort."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/problems/problem-011",
+"label": "Las tareas de mantenimiento de estos vehículos son deficientes",
+"description": "Las tareas de mantenimiento de estos vehículos son deficientes"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/problems/problem-012",
+"label": "el empleo de materiales pesados, principalmente aceros, repercute en un aumento…",
+"description": "el empleo de materiales pesados, principalmente aceros, repercute en un aumento del consumo de combustible."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/problems/problem-013",
+"label": "Ausencia de un Centro de Control (CECO) plenamente integrado con la flota.",
+"description": "Ausencia de un Centro de Control (CECO) plenamente integrado con la flota."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/problems/problem-014",
+"label": "estos sistemas se encuentran todavía en diferentes fases de desarrollo y ningun…",
+"description": "estos sistemas se encuentran todavía en diferentes fases de desarrollo y ninguno parece tener ninguna característica disruptiva con respecto a los sistemas tradicionales."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/problems/problem-015",
+"label": "Muchos cirujanos, aunque desean formarse en robótica quirúrgica, no tienen la o…",
+"description": "Muchos cirujanos, aunque desean formarse en robótica quirúrgica, no tienen la oportunidad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/problems/problem-016",
+"label": "la ejecución de las tareas quirúrgicas en los tejidos blandos se sigue llevando…",
+"description": "la ejecución de las tareas quirúrgicas en los tejidos blandos se sigue llevando a cabo de forma principalmente manual por el cirujano."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/problems/problem-001",
+"label": "Antimicrobial Resistance (AMR) is a growing problem globally.",
+"description": "Antimicrobial Resistance (AMR) is a growing problem globally."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/problems/problem-002",
+"label": "the infections they cause become harder to treat and contain.",
+"description": "the infections they cause become harder to treat and contain."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/problems/problem-003",
+"label": "healthcare facilities have different systems and IT environments",
+"description": "healthcare facilities have different systems and IT environments"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/problems/problem-004",
+"label": "infections harder to treat and increasing the risk of diseases spreading, and s…",
+"description": "infections harder to treat and increasing the risk of diseases spreading, and severe illness and death"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/problems/problem-005",
+"label": "The detection of multidrug-resistant organisms (MDROs) takes time and is costly",
+"description": "The detection of multidrug-resistant organisms (MDROs) takes time and is costly"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/problems/problem-006",
+"label": "The results can take from 24 to 72 hours to arrive",
+"description": "The results can take from 24 to 72 hours to arrive"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/problems/problem-007",
+"label": "clinicians must decide on treatment without knowing if, or which, MDRO is invol…",
+"description": "clinicians must decide on treatment without knowing if, or which, MDRO is involved"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/problems/problem-008",
+"label": "the lack of information often translates into the prescription of broad-spectru…",
+"description": "the lack of information often translates into the prescription of broad-spectrum antibiotics"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/problems/problem-009",
+"label": "some healthcare facilities such as primary care centres, long-term facilities o…",
+"description": "some healthcare facilities such as primary care centres, long-term facilities or small hospitals don't have their own laboratories"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/problems/problem-010",
+"label": "it is difficult to differentiate between a viral and bacterial infection based…",
+"description": "it is difficult to differentiate between a viral and bacterial infection based solely on signs and symptoms"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/problems/problem-011",
+"label": "AMR management and control is hindered by limitations in the access and managem…",
+"description": "AMR management and control is hindered by limitations in the access and management of information across the AMR workflow"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/problems/problem-012",
+"label": "the lack of joined up systems and lack of functionality in the detection and di…",
+"description": "the lack of joined up systems and lack of functionality in the detection and diagnosis workflow and patient journey"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/problems/problem-013",
+"label": "rapid detection alone would not fully address the very real challenges of AMR m…",
+"description": "rapid detection alone would not fully address the very real challenges of AMR management as a whole"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/problems/problem-001",
+"label": "El nº de variables y los atributos de las mismas so n indeterminadas a priori",
+"description": "El nº de variables y los atributos de las mismas so n indeterminadas a priori"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/problems/problem-002",
+"label": "La información a interoperar puede partir de descriptores en texto libre, codif…",
+"description": "La información a interoperar puede partir de descriptores en texto libre, codificaciones locales o codificaciones estándar"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/problems/problem-001",
+"label": "falta de resolución espacial (x, Y, 2), de sensibilidad y de dosis de radiación…",
+"description": "falta de resolución espacial (x, Y, 2), de sensibilidad y de dosis de radiación en el paciente que necesita de la realización de pruebas diagnósticas PET"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/problems/problem-002",
+"label": "los estudios PET actuales están limitados por la escasez de datos observados y…",
+"description": "los estudios PET actuales están limitados por la escasez de datos observados y la dosis de radiación empleada"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/problems/problem-003",
+"label": "Los escáneres actuales no maximizan la sensibilidad para generar la imagen de t…",
+"description": "Los escáneres actuales no maximizan la sensibilidad para generar la imagen de todo el cuerpo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/problems/problem-001",
+"label": "limitaciones de carácter operativo (p.ej. dependencia del calendario agrícola o…",
+"description": "limitaciones de carácter operativo (p.ej. dependencia del calendario agrícola o de la climatología)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/problems/problem-002",
+"label": "determinadas afecciones ambientales a la población (p.ej. olor)",
+"description": "determinadas afecciones ambientales a la población (p.ej. olor)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/problems/problem-003",
+"label": "importantes restricciones a la valorización agrícola de los lodos de depuración",
+"description": "importantes restricciones a la valorización agrícola de los lodos de depuración"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/problems/problem-004",
+"label": "EMASESA no pueda cumplir en este momento con los nuevos requerimientos legales…",
+"description": "EMASESA no pueda cumplir en este momento con los nuevos requerimientos legales establecidos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/problems/problem-005",
+"label": "un riesgo de imposibilidad de cumplimiento legal en agosto de 2021",
+"description": "un riesgo de imposibilidad de cumplimiento legal en agosto de 2021"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/problems/problem-006",
+"label": "los municipios pequeños y medianos no disponen de medios y escala suficiente pa…",
+"description": "los municipios pequeños y medianos no disponen de medios y escala suficiente para realizar un adecuado tratamiento de los lodos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/problems/problem-007",
+"label": "existen diversas soluciones basadas en tecnología existente, si bien no cumplen…",
+"description": "existen diversas soluciones basadas en tecnología existente, si bien no cumplen totalmente con las necesidades expuestas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/problems/problem-008",
+"label": "presenta limitaciones de carácter operativo (p.ej. dependencia del calendario a…",
+"description": "presenta limitaciones de carácter operativo (p.ej. dependencia del calendario agrícola o de la climatología) y genera determinadas afecciones ambientales a la población (p.ej. olor)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/problems/problem-009",
+"label": "la nueva regulación legal en la Comunidad Autónoma de Andalucía establece impor…",
+"description": "la nueva regulación legal en la Comunidad Autónoma de Andalucía establece importantes restricciones a la valorización agrícola de los lodos de depuración"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/problems/problem-010",
+"label": "EMASESA no pueda cumplir los nuevos requerimientos legales establecidos",
+"description": "EMASESA no pueda cumplir los nuevos requerimientos legales establecidos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/problems/problem-001",
+"label": "las entidades participantes no disponen de soluciones inmediatas adaptables a l…",
+"description": "las entidades participantes no disponen de soluciones inmediatas adaptables a la situación y cuya aplicación cubra la totalidad de las necesidades definidas para este módulo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/problems/problem-002",
+"label": "Sí existen componentes por separado que cumplen su función, pero que aún no se…",
+"description": "Sí existen componentes por separado que cumplen su función, pero que aún no se han integrado."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/problems/problem-003",
+"label": "en el caso de la gestión hídrica estos desarrollos no están en el mismo nivel d…",
+"description": "en el caso de la gestión hídrica estos desarrollos no están en el mismo nivel de madurez y no se identifican iniciativas que hayan desarrollado una metodología combinada con aspectos económicos, energéticos y ambientales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/problems/problem-004",
+"label": "existen ciertas vulnerabilidades en infraestructuras críticas como puede ser el…",
+"description": "existen ciertas vulnerabilidades en infraestructuras críticas como puede ser el alumbrado público o la gestión del agua o energía"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/problems/problem-001",
+"label": "Lento y costoso",
+"description": "Lento y costoso"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/problems/problem-002",
+"label": "Precarias medidas de seguridad",
+"description": "Precarias medidas de seguridad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/problems/problem-003",
+"label": "Interacción con resto usuarios",
+"description": "Interacción con resto usuarios"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/problems/problem-004",
+"label": "Conflictividad Social",
+"description": "Conflictividad Social"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/problems/problem-005",
+"label": "Empleo de gran nº de agentes.",
+"description": "Empleo de gran nº de agentes."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/problems/problem-006",
+"label": "Nombrados en todas las normativas, pero no definidos",
+"description": "Nombrados en todas las normativas, pero no definidos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/problems/problem-007",
+"label": "Vehículo: Obsoleto, todo sólo diesel, MMA.",
+"description": "Vehículo: Obsoleto, todo sólo diesel, MMA."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/problems/problem-008",
+"label": "Tecnología: Deficiente, incorporación sistemas sobre la marcha",
+"description": "Tecnología: Deficiente, incorporación sistemas sobre la marcha"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/problems/problem-009",
+"label": "Confort: rudimentarios sistemas de iluminación, climatización…",
+"description": "Confort: rudimentarios sistemas de iluminación, climatización…"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/problems/problem-010",
+"label": "Mantenimiento: Problemas calidad de trabajos",
+"description": "Mantenimiento: Problemas calidad de trabajos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/problems/problem-011",
+"label": "Seguridad, no adaptado a las nuevas tecnologías.",
+"description": "Seguridad, no adaptado a las nuevas tecnologías."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/problems/problem-001",
+"label": "no existe en la actualidad una planta desaladora con las mencionadas caracterís…",
+"description": "no existe en la actualidad una planta desaladora con las mencionadas características"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/problems/problem-002",
+"label": "solo muy pocos equipos del mercado consiguen alta eficiencia",
+"description": "solo muy pocos equipos del mercado consiguen alta eficiencia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/problems/problem-001",
+"label": "Las empresas innovadoras y los emprendedores en Castilla y León se encuentran g…",
+"description": "Las empresas innovadoras y los emprendedores en Castilla y León se encuentran geográficamente muy dispersos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/problems/problem-002",
+"label": "su abanico de necesidades sea muy amplio y diverso",
+"description": "su abanico de necesidades sea muy amplio y diverso"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/problems/problem-003",
+"label": "existen una serie de restricciones que le dificultan al ICE la identificación d…",
+"description": "existen una serie de restricciones que le dificultan al ICE la identificación de proyectos y la prestación de servicios de apoyo a todos los emprendedores y empresas innovadoras de Castilla y León"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/problems/problem-004",
+"label": "le imposibilitan la adecuación de su portfolio de servicios a sus necesidades e…",
+"description": "le imposibilitan la adecuación de su portfolio de servicios a sus necesidades específicas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/problems/problem-005",
+"label": "la falta de conocimiento de todo el universo de emprendedores y empresas",
+"description": "la falta de conocimiento de todo el universo de emprendedores y empresas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/problems/problem-006",
+"label": "la limitada integración y coordinación entre todos los agentes",
+"description": "la limitada integración y coordinación entre todos los agentes"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/problems/problem-007",
+"label": "la carencia de posicionamiento estratégico del ICE como actor de referencia par…",
+"description": "la carencia de posicionamiento estratégico del ICE como actor de referencia para brindar apoyo a emprendedores e innovadores"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/problems/problem-008",
+"label": "el número reducido de recursos económicos y humanos con los que cuenta el ICE",
+"description": "el número reducido de recursos económicos y humanos con los que cuenta el ICE"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/problems/problem-009",
+"label": "la amplitud del territorio y el distanciamiento físico entre el ICE y las diver…",
+"description": "la amplitud del territorio y el distanciamiento físico entre el ICE y las diversas empresas y emprendedores"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/problems/problem-010",
+"label": "la granularidad y dispersión del tejido empresarial de la región (y en particul…",
+"description": "la granularidad y dispersión del tejido empresarial de la región (y en particular emprendedor) dificulta mucho la labor del ICE en lo que refiere a la coordinación entre entidades involucradas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/problems/problem-011",
+"label": "dificulta también el posicionamiento estratégico del ICE para contribuir a una…",
+"description": "dificulta también el posicionamiento estratégico del ICE para contribuir a una mejor coordinación entre los diferentes agentes del sistema"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/problems/problem-001",
+"label": "las experiencias en este ámbito han sido hasta ahora muy escasas y limitadas, c…",
+"description": "las experiencias en este ámbito han sido hasta ahora muy escasas y limitadas, centrándose en edificios unifamiliares o soluciones parcialmente industrializadas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/problems/problem-002",
+"label": "la escasa promoción de nuevas viviendas protegidas en los últimos años y la esp…",
+"description": "la escasa promoción de nuevas viviendas protegidas en los últimos años y la espiral de precios de la vivienda en alquiler, han creado una importante bolsa de demanda insatisfecha de vivienda protegida"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/problems/problem-003",
+"label": "los promotores de vivienda protegida no están suficientemente preparados para r…",
+"description": "los promotores de vivienda protegida no están suficientemente preparados para responder al reto que supondrá la aplicación de esta normativa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/problems/problem-004",
+"label": "la dificultad de hacerlo dentro de límites de precio asequible propios de la vi…",
+"description": "la dificultad de hacerlo dentro de límites de precio asequible propios de la vivienda protegida"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/problems/problem-005",
+"label": "son muy escasas las experiencias en este tipo de edificios, limitándose hasta a…",
+"description": "son muy escasas las experiencias en este tipo de edificios, limitándose hasta ahora a edificios unifamiliares o soluciones parcialmente industrializadas."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/problems/problem-006",
+"label": "La mayor dificultad actual es el soporte a la obtención rápida de soluciones al…",
+"description": "La mayor dificultad actual es el soporte a la obtención rápida de soluciones alternativas de diseño para el conjunto envolvente / instalaciones y la propia toma de decisiones sobre las mismas teniendo en cuenta criterios de inclusión social (precio máximo) y sostenibilidad económica y ambiental -coste de ciclo de vida, plazo de ejecución y amortización y consumo energético casi nulo."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/problems/problem-007",
+"label": "las referencias existentes en la UE son en su gran mayoría soluciones parciales…",
+"description": "las referencias existentes en la UE son en su gran mayoría soluciones parciales, no integrales, y enfocadas casi en su totalidad a rehabilitación, no a obra nueva."
+}
+]

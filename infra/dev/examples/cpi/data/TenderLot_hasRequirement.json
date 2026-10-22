@@ -1,0 +1,358 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-003-requirement-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-003-requirement-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-003-requirement-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-003-requirement-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-003-requirement-005"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-003-requirement-006"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-003-requirement-007"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-003-requirement-008"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-003-requirement-009"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-003-requirement-010"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-003-requirement-011"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-003-requirement-012"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-003-requirement-013"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-003-requirement-014"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-003-requirement-015"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-003-requirement-016"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-003-requirement-017"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-003-requirement-018"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-003-requirement-019"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-003-requirement-020"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-003-requirement-021"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-003-requirement-022"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-003-requirement-023"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-003-requirement-024"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-003-requirement-025"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-003-requirement-026"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-003-requirement-027"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-003-requirement-028"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-003-requirement-029"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-003-requirement-030"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-003-requirement-031"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-004-requirement-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-004-requirement-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-004-requirement-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-004-requirement-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-004-requirement-005"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-004-requirement-006"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-004-requirement-007"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-004-requirement-008"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-004-requirement-009"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-004-requirement-010"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-004-requirement-011"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-004-requirement-012"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-004-requirement-013"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-004-requirement-014"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-004-requirement-015"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-004-requirement-016"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-004-requirement-017"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-004-requirement-018"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-004-requirement-019"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-004-requirement-020"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-004-requirement-021"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-004-requirement-022"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-004-requirement-023"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-004-requirement-024"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-004-requirement-025"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-lot-004-requirement-026"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-lot-001-requirement-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-lot-001-requirement-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-lot-001-requirement-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-lot-001-requirement-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-lot-001-requirement-005"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-lot-001-requirement-006"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-lot-001-requirement-007"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-lot-001-requirement-008"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-lot-001-requirement-009"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-lot-002-requirement-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-lot-002-requirement-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-lot-002-requirement-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-lot-002-requirement-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-lot-002-requirement-005"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-lot-003-requirement-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-lot-003-requirement-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-lot-003-requirement-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-lot-003-requirement-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-lot-003-requirement-005"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-lot-003-requirement-006"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-lot-003-requirement-007"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-lot-003-requirement-008"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-lot-003-requirement-009"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-lot-003-requirement-010"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-lot-003-requirement-011"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-lot-003-requirement-012"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-lot-003-requirement-013"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-lot-003-requirement-014"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-lot-003-requirement-015"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-lot-003-requirement-016"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-lot-003-requirement-017"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-lot-003-requirement-018"
+}
+]

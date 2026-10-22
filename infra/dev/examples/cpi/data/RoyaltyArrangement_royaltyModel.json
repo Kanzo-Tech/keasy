@@ -1,0 +1,46 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/ip-royalties/tender-001-ip-001-royalty-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-royalty-model/porcentaje-del-valor-neto-de-los-ingresos-de-la-explotacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-royalties/tender-001-ip-001-royalty-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-royalty-model/exentos-del-pago-de-licencias-o-royalties"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-royalties/tender-002-ip-001-royalty-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-royalty-model/exentos-del-pago-de-licencias-o-royalties"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/ip-royalties/tender-001-ip-001-royalty-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-royalty-model/retornos-economicos-sobre-ventas-netas-anuales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/ip-royalties/tender-001-ip-001-royalty-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-royalty-model/retornos-economicos-futuros-sobre-ventas-netas-anuales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/ip-royalties/tender-001-ip-001-royalty-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-royalty-model/retornos-economicos-futuros-royalties"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/ip-royalties/tender-001-ip-001-royalty-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-royalty-model/porcentaje-indicado-en-la-oferta-economica-de-las-ventas-anuales-netas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/ip-royalties/tender-001-ip-001-royalty-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-royalty-model/porcentaje-de-ventas-netas-obtenidas-por-la-de-explotacion-del-resultado-de-i-d-como-retorno-economico-para-cdti"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/ip-royalties/tender-001-ip-001-royalty-003",
+"o": "https://example.org/cpi-demo/id/vocab/ip-royalty-model/mismo-porcentaje-de-los-royalties-indicados-en-la-oferta-economica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/ip-royalties/tender-001-ip-001-royalty-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-royalty-model/sin-que-eso-conlleve-a-ningun-tipo-de-canon-para-el-adjudicatario"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/ip-royalties/tender-001-ip-002-royalty-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-royalty-model/exento-en-cualquier-caso-del-pago-en-concepto-de-licencias-o-royalties-sobre-los-productos-desarrollados"
+}
+]

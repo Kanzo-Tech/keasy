@@ -1,0 +1,82 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380",
+"o": "https://example.org/cpi-demo/id/organizations/ayuntamiento-de-madrid"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03",
+"o": "https://example.org/cpi-demo/id/organizations/ayuntamiento-de-alicante"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14",
+"o": "https://example.org/cpi-demo/id/organizations/fundacion-centro-de-cirugia-de-minima-invasion-jesus-uson"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7",
+"o": "https://example.org/cpi-demo/id/organizations/instituto-para-la-competitividad-empresarial-de-castilla-y-leon"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0",
+"o": "https://example.org/cpi-demo/id/organizations/centro-para-el-desarrollo-tecnologico-y-la-innovacion-e-p-e"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228",
+"o": "https://example.org/cpi-demo/id/organizations/groupement-d-interet-public-reseau-des-acheteurs-hospitaliers-gip-resah"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228",
+"o": "https://example.org/cpi-demo/id/organizations/institut-catala-d-oncologia-ico"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228",
+"o": "https://example.org/cpi-demo/id/organizations/radar-consortium"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228",
+"o": "https://example.org/cpi-demo/id/organizations/servicio-vasco-de-salud-osakidetza-osak"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228",
+"o": "https://example.org/cpi-demo/id/organizations/universita-degli-studi-di-napoli-federico-ii"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32",
+"o": "https://example.org/cpi-demo/id/organizations/fundacion-para-la-investigacion-sanitaria-y-biomedica-de-la-comunitat-valenciana-fisabio"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55",
+"o": "https://example.org/cpi-demo/id/organizations/conselleria-de-sanitat-universal-i-salut-publica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2",
+"o": "https://example.org/cpi-demo/id/organizations/servei-de-salut-de-les-illes-balears"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049",
+"o": "https://example.org/cpi-demo/id/organizations/empresa-metropolitana-de-abastecimiento-y-saneamiento-de-aguas-de-sevilla-s-a"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b",
+"o": "https://example.org/cpi-demo/id/organizations/ayuntamiento-de-alcala-de-guadaira"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0",
+"o": "https://example.org/cpi-demo/id/organizations/centro-para-el-desarrollo-tecnologico-y-la-innovacion-e-p-e"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0",
+"o": "https://example.org/cpi-demo/id/organizations/guardia-civil-gc"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111",
+"o": "https://example.org/cpi-demo/id/organizations/instituto-tecnologico-de-canarias-s-a"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8",
+"o": "https://example.org/cpi-demo/id/organizations/instituto-para-la-competitividad-empresarial-de-castilla-y-leon"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39",
+"o": "https://example.org/cpi-demo/id/organizations/agencia-de-vivienda-y-rehabilitacion-de-andalucia-avra"
+}
+]

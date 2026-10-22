@@ -1,0 +1,346 @@
+# CPI España, 15 projects — the shapes of the demo graph, from the integrated TTL (local, not in git).
+PREFIX cpi:  <https://example.org/ontology/cpi#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX demo: <https://example.org/cpi-demo/ns#>
+PREFIX xsd:  <http://www.w3.org/2001/XMLSchema#>
+
+cpi:Antecedent {
+  rdfs:label xsd:string ? ;
+  cpi:description xsd:string ?
+}
+
+cpi:AwardAllocation {
+  cpi:allocatedAmount xsd:double ? ;
+  cpi:currency xsd:string ? ;
+  cpi:isAllocationOf @cpi:ProcedureParticipation *
+}
+
+cpi:AwardCriterion {
+  rdfs:label xsd:string ? ;
+  cpi:criterionFormula xsd:string ? ;
+  cpi:description xsd:string ? ;
+  cpi:minimumThreshold xsd:double ? ;
+  cpi:weight xsd:double ? ;
+  cpi:criterionTopic @skos:Concept * ;
+  cpi:evaluationMethod @skos:Concept * ;
+  cpi:weightUnit @skos:Concept *
+}
+
+cpi:AwardOutcome {
+  cpi:admittedOfferCount xsd:integer ? ;
+  cpi:decisionDate xsd:date ? ;
+  cpi:excludedOfferCount xsd:integer ? ;
+  cpi:receivedOfferCount xsd:integer ? ;
+  cpi:awardOutcomeStatus @skos:Concept * ;
+  cpi:concernsLot @cpi:TenderLot * ;
+  cpi:isOutcomeOf @cpi:Phase * ;
+  cpi:selectsParticipation @cpi:ProcedureParticipation *
+}
+
+cpi:CPIKnowledgeBase {
+  rdfs:label xsd:string ? ;
+  cpi:description xsd:string ? ;
+  cpi:title xsd:string ? ;
+  cpi:hasProject @cpi:CPIProject *
+}
+
+cpi:CPIProject {
+  rdfs:label xsd:string ? ;
+  cpi:acronym xsd:string ? ;
+  cpi:identifier xsd:string ? ;
+  cpi:summary xsd:string ? ;
+  cpi:title xsd:string ? ;
+  cpi:hasPhase @cpi:Phase * ;
+  cpi:hasTerritorialScope @cpi:TerritorialScope * ;
+  cpi:hasTheme @cpi:ThematicArea * ;
+  cpi:isPromotedBy @cpi:Organization *
+}
+
+cpi:Challenge {
+  rdfs:label xsd:string ? ;
+  cpi:description xsd:string ? ;
+  demo:derivedFromNeed @cpi:Need * ;
+  demo:derivedFromObjective @cpi:Objective * ;
+  demo:derivedFromProblem @cpi:Problem * ;
+  cpi:challengeOrigin @skos:Concept *
+}
+
+skos:Concept {
+  rdfs:label xsd:string ? ;
+  skos:prefLabel xsd:string ? ;
+  skos:inScheme @skos:ConceptScheme *
+}
+
+skos:ConceptScheme {
+  rdfs:label xsd:string ? ;
+  skos:prefLabel xsd:string ?
+}
+
+cpi:ContractTerm {
+  rdfs:label xsd:string ? ;
+  cpi:amount xsd:double ? ;
+  cpi:currency xsd:string ? ;
+  cpi:description xsd:string ? ;
+  cpi:termConcept @skos:Concept * ;
+  cpi:termType @skos:Concept *
+}
+
+cpi:Deadline {
+  rdfs:label xsd:string ? ;
+  cpi:deadlineDate xsd:date ? ;
+  cpi:description xsd:string ?
+}
+
+cpi:Deliverable {
+  rdfs:label xsd:string ? ;
+  cpi:description xsd:string ? ;
+  cpi:sequenceNumber xsd:integer ? ;
+  cpi:title xsd:string ? ;
+  cpi:deliverableType @skos:Concept *
+}
+
+cpi:Document {
+  rdfs:label xsd:string ? ;
+  cpi:identifier xsd:string ? ;
+  cpi:sourcePath xsd:string ? ;
+  cpi:title xsd:string ? ;
+  cpi:documentType @skos:Concept *
+}
+
+cpi:ExpectedApproach {
+  rdfs:label xsd:string ? ;
+  cpi:description xsd:string ?
+}
+
+cpi:IPArrangement {
+  rdfs:label xsd:string ? ;
+  cpi:description xsd:string ? ;
+  cpi:hasIPClause @cpi:IPClause * ;
+  cpi:hasIPRight @cpi:IPRight * ;
+  cpi:hasLicenseArrangement @cpi:IPLicenseArrangement * ;
+  cpi:hasOwnershipAllocation @cpi:IPOwnershipAllocation * ;
+  cpi:hasRoyaltyArrangement @cpi:RoyaltyArrangement * ;
+  cpi:ownershipModel @skos:Concept *
+}
+
+cpi:IPClause {
+  rdfs:label xsd:string ? ;
+  cpi:description xsd:string ? ;
+  cpi:ipClauseType @skos:Concept *
+}
+
+cpi:IPLicenseArrangement {
+  rdfs:label xsd:string ? ;
+  cpi:description xsd:string ? ;
+  cpi:exclusive xsd:boolean ? ;
+  cpi:licenseType @skos:Concept * ;
+  cpi:licenseeRole @skos:Concept *
+}
+
+cpi:IPOwnershipAllocation {
+  rdfs:label xsd:string ? ;
+  cpi:description xsd:string ? ;
+  cpi:ownershipHolderRole @skos:Concept *
+}
+
+cpi:IPRight {
+  rdfs:label xsd:string ? ;
+  cpi:description xsd:string ? ;
+  cpi:exclusive xsd:boolean ? ;
+  cpi:rightHolderRole @skos:Concept * ;
+  cpi:rightType @skos:Concept *
+}
+
+cpi:Insight {
+  rdfs:label xsd:string ? ;
+  cpi:description xsd:string ?
+}
+
+cpi:MarketEngagement {
+  cpi:marketEngagementSummary xsd:string ? ;
+  cpi:participantCount xsd:integer ? ;
+  cpi:proposalCount xsd:integer ? ;
+  cpi:hasMarketParticipation @cpi:MarketParticipation *
+}
+
+cpi:MarketParticipation {
+  rdfs:label xsd:string ? ;
+  cpi:description xsd:string ? ;
+  cpi:participatingOrganization @cpi:Organization * ;
+  cpi:participationType @skos:Concept *
+}
+
+cpi:MarketQuestion {
+  rdfs:label xsd:string ? ;
+  cpi:questionText xsd:string ?
+}
+
+cpi:Milestone {
+  rdfs:label xsd:string ? ;
+  cpi:description xsd:string ? ;
+  cpi:dueDate xsd:date ? ;
+  cpi:sequenceNumber xsd:integer ? ;
+  cpi:title xsd:string ?
+}
+
+cpi:Need {
+  rdfs:label xsd:string ? ;
+  cpi:description xsd:string ?
+}
+
+cpi:Objective {
+  rdfs:label xsd:string ? ;
+  cpi:description xsd:string ?
+}
+
+cpi:Observation {
+  rdfs:label xsd:string ? ;
+  cpi:description xsd:string ?
+}
+
+cpi:Organization {
+  rdfs:label xsd:string ? ;
+  skos:altLabel xsd:string ? ;
+  demo:kind xsd:string ? ;
+  cpi:title xsd:string ? ;
+  cpi:hasMemberOrganization @cpi:Organization * ;
+  cpi:organizationType @skos:Concept *
+}
+
+cpi:Phase {
+  rdfs:label xsd:string ? ;
+  demo:kind xsd:string ? ;
+  cpi:admittedOfferCount xsd:integer ? ;
+  cpi:awardDate xsd:date ? ;
+  cpi:excludedOfferCount xsd:integer ? ;
+  cpi:formalizationDate xsd:date ? ;
+  cpi:identifier xsd:string ? ;
+  cpi:lotDivisionRationale xsd:string ? ;
+  cpi:publicationDate xsd:date ? ;
+  cpi:receivedOfferCount xsd:integer ? ;
+  cpi:summary xsd:string ? ;
+  cpi:title xsd:string ? ;
+  cpi:addressesProblem @cpi:Problem * ;
+  cpi:awardLifecycleStatus @skos:Concept * ;
+  cpi:awardOutcomeStatus @skos:Concept * ;
+  cpi:belongsToProject @cpi:CPIProject * ;
+  cpi:contractType @skos:Concept * ;
+  cpi:cpiModality @skos:Concept * ;
+  cpi:exploresApproach @cpi:ExpectedApproach * ;
+  cpi:framesChallenge @cpi:Challenge * ;
+  cpi:hasAntecedent @cpi:Antecedent * ;
+  cpi:hasAwardCriterion @cpi:AwardCriterion * ;
+  cpi:hasAwardOutcome @cpi:AwardOutcome * ;
+  cpi:hasContractTerm @cpi:ContractTerm * ;
+  cpi:hasDeadline @cpi:Deadline * ;
+  cpi:hasDeliverable @cpi:Deliverable * ;
+  cpi:hasDocument @cpi:Document * ;
+  cpi:hasIPArrangement @cpi:IPArrangement * ;
+  cpi:hasInsight @cpi:Insight * ;
+  cpi:hasLot @cpi:TenderLot * ;
+  cpi:hasMarketEngagement @cpi:MarketEngagement * ;
+  cpi:hasMarketQuestion @cpi:MarketQuestion * ;
+  cpi:hasNeed @cpi:Need * ;
+  cpi:hasObjective @cpi:Objective * ;
+  cpi:hasObservation @cpi:Observation * ;
+  cpi:hasPlannedExecutionStage @cpi:PlannedExecutionStage * ;
+  cpi:hasProcedureParticipation @cpi:ProcedureParticipation * ;
+  cpi:hasRequirement @cpi:TenderRequirement * ;
+  cpi:hasScope @cpi:TenderScope * ;
+  cpi:hasSolutionSpecification @cpi:SolutionSpecification * ;
+  cpi:hasSubmissionChannel @cpi:SubmissionChannel * ;
+  cpi:procedureType @skos:Concept * ;
+  cpi:resolvesTender @cpi:Phase *
+}
+
+cpi:PlannedExecutionStage {
+  rdfs:label xsd:string ? ;
+  cpi:description xsd:string ? ;
+  cpi:dueDate xsd:date ? ;
+  cpi:sequenceNumber xsd:integer ? ;
+  cpi:title xsd:string ? ;
+  cpi:hasDeliverable @cpi:Deliverable * ;
+  cpi:hasMilestone @cpi:Milestone *
+}
+
+cpi:Problem {
+  rdfs:label xsd:string ? ;
+  cpi:description xsd:string ?
+}
+
+cpi:ProcedureParticipation {
+  cpi:awardedAmount xsd:double ? ;
+  cpi:currency xsd:string ? ;
+  cpi:offeredAmount xsd:double ? ;
+  cpi:participationScore xsd:double ? ;
+  cpi:rankingPosition xsd:integer ? ;
+  cpi:concernsLot @cpi:TenderLot * ;
+  cpi:hasAwardAllocation @cpi:AwardAllocation * ;
+  cpi:isParticipationDocumentedBy @cpi:Phase * ;
+  cpi:participatingOrganization @cpi:Organization * ;
+  cpi:participationStatus @skos:Concept *
+}
+
+cpi:RoyaltyArrangement {
+  rdfs:label xsd:string ? ;
+  cpi:description xsd:string ? ;
+  cpi:royaltyPercentage xsd:double ? ;
+  cpi:royaltyModel @skos:Concept *
+}
+
+cpi:SolutionSpecification {
+  rdfs:label xsd:string ? ;
+  cpi:description xsd:string ? ;
+  cpi:title xsd:string ? ;
+  cpi:expectedOutputType @skos:Concept * ;
+  cpi:hasDeliverable @cpi:Deliverable * ;
+  cpi:requiresTechnology @skos:Concept * ;
+  cpi:solutionType @skos:Concept *
+}
+
+cpi:SubmissionChannel {
+  rdfs:label xsd:string ? ;
+  cpi:description xsd:string ? ;
+  cpi:email xsd:string ? ;
+  cpi:url xsd:string ? ;
+  cpi:channelType @skos:Concept *
+}
+
+cpi:TenderLot {
+  rdfs:label xsd:string ? ;
+  cpi:description xsd:string ? ;
+  cpi:lotNumber xsd:string ? ;
+  cpi:title xsd:string ? ;
+  cpi:hasAwardCriterion @cpi:AwardCriterion * ;
+  cpi:hasContractTerm @cpi:ContractTerm * ;
+  cpi:hasDeliverable @cpi:Deliverable * ;
+  cpi:hasIPArrangement @cpi:IPArrangement * ;
+  cpi:hasPlannedExecutionStage @cpi:PlannedExecutionStage * ;
+  cpi:hasRequirement @cpi:TenderRequirement * ;
+  cpi:hasSolutionSpecification @cpi:SolutionSpecification * ;
+  cpi:isLotOf @cpi:Phase *
+}
+
+cpi:TenderRequirement {
+  rdfs:label xsd:string ? ;
+  cpi:description xsd:string ? ;
+  cpi:requirementType @skos:Concept *
+}
+
+cpi:TenderScope {
+  rdfs:label xsd:string ? ;
+  cpi:contractObject xsd:string ? ;
+  cpi:functionalScope xsd:string ? ;
+  cpi:technicalScope xsd:string ?
+}
+
+cpi:TerritorialScope {
+  rdfs:label xsd:string ? ;
+  skos:prefLabel xsd:string ?
+}
+
+cpi:ThematicArea {
+  rdfs:label xsd:string ? ;
+  skos:prefLabel xsd:string ?
+}

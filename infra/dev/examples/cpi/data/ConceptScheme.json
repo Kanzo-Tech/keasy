@@ -1,0 +1,147 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/vocab/award-lifecycle-status",
+"label": "award lifecycle status",
+"prefLabel": "award lifecycle status"
+},
+{
+"iri": "https://example.org/cpi-demo/id/vocab/award-outcome-status",
+"label": "Estados de resultado de adjudicación",
+"prefLabel": "Estados de resultado de adjudicación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/vocab/challenge-origin",
+"label": "challenge origin",
+"prefLabel": "challenge origin"
+},
+{
+"iri": "https://example.org/cpi-demo/id/vocab/contract-term-concept",
+"label": "contract term concept",
+"prefLabel": "contract term concept"
+},
+{
+"iri": "https://example.org/cpi-demo/id/vocab/contract-term-type",
+"label": "contract term type",
+"prefLabel": "contract term type"
+},
+{
+"iri": "https://example.org/cpi-demo/id/vocab/contract-type",
+"label": "contract type",
+"prefLabel": "contract type"
+},
+{
+"iri": "https://example.org/cpi-demo/id/vocab/cpi-modality",
+"label": "cpi modality",
+"prefLabel": "cpi modality"
+},
+{
+"iri": "https://example.org/cpi-demo/id/vocab/criterion-topic",
+"label": "criterion topic",
+"prefLabel": "criterion topic"
+},
+{
+"iri": "https://example.org/cpi-demo/id/vocab/deliverable-type",
+"label": "deliverable type",
+"prefLabel": "deliverable type"
+},
+{
+"iri": "https://example.org/cpi-demo/id/vocab/document-type",
+"label": "document type",
+"prefLabel": "document type"
+},
+{
+"iri": "https://example.org/cpi-demo/id/vocab/evaluation-method",
+"label": "evaluation method",
+"prefLabel": "evaluation method"
+},
+{
+"iri": "https://example.org/cpi-demo/id/vocab/expected-output-type",
+"label": "expected output type",
+"prefLabel": "expected output type"
+},
+{
+"iri": "https://example.org/cpi-demo/id/vocab/ip-clause-type",
+"label": "ip clause type",
+"prefLabel": "ip clause type"
+},
+{
+"iri": "https://example.org/cpi-demo/id/vocab/ip-holder-role",
+"label": "ip holder role",
+"prefLabel": "ip holder role"
+},
+{
+"iri": "https://example.org/cpi-demo/id/vocab/ip-license-type",
+"label": "ip license type",
+"prefLabel": "ip license type"
+},
+{
+"iri": "https://example.org/cpi-demo/id/vocab/ip-licensee-role",
+"label": "ip licensee role",
+"prefLabel": "ip licensee role"
+},
+{
+"iri": "https://example.org/cpi-demo/id/vocab/ip-ownership-model",
+"label": "ip ownership model",
+"prefLabel": "ip ownership model"
+},
+{
+"iri": "https://example.org/cpi-demo/id/vocab/ip-right-type",
+"label": "ip right type",
+"prefLabel": "ip right type"
+},
+{
+"iri": "https://example.org/cpi-demo/id/vocab/ip-royalty-model",
+"label": "ip royalty model",
+"prefLabel": "ip royalty model"
+},
+{
+"iri": "https://example.org/cpi-demo/id/vocab/market-participation-type",
+"label": "market participation type",
+"prefLabel": "market participation type"
+},
+{
+"iri": "https://example.org/cpi-demo/id/vocab/organization-type",
+"label": "Tipos de organización CPI",
+"prefLabel": "Tipos de organización CPI"
+},
+{
+"iri": "https://example.org/cpi-demo/id/vocab/participation-status",
+"label": "participation status",
+"prefLabel": "participation status"
+},
+{
+"iri": "https://example.org/cpi-demo/id/vocab/procedure-participation-status",
+"label": "Estados de participación en procedimiento",
+"prefLabel": "Estados de participación en procedimiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/vocab/procedure-type",
+"label": "procedure type",
+"prefLabel": "procedure type"
+},
+{
+"iri": "https://example.org/cpi-demo/id/vocab/requirement-type",
+"label": "requirement type",
+"prefLabel": "requirement type"
+},
+{
+"iri": "https://example.org/cpi-demo/id/vocab/solution-type",
+"label": "solution type",
+"prefLabel": "solution type"
+},
+{
+"iri": "https://example.org/cpi-demo/id/vocab/submission-channel-type",
+"label": "submission channel type",
+"prefLabel": "submission channel type"
+},
+{
+"iri": "https://example.org/cpi-demo/id/vocab/technology",
+"label": "technology",
+"prefLabel": "technology"
+},
+{
+"iri": "https://example.org/cpi-demo/id/vocab/weight-unit",
+"label": "weight unit",
+"prefLabel": "weight unit"
+}
+]

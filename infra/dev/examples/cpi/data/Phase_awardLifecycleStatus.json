@@ -1,0 +1,30 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/awards/award-001",
+"o": "https://example.org/cpi-demo/id/vocab/award-lifecycle-status/formalizacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/awards/award-001",
+"o": "https://example.org/cpi-demo/id/vocab/award-lifecycle-status/adjudicado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/awards/award-001",
+"o": "https://example.org/cpi-demo/id/vocab/award-lifecycle-status/continuar-la-tramitacion-del-expediente-hasta-la-formalizacion-del-contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/awards/award-002",
+"o": "https://example.org/cpi-demo/id/vocab/award-lifecycle-status/continuar-la-tramitacion-del-expediente-hasta-la-formalizacion-del-contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/awards/award-001",
+"o": "https://example.org/cpi-demo/id/vocab/award-lifecycle-status/fase-de-ejecucion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/awards/award-001",
+"o": "https://example.org/cpi-demo/id/vocab/award-lifecycle-status/modificacion-del-contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/awards/award-001",
+"o": "https://example.org/cpi-demo/id/vocab/award-lifecycle-status/formalizado"
+}
+]

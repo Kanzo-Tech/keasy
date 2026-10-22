@@ -1,0 +1,42 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/award-outcomes/award-001-outcome-001",
+"o": "https://example.org/cpi-demo/id/vocab/award-outcome-status/adjudicado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-outcomes/award-001-outcome-001",
+"o": "https://example.org/cpi-demo/id/vocab/award-outcome-status/adjudicado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-outcomes/award-002-outcome-001",
+"o": "https://example.org/cpi-demo/id/vocab/award-outcome-status/adjudicado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/award-outcomes/award-001-outcome-001",
+"o": "https://example.org/cpi-demo/id/vocab/award-outcome-status/adjudicado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/award-outcomes/award-001-outcome-001",
+"o": "https://example.org/cpi-demo/id/vocab/award-outcome-status/adjudicado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/award-outcomes/award-001-outcome-001",
+"o": "https://example.org/cpi-demo/id/vocab/award-outcome-status/adjudicado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/award-outcomes/award-001-outcome-001",
+"o": "https://example.org/cpi-demo/id/vocab/award-outcome-status/adjudicado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/award-outcomes/award-001-outcome-001",
+"o": "https://example.org/cpi-demo/id/vocab/award-outcome-status/adjudicado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-outcomes/award-001-outcome-001",
+"o": "https://example.org/cpi-demo/id/vocab/award-outcome-status/adjudicado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/award-outcomes/award-001-outcome-001",
+"o": "https://example.org/cpi-demo/id/vocab/award-outcome-status/adjudicado"
+}
+]

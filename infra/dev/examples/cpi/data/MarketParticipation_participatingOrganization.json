@@ -1,0 +1,690 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/market-participations/market-participation-001-001",
+"o": "https://example.org/cpi-demo/id/organizations/showleap-technologies-sl"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/market-participations/market-participation-001-002",
+"o": "https://example.org/cpi-demo/id/organizations/marketeer-co"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/market-participations/market-participation-002-001",
+"o": "https://example.org/cpi-demo/id/organizations/showleap-technologies-sl"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/market-participations/market-participation-003-001",
+"o": "https://example.org/cpi-demo/id/organizations/showleap-technologies-sl"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/market-participations/market-participation-001-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/organization-groups/market-participation-001-001-actor"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/market-participations/market-participation-001-002",
+"o": "https://example.org/cpi-demo/id/organizations/citiservi-europe-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/market-participations/market-participation-001-003",
+"o": "https://example.org/cpi-demo/id/organizations/capgemini-espana-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/market-participations/market-participation-001-004",
+"o": "https://example.org/cpi-demo/id/organizations/everis-spain-slu"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/market-participations/market-participation-001-005",
+"o": "https://example.org/cpi-demo/id/organizations/riam-intelearning-lab-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/market-participations/market-participation-001-006",
+"o": "https://example.org/cpi-demo/id/organizations/lucentia-lab-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/market-participations/market-participation-001-007",
+"o": "https://example.org/cpi-demo/id/organizations/bravent-13-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/market-participations/market-participation-001-008",
+"o": "https://example.org/cpi-demo/id/organizations/fundacion-centro-de-tecnologias-de-interaccion-visual-y-comunicaciones-vicomtech"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/market-participations/market-participation-001-009",
+"o": "https://example.org/cpi-demo/id/organizations/telefonica-s-a"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/market-participations/market-participation-002-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/organization-groups/market-participation-002-001-actor"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/market-participations/market-participation-002-002",
+"o": "https://example.org/cpi-demo/id/organizations/citiservi-europe-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/market-participations/market-participation-002-003",
+"o": "https://example.org/cpi-demo/id/organizations/capgemini-espana-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/market-participations/market-participation-002-004",
+"o": "https://example.org/cpi-demo/id/organizations/everis-spain-slu"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/market-participations/market-participation-002-005",
+"o": "https://example.org/cpi-demo/id/organizations/riam-intelearning-lab-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/market-participations/market-participation-002-006",
+"o": "https://example.org/cpi-demo/id/organizations/lucentia-lab-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/market-participations/market-participation-002-007",
+"o": "https://example.org/cpi-demo/id/organizations/bravent-13-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/market-participations/market-participation-002-008",
+"o": "https://example.org/cpi-demo/id/organizations/fundacion-centro-de-tecnologias-de-interaccion-visual-y-comunicaciones-vicomtech"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-participations/market-participation-002-001",
+"o": "https://example.org/cpi-demo/id/organizations/medtronic-iberica-sa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-participations/market-participation-002-002",
+"o": "https://example.org/cpi-demo/id/organizations/fundacion-centro-de-tecnologias-de-interaccion-visual-y-comunicaciones-vicomtech"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-001-001",
+"o": "https://example.org/cpi-demo/id/organizations/fundacion-cartif"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-001-002",
+"o": "https://example.org/cpi-demo/id/organizations/cyrity-sl"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-001-003",
+"o": "https://example.org/cpi-demo/id/organizations/deloitte-consulting-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-001-004",
+"o": "https://example.org/cpi-demo/id/organizations/divisa-it"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-001-005",
+"o": "https://example.org/cpi-demo/id/organizations/grupo-mecanica-del-vuelo-sistemas-sau"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-001-006",
+"o": "https://example.org/cpi-demo/id/organizations/hp-printing-and-computing-solutions-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-001-007",
+"o": "https://example.org/cpi-demo/id/organizations/hp-solutions-creation-and-development-services-s-l-hp-scds"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-001-008",
+"o": "https://example.org/cpi-demo/id/organizations/humedo-valley-sl"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-001-009",
+"o": "https://example.org/cpi-demo/id/organizations/instituto-leones-de-desarrollo-economico-formacion-y-empleo-ildefe"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-001-010",
+"o": "https://example.org/cpi-demo/id/organizations/incibe"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-001-011",
+"o": "https://example.org/cpi-demo/id/organizations/leasba-consulting-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-001-012",
+"o": "https://example.org/cpi-demo/id/organizations/mediaroom-solutions"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-001-013",
+"o": "https://example.org/cpi-demo/id/organizations/mediaroom-solutions"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-001-014",
+"o": "https://example.org/cpi-demo/id/organizations/telecomunicaciones-los-ocho-canos-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-001-015",
+"o": "https://example.org/cpi-demo/id/organizations/proconsi"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-001-016",
+"o": "https://example.org/cpi-demo/id/organizations/centro-de-supercomputacion-de-castilla-y-leon-scayle"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-001-017",
+"o": "https://example.org/cpi-demo/id/organizations/universidad-de-valladolid"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-002-001",
+"o": "https://example.org/cpi-demo/id/organizations/federacion-de-empresas-de-tecnologias-de-la-informacion-comunicaciones-y-electronica-de-castilla-y-leon-aetical"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-002-002",
+"o": "https://example.org/cpi-demo/id/organizations/agrupacion-empresarial-innovacora-para-la-seguridad-de-las-redes-y-los-sistemas-de-informacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-002-003",
+"o": "https://example.org/cpi-demo/id/organizations/cabling-system-valladolid-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-002-004",
+"o": "https://example.org/cpi-demo/id/organizations/construyendo-futuro-informatico-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-002-005",
+"o": "https://example.org/cpi-demo/id/organizations/centro-regional-de-servicios-avanzados-csa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-002-006",
+"o": "https://example.org/cpi-demo/id/organizations/fundacion-ctic-centro-tecnologico"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-002-007",
+"o": "https://example.org/cpi-demo/id/organizations/cyrity-sl"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-002-008",
+"o": "https://example.org/cpi-demo/id/organizations/drainware-systems-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-002-009",
+"o": "https://example.org/cpi-demo/id/organizations/future-space-s-a"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-002-010",
+"o": "https://example.org/cpi-demo/id/organizations/gmv-soluciones-globales-internet-s-a"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-002-011",
+"o": "https://example.org/cpi-demo/id/organizations/incibe"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-002-012",
+"o": "https://example.org/cpi-demo/id/organizations/investigacion-y-tratamiento-en-salud-mental-y-discapacidad-intras"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-002-013",
+"o": "https://example.org/cpi-demo/id/organizations/mnemo-evolution-integration-services-s-a"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-002-014",
+"o": "https://example.org/cpi-demo/id/organizations/prosegur-soluciones-integrales-de-seguridad-espana-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-002-015",
+"o": "https://example.org/cpi-demo/id/organizations/rodrigo-aguado-santa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-002-016",
+"o": "https://example.org/cpi-demo/id/organizations/telefonica-moviles-espana-s-a-u"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-002-017",
+"o": "https://example.org/cpi-demo/id/organizations/universidad-de-salamanca"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-001",
+"o": "https://example.org/cpi-demo/id/organizations/drainware-systems-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-002",
+"o": "https://example.org/cpi-demo/id/organizations/universidad-de-murcia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/organization-groups/market-participation-003-003-actor"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-004",
+"o": "https://example.org/cpi-demo/id/organizations/universidad-de-alcala"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-005",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/organization-groups/market-participation-003-005-actor"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-006",
+"o": "https://example.org/cpi-demo/id/organizations/drainware-systems-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-007",
+"o": "https://example.org/cpi-demo/id/organizations/scassi-spain"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-008",
+"o": "https://example.org/cpi-demo/id/organizations/indra-soluciones-tecnologias-de-la-informacion-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-009",
+"o": "https://example.org/cpi-demo/id/organizations/drainware-systems-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-010",
+"o": "https://example.org/cpi-demo/id/organizations/centro-de-investigacion-y-desarrollo-en-automocion-y-transporte-cidaut"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-011",
+"o": "https://example.org/cpi-demo/id/organizations/universidad-politecnica-de-madrid"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-012",
+"o": "https://example.org/cpi-demo/id/organizations/fundacion-ctic-centro-tecnologico"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-013",
+"o": "https://example.org/cpi-demo/id/organizations/universidad-de-murcia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-014",
+"o": "https://example.org/cpi-demo/id/organizations/xeridia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-015",
+"o": "https://example.org/cpi-demo/id/organizations/fundacion-centro-tecnoloxico-de-telecomunicacions-de-galicia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-016",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/organization-groups/market-participation-003-016-actor"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-017",
+"o": "https://example.org/cpi-demo/id/organizations/vector"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-018",
+"o": "https://example.org/cpi-demo/id/organizations/sowlers-technologies-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-019",
+"o": "https://example.org/cpi-demo/id/organizations/fundacion-para-el-desarrollo-y-la-innovacion-tecnologica-funditec"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-020",
+"o": "https://example.org/cpi-demo/id/organizations/cyrity-sl"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-021",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/organization-groups/market-participation-003-021-actor"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-022",
+"o": "https://example.org/cpi-demo/id/organizations/fundacion-ctic-centro-tecnologico"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-023",
+"o": "https://example.org/cpi-demo/id/organizations/drainware-systems-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-024",
+"o": "https://example.org/cpi-demo/id/organizations/universidad-de-murcia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-025",
+"o": "https://example.org/cpi-demo/id/organizations/blueliv"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-004-002",
+"o": "https://example.org/cpi-demo/id/organizations/centro-de-investigacion-y-desarrollo-en-automocion-y-transporte-cidaut"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-004-003",
+"o": "https://example.org/cpi-demo/id/organizations/vector-software-factory-sl"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-004-004",
+"o": "https://example.org/cpi-demo/id/organizations/universidad-de-alcala"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-004-005",
+"o": "https://example.org/cpi-demo/id/organizations/scassi-spain"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-004-006",
+"o": "https://example.org/cpi-demo/id/organizations/fundacion-centro-tecnoloxico-de-telecomunicacions-de-galicia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-004-007",
+"o": "https://example.org/cpi-demo/id/organizations/indra-soluciones-tecnologias-de-la-informacion-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-004-008",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/organization-groups/market-participation-004-008-actor"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-004-009",
+"o": "https://example.org/cpi-demo/id/organizations/drainware-systems-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-004-010",
+"o": "https://example.org/cpi-demo/id/organizations/xeridia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-004-011",
+"o": "https://example.org/cpi-demo/id/organizations/aensis-ciberseguridad-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-004-012",
+"o": "https://example.org/cpi-demo/id/organizations/grupo-mecanica-del-vuelo-sistemas-sau"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-004-013",
+"o": "https://example.org/cpi-demo/id/organizations/vector-software-factory-sl"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-004-014",
+"o": "https://example.org/cpi-demo/id/organizations/cyrity-sl"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-004-015",
+"o": "https://example.org/cpi-demo/id/organizations/emetel-sistemas-sl"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-004-016",
+"o": "https://example.org/cpi-demo/id/organizations/fundacion-para-el-desarrollo-y-la-innovacion-tecnologica-funditec"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-004-017",
+"o": "https://example.org/cpi-demo/id/organizations/sowlers-technologies-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-004-018",
+"o": "https://example.org/cpi-demo/id/organizations/universidad-de-zaragoza"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-004-019",
+"o": "https://example.org/cpi-demo/id/organizations/universidad-de-murcia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/market-participations/market-participation-001-001",
+"o": "https://example.org/cpi-demo/id/organizations/arquimea-research-center-s-l-u"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/market-participations/market-participation-001-002",
+"o": "https://example.org/cpi-demo/id/organizations/fundacion-centro-de-tecnologias-de-interaccion-visual-y-comunicaciones-vicomtech"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/market-participations/market-participation-001-003",
+"o": "https://example.org/cpi-demo/id/organizations/globant"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/market-participations/market-participation-001-004",
+"o": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/organization-groups/market-participation-001-004-actor"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/market-participations/market-participation-001-001",
+"o": "https://example.org/cpi-demo/id/organizations/global-rosetta"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/market-participations/market-participation-001-002",
+"o": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/organization-groups/market-participation-001-002-actor"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/market-participations/market-participation-001-001",
+"o": "https://example.org/cpi-demo/id/organizations/full-body-insight"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/market-participations/market-participation-001-002",
+"o": "https://example.org/cpi-demo/id/organizations/philips-electronic-netherland"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/market-participations/market-participation-001-003",
+"o": "https://example.org/cpi-demo/id/organizations/general-electric-healthcare-espana-s-a-u"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/market-participations/market-participation-001-004",
+"o": "https://example.org/cpi-demo/id/organizations/oncovision"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/market-participations/market-participation-001-005",
+"o": "https://example.org/cpi-demo/id/organizations/everis-spain-slu"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/market-participations/market-participation-001-006",
+"o": "https://example.org/cpi-demo/id/organizations/canon-medical-systems-sa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-001-001",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-001-001-actor"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-001-002",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-001-002-actor"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-001-003",
+"o": "https://example.org/cpi-demo/id/organizations/biovic"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-001-004",
+"o": "https://example.org/cpi-demo/id/organizations/nedgia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-001-005",
+"o": "https://example.org/cpi-demo/id/organizations/cadagua"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-001-006",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-001-006-actor"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-001-007",
+"o": "https://example.org/cpi-demo/id/organizations/cadagua"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-001-008",
+"o": "https://example.org/cpi-demo/id/organizations/david-nieto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-001-009",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-001-009-actor"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-001-010",
+"o": "https://example.org/cpi-demo/id/organizations/sando"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-001-011",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-001-011-actor"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-001-012",
+"o": "https://example.org/cpi-demo/id/organizations/suez"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-001-013",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-001-013-actor"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-001-014",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-001-014-actor"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-001-015",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-001-015-actor"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-001-016",
+"o": "https://example.org/cpi-demo/id/organizations/traco"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-001-017",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-001-017-actor"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-001-018",
+"o": "https://example.org/cpi-demo/id/organizations/valoriza"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-004-001",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-004-001-actor"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-004-002",
+"o": "https://example.org/cpi-demo/id/organizations/cadagua"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-004-003",
+"o": "https://example.org/cpi-demo/id/organizations/centro-de-las-nuevas-tecnologias-del-agua"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-004-004",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-004-004-actor"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-004-005",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-004-005-actor"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-004-006",
+"o": "https://example.org/cpi-demo/id/organizations/suez"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-004-007",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-004-007-actor"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/market-participations/market-participation-001-001",
+"o": "https://example.org/cpi-demo/id/organizations/cellnex"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/market-participations/market-participation-001-002",
+"o": "https://example.org/cpi-demo/id/organizations/indra-soluciones-tecnologias-de-la-informacion-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/market-participations/market-participation-001-003",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/organization-groups/market-participation-001-003-actor"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/market-participations/market-participation-001-004",
+"o": "https://example.org/cpi-demo/id/organizations/itelligent-information-technologies-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/market-participations/market-participation-001-005",
+"o": "https://example.org/cpi-demo/id/organizations/msig-smart-management"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/market-participations/market-participation-001-006",
+"o": "https://example.org/cpi-demo/id/organizations/next-comunicaciones-s-a"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/market-participations/market-participation-001-007",
+"o": "https://example.org/cpi-demo/id/organizations/telefonica-s-a"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/market-participations/market-participation-001-008",
+"o": "https://example.org/cpi-demo/id/organizations/t-systems-itc-iberia-s-a"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/market-participations/market-participation-001-009",
+"o": "https://example.org/cpi-demo/id/organizations/fundacion-centro-de-tecnologias-de-interaccion-visual-y-comunicaciones-vicomtech"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/market-participations/market-participation-001-010",
+"o": "https://example.org/cpi-demo/id/organizations/wellness-telecom-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-participations/market-participation-002-001",
+"o": "https://example.org/cpi-demo/id/organizations/telecyl-s-a"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-participations/market-participation-002-002",
+"o": "https://example.org/cpi-demo/id/organizations/export-blue-market-sl-exportun"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-participations/market-participation-002-003",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/organization-groups/market-participation-002-003-actor"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-participations/market-participation-002-004",
+"o": "https://example.org/cpi-demo/id/organizations/moonshot-innovation-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-participations/market-participation-002-005",
+"o": "https://example.org/cpi-demo/id/organizations/enoges-consultores-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-participations/market-participation-002-006",
+"o": "https://example.org/cpi-demo/id/organizations/connectis-ict-services-sau-getronics"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-participations/market-participation-002-007",
+"o": "https://example.org/cpi-demo/id/organizations/acid-tango-sl"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-participations/market-participation-002-008",
+"o": "https://example.org/cpi-demo/id/organizations/fundacion-instituto-internacional-de-investigacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-participations/market-participation-002-009",
+"o": "https://example.org/cpi-demo/id/organizations/alpha-syltec-ingenieria-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-participations/market-participation-002-010",
+"o": "https://example.org/cpi-demo/id/organizations/edosoft-factory-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-participations/market-participation-002-011",
+"o": "https://example.org/cpi-demo/id/organizations/gmv-soluciones-globales-internet-s-a"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-participations/market-participation-002-012",
+"o": "https://example.org/cpi-demo/id/organizations/oxentia-europe-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/market-participations/market-participation-003-001",
+"o": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/market-participation-003-001-actor"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/market-participations/market-participation-003-002",
+"o": "https://example.org/cpi-demo/id/organizations/talestech"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/market-participations/market-participation-003-003",
+"o": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/market-participation-003-003-actor"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/market-participations/market-participation-003-004",
+"o": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/market-participation-003-004-actor"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/market-participations/market-participation-003-005",
+"o": "https://example.org/cpi-demo/id/organizations/defcon8"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/market-participations/market-participation-003-006",
+"o": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/market-participation-003-006-actor"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/market-participations/market-participation-003-007",
+"o": "https://example.org/cpi-demo/id/organizations/maderas-impregnadas-para-exterior-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/market-participations/market-participation-003-008",
+"o": "https://example.org/cpi-demo/id/organizations/aicia-grupo-de-termotecnia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/market-participations/market-participation-003-009",
+"o": "https://example.org/cpi-demo/id/organizations/fluidmecanicasur-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/market-participations/market-participation-003-010",
+"o": "https://example.org/cpi-demo/id/organizations/indra-soluciones-tecnologias-de-la-informacion-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/market-participations/market-participation-003-011",
+"o": "https://example.org/cpi-demo/id/organizations/mv-international-bim-services-sl"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/market-participations/market-participation-003-012",
+"o": "https://example.org/cpi-demo/id/organizations/trinomio"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/market-participations/market-participation-003-013",
+"o": "https://example.org/cpi-demo/id/organizations/a3d-additive-printer"
+}
+]

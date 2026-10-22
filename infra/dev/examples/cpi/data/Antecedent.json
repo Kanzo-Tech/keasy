@@ -1,0 +1,317 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/antecedents/antecedent-001",
+"label": "por Resolución de 29 de julio de 2016 del Director General de Innovación y Prom…",
+"description": "por Resolución de 29 de julio de 2016 del Director General de Innovación y Promoción de la Ciudad del Ayuntamiento de Madrid"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/antecedents/antecedent-002",
+"label": "se aprobó la convocatoria de la Consulla Preliminar del Mercado para la búsqued…",
+"description": "se aprobó la convocatoria de la Consulla Preliminar del Mercado para la búsqueda de soluciones innovadoras a la comunicación e inleracción de las personas con discapacidad auditiva severa."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/antecedents/antecedent-003",
+"label": "se aprobó la Instrucción 4/2016 relativa a los criterios de tramitación para la…",
+"description": "se aprobó la Instrucción 4/2016 relativa a los criterios de tramitación para la realización de Consultas Preliminares del Mercado en el ámbito de la contratación pública municipal."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/antecedents/antecedent-001",
+"label": "formalización del Convenio entre el Ministerio de Ciencia e Innovación (MCIN) y…",
+"description": "formalización del Convenio entre el Ministerio de Ciencia e Innovación (MCIN) y la Fundación CCMIJU"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/antecedents/antecedent-002",
+"label": "propuesta de resolución definitiva de 8 de abril de 2020",
+"description": "propuesta de resolución definitiva de 8 de abril de 2020"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/antecedents/antecedent-003",
+"label": "colaboraciones con hospitales, profesionales clínicos y empresas del sector de…",
+"description": "colaboraciones con hospitales, profesionales clínicos y empresas del sector de la Cirugía y Medicina"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/antecedents/antecedent-004",
+"label": "la firma de un convenio (DECA) con el Ministerio de Ciencia e Innovación",
+"description": "la firma de un convenio (DECA) con el Ministerio de Ciencia e Innovación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/antecedents/antecedent-001",
+"label": "Los centros especializados en seguridad cibernética están realizando investigac…",
+"description": "Los centros especializados en seguridad cibernética están realizando investigaciones para obtención de información de bots mediante la compra de dominios obtenidos de fuentes (públicas y privadas) de DGAs (Domain Generation Algorithms)."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/antecedents/antecedent-002",
+"label": "Investigación sobre el problema.",
+"description": "Investigación sobre el problema."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/antecedents/antecedent-003",
+"label": "Recopilación de conjuntos de datos para entrenar sistemas.",
+"description": "Recopilación de conjuntos de datos para entrenar sistemas."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/antecedents/antecedent-004",
+"label": "Se dispone de un conjunto de Honeypots de baja-media interacción para la detecc…",
+"description": "Se dispone de un conjunto de Honeypots de baja-media interacción para la detección temprana de ciberataques."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/antecedents/antecedent-005",
+"label": "Se trabaja en la gestión de incidentes de ciberseguridad.",
+"description": "Se trabaja en la gestión de incidentes de ciberseguridad."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/antecedents/antecedent-006",
+"label": "Los centros especializados en seguridad cibernética trabajan en la monitorizaci…",
+"description": "Los centros especializados en seguridad cibernética trabajan en la monitorización de dominios .onion ilícitos de la red TOR."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/antecedents/antecedent-001",
+"label": "alguna experiencia en la automatización de alguna tarea quirúrgica en cirugía a…",
+"description": "alguna experiencia en la automatización de alguna tarea quirúrgica en cirugía abierta convencional, tales como sutura o disección"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/antecedents/antecedent-002",
+"label": "El único PET cerebral con base instalada es el HRRT, de Siemens-CTI (1997 1 ),…",
+"description": "El único PET cerebral con base instalada es el HRRT, de Siemens-CTI (1997 1 ), abandonado por Siemens desde 2017."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/antecedents/antecedent-003",
+"label": "NeuroPET, con tecnología de MGH, de la PYME de Boston PhotoDetection Systems (2…",
+"description": "NeuroPET, con tecnología de MGH, de la PYME de Boston PhotoDetection Systems (2009-2014), no llegó a ser comercializado."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/antecedents/antecedent-004",
+"label": "Recientemente, se han introducido en el mercado varias plataformas robóticas co…",
+"description": "Recientemente, se han introducido en el mercado varias plataformas robóticas con aplicación quirúrgica."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/antecedents/antecedent-001",
+"label": "a prior information notice (PIN) in the Official Journal of the European Union",
+"description": "a prior information notice (PIN) in the Official Journal of the European Union"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/antecedents/antecedent-002",
+"label": "a second PIN was published in November 2022",
+"description": "a second PIN was published in November 2022"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/antecedents/antecedent-003",
+"label": "an initial state of the art review",
+"description": "an initial state of the art review"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/antecedents/antecedent-004",
+"label": "ANTI-SUPERBUGS PCP",
+"description": "ANTI-SUPERBUGS PCP"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/antecedents/antecedent-005",
+"label": "EU and national AMR Action plans",
+"description": "EU and national AMR Action plans"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/antecedents/antecedent-001",
+"label": "ha participado en el programa FIDSALUD",
+"description": "ha participado en el programa FIDSALUD"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/antecedents/antecedent-002",
+"label": "una iniciativa estadounidense liderada por Badavi y Cherry",
+"description": "una iniciativa estadounidense liderada por Badavi y Cherry"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/antecedents/antecedent-001",
+"label": "un modelo basado en la valorización agrícola",
+"description": "un modelo basado en la valorización agrícola"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/antecedents/antecedent-002",
+"label": "la aplicación directa, el compostaje y el co-compostaje con biomasa vegetal",
+"description": "la aplicación directa, el compostaje y el co-compostaje con biomasa vegetal"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/antecedents/antecedent-003",
+"label": "recogida selectiva de residuos urbanos orgánicos",
+"description": "recogida selectiva de residuos urbanos orgánicos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/antecedents/antecedent-004",
+"label": "El Proyecto para la adecuación del tratamiento de las EDAR de Sevilla para el v…",
+"description": "El Proyecto para la adecuación del tratamiento de las EDAR de Sevilla para el vertido a zona sensible en el entorno de Doñana"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/antecedents/antecedent-001",
+"label": "Traslados por Ferrocarril",
+"description": "Traslados por Ferrocarril"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/antecedents/antecedent-002",
+"label": "Decreto 2355/1967. Determina cambio medios traslados",
+"description": "Decreto 2355/1967. Determina cambio medios traslados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/antecedents/antecedent-003",
+"label": "Orden 21/10/1968 del Ministerio de Justicia",
+"description": "Orden 21/10/1968 del Ministerio de Justicia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/antecedents/antecedent-004",
+"label": "Orden 6/04/1990 Primeras Especificaciones Técnicas",
+"description": "Orden 6/04/1990 Primeras Especificaciones Técnicas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/antecedents/antecedent-005",
+"label": "Orden 15/06/1995 Nuevas Especificaciones Técnicas",
+"description": "Orden 15/06/1995 Nuevas Especificaciones Técnicas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/antecedents/antecedent-006",
+"label": "Orden INT/2573/2015",
+"description": "Orden INT/2573/2015"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/antecedents/antecedent-007",
+"label": "En furgones este cambio en 2.006 incluyendo cámara y pantalla de vigilancia pro…",
+"description": "En furgones este cambio en 2.006 incluyendo cámara y pantalla de vigilancia promovido por el Servicio de Material Móvil."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/antecedents/antecedent-001",
+"label": "la creación de la Red de Emprendimiento e Innovación",
+"description": "la creación de la Red de Emprendimiento e Innovación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/antecedents/antecedent-002",
+"label": "el lanzamiento de diversas iniciativas colaborativas con grupos de trabajo orga…",
+"description": "el lanzamiento de diversas iniciativas colaborativas con grupos de trabajo organizados por temáticas y territorios"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/antecedents/antecedent-003",
+"label": "la puesta en marcha del Sistema Integral de Atención al Emprendedor",
+"description": "la puesta en marcha del Sistema Integral de Atención al Emprendedor"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/antecedents/antecedent-004",
+"label": "el Programa ADE2020 consolidado",
+"description": "el Programa ADE2020 consolidado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/antecedents/antecedent-005",
+"label": "el Programa GESTIDI consolidado",
+"description": "el Programa GESTIDI consolidado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/antecedents/antecedent-006",
+"label": "el Programa Centra@Tec",
+"description": "el Programa Centra@Tec"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/antecedents/antecedent-007",
+"label": "otros programas y planes de apoyo a la financiación I+D+i",
+"description": "otros programas y planes de apoyo a la financiación I+D+i"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/antecedents/antecedent-008",
+"label": "un plan de trabajo en materia de Compra Pública de Innovación",
+"description": "un plan de trabajo en materia de Compra Pública de Innovación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/antecedents/antecedent-009",
+"label": "La creación, en el marco de la Estrategia de Innovación y Emprendimiento, de la…",
+"description": "La creación, en el marco de la Estrategia de Innovación y Emprendimiento, de la Red de Emprendimiento e Innovación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/antecedents/antecedent-010",
+"label": "El desarrollo y lanzamiento de programas consolidados de I+D+i y de emprendimei…",
+"description": "El desarrollo y lanzamiento de programas consolidados de I+D+i y de emprendimeinto como: ADE2020, GESTIDI, o Centra@Tec."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/antecedents/antecedent-001",
+"label": "Plan de Vivienda y Rehabilitación de Andalucía 2016-2020",
+"description": "Plan de Vivienda y Rehabilitación de Andalucía 2016-2020"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/antecedents/antecedent-002",
+"label": "ha promovido aproximadamente un total de más 17.500 viviendas protegidas en tod…",
+"description": "ha promovido aproximadamente un total de más 17.500 viviendas protegidas en todo el territorio andaluz"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/antecedents/antecedent-003",
+"label": "ha ejecutado, al amparo del programa andaluz de Fomento de la Construcción Sost…",
+"description": "ha ejecutado, al amparo del programa andaluz de Fomento de la Construcción Sostenible , actuaciones en más de 7.000 viviendas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/antecedents/antecedent-004",
+"label": "Estudios previos realizados internamente por AVRA",
+"description": "Estudios previos realizados internamente por AVRA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/antecedents/antecedent-005",
+"label": "Desde el año 2000 a hoy día, la Agencia ha promovido aproximadamente un total d…",
+"description": "Desde el año 2000 a hoy día, la Agencia ha promovido aproximadamente un total de más 17.500 viviendas protegidas en todo el territorio andaluz."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/antecedents/antecedent-006",
+"label": "está rehabilitando el parque público residencial que gestiona",
+"description": "está rehabilitando el parque público residencial que gestiona"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/antecedents/antecedent-007",
+"label": "Proyectos BUILDHEAT y E 2 VENT",
+"description": "Proyectos BUILDHEAT y E 2 VENT"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/antecedents/antecedent-008",
+"label": "Proyecto EASE E",
+"description": "Proyecto EASE E"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/antecedents/antecedent-009",
+"label": "Proyectos Green INSTRUCT e INNOW EE",
+"description": "Proyectos Green INSTRUCT e INNOW EE"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/antecedents/antecedent-010",
+"label": "Proyectos MEEFS Retrofitting, MORE-CON NECT , P2Endure y Pro-GET-OnE",
+"description": "Proyectos MEEFS Retrofitting, MORE-CON NECT , P2Endure y Pro-GET-OnE"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/antecedents/antecedent-011",
+"label": "Proyectos ReCO2ST y RenoZEB",
+"description": "Proyectos ReCO2ST y RenoZEB"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/antecedents/antecedent-012",
+"label": "Proyecto EENSULATE",
+"description": "Proyecto EENSULATE"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/antecedents/antecedent-013",
+"label": "Proyecto IMPRESS",
+"description": "Proyecto IMPRESS"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/antecedents/antecedent-014",
+"label": "Construcción de 500 viviendas sociales NZEB en Navarra por NASUVINSA",
+"description": "Construcción de 500 viviendas sociales NZEB en Navarra por NASUVINSA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/antecedents/antecedent-015",
+"label": "Construcción en Irlanda de 465 viviendas sociales por metodología BIM y orienta…",
+"description": "Construcción en Irlanda de 465 viviendas sociales por metodología BIM y orientación NZEB"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/antecedents/antecedent-016",
+"label": "Construcción en Suecia de 115 viviendas sociales NZEB por la promotora Wallenst…",
+"description": "Construcción en Suecia de 115 viviendas sociales NZEB por la promotora Wallenstam"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/antecedents/antecedent-017",
+"label": "Viom System",
+"description": "Viom System"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/antecedents/antecedent-018",
+"label": "Edificio Mataró (2004)",
+"description": "Edificio Mataró (2004)"
+}
+]

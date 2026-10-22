@@ -1,0 +1,302 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/ip-rights/tender-001-ip-001-right-001",
+"label": "El contratista ostenta con total plenitud el ejercicio exclusivo de los derecho…",
+"description": "El contratista ostenta con total plenitud el ejercicio exclusivo de los derechos de explotación de cualquier forma y modalidad de la solución desarrollada durante el presente contrato.",
+"exclusive": true
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/ip-rights/tender-001-ip-001-right-002",
+"label": "si a los tres años de la finalización del contrato el contratista no ha explota…",
+"description": "si a los tres años de la finalización del contrato el contratista no ha explotado ni realizado esfuerzos en explotar comercialmente la propiedad intelectual e industrial generada dentro del proyecto; 0 lo está haciendo en detrimento del interés público; el órgano de contratación se reserva el derecho de recuperar la propiedad intelectual 0 industrial generada.",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/ip-rights/tender-001-ip-001-right-003",
+"label": "AI vencimiento del contrato todos los derechos de explotación de la propiedad i…",
+"description": "AI vencimiento del contrato todos los derechos de explotación de la propiedad intelectual e industrial corresponderán al adjudicatario, reservándose el Ayuntamiento de Madrid los derechos de comunicación de los resultados incluidos en este apartado.",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/ip-rights/tender-001-ip-001-right-004",
+"label": "El Ayuntamiento de Madrid se reserva los derechos de divulgación de las conclus…",
+"description": "El Ayuntamiento de Madrid se reserva los derechos de divulgación de las conclusiones generadas bajo como la obligación de ejercer como entidad pública demostradora frente a terceros de las soluciones innovadoras desarrolladas.",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/ip-rights/tender-001-ip-002-right-001",
+"label": "El Ayuntamiento de Alicante podrá ofrecer la reutilización de estos desarrollos…",
+"description": "El Ayuntamiento de Alicante podrá ofrecer la reutilización de estos desarrollos a otras Administraciones Públicas.",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/ip-rights/tender-001-ip-002-right-002",
+"label": "Además, podrá declararlos como fuentes abiertas.",
+"description": "Además, podrá declararlos como fuentes abiertas.",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-rights/tender-001-ip-001-right-001",
+"label": "perteneciendo este derecho únicamente a la entidad contratista como titular de…",
+"description": "perteneciendo este derecho únicamente a la entidad contratista como titular de los de derechos de Propiedad Intelectual e Industrial",
+"exclusive": true
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-rights/tender-001-ip-001-right-002",
+"label": "a efectos de investigación y formación del personal de ambas entidades",
+"description": "a efectos de investigación y formación del personal de ambas entidades",
+"exclusive": false
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-rights/tender-001-ip-001-right-003",
+"label": "La Fundación CCMIJU no podrá explotar económicamente estos prototipos pudiendo…",
+"description": "La Fundación CCMIJU no podrá explotar económicamente estos prototipos pudiendo usarlos únicamente con fines de investigación científica y para formación de su personal",
+"exclusive": false
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-rights/tender-002-ip-001-right-001",
+"label": "perteneciendo este derecho únicamente a la entidad contratista como titular de…",
+"description": "perteneciendo este derecho únicamente a la entidad contratista como titular de los de derechos de Propiedad Intelectual e Industrial",
+"exclusive": true
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-rights/tender-002-ip-001-right-002",
+"label": "a efectos de investigación y formación del personal de ambas entidades",
+"description": "a efectos de investigación y formación del personal de ambas entidades",
+"exclusive": false
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-rights/tender-002-ip-002-right-001",
+"label": "no podrá explotar económicamente estos prototipos pudiendo usarlos únicamente c…",
+"description": "no podrá explotar económicamente estos prototipos pudiendo usarlos únicamente con fines de investigación científica",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/ip-rights/tender-001-ip-001-right-001",
+"label": "corresponderá a la empresa o empresas adjudicatarias la comercialización y expl…",
+"description": "corresponderá a la empresa o empresas adjudicatarias la comercialización y explotación de los nuevos productos y servicios resultantes de la investigación y desarrollo",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/ip-rights/tender-001-ip-001-right-002",
+"label": "la empresa o empresas adjudicatarias tienen el derecho de registrar y mantener…",
+"description": "la empresa o empresas adjudicatarias tienen el derecho de registrar y mantener los DPI que se deriven del proyecto",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/ip-rights/tender-001-ip-001-right-003",
+"label": "La empresa o empresas adjudicatarias estarán obligadas a conceder a la administ…",
+"description": "La empresa o empresas adjudicatarias estarán obligadas a conceder a la administración contratante, a la Junta de Castilla y León, y a INCIBE acceso ilimitado y gratuito a los resultados de la investigación y desarrollo para su uso",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/ip-rights/tender-001-ip-001-right-001",
+"label": "Corresponderá al adjudicatario la comercialización y explotación de los nuevos…",
+"description": "Corresponderá al adjudicatario la comercialización y explotación de los nuevos productos y servicios resultantes de la investigación y desarrollo objeto de este contrato.",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/ip-rights/tender-001-ip-001-right-002",
+"label": "se reserva una licencia de uso no exclusiva, irrevocable, gratuita y perpetua (…",
+"description": "se reserva una licencia de uso no exclusiva, irrevocable, gratuita y perpetua (o, en su caso hasta la expiración de los correspondientes derechos), con facultad de sublicenciar en el sector público, definido en el artículo 2 de la ley 40/2015, y de un Derecho de acceso, sobre los resultados/solución y todos los DPI derivados de la misma",
+"exclusive": false
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/ip-rights/tender-001-ip-001-right-003",
+"label": "Usar, desarrollar, adaptar, modificar y utilizar los resultados/solución, y tod…",
+"description": "Usar, desarrollar, adaptar, modificar y utilizar los resultados/solución, y todos los DPI derivados de la misma.",
+"exclusive": false
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/ip-rights/tender-001-ip-001-right-004",
+"label": "Fabricar y contratar la fabricación de los resultados/solución.",
+"description": "Fabricar y contratar la fabricación de los resultados/solución.",
+"exclusive": false
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/ip-rights/tender-001-ip-001-right-005",
+"label": "Utilizar la solución, los resultados y DPI y a conceder licencias sobre ella en…",
+"description": "Utilizar la solución, los resultados y DPI y a conceder licencias sobre ella en los procedimientos de contratación pública para desplegar las soluciones.",
+"exclusive": false
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-rights/tender-001-ip-001-right-001",
+"label": "todos los derechos de explotación o de carácter patrimonial",
+"description": "todos los derechos de explotación o de carácter patrimonial",
+"exclusive": true
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-rights/tender-001-ip-001-right-002",
+"label": "para la obtención o protección de dichos derechos sin límite territorial alguno",
+"description": "para la obtención o protección de dichos derechos sin límite territorial alguno",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-rights/tender-001-ip-001-right-003",
+"label": "para cualquier medio o soporte, con facultad de transmisión y licencia a tercer…",
+"description": "para cualquier medio o soporte, con facultad de transmisión y licencia a terceros, para todo el mundo y durante todo el plazo de protección de dichos derechos, esto es, sin ningún límite geográfico o temporal",
+"exclusive": true
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-rights/tender-001-ip-002-right-001",
+"label": "sin límite territorial alguno",
+"description": "sin límite territorial alguno",
+"exclusive": true
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-rights/tender-001-ip-002-right-002",
+"label": "para cualquier medio o soporte, con facultad de transmisión y licencia a tercer…",
+"description": "para cualquier medio o soporte, con facultad de transmisión y licencia a terceros, para todo el mundo y durante todo el plazo de protección de dichos derechos",
+"exclusive": true
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-rights/tender-002-ip-001-right-001",
+"label": "estos llevan pareada la cesión de los derechos mencionados a la Administración…",
+"description": "estos llevan pareada la cesión de los derechos mencionados a la Administración contratante, salvo que se prevea de lo contrario en la documentación contractual",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-rights/tender-002-ip-001-right-002",
+"label": "el órgano de contratación puede siempre autorizar el uso del producto correspon…",
+"description": "el órgano de contratación puede siempre autorizar el uso del producto correspondiente a los entes, organismos y entidades pertenecientes al sector público",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-rights/tender-002-ip-002-right-001",
+"label": "podrán utilizarlos para explotar el mercado potencial de sus soluciones innovad…",
+"description": "podrán utilizarlos para explotar el mercado potencial de sus soluciones innovadoras más allá de esta contratación",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-rights/tender-003-ip-001-right-001",
+"label": "El contratista cede con carácter de exclusividad la totalidad de los derechos d…",
+"description": "El contratista cede con carácter de exclusividad la totalidad de los derechos de explotación de los trabajos objeto de este pliego, incluidos los derechos de comunicación pública, reproducción, transformación o modificación o cualquier otro derecho susceptible de cesión en exclusiva",
+"exclusive": true
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-rights/tender-003-ip-002-right-001",
+"label": "podrán utilizarlos para explotar el mercado potencial de sus soluciones innovad…",
+"description": "podrán utilizarlos para explotar el mercado potencial de sus soluciones innovadoras más allá de esta contratación",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/ip-rights/tender-001-ip-001-right-001",
+"label": "el contratista ostenta con total plenitud el ejercicio exclusivo de los derecho…",
+"description": "el contratista ostenta con total plenitud el ejercicio exclusivo de los derechos de explotación de los componentes tecnológicos desarrollados en cualquier forma y modalidad, y en especial, los derechos de reproducción, distribución, comunicación pública y transformación, a nivel mund ial",
+"exclusive": true
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/ip-rights/tender-001-ip-001-right-002",
+"label": "FISABIO tendrá la capacidad de desarrollo del siste ma para su mantenimiento in…",
+"description": "FISABIO tendrá la capacidad de desarrollo del siste ma para su mantenimiento interno sin fines comerciales.",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/ip-rights/tender-001-ip-002-right-001",
+"label": "establecer la cesión de uso a otras entidades",
+"description": "establecer la cesión de uso a otras entidades",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/ip-rights/tender-001-ip-001-right-001",
+"label": "el contratista ostentará con total plenitud el ejercicio de los derechos de exp…",
+"description": "el contratista ostentará con total plenitud el ejercicio de los derechos de explotación de cualquier forma y modalidad de la solución que haya desarrollado durante el presente contrato.",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/ip-rights/tender-001-ip-001-right-002",
+"label": "licencias de uso perpetuas, universales, no exclusivas y gratuitas para el uso…",
+"description": "licencias de uso perpetuas, universales, no exclusivas y gratuitas para el uso o explotación de los DPI generados en el contrato para las finalidades de uso interno",
+"exclusive": false
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/ip-rights/tender-001-ip-001-right-003",
+"label": "licencia ilimitada, no exclusiva, no transmisible y gratuita de estos resultado…",
+"description": "licencia ilimitada, no exclusiva, no transmisible y gratuita de estos resultados para el uso en investigación y docencia.",
+"exclusive": false
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/ip-rights/tender-001-ip-001-right-001",
+"label": "En el supuesto de que el contrato tenga por objeto el desarrollo y la puesta a…",
+"description": "En el supuesto de que el contrato tenga por objeto el desarrollo y la puesta a disposición de productos protegidos por un derecho de propiedad intelectual o industrial, y salvo que en la letra Y del cuadro de características del contrato se establezca el contrario, la ejecución del contrato implica la cesión a la Administración contratante del derecho de uso de estos productos.",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/ip-rights/tender-001-ip-002-right-001",
+"label": "La ejecución del contrato lleva aparejada la cesión al IB-Salut del derecho de…",
+"description": "La ejecución del contrato lleva aparejada la cesión al IB-Salut del derecho de uso de dichos productos",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/ip-rights/tender-001-ip-002-right-002",
+"label": "podrá siempre autorizar el uso del correspondiente producto a los entes, organi…",
+"description": "podrá siempre autorizar el uso del correspondiente producto a los entes, organismos y entidades de él dependientes",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/ip-rights/tender-001-ip-001-right-001",
+"label": "El Ayuntamiento se reserva su utilización",
+"description": "El Ayuntamiento se reserva su utilización",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/ip-rights/tender-001-ip-001-right-002",
+"label": "Los trabajos que constituyan objeto de propiedad intelectual, se entenderán exp…",
+"description": "Los trabajos que constituyan objeto de propiedad intelectual, se entenderán expresamente cedidos en exclusiva al Ayuntamiento",
+"exclusive": true
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/ip-rights/tender-001-ip-001-right-001",
+"label": "Corresponderá al adjudicatario la comercialización y explotación de los nuevos…",
+"description": "Corresponderá al adjudicatario la comercialización y explotación de los nuevos productos y servicios resultantes de la investigación y desarrollo objeto de este contrato.",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/ip-rights/tender-001-ip-001-right-002",
+"label": "si a los tres (3) años de su registro en el caso de los derechos de PI registra…",
+"description": "si a los tres (3) años de su registro en el caso de los derechos de PI registrables o a los 3 años de la terminación de la Fase III el adjudicatario no ha explotado ni realizado esfuerzos en explotar comercialmente la propiedad industrial e intelectual generada dentro del proyecto, o lo está haciendo en detrimento del interés público, CDTI se reserva el derecho de recuperar los derechos sobre la propiedad intelectual o industrial generada",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/ip-rights/tender-001-ip-001-right-003",
+"label": "el CDTI se reserva el derecho de exigir al adjudicatario que conceda licencias…",
+"description": "el CDTI se reserva el derecho de exigir al adjudicatario que conceda licencias sobre las soluciones desarrolladas a terceros proveedores en condiciones de mercado equitativas y razonables",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/ip-rights/tender-001-ip-001-right-001",
+"label": "para poder ser publicados, divulgados y replicados en futuras licitaciones de p…",
+"description": "para poder ser publicados, divulgados y replicados en futuras licitaciones de plantas desaladoras que promueva el ITC ya sea de forma directa o indirecta en el ámbito de la Comunidad Autónoma de Canarias",
+"exclusive": true
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/ip-rights/tender-001-ip-001-right-001",
+"label": "las Partes se concederán los Derechos de Acceso y Utilización pertinentes a dic…",
+"description": "las Partes se concederán los Derechos de Acceso y Utilización pertinentes a dichos Derechos",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/ip-rights/tender-001-ip-002-right-001",
+"label": "El ICE mantendrá en cualquier caso y durante plazo ilimitado los derechos de us…",
+"description": "El ICE mantendrá en cualquier caso y durante plazo ilimitado los derechos de uso, modificación y desarrollo sobre los nuevos bienes, tecnologías y soluciones desarrolladas",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/ip-rights/tender-001-ip-002-right-002",
+"label": "el ICE podrá utilizar el desarrollo y/o los derechos aportados para promover nu…",
+"description": "el ICE podrá utilizar el desarrollo y/o los derechos aportados para promover nuevos proyectos de innovación, que podrán generar resultados comerciales.",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/ip-rights/tender-001-ip-003-right-001",
+"label": "licencia ilimitada para su utilización por parte de ICE",
+"description": "licencia ilimitada para su utilización por parte de ICE",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/ip-rights/tender-001-ip-001-right-001",
+"label": "para cubrir determinados suministros en circunstancias especiales relacionadas…",
+"description": "para cubrir determinados suministros en circunstancias especiales relacionadas con la explotación de los resultados del proyecto",
+"exclusive": null
+}
+]

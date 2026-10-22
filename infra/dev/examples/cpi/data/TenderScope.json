@@ -1,0 +1,135 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/tender-scopes/tender-001-scope",
+"label": "la contratación de servicios de I+D para el desarrollo de una solución tecnológ…",
+"contractObject": "la contratación de servicios de I+D para el desarrollo de una solución tecnológica poco intrusiva que permita la comunicación en lengua de signos del discapacitado auditivo con un interlocutor oyente que desconozca dicha lengua de signos",
+"functionalScope": "Sistema de traducción bidireccional (oyente discapacitado auditivo severo; y viceversa)",
+"technicalScope": "El sistema permitirá la conversión bidireccional con una tasa de acierto superior al 60%"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/tender-scopes/tender-001-scope",
+"label": "Implementación de una capa de acceso unificado basada en inteligencia artificia…",
+"contractObject": "Implementación de una capa de acceso unificado basada en inteligencia artificial sobre navegación web y tramitación electrónica por SEDE",
+"functionalScope": "navegación web y tramitación electrónica por SEDE",
+"technicalScope": "capa de acceso unificado basada en inteligencia artificial"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tender-scopes/tender-001-scope",
+"label": "la contratación de una solución innovadora para el reto de plataforma robótica…",
+"contractObject": "la contratación de una solución innovadora para el reto de plataforma robótica de microcirugía del proyecto 'Sistemas de cirugía robótica de mínima invasión (TREMIRS)', en el marco de un proceso de Compra Pública Precomercial",
+"functionalScope": "el desarrollo de una plataforma robótica teleoperada para llevar a cabo procedimientos de microcirugía",
+"technicalScope": "una plataforma robótica para llevar a cabo microcirugía de forma remota"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tender-scopes/tender-002-scope",
+"label": "Servicios de desarrollo de dos soluciones innovadoras para el reto de plataform…",
+"contractObject": "Servicios de desarrollo de dos soluciones innovadoras para el reto de plataforma robótica de cirugía laparoscópica del proyecto 'Sistemas de cirugía robótica de mínima invasión (TREMIRS)', en el marco de un proceso de Compra Pública de Tecnología Innovadora.",
+"functionalScope": "disponer de una plataforma robotizada para cirugía laparoscópica que mejore los sistemas ya existentes en el mercado",
+"technicalScope": "componentes de los elementos de la plataforma robótica, en el lote 1, y el sistema de formación y entrenamiento, en el lote 2, incluyendo el software"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/tender-scopes/tender-001-scope",
+"label": "la contratación de los servicios de investigación y desarrollo para la búsqueda…",
+"contractObject": "la contratación de los servicios de investigación y desarrollo para la búsqueda de soluciones innovadoras en la obtención de servicios ocultos ilícitos en la red anónima TOR, en su versión 2 y 3, que no sean conocidos y que no hayan sido indexados por fuentes públicas",
+"functionalScope": "identificar nuevos servicios ocultos en TOR que no hayan sido identificados previamente y que no se puedan encontrar en fuentes públicas",
+"technicalScope": "investigación de técnicas y desarrollo de un sistema de detección de estos servicios"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/tender-scopes/tender-001-scope",
+"label": "contratación de servicios de I+D para desarrollar una plataforma robótica con a…",
+"contractObject": "contratación de servicios de I+D para desarrollar una plataforma robótica con autonomía en la ejecución de tareas y/o procedimientos quirúrgicos en cirugía mínima invasiva laparoscópica",
+"functionalScope": "automatizar tareas y/o procedimientos quirúrgicos específicos de cirugía laparoscópica, aunque siempre permitiendo al cirujano un control discreto durante la intervención",
+"technicalScope": "aplicación e integración de tecnologías en el ámbito de la automática y robótica, inteligencia artificial, gemelos digitales, metaverso y realidad extendida (realidad virtual, aumentada y mixta)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tender-scopes/tender-001-scope",
+"label": "el desarrollo de una herramienta digital (RaDAR evaluation digital platform) de…",
+"contractObject": "el desarrollo de una herramienta digital (RaDAR evaluation digital platform) de recogida, análisis y visualización de indicadores para la evaluación de la implementación de las soluciones adquiridas por los socios compradores del consorcio RaDAR (Francia, Italia y Cataluña).",
+"functionalScope": "recogida, análisis y visualización de indicadores para la evaluación de la implementación de las soluciones adquiridas por los socios compradores del consorcio RaDAR (Francia, Italia y Cataluña).",
+"technicalScope": "herramienta digital (RaDAR evaluation digital platform)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tender-scopes/tender-002-scope",
+"label": "la contratación de un sistema para implementar, desplegar y mantener una soluci…",
+"contractObject": "la contratación de un sistema para implementar, desplegar y mantener una solución funcional",
+"functionalScope": "el abordaje integral de la resistencia antimicrobiana en el hospital",
+"technicalScope": "la cesión de equipos para la detección rápida tanto por el cribado como por el diagnóstico de sepsis, detectando infecciones y colonizaciones por microorganismos resistentes a los antimicrobianos; así como el software que apoye a través de la rutina de los profesionales sanitarios por la optimización antimicrobiana y el correcto manejo de los microorganismos y los pacientes en el hospital"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tender-scopes/tender-003-scope",
+"label": "el suministro señalado en el cuadro de características específicas",
+"contractObject": "el suministro señalado en el cuadro de características específicas",
+"functionalScope": null,
+"technicalScope": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/tender-scopes/tender-001-scope",
+"label": "DESARROLLO DEL GESTOR DE INTEROPERABILIDAD SEMÁNTICA DE LA RED VALENCIANA DE BI…",
+"contractObject": "DESARROLLO DEL GESTOR DE INTEROPERABILIDAD SEMÁNTICA DE LA RED VALENCIANA DE BIOBANCOS",
+"functionalScope": "aunar y poner en valor la información asociada a los procesos relacionados con la salud y revertir la atomización de dichos datos, dispersos en multitud aplicaciones informáticas",
+"technicalScope": "análisis y desarrollo de un único componente software"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/tender-scopes/tender-001-scope",
+"label": "LOS SERVICIOS DE INVESTIGACIÓN Y DESARROLLO PARA LA BÚSQUEDA DE SOLUCIONES INNO…",
+"contractObject": "LOS SERVICIOS DE INVESTIGACIÓN Y DESARROLLO PARA LA BÚSQUEDA DE SOLUCIONES INNOVADORAS EN EL DESARROLLO Y FASE DEMOSTRACIÓN DE UNA TECNOLOGÍA PARA EL DIAGNÓSTICO Y SEGUIMIENTO DE ENFERMEDADES MEDIANTE IMAGEN MOLECULAR DE ALTA SENSIBILIDAD (IMAS)",
+"functionalScope": "mejorar el diagnóstico y el seguimiento del tratamiento de distintas patologías mediante imagen molecular de alta sensibilidad",
+"technicalScope": "ESCÁNER PET DE EJE Z LARGO, TOMOGRAFÍA POR EMISIÓN DE POSITRONES, BASADO EN DETECTORES DE XENÓN LÍQUIDO Y TECNOLOGÍA INNOVADORA PARA LA LECTURA DE MATERIALES SÓLIDOS CENTELLEADORES"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/tender-scopes/tender-001-scope",
+"label": "soporte de los equipos hardware y software que constituyen la base para el func…",
+"contractObject": "soporte de los equipos hardware y software que constituyen la base para el funcionamiento de la electrónica de red",
+"functionalScope": "el Servicio de Salud de las Islas Baleares utiliza para prestar sus servicios",
+"technicalScope": "soporte del parque de activos de Explotación de la electrónica de red CISCO de los CPDs"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tender-scopes/tender-001-scope",
+"label": "obras que se detallan en el Proyecto",
+"contractObject": "obras que se detallan en el Proyecto",
+"functionalScope": "CONSTRUCCIÓN DEL COMPLEJO AMBIENTAL COPERO",
+"technicalScope": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tender-scopes/tender-002-scope",
+"label": "CONSTRUCCIÓN DE UNA PLANTA DE HIDRÓLISIS TÉRMICA EN LA EDAR RANILLA, ALCALÁ DE…",
+"contractObject": "CONSTRUCCIÓN DE UNA PLANTA DE HIDRÓLISIS TÉRMICA EN LA EDAR RANILLA, ALCALÁ DE GUADAIRA (SEVILLA)",
+"functionalScope": null,
+"technicalScope": "PLANTA DE HIDRÓLISIS TÉRMICA EN LA EDAR RANILLA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/tender-scopes/tender-001-scope",
+"label": "Prestación del servicio de definición y desarrollo de una nueva solución tecnol…",
+"contractObject": "Prestación del servicio de definición y desarrollo de una nueva solución tecnológica que permita la monitorización y control de riesgos para bienes materiales y personales en las áreas industriales de Alcalá de Guadaíra",
+"functionalScope": "monitorización y control de riesgos para bienes materiales y personales en las áreas industriales de Alcalá de Guadaíra",
+"technicalScope": "definición y desarrollo de una nueva solución tecnológica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/tender-scopes/tender-001-scope",
+"label": "el desarrollo de soluciones de I+D para los siguientes escenarios de actuación",
+"contractObject": "el desarrollo de soluciones de I+D para los siguientes escenarios de actuación",
+"functionalScope": "dos bloques funcionales o líneas a ser desarrollados y que deberán interoperar entre sí para obtener un desarrollo integral que permita mejorar la seguridad en el medio rural",
+"technicalScope": "Desarrollo de sistemas novedosos de fusión, enriquecimiento y análisis inteligente de datos provenientes de distintas fuentes"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/tender-scopes/tender-001-scope",
+"label": "obras de construcción de una planta desaladora experimental de 2.500 m3/d por ó…",
+"contractObject": "obras de construcción de una planta desaladora experimental de 2.500 m3/d por ósmosis inversa de agua de mar en las instalaciones del ITC en Pozo Izquierdo, incluidas su puesta en marcha y verificación de rendimientos y redacción de Proyecto",
+"functionalScope": "puesta en marcha y verificación de rendimientos",
+"technicalScope": "una planta desaladora experimental de 2.500 m3/d por ósmosis inversa de agua de mar en las instalaciones del ITC en Pozo Izquierdo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/tender-scopes/tender-001-scope",
+"label": "Diseño, desarrollo, validación y mantenimiento de un sistema experto en la nube…",
+"contractObject": "Diseño, desarrollo, validación y mantenimiento de un sistema experto en la nube de diagnóstico y acompañamiento (SENDA) en fase piloto, que proporcionará un espacio de interrelación para el ecosistema de emprendimiento e innovación en Castilla y León",
+"functionalScope": "acompañamiento a los emprendedores y empresas innovadoras con hojas de ruta personalizadas, formación en los ámbitos de la gestión de proyectos y de la I+D+i y prestación de servicios de apoyo personalizados virtuales que reduzcan el tiempo empleado en los desplazamientos",
+"technicalScope": "sistema piloto, capaz de agrupar las herramientas dispersas existentes para ponerlas al servicio del tejido empresarial, dirigir y facilitar la toma de decisiones, favorecer la comunicación multidireccional y el acceso a información relevante y referente, ofrecerles la posibilidad de conectarse en tiempo real con el ecosistema"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/tender-scopes/tender-001-scope",
+"label": "Adquisición de servicios de I+D para desarrollar un novedoso sistema experto ba…",
+"contractObject": "Adquisición de servicios de I+D para desarrollar un novedoso sistema experto basado en la Inteligencia Artificial, de apoyo al diseño, ejecución y mantenimiento de edificios modulares y de construcción industrializada de vivienda protegida de consumo energético casi nulo",
+"functionalScope": "el sistema calculará la solución o soluciones de diseño modular industrializado que satisfagan dichos parámetros y además optimicen las variables económicas y energéticas del edificio",
+"technicalScope": "el sistema estará basado en estándares abiertos y protocolos de intercambio de datos, permitiendo la compatibilidad e interoperabilidad con otras plataformas y aplicaciones de software."
+}
+]

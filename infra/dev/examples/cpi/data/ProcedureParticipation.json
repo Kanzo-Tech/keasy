@@ -1,0 +1,362 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/participations/award-001-participation-001",
+"awardedAmount": 274133.0,
+"currency": "euros",
+"offeredAmount": null,
+"participationScore": null,
+"rankingPosition": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/participations/award-001-participation-001",
+"awardedAmount": null,
+"currency": "EUR",
+"offeredAmount": 597000.0,
+"participationScore": null,
+"rankingPosition": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/participations/award-001-participation-001",
+"awardedAmount": 1945400.0,
+"currency": "EUR",
+"offeredAmount": 1945400.0,
+"participationScore": null,
+"rankingPosition": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/participations/award-001-participation-002",
+"awardedAmount": 1848000.0,
+"currency": "EUR",
+"offeredAmount": 1848000.0,
+"participationScore": null,
+"rankingPosition": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/participations/award-002-participation-001",
+"awardedAmount": 630872.73,
+"currency": "EUR",
+"offeredAmount": 630872.73,
+"participationScore": null,
+"rankingPosition": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/participations/award-001-participation-001",
+"awardedAmount": null,
+"currency": "EUR",
+"offeredAmount": 153500.0,
+"participationScore": null,
+"rankingPosition": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/participations/award-001-participation-002",
+"awardedAmount": null,
+"currency": "EUR",
+"offeredAmount": 156000.0,
+"participationScore": null,
+"rankingPosition": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/participations/award-001-participation-001",
+"awardedAmount": null,
+"currency": "EUR",
+"offeredAmount": 4850000.0,
+"participationScore": null,
+"rankingPosition": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/participations/award-001-participation-002",
+"awardedAmount": null,
+"currency": null,
+"offeredAmount": null,
+"participationScore": null,
+"rankingPosition": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/participations/award-001-participation-001",
+"awardedAmount": null,
+"currency": null,
+"offeredAmount": null,
+"participationScore": null,
+"rankingPosition": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/participations/award-001-participation-002",
+"awardedAmount": null,
+"currency": null,
+"offeredAmount": null,
+"participationScore": null,
+"rankingPosition": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/participations/award-001-participation-003",
+"awardedAmount": null,
+"currency": "€",
+"offeredAmount": 79200.0,
+"participationScore": 84.5,
+"rankingPosition": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/participations/award-001-participation-004",
+"awardedAmount": 109008.9,
+"currency": "euros",
+"offeredAmount": 90090.0,
+"participationScore": 87.88,
+"rankingPosition": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/participations/award-001-participation-005",
+"awardedAmount": null,
+"currency": "€",
+"offeredAmount": 89100.0,
+"participationScore": 85.75,
+"rankingPosition": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/participations/award-002-participation-001",
+"awardedAmount": 265851.74,
+"currency": "€",
+"offeredAmount": null,
+"participationScore": 74.5,
+"rankingPosition": 1
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/participations/award-002-participation-002",
+"awardedAmount": 87930.7,
+"currency": "€",
+"offeredAmount": null,
+"participationScore": 90.5,
+"rankingPosition": 1
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/participations/award-002-participation-003",
+"awardedAmount": 263559.78,
+"currency": "€",
+"offeredAmount": null,
+"participationScore": 97.92,
+"rankingPosition": 1
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/participations/award-003-participation-001",
+"awardedAmount": 49403.06,
+"currency": "euros",
+"offeredAmount": null,
+"participationScore": null,
+"rankingPosition": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/participations/award-003-participation-002",
+"awardedAmount": 25172.85,
+"currency": "euros",
+"offeredAmount": null,
+"participationScore": null,
+"rankingPosition": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/participations/award-003-participation-003",
+"awardedAmount": 90750.0,
+"currency": "euros",
+"offeredAmount": null,
+"participationScore": null,
+"rankingPosition": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/participations/award-001-participation-001",
+"awardedAmount": 126400.0,
+"currency": "EUR",
+"offeredAmount": 126400.0,
+"participationScore": 92.96,
+"rankingPosition": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/participations/award-001-participation-001",
+"awardedAmount": null,
+"currency": "EUR",
+"offeredAmount": 5848065.0,
+"participationScore": null,
+"rankingPosition": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/participations/award-001-participation-001",
+"awardedAmount": 78872.82,
+"currency": "EUR",
+"offeredAmount": 78872.82,
+"participationScore": null,
+"rankingPosition": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/participations/award-001-participation-001",
+"awardedAmount": 16999230.76,
+"currency": "€",
+"offeredAmount": null,
+"participationScore": null,
+"rankingPosition": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/participations/award-002-participation-001",
+"awardedAmount": 2832790.08,
+"currency": "€",
+"offeredAmount": null,
+"participationScore": null,
+"rankingPosition": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/participations/award-001-participation-001",
+"awardedAmount": 1528566.34,
+"currency": "€",
+"offeredAmount": 1528566.34,
+"participationScore": 41.0,
+"rankingPosition": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/participations/award-001-participation-002",
+"awardedAmount": null,
+"currency": null,
+"offeredAmount": null,
+"participationScore": 22.25,
+"rankingPosition": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/participations/award-001-participation-003",
+"awardedAmount": 1528566.34,
+"currency": "€",
+"offeredAmount": null,
+"participationScore": null,
+"rankingPosition": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/participations/award-001-participation-001",
+"awardedAmount": 3426500.0,
+"currency": "euros",
+"offeredAmount": 3426500.0,
+"participationScore": null,
+"rankingPosition": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/participations/award-001-participation-002",
+"awardedAmount": 3452650.0,
+"currency": "euros",
+"offeredAmount": 3452650.0,
+"participationScore": null,
+"rankingPosition": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/participations/award-001-participation-003",
+"awardedAmount": null,
+"currency": null,
+"offeredAmount": null,
+"participationScore": null,
+"rankingPosition": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/participations/award-001-participation-001",
+"awardedAmount": 1319746.06,
+"currency": "EUR",
+"offeredAmount": 1319746.06,
+"participationScore": null,
+"rankingPosition": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/participations/award-001-participation-002",
+"awardedAmount": null,
+"currency": null,
+"offeredAmount": null,
+"participationScore": null,
+"rankingPosition": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/participations/award-001-participation-001",
+"awardedAmount": 1507775.4,
+"currency": "EUR",
+"offeredAmount": 1507775.4,
+"participationScore": null,
+"rankingPosition": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/participations/award-001-participation-001",
+"awardedAmount": null,
+"currency": null,
+"offeredAmount": null,
+"participationScore": null,
+"rankingPosition": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/participations/award-001-participation-002",
+"awardedAmount": null,
+"currency": null,
+"offeredAmount": null,
+"participationScore": null,
+"rankingPosition": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/participations/award-001-participation-003",
+"awardedAmount": null,
+"currency": null,
+"offeredAmount": null,
+"participationScore": 92.41,
+"rankingPosition": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/participations/award-001-participation-004",
+"awardedAmount": null,
+"currency": null,
+"offeredAmount": null,
+"participationScore": null,
+"rankingPosition": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/participations/award-001-participation-005",
+"awardedAmount": null,
+"currency": null,
+"offeredAmount": null,
+"participationScore": 89.0,
+"rankingPosition": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/participations/award-001-participation-006",
+"awardedAmount": null,
+"currency": null,
+"offeredAmount": null,
+"participationScore": null,
+"rankingPosition": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/participations/award-001-participation-007",
+"awardedAmount": null,
+"currency": null,
+"offeredAmount": null,
+"participationScore": null,
+"rankingPosition": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/participations/award-001-participation-008",
+"awardedAmount": null,
+"currency": null,
+"offeredAmount": null,
+"participationScore": null,
+"rankingPosition": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/participations/award-001-participation-009",
+"awardedAmount": null,
+"currency": null,
+"offeredAmount": null,
+"participationScore": 71.18,
+"rankingPosition": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/participations/award-001-participation-010",
+"awardedAmount": null,
+"currency": null,
+"offeredAmount": null,
+"participationScore": null,
+"rankingPosition": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/participations/award-001-participation-011",
+"awardedAmount": null,
+"currency": null,
+"offeredAmount": null,
+"participationScore": 88.32,
+"rankingPosition": null
+}
+]

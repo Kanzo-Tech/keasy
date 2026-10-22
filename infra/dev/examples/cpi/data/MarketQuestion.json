@@ -1,0 +1,807 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/market-questions/market-question-001",
+"label": "Descripción funcional de la plataforma: funcionalidades, rendimiento, plataform…",
+"questionText": "Descripción funcional de la plataforma: funcionalidades, rendimiento, plataformas, tasas de reconocimiento, idiomas , arquitecturas , etc."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/market-questions/market-question-002",
+"label": "Justificación del presupuesto",
+"questionText": "Justificación del presupuesto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/market-questions/market-question-003",
+"label": "Argumentación que justifique la consecución de objetivos",
+"questionText": "Argumentación que justifique la consecución de objetivos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/market-questions/market-question-004",
+"label": "Justificación de la viabilidad técnica del proyecto.",
+"questionText": "Justificación de la viabilidad técnica del proyecto."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/market-questions/market-question-005",
+"label": "Análisis de riesgos",
+"questionText": "Análisis de riesgos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/market-questions/market-question-006",
+"label": "Si se ha recibido alguna subvención, ayuda, préstamo público, nacional o europe…",
+"questionText": "Si se ha recibido alguna subvención, ayuda, préstamo público, nacional o europeo,"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/market-questions/market-question-007",
+"label": "Se dispone de un prototipo; y en caso afirmativo; funcionalidades del mismo.",
+"questionText": "Se dispone de un prototipo; y en caso afirmativo; funcionalidades del mismo."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/market-questions/market-question-008",
+"label": "Experiencia en el tratamiento, aprendizaje e integración de personas con discap…",
+"questionText": "Experiencia en el tratamiento, aprendizaje e integración de personas con discapacidad auditiva; en técnicas, métodos y dispositivos de trasmisión de datos; en técnicas de reconocimiento automático del habla, etc."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/market-questions/market-question-009",
+"label": "Especificar si se dispone 0 no de colaboradores en el desarrollo de la solución…",
+"questionText": "Especificar si se dispone 0 no de colaboradores en el desarrollo de la solución propuesta."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/market-questions/market-question-010",
+"label": "Descripción breve de la propuesta 0 idea:",
+"questionText": "Descripción breve de la propuesta 0 idea:"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/market-questions/market-question-011",
+"label": "Justificación:",
+"questionText": "Justificación:"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/market-questions/market-question-012",
+"label": "Novedad que aporta respecto al estado del arte",
+"questionText": "Novedad que aporta respecto al estado del arte"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/market-questions/market-question-013",
+"label": "Beneficios aportados por la solución:",
+"questionText": "Beneficios aportados por la solución:"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/market-questions/market-question-014",
+"label": "Duración estimada para la ejecución de la propuesta:",
+"questionText": "Duración estimada para la ejecución de la propuesta:"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/market-questions/market-question-015",
+"label": "Nivel de desarrollo en el que se encuentra la solución propuesta:",
+"questionText": "Nivel de desarrollo en el que se encuentra la solución propuesta:"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/market-questions/market-question-016",
+"label": "Detallar las actividades necesarias para disponer de una solución comercializab…",
+"questionText": "Detallar las actividades necesarias para disponer de una solución comercializable"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/market-questions/market-question-017",
+"label": "Regulación y normas asociadas:",
+"questionText": "Regulación y normas asociadas:"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/market-questions/market-question-001",
+"label": "Descripción de posibles soluciones de Inteligencia Artificial aplicables a las…",
+"questionText": "Descripción de posibles soluciones de Inteligencia Artificial aplicables a las aplicaciones informáticas de consulta, trámite y gestión existentes en el ayuntamiento informáticas: funcionalidades, ubicación de los servidores, servicios redundados, tipos de aplicación (escritorio/vía web), licenciamiento necesario, limitaciones de usuario, nivel de integración, etc."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/market-questions/market-question-002",
+"label": "Requisitos técnicos necesarios, tanto a nivel de usuario como de servidores.",
+"questionText": "Requisitos técnicos necesarios, tanto a nivel de usuario como de servidores."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/market-questions/market-question-003",
+"label": "Soporte técnico, medios y tiempos de respuesta.",
+"questionText": "Soporte técnico, medios y tiempos de respuesta."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/market-questions/market-question-004",
+"label": "Servicio de Integración/compatibilidad con las diferentes plataformas tanto int…",
+"questionText": "Servicio de Integración/compatibilidad con las diferentes plataformas tanto internas como externas y de ficheros históricos."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/market-questions/market-question-005",
+"label": "Precios y plazos de ejecución orientativos de los distintos servicios a contrat…",
+"questionText": "Precios y plazos de ejecución orientativos de los distintos servicios a contratar (suministro de software, implantación de sistemas, migración de datos, formación de usuarios, mantenimiento de programas)."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/market-questions/market-question-006",
+"label": "Características y precios orientativos de módulos adicionales de gestión en otr…",
+"questionText": "Características y precios orientativos de módulos adicionales de gestión en otros ámbitos municipales (recursos humanos, hacienda, intervención, contratación, gestión tributaria, etc."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/market-questions/market-question-007",
+"label": "Si se requiere algún otro tipo de Información municipal para la presentación ad…",
+"questionText": "Si se requiere algún otro tipo de Información municipal para la presentación adecuada de ofertas."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/market-questions/market-question-008",
+"label": "Posibles soluciones innovadoras",
+"questionText": "Posibles soluciones innovadoras"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/market-questions/market-question-009",
+"label": "Otras recomendaciones, sugerencias u observaciones.",
+"questionText": "Otras recomendaciones, sugerencias u observaciones."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/market-questions/market-question-010",
+"label": "Descripción de posibles soluciones de Inteligencia Artificial aplicables a as a…",
+"questionText": "Descripción de posibles soluciones de Inteligencia Artificial aplicables a as aplicaciones informáticas de consulta, trámite Y gestión existentes en el ayuntamiento."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/market-questions/market-question-011",
+"label": "Servicio de Integración/compatibilidad con las diferentes plataformas tanto int…",
+"questionText": "Servicio de Integración/compatibilidad con las diferentes plataformas tanto internas como externas."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-questions/market-question-001",
+"label": "¿Tiene intención de presentarse a futuras licitaciones relacionadas con el reto…",
+"questionText": "¿Tiene intención de presentarse a futuras licitaciones relacionadas con el reto o retos a los que está aplicando?"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-questions/market-question-002",
+"label": "Forma de transportar la plataforma",
+"questionText": "Forma de transportar la plataforma"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-questions/market-question-003",
+"label": "Número de brazos mínimos de la plataforma",
+"questionText": "Número de brazos mínimos de la plataforma"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-questions/market-question-004",
+"label": "Número de brazos máximos q ue permite la plataforma",
+"questionText": "Número de brazos máximos q ue permite la plataforma"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-questions/market-question-005",
+"label": "Tamaño máximo de la plataforma (Alto x Ancho x Profundidad)",
+"questionText": "Tamaño máximo de la plataforma (Alto x Ancho x Profundidad)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-questions/market-question-006",
+"label": "Radio de acción máxima que debe alcanzar cada brazo",
+"questionText": "Radio de acción máxima que debe alcanzar cada brazo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-questions/market-question-007",
+"label": "Tamaño máximo de cada brazo, incluida su base, en caso de disponer de ella (Alt…",
+"questionText": "Tamaño máximo de cada brazo, incluida su base, en caso de disponer de ella (Alto x Ancho x Profundidad)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-questions/market-question-008",
+"label": "Nivel TLR 1 del que parte la plataforma base",
+"questionText": "Nivel TLR 1 del que parte la plataforma base"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-questions/market-question-009",
+"label": "Nivel TLR que sería conveniente alcanzar en el proyecto",
+"questionText": "Nivel TLR que sería conveniente alcanzar en el proyecto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-questions/market-question-010",
+"label": "Número mínimo de grados de libertad de los instrumentos quirúrgicos",
+"questionText": "Número mínimo de grados de libertad de los instrumentos quirúrgicos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-questions/market-question-011",
+"label": "Número mínimo de usos del instrumental quirúrgico",
+"questionText": "Número mínimo de usos del instrumental quirúrgico"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-questions/market-question-012",
+"label": "Diámetro máximo del vástago del instrumental quirúrgico",
+"questionText": "Diámetro máximo del vástago del instrumental quirúrgico"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-questions/market-question-013",
+"label": "Diámetro máximo de la punta del actuador del instrumental quirúrgico",
+"questionText": "Diámetro máximo de la punta del actuador del instrumental quirúrgico"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-questions/market-question-014",
+"label": "Los instrumentos quirúrgicos deben ofrecer, como mínimo, los siguientes tipos d…",
+"questionText": "Los instrumentos quirúrgicos deben ofrecer, como mínimo, los siguientes tipos de actuadores (Ej. Pinzas de agarre, tijeras, portaagujas, etc.)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-questions/market-question-015",
+"label": "Los instrumentos quirúrgicos deben ofrecer una precisión de movimientos mínima…",
+"questionText": "Los instrumentos quirúrgicos deben ofrecer una precisión de movimientos mínima de (mm, grados):"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-questions/market-question-016",
+"label": "Tiempo máximo necesario para el montaje completo y puesta a punto de la platafo…",
+"questionText": "Tiempo máximo necesario para el montaje completo y puesta a punto de la plataforma"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-questions/market-question-017",
+"label": "Tiempo máximo necesario para el cambio de instrumental quirúrgico",
+"questionText": "Tiempo máximo necesario para el cambio de instrumental quirúrgico"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-questions/market-question-018",
+"label": "Mínimo y máximo número de frames por segundo a los que el sistema debe permitir…",
+"questionText": "Mínimo y máximo número de frames por segundo a los que el sistema debe permitir capturar la escena quirúrgica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-questions/market-question-019",
+"label": "Mínimo y máximo de Hercios (Hz) a los que se debe visualizar la imagen quirúrgi…",
+"questionText": "Mínimo y máximo de Hercios (Hz) a los que se debe visualizar la imagen quirúrgica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-questions/market-question-020",
+"label": "Posibilidades de almacenamiento de vídeo y datos que el sistema debe proporcion…",
+"questionText": "Posibilidades de almacenamiento de vídeo y datos que el sistema debe proporcionar"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-questions/market-question-021",
+"label": "Sistema de gestión de archivos de vídeo y datos que el sistema debe proporcionar",
+"questionText": "Sistema de gestión de archivos de vídeo y datos que el sistema debe proporcionar"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-questions/market-question-022",
+"label": "Resolución mínima (pixels) a la que el sistema debe retransmitir en directo la…",
+"questionText": "Resolución mínima (pixels) a la que el sistema debe retransmitir en directo la cirugía"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-questions/market-question-023",
+"label": "Indique qué tipo de asistencia sería útil proporcionar al cirujano durante la c…",
+"questionText": "Indique qué tipo de asistencia sería útil proporcionar al cirujano durante la cirugía"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-questions/market-question-024",
+"label": "Otros sistemas de asistencia quirúrgica que deba incluir el sistema",
+"questionText": "Otros sistemas de asistencia quirúrgica que deba incluir el sistema"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-questions/market-question-025",
+"label": "Tipo de manipulador de control de los instrumentos quirúrgicos (Ej. Joystick, d…",
+"questionText": "Tipo de manipulador de control de los instrumentos quirúrgicos (Ej. Joystick, de pinza, con forma de mango de instrumento laparoscópico, etc.)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-questions/market-question-026",
+"label": "Tipos de sistemas de comunicación con el resto del equipo quirúrgico",
+"questionText": "Tipos de sistemas de comunicación con el resto del equipo quirúrgico"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-questions/market-question-027",
+"label": "Otros aspectos ergonómicos a destacar",
+"questionText": "Otros aspectos ergonómicos a destacar"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-questions/market-question-028",
+"label": "Tipo de controles que permite (Ej. Ratón, Teclado, Joystick, interfaz háptico,…",
+"questionText": "Tipo de controles que permite (Ej. Ratón, Teclado, Joystick, interfaz háptico, plataformas de control comerciales, etc.)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-questions/market-question-029",
+"label": "Tipo de instrumentos robotizados simulados",
+"questionText": "Tipo de instrumentos robotizados simulados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-questions/market-question-030",
+"label": "Tipo de tecnología de visión permitida (Ej. pantalla 3D, Gafas de Realidad Virt…",
+"questionText": "Tipo de tecnología de visión permitida (Ej. pantalla 3D, Gafas de Realidad Virtual o Realidad Mixta, etc.)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-questions/market-question-031",
+"label": "Otras funciones que la plataforma deba simular respecto a las plataformas robót…",
+"questionText": "Otras funciones que la plataforma deba simular respecto a las plataformas robóticas para cirugía laparoscópica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-questions/market-question-032",
+"label": "Justifique la respuesta anterior",
+"questionText": "Justifique la respuesta anterior"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-questions/market-question-033",
+"label": "Por favor, indique en qué bloques estarían dispuestos a participar:",
+"questionText": "Por favor, indique en qué bloques estarían dispuestos a participar:"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-questions/market-question-034",
+"label": "Otros procedimientos microquirúrgicos que deba permitir la plataforma (Ej. Reco…",
+"questionText": "Otros procedimientos microquirúrgicos que deba permitir la plataforma (Ej. Reconstrucción de colgajos libres pediculados, anastomosis linfático-venosas, etc.)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-questions/market-question-035",
+"label": "Número mínimo de usos de los microinstrumentos quirúrgicos",
+"questionText": "Número mínimo de usos de los microinstrumentos quirúrgicos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-questions/market-question-036",
+"label": "Diámetro máximo del vástago de los microinstrumentos quirúrgicos",
+"questionText": "Diámetro máximo del vástago de los microinstrumentos quirúrgicos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-questions/market-question-037",
+"label": "Diámetro máximo de la punta del actuador de los microinstrumentos quirúrgicos",
+"questionText": "Diámetro máximo de la punta del actuador de los microinstrumentos quirúrgicos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-questions/market-question-038",
+"label": "Los microinstrumentos quirúrgicos deben ofrecer, como mínimo, los siguientes ti…",
+"questionText": "Los microinstrumentos quirúrgicos deben ofrecer, como mínimo, los siguientes tipos de actuadores (Ej. Pinzas, tijeras, portaagujas, etc.)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-questions/market-question-039",
+"label": "Tipo de manipulador de control de los instrumentos microquirúrgicos (Ej. Joysti…",
+"questionText": "Tipo de manipulador de control de los instrumentos microquirúrgicos (Ej. Joystick, de pinza, con forma de mango de instrumental microquirúrgico, etc.)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-questions/market-question-040",
+"label": "Factor mínimo de escalado de movimientos permitido",
+"questionText": "Factor mínimo de escalado de movimientos permitido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-questions/market-question-041",
+"label": "Nivel TLR 1 del que parte la plataforma base ( Por favor, complete )",
+"questionText": "Nivel TLR 1 del que parte la plataforma base ( Por favor, complete )"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-questions/market-question-042",
+"label": "Nivel TLR que sería conveniente alcanzar en el proyecto ( Por favor, complete )",
+"questionText": "Nivel TLR que sería conveniente alcanzar en el proyecto ( Por favor, complete )"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-questions/market-question-043",
+"label": "Indique qué tipo de asistencia sería útil proporcionar al cirujano durante la c…",
+"questionText": "Indique qué tipo de asistencia sería útil proporcionar al cirujano durante la cirugía ( Por favor, complete )"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-questions/market-question-044",
+"label": "Los microinstrumentos quirúrgicos deben ofrecer una precisión de movimientos mí…",
+"questionText": "Los microinstrumentos quirúrgicos deben ofrecer una precisión de movimientos mínima de (mm, grados): ( Por favor, complete )"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-questions/market-question-001",
+"label": "¿Su entidad tiene facturación de tecnologías similares a las de la presente pro…",
+"questionText": "¿Su entidad tiene facturación de tecnologías similares a las de la presente propuesta en últimos 3 ejercicios?"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-questions/market-question-002",
+"label": "¿Considera que su entidad dispone de certificaciones relevantes para acometer l…",
+"questionText": "¿Considera que su entidad dispone de certificaciones relevantes para acometer los retos que se propone?"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-questions/market-question-003",
+"label": "¿Considera que el personal de su entidad tiene calificaciones que son específic…",
+"questionText": "¿Considera que el personal de su entidad tiene calificaciones que son específicamente relevantes para acometer los retos que se propone?"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-questions/market-question-004",
+"label": "¿Ha realizado inversión en I+D en los últimos 3 ejercicios?",
+"questionText": "¿Ha realizado inversión en I+D en los últimos 3 ejercicios?"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-questions/market-question-005",
+"label": "¿Su entidad ha obtenido financiación pública de concurrencia competitiva para p…",
+"questionText": "¿Su entidad ha obtenido financiación pública de concurrencia competitiva para proyectos de I+D en alguno de los 3 últimos ejercicios?"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/market-questions/market-question-001",
+"label": "¿Este apartado es confidencial?",
+"questionText": "¿Este apartado es confidencial?"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/market-questions/market-question-002",
+"label": "¿Se considera que la actividad causa un perjuicio significativo a la mitigación…",
+"questionText": "¿Se considera que la actividad causa un perjuicio significativo a la mitigación del cambio climático al dar lugar a considerables emisiones de gases de efecto invernadero (GEI)?"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/market-questions/market-question-003",
+"label": "¿Se considera que la actividad causa un perjuicio significativo a la adaptación…",
+"questionText": "¿Se considera que la actividad causa un perjuicio significativo a la adaptación al cambio climático al provocar un aumento de los efectos adversos de las condiciones climáticas actuales y de las previstas en el futuro, sobre sí misma o en las personas, la naturaleza o los activos 2 ?"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/market-questions/market-question-004",
+"label": "¿Se considera que la actividad causa un perjuicio significativo a la utilizació…",
+"questionText": "¿Se considera que la actividad causa un perjuicio significativo a la utilización y protección sostenibles de los recursos hídricos y marinos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/market-questions/market-question-005",
+"label": "¿Se considera que la actividad causa un perjuicio significativo a la economía c…",
+"questionText": "¿Se considera que la actividad causa un perjuicio significativo a la economía circular , incluidos la prevención y el reciclado de residuos, al generar importantes ineficiencias en el uso de materiales o en el uso directo o indirecto de recursos naturales; al dar lugar a un aumento significativo de la generación, incineración o eliminación de residuos; o si la eliminación de residuos a largo plazo puede causar un perjuicio significativo y a largo plazo para el medio ambiente?"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/market-questions/market-question-006",
+"label": "¿Se considera que la actividad causa un perjuicio significativo a la prevención…",
+"questionText": "¿Se considera que la actividad causa un perjuicio significativo a la prevención y el control de la contaminación al dar lugar a un aumento significativo de las emisiones de contaminantes a la atmósfera, el agua o el suelo?"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/market-questions/market-question-007",
+"label": "¿Se considera que la actividad causa un perjuicio significativo a la protección…",
+"questionText": "¿Se considera que la actividad causa un perjuicio significativo a la protección y restauración de la biodiversidad y los ecosistemas al ir en gran medida en detrimento de las buenas condiciones y la resiliencia de los ecosistemas, o va en detrimento del estado de conservación de los hábitats y las especies, en particular de aquellos de interés para la Unión?"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/market-questions/market-question-008",
+"label": "Para el reto planteado aportar información detallada con relación a investigaci…",
+"questionText": "Para el reto planteado aportar información detallada con relación a investigaciones, desarrollo de soluciones, publicaciones, …etc. realizadas o en curso con objeto similar al planteado en esta CPM."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/market-questions/market-question-009",
+"label": "1.- Identifique posibles riesgos que puedan impedir la realización del proyecto…",
+"questionText": "1.- Identifique posibles riesgos que puedan impedir la realización del proyecto en el plazo indicado."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/market-questions/market-question-010",
+"label": "¿Este apartado confidencial?",
+"questionText": "¿Este apartado confidencial?"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/market-questions/market-question-001",
+"label": "if responding companies would consider developing new solution to meet the RaDA…",
+"questionText": "if responding companies would consider developing new solution to meet the RaDAR buyers' needs"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/market-questions/market-question-002",
+"label": "Explore what solutions are or could be available given the right market conditi…",
+"questionText": "Explore what solutions are or could be available given the right market conditions to address the unmet needs and requirements identified by the buyers group"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/market-questions/market-question-003",
+"label": "Understand the timeframes over which these solutions can be mobilised or become…",
+"questionText": "Understand the timeframes over which these solutions can be mobilised or become available"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/market-questions/market-question-004",
+"label": "Inform the buyers group as to how they can support suppliers and innovators to…",
+"questionText": "Inform the buyers group as to how they can support suppliers and innovators to deliver innovative solutions to meet these needs."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/market-questions/market-question-001",
+"label": "posibilidad de realizar una colaboración público-privada de la solución a desar…",
+"questionText": "posibilidad de realizar una colaboración público-privada de la solución a desarrollar para ceder la propiedad intelectual"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/market-questions/market-question-002",
+"label": "tipo de modelo de negocio que les gustaría aplicar",
+"questionText": "tipo de modelo de negocio que les gustaría aplicar"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/market-questions/market-question-003",
+"label": "si existen determinadas soluciones desarrolladas o en desarrollo relacionadas c…",
+"questionText": "si existen determinadas soluciones desarrolladas o en desarrollo relacionadas con el objeto de esta consulta"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/market-questions/market-question-004",
+"label": "el nivel de desarrollo en el que se encuentra la solución propuesta",
+"questionText": "el nivel de desarrollo en el que se encuentra la solución propuesta"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/market-questions/market-question-005",
+"label": "el plazo estimado de ejecución",
+"questionText": "el plazo estimado de ejecución"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/market-questions/market-question-006",
+"label": "la valoración de impacto económico",
+"questionText": "la valoración de impacto económico"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-questions/market-question-001",
+"label": "¿Su entidad tiene facturación de tecnologías similares a las de la presente pro…",
+"questionText": "¿Su entidad tiene facturación de tecnologías similares a las de la presente propuesta en últimos 3 ejercicios?"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-questions/market-question-002",
+"label": "¿Considera que su entidad dispone de certificaciones relevantes para acometer l…",
+"questionText": "¿Considera que su entidad dispone de certificaciones relevantes para acometer los retos que se propone?"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-questions/market-question-003",
+"label": "¿Considera que el personal de su entidad tiene calificaciones que son específic…",
+"questionText": "¿Considera que el personal de su entidad tiene calificaciones que son específicamente relevantes para acometer el reto que se propone?"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-questions/market-question-004",
+"label": "¿Ha realizado inversión en I+D en los últimos 3 ejercicios?",
+"questionText": "¿Ha realizado inversión en I+D en los últimos 3 ejercicios?"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-questions/market-question-005",
+"label": "¿Su entidad ha obtenido financiación pública de concurrencia competitiva para p…",
+"questionText": "¿Su entidad ha obtenido financiación pública de concurrencia competitiva para proyectos de I+D en alguno de los 3 últimos ejercicios?"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-questions/market-question-006",
+"label": "¿Tiene experiencia en el ámbito de la gestión de residuos?",
+"questionText": "¿Tiene experiencia en el ámbito de la gestión de residuos?"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-questions/market-question-007",
+"label": "¿Tiene experiencia en diseño industrial y de procesos?",
+"questionText": "¿Tiene experiencia en diseño industrial y de procesos?"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-questions/market-question-008",
+"label": "¿Tiene experiencia en el sector del agua?",
+"questionText": "¿Tiene experiencia en el sector del agua?"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-questions/market-question-009",
+"label": "¿Tiene experiencia en el sector agrícola?",
+"questionText": "¿Tiene experiencia en el sector agrícola?"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-questions/market-question-010",
+"label": "¿Estaría su entidad interesada en participar en la licitación de este proyecto?",
+"questionText": "¿Estaría su entidad interesada en participar en la licitación de este proyecto?"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-questions/market-question-011",
+"label": "Su entidad, ¿tiene experiencia en desarrollos relacionados con el proyecto plan…",
+"questionText": "Su entidad, ¿tiene experiencia en desarrollos relacionados con el proyecto planteado? ¿Cuáles?"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-questions/market-question-012",
+"label": "Considera que existe alguna limitación o barrera específica para el despliegue…",
+"questionText": "Considera que existe alguna limitación o barrera específica para el despliegue del producto en el mercado ¿Cuál?"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-questions/market-question-013",
+"label": "El alcance del proyecto planteado ¿es claro y factible?",
+"questionText": "El alcance del proyecto planteado ¿es claro y factible?"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-questions/market-question-014",
+"label": "¿Cuáles son las principales ventajas que se encuentran de la solución propuesta…",
+"questionText": "¿Cuáles son las principales ventajas que se encuentran de la solución propuesta frente a otras?"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-questions/market-question-015",
+"label": "¿Cuáles considera que son los principales riesgos del proyecto?",
+"questionText": "¿Cuáles considera que son los principales riesgos del proyecto?"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-questions/market-question-016",
+"label": "¿Tiene intención de presentarse a futuras licitaciones relacionadas con el reto?",
+"questionText": "¿Tiene intención de presentarse a futuras licitaciones relacionadas con el reto?"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-questions/market-question-017",
+"label": "Descripción de la propuesta de solución",
+"questionText": "Descripción de la propuesta de solución"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-questions/market-question-018",
+"label": "Duración estimada para la ejecución de la propuesta planteada (meses)",
+"questionText": "Duración estimada para la ejecución de la propuesta planteada (meses)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-questions/market-question-019",
+"label": "Coste estimado del desarrollo e implantación de su solución propuesta (€)",
+"questionText": "Coste estimado del desarrollo e implantación de su solución propuesta (€)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-questions/market-question-020",
+"label": "Coste estimado de operación de su solución propuesta (€)",
+"questionText": "Coste estimado de operación de su solución propuesta (€)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-questions/market-question-021",
+"label": "El proyecto planteado, ¿está en línea con su estrategia de negocio?",
+"questionText": "El proyecto planteado, ¿está en línea con su estrategia de negocio?"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-questions/market-question-022",
+"label": "Elementos de innovación (nuevas tecnologías entregadas y soluciones innovadoras…",
+"questionText": "Elementos de innovación (nuevas tecnologías entregadas y soluciones innovadoras) o Resultados de I+D esperados."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-questions/market-question-023",
+"label": "Necesidades tecnológicas para la aplicación de su propuesta (indicar un ejemplo)",
+"questionText": "Necesidades tecnológicas para la aplicación de su propuesta (indicar un ejemplo)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-questions/market-question-024",
+"label": "Nivel de madurez actual en el que se encuentra su solución propuesta",
+"questionText": "Nivel de madurez actual en el que se encuentra su solución propuesta"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-questions/market-question-025",
+"label": "Resultados de I+D que se espera generar",
+"questionText": "Resultados de I+D que se espera generar"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-questions/market-question-026",
+"label": "Indique las regulaciones y normativa asociada a la necesidad planteada",
+"questionText": "Indique las regulaciones y normativa asociada a la necesidad planteada"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-questions/market-question-027",
+"label": "Sobre los Derechos de Propiedad Intelectual e Industrial (DPII), a priori y por…",
+"questionText": "Sobre los Derechos de Propiedad Intelectual e Industrial (DPII), a priori y por las características de su entidad, ¿ésta tiene limitaciones para compartir los DPII con el organismo contratante o para establecer un royalty sobre las ventas futuras de la solución propuesta?"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-questions/market-question-028",
+"label": "¿Cuáles considera que son los riesgos del proyecto?",
+"questionText": "¿Cuáles considera que son los riesgos del proyecto?"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/market-questions/market-question-001",
+"label": "Módulo/s de la plataforma a los que da solución la propuesta:",
+"questionText": "Módulo/s de la plataforma a los que da solución la propuesta:"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/market-questions/market-question-002",
+"label": "Resumen de la solución propuesta.",
+"questionText": "Resumen de la solución propuesta."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/market-questions/market-question-003",
+"label": "Elementos diferenciadores de la propuesta frente a los productos y/o servicios…",
+"questionText": "Elementos diferenciadores de la propuesta frente a los productos y/o servicios que se encuentran ya disponibles en el mercado."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/market-questions/market-question-004",
+"label": "Tecnologías más significativas que incorpora la propuesta.",
+"questionText": "Tecnologías más significativas que incorpora la propuesta."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/market-questions/market-question-005",
+"label": "Innovaciones tecnológicas o resultados de I+D que incluye la propuesta.",
+"questionText": "Innovaciones tecnológicas o resultados de I+D que incluye la propuesta."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/market-questions/market-question-006",
+"label": "Referencias bibliográficas más relevantes de las innovaciones tecnológicas que…",
+"questionText": "Referencias bibliográficas más relevantes de las innovaciones tecnológicas que incluye la propuesta."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/market-questions/market-question-007",
+"label": "Requisitos no obligatorios que no recoge la solución propuesta. Justificación y…",
+"questionText": "Requisitos no obligatorios que no recoge la solución propuesta. Justificación y/o alternativas propuestas."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/market-questions/market-question-008",
+"label": "Duración estimada para la ejecución de la propuesta planteada (meses).",
+"questionText": "Duración estimada para la ejecución de la propuesta planteada (meses)."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/market-questions/market-question-009",
+"label": "Cronograma-plan de trabajo estimativo.",
+"questionText": "Cronograma-plan de trabajo estimativo."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/market-questions/market-question-010",
+"label": "Coste estimado de la ejecución de la propuesta planteada (euros).",
+"questionText": "Coste estimado de la ejecución de la propuesta planteada (euros)."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/market-questions/market-question-011",
+"label": "Beneficios económicos, sociales o medioambientales que proporciona la solución…",
+"questionText": "Beneficios económicos, sociales o medioambientales que proporciona la solución propuesta a los servicios municipales y/o la economía local."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/market-questions/market-question-001",
+"label": "Incluir un actividades e hitos (saltos de TRL) .",
+"questionText": "Incluir un actividades e hitos (saltos de TRL) ."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/market-questions/market-question-002",
+"label": "Actividades del proyecto, como mínimo, incluir un desglose en: DISEÑO DESARROLL…",
+"questionText": "Actividades del proyecto, como mínimo, incluir un desglose en: DISEÑO DESARROLLO VALIDACIÓN"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/market-questions/market-question-003",
+"label": "Descripción riesgos que afecten al desarrollo del proyecto y pudieran retrasar…",
+"questionText": "Descripción riesgos que afecten al desarrollo del proyecto y pudieran retrasar su finalización."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-questions/market-question-001",
+"label": "¿Su entidad tiene facturación de tecnologías similares a las de la presente pro…",
+"questionText": "¿Su entidad tiene facturación de tecnologías similares a las de la presente propuesta en últimos 3 ejercicios?"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-questions/market-question-002",
+"label": "¿Considera que su entidad dispone de certificaciones relevantes para acometer l…",
+"questionText": "¿Considera que su entidad dispone de certificaciones relevantes para acometer los retos que se propone?"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-questions/market-question-003",
+"label": "¿Ha realizado inversión en I+D en los últimos 3 ejercicios?",
+"questionText": "¿Ha realizado inversión en I+D en los últimos 3 ejercicios?"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-questions/market-question-004",
+"label": "¿Su entidad ha obtenido financiación pública de concurrencia competitiva para p…",
+"questionText": "¿Su entidad ha obtenido financiación pública de concurrencia competitiva para proyectos de I+D en alguno de los 3 últimos ejercicios?"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-questions/market-question-005",
+"label": "Para el reto planteado, aportar información detallada en relación a investigaci…",
+"questionText": "Para el reto planteado, aportar información detallada en relación a investigaciones, desarrollo de soluciones, publicaciones, etc. realizadas o realizándose cuyo objeto sea similar al indicado."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-questions/market-question-006",
+"label": "Breve resumen de la propuesta de solución: especificación funcional",
+"questionText": "Breve resumen de la propuesta de solución: especificación funcional"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-questions/market-question-007",
+"label": "Necesidades tecnológicas para la aplicación de su propuesta",
+"questionText": "Necesidades tecnológicas para la aplicación de su propuesta"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-questions/market-question-008",
+"label": "Considera que existe alguna limitación o barrera específica para el despliegue…",
+"questionText": "Considera que existe alguna limitación o barrera específica para el despliegue del producto en el mercado ¿Cuál?"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-questions/market-question-009",
+"label": "¿Cuáles considera que son los principales riesgos del proyecto?",
+"questionText": "¿Cuáles considera que son los principales riesgos del proyecto?"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-questions/market-question-010",
+"label": "Duración estimada para la ejecución de la propuesta planteada",
+"questionText": "Duración estimada para la ejecución de la propuesta planteada"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-questions/market-question-011",
+"label": "Principales hitos y entregables de la propuesta",
+"questionText": "Principales hitos y entregables de la propuesta"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-questions/market-question-012",
+"label": "Coste estimado del desarrollo de su solución propuesta desglosado",
+"questionText": "Coste estimado del desarrollo de su solución propuesta desglosado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-questions/market-question-013",
+"label": "Beneficios que proporciona la posible solución al ecosistema de emprendedores e…",
+"questionText": "Beneficios que proporciona la posible solución al ecosistema de emprendedores e innovadores en Castilla y León"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-questions/market-question-014",
+"label": "Beneficios aportados por la solución propuesta para el sector público y otros a…",
+"questionText": "Beneficios aportados por la solución propuesta para el sector público y otros agentes"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-questions/market-question-015",
+"label": "Elementos de innovación (nuevas tecnologías entregadas y soluciones innovadoras…",
+"questionText": "Elementos de innovación (nuevas tecnologías entregadas y soluciones innovadoras) o Resultados de I+D esperados."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-questions/market-question-016",
+"label": "Nivel de madurez actual en el que se encuentra su solución propuesta",
+"questionText": "Nivel de madurez actual en el que se encuentra su solución propuesta"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-questions/market-question-017",
+"label": "¿ésta tiene limitaciones para compartir los DPII con el organismo contratante o…",
+"questionText": "¿ésta tiene limitaciones para compartir los DPII con el organismo contratante o para establecer un royalty sobre las ventas futuras de la solución propuesta?"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-questions/market-question-018",
+"label": "¿de qué tipo?",
+"questionText": "¿de qué tipo?"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-questions/market-question-019",
+"label": "¿Qué porcentaje considera que podría ser compartido con el organismo contratant…",
+"questionText": "¿Qué porcentaje considera que podría ser compartido con el organismo contratante?"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-questions/market-question-020",
+"label": "¿Qué porcentaje del precio de venta podría ser establecido como canon?",
+"questionText": "¿Qué porcentaje del precio de venta podría ser establecido como canon?"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-questions/market-question-021",
+"label": "Breve resumen de la propuesta de solución: especificación funcional (máximo 1.2…",
+"questionText": "Breve resumen de la propuesta de solución: especificación funcional (máximo 1.250 caracteres)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-questions/market-question-022",
+"label": "Necesidades tecnológicas para la aplicación de su propuesta (indicar un ejemplo)",
+"questionText": "Necesidades tecnológicas para la aplicación de su propuesta (indicar un ejemplo)"
+}
+]

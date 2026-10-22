@@ -1,0 +1,502 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/insights/insight-001",
+"label": "se decide tomar en consideración los aspectos técnicos y funcionales referidos…",
+"description": "se decide tomar en consideración los aspectos técnicos y funcionales referidos a los tres requisitos descritos en el artículo 2 de la Resolución"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/insights/insight-001",
+"label": "no se han producido incidencias metodológicas",
+"description": "no se han producido incidencias metodológicas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/insights/insight-002",
+"label": "han planteado soluciones al reto alcanzables mediante un proceso innovador, en…",
+"description": "han planteado soluciones al reto alcanzables mediante un proceso innovador, en ocasiones, de forma parcial."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/insights/insight-003",
+"label": "todas plantean el uso de Inteligencia Artificial y procesamiento del lenguaje n…",
+"description": "todas plantean el uso de Inteligencia Artificial y procesamiento del lenguaje natural como núcleo de estas."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/insights/insight-004",
+"label": "otro de los puntos clave de las propuestas es la accesibilidad de la plataforma.",
+"description": "otro de los puntos clave de las propuestas es la accesibilidad de la plataforma."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/insights/insight-005",
+"label": "la ejecución del reto en los términos planteados es realizable.",
+"description": "la ejecución del reto en los términos planteados es realizable."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/insights/insight-006",
+"label": "La respuesta del mercado a esta Consulta Preliminar se considera satisfactoria.",
+"description": "La respuesta del mercado a esta Consulta Preliminar se considera satisfactoria."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/insights/insight-007",
+"label": "además de existir las capacidades técnicas para acometer la innovación, también…",
+"description": "además de existir las capacidades técnicas para acometer la innovación, también existe el tejido empresarial necesario para hacerlo."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/insights/insight-001",
+"label": "Las entidades europeas fueron las que tuvieron mayor participación en la Consul…",
+"description": "Las entidades europeas fueron las que tuvieron mayor participación en la Consulta."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/insights/insight-002",
+"label": "La participación fue mayoritaria para el Reto Nº1 de laparoscopia, nueve de las…",
+"description": "La participación fue mayoritaria para el Reto Nº1 de laparoscopia, nueve de las doce entidades hicieron propuestas para este reto."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/insights/insight-003",
+"label": "el mercado de laparoscopia está más desarrollado en comparación con el mercado…",
+"description": "el mercado de laparoscopia está más desarrollado en comparación con el mercado de microcirugía"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/insights/insight-004",
+"label": "no se han producido incidencias",
+"description": "no se han producido incidencias"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/insights/insight-005",
+"label": "Las propuestas recibidas y las entrevistas mantenidas con las entidades partici…",
+"description": "Las propuestas recibidas y las entrevistas mantenidas con las entidades participantes en el marco del proyecto TREMIRS han servido para entender mejor el alcance de las soluciones propuestas, su grado de madurez y el nivel de desarrollo tecnológico."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/insights/insight-006",
+"label": "se ha recogido suficiente información como para dar por cerrada la Consulta de…",
+"description": "se ha recogido suficiente información como para dar por cerrada la Consulta de cada uno de los retos que forman este Proyecto y pasar a una posible redacción de pliegos."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/insights/insight-001",
+"label": "realmente no existen soluciones en el mercado que puedan cubrir la necesidad pl…",
+"description": "realmente no existen soluciones en el mercado que puedan cubrir la necesidad planteada"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/insights/insight-002",
+"label": "lo que se prentede conseguir es identificar infraestructuras completas de botne…",
+"description": "lo que se prentede conseguir es identificar infraestructuras completas de botnets"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/insights/insight-003",
+"label": "un posible enfoque a adoptar consiste en montar una infraestructura hardware /…",
+"description": "un posible enfoque a adoptar consiste en montar una infraestructura hardware / software completa para la ejecución de muestras de malware pertenecientes a botnets"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/insights/insight-004",
+"label": "existe poco conocimiento profundo de la DeepWeb y de redes tipo TOR",
+"description": "existe poco conocimiento profundo de la DeepWeb y de redes tipo TOR"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/insights/insight-005",
+"label": "La mayoría de las propuestas se basan en la definición del reto y muchas de ell…",
+"description": "La mayoría de las propuestas se basan en la definición del reto y muchas de ellas carecen de consistencia técnica."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/insights/insight-006",
+"label": "Se contempla la posibilidad de ampliacion del alcance inicial del reto de obten…",
+"description": "Se contempla la posibilidad de ampliacion del alcance inicial del reto de obtención de dominios en la red TOR a otras redes anónimas (I2P, 0net y Freenet)."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/insights/insight-007",
+"label": "Se establece la generacion atomatizada de dominios a través de ataques por dicc…",
+"description": "Se establece la generacion atomatizada de dominios a través de ataques por diccionario y/o fuerza bruta como una solución no innovadora"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/insights/insight-008",
+"label": "Como conclusión general este tema ha suscitado un gran interés.",
+"description": "Como conclusión general este tema ha suscitado un gran interés."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/insights/insight-009",
+"label": "El reto ha sufrido cierta evolución gracias a las conversaciones con las entida…",
+"description": "El reto ha sufrido cierta evolución gracias a las conversaciones con las entidades en esta parte del proceso."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/insights/insight-010",
+"label": "no se considera necesario contar con la infraestructura actual de honey de INCI…",
+"description": "no se considera necesario contar con la infraestructura actual de honey de INCIBE sino el despliegue de una nueva infraestructura orientada al fin identificado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/insights/insight-011",
+"label": "Las labores de atribución de ciberincidentes resultan especialmente complejas",
+"description": "Las labores de atribución de ciberincidentes resultan especialmente complejas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/insights/insight-012",
+"label": "La posibles labores de predicción, basadas en el conocimiento y seguimiento de…",
+"description": "La posibles labores de predicción, basadas en el conocimiento y seguimiento de agentes de amenazas, no se puede garantizar que pasen de niveles bajos de TRL."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/insights/insight-001",
+"label": "se han recibido propuestas que oscilan entre 0,55 y 3,5 Millones de euros, con…",
+"description": "se han recibido propuestas que oscilan entre 0,55 y 3,5 Millones de euros, con períodos de ejecución que oscilan entre los 16 y 48 meses"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/insights/insight-002",
+"label": "El único proyecto que plantea una solución completa al reto planteado requiere…",
+"description": "El único proyecto que plantea una solución completa al reto planteado requiere de la incorporación de otro socio industrial proveedor del equipo robótico para laparoscopia."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/insights/insight-003",
+"label": "Interesante y pertinente | 3",
+"description": "Interesante y pertinente | 3"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/insights/insight-004",
+"label": "Interesante pero no pertinente | 1",
+"description": "Interesante pero no pertinente | 1"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/insights/insight-005",
+"label": "la tecnología existente en el mercado, tal y cómo se está explotando, no es cap…",
+"description": "la tecnología existente en el mercado, tal y cómo se está explotando, no es capaz de cubrir con integridad el reto tecnológico planteado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/insights/insight-006",
+"label": "se considera adecuado iniciar un procedimiento de compra pública precomercial.",
+"description": "se considera adecuado iniciar un procedimiento de compra pública precomercial."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/insights/insight-007",
+"label": "ninguna de las patentes localizadas interfiere con el reto planteado.",
+"description": "ninguna de las patentes localizadas interfiere con el reto planteado."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/insights/insight-008",
+"label": "las publicaciones indican que tecnologías se encuentran en un TRL bajo, sin apl…",
+"description": "las publicaciones indican que tecnologías se encuentran en un TRL bajo, sin aplicación comercial"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/insights/insight-009",
+"label": "existe un potencial tejido industrial capaz de abordar el reto",
+"description": "existe un potencial tejido industrial capaz de abordar el reto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/insights/insight-010",
+"label": "esta deberá distribuirse al menos en tres fases, considerando una primera sobre…",
+"description": "esta deberá distribuirse al menos en tres fases, considerando una primera sobre el diseño de la solución."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/insights/insight-011",
+"label": "La segunda fase se dedicará al desarrollo de los subsistemas/componentes.",
+"description": "La segunda fase se dedicará al desarrollo de los subsistemas/componentes."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/insights/insight-012",
+"label": "la tercera fase contemplará la integración y verificación a escala real del equ…",
+"description": "la tercera fase contemplará la integración y verificación a escala real del equipo."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/insights/insight-001",
+"label": "the market is primed to respond to challenge of AMR testing and management",
+"description": "the market is primed to respond to challenge of AMR testing and management"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/insights/insight-002",
+"label": "there is both capacity and appetite in the market to respond to the different r…",
+"description": "there is both capacity and appetite in the market to respond to the different requirements highlighted relating to both Rapid and Accurate Detection and Smart AMR management."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/insights/insight-003",
+"label": "These solutions are already available in the market or near to market, and ther…",
+"description": "These solutions are already available in the market or near to market, and there are many ongoing developments, some nearer to the market than others ."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/insights/insight-004",
+"label": "all aspects of the buyers needs can be addressed by the supply chain and that s…",
+"description": "all aspects of the buyers needs can be addressed by the supply chain and that solutions would be available within the timeframe of the project."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/insights/insight-005",
+"label": "over 70% of respondents said that they would.",
+"description": "over 70% of respondents said that they would."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/insights/insight-006",
+"label": "a fully integrated solution is likely to require collaboration and a consortium…",
+"description": "a fully integrated solution is likely to require collaboration and a consortium of companies working together"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/insights/insight-007",
+"label": "Adopting innovation friendly procurement (see below). This was the most common…",
+"description": "Adopting innovation friendly procurement (see below). This was the most common recommendation made by respondents."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/insights/insight-008",
+"label": "unmet needs were found right across the clinical workflow, relating to both the…",
+"description": "unmet needs were found right across the clinical workflow, relating to both the detection and subsequent management of AMR situations"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/insights/insight-009",
+"label": "rapid detection alone would not fully address the very real challenges of AMR m…",
+"description": "rapid detection alone would not fully address the very real challenges of AMR management as a whole experienced in our healthcare facilities"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/insights/insight-001",
+"label": "la contratación de gestor de interoperabilidad semántica de la Red Valenciana d…",
+"description": "la contratación de gestor de interoperabilidad semántica de la Red Valenciana de Biobancos, es técnicamente y económicamente viable"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/insights/insight-002",
+"label": "se va a proponer al órgano de contratación de FISABIO el inicio del pertinente…",
+"description": "se va a proponer al órgano de contratación de FISABIO el inicio del pertinente proceso de contratación pública"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/insights/insight-001",
+"label": "denota interés por encontrar solución a los retos que se han planteado en la co…",
+"description": "denota interés por encontrar solución a los retos que se han planteado en la consulta"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/insights/insight-002",
+"label": "La mayoría de las propuestas incluyen de una forma destacada su apuesta por la…",
+"description": "La mayoría de las propuestas incluyen de una forma destacada su apuesta por la innovación en el abordaje de los retos planteados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/insights/insight-003",
+"label": "coinciden en la conveniencia de un acuerdo previo para acometer el proyecto aun…",
+"description": "coinciden en la conveniencia de un acuerdo previo para acometer el proyecto aunando esfuerzos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/insights/insight-004",
+"label": "El desarrollo de la plataforma de procesamiento de imagen se muestra camo un ob…",
+"description": "El desarrollo de la plataforma de procesamiento de imagen se muestra camo un objetivo alcanzable y complementario al prototipo."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/insights/insight-005",
+"label": "se estima que es viable acometer el proceso de I+D con altas garantias de éxito…",
+"description": "se estima que es viable acometer el proceso de I+D con altas garantias de éxito si se dispone de un temporal razonable."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/insights/insight-006",
+"label": "la CM ha permitido identificar los requerimientos que darlan forma al clausulad…",
+"description": "la CM ha permitido identificar los requerimientos que darlan forma al clausulado de los pliegos de contratación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/insights/insight-001",
+"label": "Amplia respuesta del mercado.",
+"description": "Amplia respuesta del mercado."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/insights/insight-002",
+"label": "Participación de grandes y pequeñas empresas y centros tecnológicos y de invest…",
+"description": "Participación de grandes y pequeñas empresas y centros tecnológicos y de investigación."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/insights/insight-003",
+"label": "El proceso de gestión de la información para los trámites de la CPM ha funciona…",
+"description": "El proceso de gestión de la información para los trámites de la CPM ha funcionado correctamente."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/insights/insight-004",
+"label": "en este ámbito existen diversas soluciones basadas en tecnología existente, si…",
+"description": "en este ámbito existen diversas soluciones basadas en tecnología existente, si bien no cumplen totalmente con las necesidades expuestas y se contempla la necesidad de que exista un desarrollo tecnológico y adecuación específica para el proyecto."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/insights/insight-005",
+"label": "se considera adecuado iniciar un procedimiento de Compra Pública de Tecnología…",
+"description": "se considera adecuado iniciar un procedimiento de Compra Pública de Tecnología Innovadora (CPTI)."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/insights/insight-006",
+"label": "la novedad y riesgo de una aproximación integral, que recoge múltiples solucion…",
+"description": "la novedad y riesgo de una aproximación integral, que recoge múltiples soluciones parciales en la frontera del estado del arte, al problema de la valorización de lodos de depuración."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/insights/insight-007",
+"label": "se valora la instalación de túneles de fermentación con uso de lodo seco como e…",
+"description": "se valora la instalación de túneles de fermentación con uso de lodo seco como estructurante"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/insights/insight-008",
+"label": "Se valora la eliminación del transporte de lodos mediante camión desde la EDAR",
+"description": "Se valora la eliminación del transporte de lodos mediante camión desde la EDAR"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/insights/insight-009",
+"label": "se contempla la reutilización de las Naves de Secado Solar con robotización del…",
+"description": "se contempla la reutilización de las Naves de Secado Solar con robotización del llenado, remoción y vaciado del lodo seco."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/insights/insight-010",
+"label": "se valora el uso de biofiltros convencionales para las Naves de Secado Solar y…",
+"description": "se valora el uso de biofiltros convencionales para las Naves de Secado Solar y abatimiento químico (scrubber) con biofiltros avanzados para la nave de compostaje."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/insights/insight-011",
+"label": "se valora la posible implantación de una plataforma inteligente de gestión avan…",
+"description": "se valora la posible implantación de una plataforma inteligente de gestión avanzada de la calidad del aire y olores"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/insights/insight-012",
+"label": "aula didáctica para la divulgación de la cultura del agua",
+"description": "aula didáctica para la divulgación de la cultura del agua"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/insights/insight-013",
+"label": "se contempla la puesta en marcha de una unidad que lleve a cabo estudios con un…",
+"description": "se contempla la puesta en marcha de una unidad que lleve a cabo estudios con un alto carácter innovador, de un eminente carácter demostrativo y aplicación directa."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/insights/insight-014",
+"label": "disponer de un centro de investigación en el que se puedan obtener conclusiones…",
+"description": "disponer de un centro de investigación en el que se puedan obtener conclusiones y recomendaciones sobre el uso de compost de lodos en la agricultura."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/insights/insight-001",
+"label": "se han recibido varias propuestas para cada uno de los cuatro módulos planteado…",
+"description": "se han recibido varias propuestas para cada uno de los cuatro módulos planteados inicialmente."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/insights/insight-002",
+"label": "se han recibido soluciones adicionales correspondientes a otros ámbitos complem…",
+"description": "se han recibido soluciones adicionales correspondientes a otros ámbitos complementarios a la propuesta como son la ciberseguridad y la inteligencia artificial."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/insights/insight-003",
+"label": "la mayoría de las propuestas se basan en desarrollos o plataformas preexistente…",
+"description": "la mayoría de las propuestas se basan en desarrollos o plataformas preexistentes con un nivel de madurez elevado (principalmente TRL 7), sobre las que habría que desarrollar nuevos componentes para dar respuesta a las necesidades planteadas en el proyecto para este módulo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/insights/insight-004",
+"label": "las entidades participantes no disponen de soluciones inmediatas adaptables a l…",
+"description": "las entidades participantes no disponen de soluciones inmediatas adaptables a la situación y cuya aplicación cubra la totalidad de las necesidades definidas para este módulo."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/insights/insight-005",
+"label": "no se identifican iniciativas que hayan desarrollado una metodología combinada…",
+"description": "no se identifican iniciativas que hayan desarrollado una metodología combinada con aspectos económicos, energéticos y ambientales que evalúe numéricamente la eficiencia del uso del agua en los parques industriales objeto de esta iniciativa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/insights/insight-006",
+"label": "las propuestas recibidas por parte del mercado no están completamente enfocadas…",
+"description": "las propuestas recibidas por parte del mercado no están completamente enfocadas a desarrollar acciones de I+D específicas en una tecnología emergente concreta, sino en crear el escenario ideal que permita crear sinergias para que esto suceda."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/insights/insight-007",
+"label": "son retos abordables en base a las tendencias tecnológicas, cuentan con un pres…",
+"description": "son retos abordables en base a las tendencias tecnológicas, cuentan con un presupuesto ajustado a su magnitud y complejidad y están formulados en plazos realistas para su desarrollo."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/insights/insight-008",
+"label": "se considera adecuado utilizar el procedimiento de Compra Pública de Tecnología…",
+"description": "se considera adecuado utilizar el procedimiento de Compra Pública de Tecnología Innovadora"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/insights/insight-009",
+"label": "todos los proveedores que han participado en la Consulta muestran predisposició…",
+"description": "todos los proveedores que han participado en la Consulta muestran predisposición a colaborar con otras entidades"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/insights/insight-001",
+"label": "La mayoría de las propuestas se encuentran entre los niveles TRL 6 y 7.",
+"description": "La mayoría de las propuestas se encuentran entre los niveles TRL 6 y 7."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/insights/insight-002",
+"label": "Se presentaron 2 propuestas conjuntas",
+"description": "Se presentaron 2 propuestas conjuntas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/insights/insight-003",
+"label": "En la mayoría de los casos se ha intentado alinear el reto con las capacidades…",
+"description": "En la mayoría de los casos se ha intentado alinear el reto con las capacidades o plataformas ya existentes de las empresas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/insights/insight-004",
+"label": "Se ha evidenciado mucha variabilidad en el precio ante planteamientos a priori…",
+"description": "Se ha evidenciado mucha variabilidad en el precio ante planteamientos a priori similares."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/insights/insight-005",
+"label": "Muy pocas entidades han aportado ideas suficientemente desarrolladas o innovaci…",
+"description": "Muy pocas entidades han aportado ideas suficientemente desarrolladas o innovaciones asociadas a dos de los objetivos del reto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/insights/insight-006",
+"label": "Existe un consenso casi pleno en cuanto a la modularidad y la capacidad de adap…",
+"description": "Existe un consenso casi pleno en cuanto a la modularidad y la capacidad de adaptación de las diferentes plataformas presentadas para la solución."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/insights/insight-007",
+"label": "la escasez de propuestas que han dado una solución global al reto",
+"description": "la escasez de propuestas que han dado una solución global al reto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/insights/insight-008",
+"label": "tan sólo una recaía fuera del ámbito de interés del proyecto, seleccionando 3 d…",
+"description": "tan sólo una recaía fuera del ámbito de interés del proyecto, seleccionando 3 de ellas como parcialmente interesantes y pertinentes, y 8 como interesantes y pertinentes"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/insights/insight-009",
+"label": "Los procesos ya existentes en el ICE y todos aquellos de otras entidades del ec…",
+"description": "Los procesos ya existentes en el ICE y todos aquellos de otras entidades del ecosistema deben ser mapeados e integrados en un sistema ordenado, estandarizado y abierto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/insights/insight-010",
+"label": "un producto mínimo viable con un alcance limitado, que aborde una de las áreas…",
+"description": "un producto mínimo viable con un alcance limitado, que aborde una de las áreas fundamentales: los procesos de Aceleración del Emprendimiento Innovador"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/insights/insight-001",
+"label": "se retuvieron para su posterior revisión cinco de ellas, descartándose las otra…",
+"description": "se retuvieron para su posterior revisión cinco de ellas, descartándose las otras ocho por no estar relacionadas con el objeto de la convocatoria"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/insights/insight-002",
+"label": "Todos los proponentes acreditaron una elevada solvencia técnica y amplia experi…",
+"description": "Todos los proponentes acreditaron una elevada solvencia técnica y amplia experiencia en las tecnologías y aplicaciones objeto de consulta."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/insights/insight-003",
+"label": "Tres de las propuestas cubren globalmente los requerimientos planteados por AVR…",
+"description": "Tres de las propuestas cubren globalmente los requerimientos planteados por AVRA mientras las otras dos se centran"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/insights/insight-004",
+"label": "De las cinco propuestas retenidas, cuatro de ellas fueron consideradas por el C…",
+"description": "De las cinco propuestas retenidas, cuatro de ellas fueron consideradas por el Comité Asesor viables técnica y económicamente, mientras una de ellas presentaba un grado de definición aún incipiente, que no obstante su procedencia, no permite a corto plazo dicha valoración."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/insights/insight-005",
+"label": "Las cuatro propuestas con suficiente grado de definición reflejan un nivel de m…",
+"description": "Las cuatro propuestas con suficiente grado de definición reflejan un nivel de madurez tecnológica (TRL) medio-bajo , comprendido entre 3 y 5"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/insights/insight-006",
+"label": "todas las propuestas plantean entre 18 y 24 meses para el desarrollo y validaci…",
+"description": "todas las propuestas plantean entre 18 y 24 meses para el desarrollo y validación de la herramienta, el catálogo y el piloto virtual, siendo a juicio de los Miembros del Comité Asesor 24 meses la duración real más probable"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/insights/insight-007",
+"label": "las propuestas de alcance global presentadas se sitúan entre 1,9 y 2.3 M€ siend…",
+"description": "las propuestas de alcance global presentadas se sitúan entre 1,9 y 2.3 M€ siendo a juico de los Miembros del Comité Asesor 2-2,1 M€ el presupuesto de ejecución más probable"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/insights/insight-008",
+"label": "se confirma por el Comité Asesor la novedad tecnológica objetiva de los desarro…",
+"description": "se confirma por el Comité Asesor la novedad tecnológica objetiva de los desarrollos necesarios para cubrir las necesidades funcionales identificadas por AVRA, así como la solvencia técnica del mercado para darles respuesta y la existencia de soluciones viables técnica y económicamente tanto globales como parciales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/insights/insight-009",
+"label": "el Comité Asesor considera necesario profundizar más en los futuros pliegos en…",
+"description": "el Comité Asesor considera necesario profundizar más en los futuros pliegos en la integración, coherencia y complementariedad de las funcionalidades y ejes tecnológicos (TICs, energía, fabricación modular) del sistema experto, y en su propósito global"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/insights/insight-010",
+"label": "la Compra Pública Precomercial (CPP) se postula como el instrumento técnico y j…",
+"description": "la Compra Pública Precomercial (CPP) se postula como el instrumento técnico y jurídico más apropiado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/insights/insight-011",
+"label": "la disponibilidad de sistemas abiertos y de código libre se considera fundament…",
+"description": "la disponibilidad de sistemas abiertos y de código libre se considera fundamental"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/insights/insight-012",
+"label": "se trate de soluciones de apoyo al diseñador , no de sustitución de éste",
+"description": "se trate de soluciones de apoyo al diseñador , no de sustitución de éste"
+}
+]

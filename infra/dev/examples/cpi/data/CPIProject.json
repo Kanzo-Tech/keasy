@@ -1,0 +1,122 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380",
+"label": "LA BÚSQUEDA DE SOLUCIONES INNOVADORAS A LA COMUNICACIÓN E INTERACCIÓN DE LAS PE…",
+"acronym": null,
+"identifier": "145/2017/00380",
+"summary": "El Ayuntamiento de Madrid busca soluciones innovadoras para mejorar la comunicación y la interacción de las personas con discapacidad auditiva severa. El proyecto plantea la comunicación en tiempo real, de forma bidireccional y sin apoyo de otra persona.",
+"title": "LA BÚSQUEDA DE SOLUCIONES INNOVADORAS A LA COMUNICACIÓN E INTERACCIÓN DE LAS PERSONAS CON DISCAPACIDAD AUDITIVA SEVERA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03",
+"label": "Capa de acceso unificado basada en Inteligencia Artificial sobre navegación web…",
+"acronym": null,
+"identifier": null,
+"summary": "El Ayuntamiento de Alicante plantea una capa de acceso unificado basada en Inteligencia Artificial sobre navegación web y tramitación electrónica por sede para facilitar la interacción de la ciudadanía con los medios electrónicos municipales y reducir la brecha digital.",
+"title": "Capa de acceso unificado basada en Inteligencia Artificial sobre navegación web y tramitación electrónica por sede"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14",
+"label": "TREMIRS · Sistemas de cirugía robótica de mínima invasión",
+"acronym": "TREMIRS",
+"identifier": "CPI-2019-33-1-TRE-14",
+"summary": "El proyecto Sistemas de cirugía robótica de mínima invasión, promovido por la Fundación Centro de Cirugía de Mínima Invasión Jesús Usón, persigue mejorar las limitaciones de los sistemas robóticos quirúrgicos existentes para cirugía laparoscópica y microcirugía y resolver las necesidades del Sistema Sanitario Extremeño y Español en cirugía mínimamente invasiva.",
+"title": "Sistemas de cirugía robótica de mínima invasión"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7",
+"label": "El Instituto para la Competitividad Empresarial de Castilla y León impulsa una…",
+"acronym": null,
+"identifier": null,
+"summary": "El Instituto para la Competitividad Empresarial de Castilla y León impulsa una consulta en materia de ciberseguridad para dar respuesta a cuatro retos: detección de bots y servidores de comando y control, detección de dominios .onion no indexados, detección, categorización y predicción automática de ciberataques, y atribución de ciberincidentes.",
+"title": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0",
+"label": "DESARROLLO DE TECNOLOGÍA EN EL ÁMBITO DE LA AUTOMATIZACIÓN DE TAREAS Y PROCESOS…",
+"acronym": null,
+"identifier": null,
+"summary": "El proyecto del Centro para el Desarrollo Tecnológico y la Innovación E.P.E. aborda el desarrollo de tecnología para la automatización de tareas y procesos en sistemas de robotización quirúrgica. Persigue desarrollar un sistema robotizado que realice tareas específicas de cirugía laparoscópica de forma autónoma, permitiendo al cirujano un control discreto durante la intervención.",
+"title": "DESARROLLO DE TECNOLOGÍA EN EL ÁMBITO DE LA AUTOMATIZACIÓN DE TAREAS Y PROCESOS EN SISTEMAS DE ROBOTIZACIÓN QUIRÚRGICA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228",
+"label": "RaDAR · Rapid Detection and Control Systems for Antimicrobial Resistance",
+"acronym": "RaDAR",
+"identifier": "GA:101036228",
+"summary": "Rapid Detection and Control Systems for Antimicrobial Resistance (RaDAR) aborda la rapid detection of multi-drug resistant microorganisms (MDROs) y los antimicrobial resistance (AMR) management and control systems. Persigue una holistic solution que permita gold standard AMR management and control.",
+"title": "Rapid Detection and Control Systems for Antimicrobial Resistance"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32",
+"label": "gestor de interoperabilidad semántica de la Red Valenciana de Biobancos",
+"acronym": null,
+"identifier": null,
+"summary": "FISABIO impulsa un gestor de interoperabilidad semántica de la Red Valenciana de Biobancos. El proyecto persigue desarrollar e implantar un módulo que estandarice la incorporación, recuperación y representación de la información clínica asociada a las muestras biológicas y facilite la integración del SGI con otros sistemas.",
+"title": "gestor de interoperabilidad semántica de la Red Valenciana de Biobancos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55",
+"label": "IMAS · Imagen Molecular de alta Sensibilidad",
+"acronym": "IMAS",
+"identifier": null,
+"summary": "Imagen Molecular de alta Sensibilidad es un proyecto de la Conselleria de Sanidad Universal y Salud Pública para desarrollar una solución innovadora de diagnóstico y seguimiento de enfermedades mediante imagen molecular de alta sensibilidad, tanto a nivel instrumental como de tratamiento de datos.",
+"title": "Imagen Molecular de alta Sensibilidad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2",
+"label": "Intel IB-SALUD: Gestión Inteligente de las Emergencias del 061 y Registro Autom…",
+"acronym": null,
+"identifier": null,
+"summary": "Intel IB-SALUD es un proyecto del Servicio de Salud de las Illes Balears para la Gestión Inteligente de las Emergencias del 061 y el Registro Automatizado Inteligente de Pacientes Desplazados.",
+"title": "Intel IB-SALUD: Gestión Inteligente de las Emergencias del 061 y Registro Automatizado Inteligente de Pacientes Desplazados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049",
+"label": "MITLOP · Modelo integrado de gestión de lodos de depuración y de otros residuos…",
+"acronym": "MITLOP",
+"identifier": null,
+"summary": "EMASESA plantea el diseño e implementación de un modelo integrado de gestión de lodos de depuración y de otros residuos orgánicos. Persigue cerrar correctamente el ciclo urbano del agua y tratar y transformar estos residuos para producir un nuevo producto que pueda crear valor para su entorno.",
+"title": "Modelo integrado de gestión de lodos de depuración y de otros residuos orgánicos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b",
+"label": "Plataforma para Parques Empresariales Inteligentes",
+"acronym": null,
+"identifier": null,
+"summary": "El Ayuntamiento de Alcalá de Guadaíra impulsa una Plataforma para Parques Empresariales Inteligentes con el objetivo de transformar los espacios productivos locales y mejorar sus servicios públicos. El proyecto persigue una gestión integral del espacio productivo, la sostenibilidad mediante el ahorro energético e hídrico y la innovación en el marco de la Industria 4.0.",
+"title": "Plataforma para Parques Empresariales Inteligentes"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0",
+"label": "Reto Traslado de Presos",
+"acronym": null,
+"identifier": null,
+"summary": "El «Reto Traslado de Presos», promovido por el Centro para el Desarrollo Tecnológico Industrial EPE y la Guardia Civil, aborda necesidades de seguridad, motorización y ciberseguridad en el traslado de presos.",
+"title": "Reto Traslado de Presos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111",
+"label": "DESALRO2.0 · PLATAFORMA EXPERIMENTAL DE TECNOLOGÍA DE DESALACIÓN DE AGUA DE MAR…",
+"acronym": "DESALRO2.0",
+"identifier": "Sd-2111",
+"summary": "DESALRO2.0 es un proyecto del Instituto Tecnológico de Canarias, S.A. para ejecutar físicamente y validar diseños del ITC de una desaladora experimental de agua de mar por osmosis inversa de 2.500 m3/d con alta eficiencia y con el mínimo consumo energético del mercado.",
+"title": "PLATAFORMA EXPERIMENTAL DE TECNOLOGÍA DE DESALACIÓN DE AGUA DE MAR DE OSMOSIS INVERSA DE ELEVADA EFICIENCIA ENERGETICA - DESALRO2.0"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8",
+"label": "SENDA (Sistema Experto en la Nube de Diagnóstico y Acompañamiento)",
+"acronym": "SENDA",
+"identifier": null,
+"summary": "SENDA es un sistema experto en la nube de diagnóstico y acompañamiento, impulsado por el Instituto para la Competitividad Empresarial de Castilla y León para proporcionar apoyo integral al emprendimiento y la innovación. Persigue crear un entorno digital para relacionarse con emprendedores, empresas y otros agentes del sistema de ciencia e innovación.",
+"title": "SENDA (Sistema Experto en la Nube de Diagnóstico y Acompañamiento)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39",
+"label": "nZEISHB · SISTEMA DE VIVIENDA PROTEGIDA INDUSTRIALIZADA DE CONSUMO ENERGÉTICO C…",
+"acronym": "nZEISHB",
+"identifier": null,
+"summary": "AVRA impulsa un sistema de vivienda protegida plurifamiliar industrializada de consumo energético casi nulo. Persigue promover más viviendas en menos tiempo, con más calidad y a menor coste.",
+"title": "SISTEMA DE VIVIENDA PROTEGIDA INDUSTRIALIZADA DE CONSUMO ENERGÉTICO CASI NULO"
+}
+]

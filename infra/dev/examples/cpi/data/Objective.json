@@ -1,0 +1,842 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/objectives/objective-001",
+"label": "obtener conocimiento suficiente de las soluciones más novedosas y óptimas exisl…",
+"description": "obtener conocimiento suficiente de las soluciones más novedosas y óptimas exislenles en el mercado a corto plazo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/objectives/objective-002",
+"label": "la búsqueda de soluciones innovadoras a la comunicación e inleracción de las pe…",
+"description": "la búsqueda de soluciones innovadoras a la comunicación e inleracción de las personas con discapacidad auditiva severa."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/objectives/objective-003",
+"label": "conocer el estado del arte previo a la preparación de un contrato",
+"description": "conocer el estado del arte previo a la preparación de un contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/objectives/objective-004",
+"label": "promover la participación de personas físicas o jurídicas en la presentación de…",
+"description": "promover la participación de personas físicas o jurídicas en la presentación de propuestas innovadoras"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/objectives/objective-005",
+"label": "mejoren la comunicación y la interacción de personas que padecen una discapacid…",
+"description": "mejoren la comunicación y la interacción de personas que padecen una discapacidad auditiva severa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/objectives/objective-001",
+"label": "optimizar, agilizar y facilitar la interacción de estos a los medios electrónic…",
+"description": "optimizar, agilizar y facilitar la interacción de estos a los medios electrónicos del Ayuntamiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/objectives/objective-002",
+"label": "reducir la brecha digital y fomentando la accesibilidad de estos servicios",
+"description": "reducir la brecha digital y fomentando la accesibilidad de estos servicios"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/objectives/objective-003",
+"label": "aprovechamiento del dato que añada valor a los servicios del ayuntamiento",
+"description": "aprovechamiento del dato que añada valor a los servicios del ayuntamiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/objectives/objective-004",
+"label": "recabar la información necesaria para planificar el futuro desarrollo de una ca…",
+"description": "recabar la información necesaria para planificar el futuro desarrollo de una capa añadida a sus servicios de atención al ciudadano"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/objectives/objective-005",
+"label": "recopilar la información necesaria para preparar una o varias eventuales contra…",
+"description": "recopilar la información necesaria para preparar una o varias eventuales contrataciones públicas de innovación e informar a los operadores económicos acerca de los planes y requisitos de contratación del Ayuntamiento de Alicante"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/objectives/objective-006",
+"label": "promover la dinamización de las actividades de I+D+i en el sector privado a tra…",
+"description": "promover la dinamización de las actividades de I+D+i en el sector privado a través de la CPI"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/objectives/objective-007",
+"label": "implementar una solución tecnológica de Inteligencia Artificial para su utiliza…",
+"description": "implementar una solución tecnológica de Inteligencia Artificial para su utilización por parte de la ciudadanía a la hora de acceder a la página web municipal"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/objectives/objective-008",
+"label": "elaborar un pliego de prescripciones técnicas",
+"description": "elaborar un pliego de prescripciones técnicas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/objectives/objective-001",
+"label": "la identificación y recopilación de soluciones innovadoras en robótica quirúrgi…",
+"description": "la identificación y recopilación de soluciones innovadoras en robótica quirúrgica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/objectives/objective-002",
+"label": "resolver las necesidades del Sistema Sanitario Extremeño y Español en el ámbito…",
+"description": "resolver las necesidades del Sistema Sanitario Extremeño y Español en el ámbito de la cirugía mínimamente invasiva"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/objectives/objective-003",
+"label": "mejorar el servicio prestado al paciente, mejorar ergonomía del cirujano y ofre…",
+"description": "mejorar el servicio prestado al paciente, mejorar ergonomía del cirujano y ofrecer mayores prestaciones al equipo quirúrgico"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/objectives/objective-004",
+"label": "recopilar la información necesaria para las contrataciones públicas innovadoras…",
+"description": "recopilar la información necesaria para las contrataciones públicas innovadoras de la 'Plataforma robótica para cirugía laparoscópica' (Reto 1) y de la 'Plataforma robótica para microcirugía' (Reto 2)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/objectives/objective-005",
+"label": "disponer de una plataforma robotizada para cirugía laparoscópica que mejore los…",
+"description": "disponer de una plataforma robotizada para cirugía laparoscópica que mejore los sistemas ya existentes en el mercado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/objectives/objective-006",
+"label": "Ofrecer una mayor precisión, maniobrabilidad y calidad en los procedimientos qu…",
+"description": "Ofrecer una mayor precisión, maniobrabilidad y calidad en los procedimientos quirúrgicos mínimamente invasivos."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/objectives/objective-007",
+"label": "Aplicar la cirugía robótica a nuevos procedimientos y abordajes quirúrgicos.",
+"description": "Aplicar la cirugía robótica a nuevos procedimientos y abordajes quirúrgicos."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/objectives/objective-008",
+"label": "Mejorar y personalizar las condiciones ergonómicas de los cirujanos",
+"description": "Mejorar y personalizar las condiciones ergonómicas de los cirujanos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/objectives/objective-009",
+"label": "Proporcionar nuevas herramientas de asistencia quirúrgica a todo el equipo quir…",
+"description": "Proporcionar nuevas herramientas de asistencia quirúrgica a todo el equipo quirúrgico"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/objectives/objective-010",
+"label": "Ofrecer nuevas herramientas portables para la formación a distancia en cirugía…",
+"description": "Ofrecer nuevas herramientas portables para la formación a distancia en cirugía laparoscópica robótica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/objectives/objective-011",
+"label": "el desarrollo de una plataforma robótica teleoperada para llevar a cabo procedi…",
+"description": "el desarrollo de una plataforma robótica teleoperada para llevar a cabo procedimientos de microcirugía abierta con microinstrumentos articulados e intercambiables"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/objectives/objective-012",
+"label": "Desarrollo de los estudios iniciales para la definición de las especificaciones…",
+"description": "Desarrollo de los estudios iniciales para la definición de las especificaciones clínicas y técnicas de los instrumentos microquirúrgicos."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/objectives/objective-013",
+"label": "Diseño e implementación de un set de microinstrumentos robóticos multiarticulad…",
+"description": "Diseño e implementación de un set de microinstrumentos robóticos multiarticulados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/objectives/objective-014",
+"label": "Diseño e implementación del sistema de control intuitivo de los microinstrument…",
+"description": "Diseño e implementación del sistema de control intuitivo de los microinstrumentos robóticos."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/objectives/objective-015",
+"label": "Permitir eliminar los temblores fisiológicos del cirujano durante el manejo del…",
+"description": "Permitir eliminar los temblores fisiológicos del cirujano durante el manejo del instrumental quirúrgico"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/objectives/objective-016",
+"label": "Permitir llevar a cabo procedimientos microquirúrgicos vasculares y linfáticos…",
+"description": "Permitir llevar a cabo procedimientos microquirúrgicos vasculares y linfáticos con precisión y seguridad."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/objectives/objective-017",
+"label": "Validación de la plataforma teleoperada para microcirugía en el desempeño de pr…",
+"description": "Validación de la plataforma teleoperada para microcirugía en el desempeño de procedimientos microquirúrgicos básicos."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/objectives/objective-018",
+"label": "mejorar las limitaciones de los sistemas robóticos quirúrgicos existentes en el…",
+"description": "mejorar las limitaciones de los sistemas robóticos quirúrgicos existentes en el mercado tanto para cirugía laparoscópica como microcirugía"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/objectives/objective-019",
+"label": "Proporcionar nuevas herramientas de asistencia quirúrgica a todo el equipo quir…",
+"description": "Proporcionar nuevas herramientas de asistencia quirúrgica a todo el equipo quirúrgico, como son el uso de técnicas de imagen 3D, virtual, aumentada y mixta."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/objectives/objective-020",
+"label": "recopilar la información necesaria para las contrataciones públicas innovadoras…",
+"description": "recopilar la información necesaria para las contrataciones públicas innovadoras de la 'Plataforma robótica para cirugía laparoscópica' (Reto 1) y de la 'Plataforma robótica para microcirugía' (Reto 2), e informar a los operadores tecnológicos acerca de los planes y requisitos de contratación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/objectives/objective-001",
+"label": "obtener conocimiento acerca de su funcionamiento",
+"description": "obtener conocimiento acerca de su funcionamiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/objectives/objective-002",
+"label": "establecer medidas de mitigación apropiadas",
+"description": "establecer medidas de mitigación apropiadas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/objectives/objective-003",
+"label": "detección de bots y servidores de comando y control (C&C)",
+"description": "detección de bots y servidores de comando y control (C&C)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/objectives/objective-004",
+"label": "investigación y posterior desarrollo de una prueba de concepto para la detecció…",
+"description": "investigación y posterior desarrollo de una prueba de concepto para la detección de dominios .onion que no estén siendo indexados por fuentes públicas (tipo Ahmia)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/objectives/objective-005",
+"label": "descubrir nuevos servicios ilícitos ocultos",
+"description": "descubrir nuevos servicios ilícitos ocultos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/objectives/objective-006",
+"label": "mejorar el servicio de monitorización",
+"description": "mejorar el servicio de monitorización"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/objectives/objective-007",
+"label": "incrementar el conocimiento de la red TOR y de sus usuarios",
+"description": "incrementar el conocimiento de la red TOR y de sus usuarios"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/objectives/objective-008",
+"label": "la investigación y posterior desarrollo de una prueba de concepto para la detec…",
+"description": "la investigación y posterior desarrollo de una prueba de concepto para la detección, categorización y predicción automática de ciberataques"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/objectives/objective-009",
+"label": "la investigación y posterior desarrollo de una prueba de concepto, según el cas…",
+"description": "la investigación y posterior desarrollo de una prueba de concepto, según el caso de uso que se propone, que permita generar información y conocimiento de alto valor para la atribución de ataques reales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/objectives/objective-010",
+"label": "promover la participación de personas físicas o jurídicas para la presentación…",
+"description": "promover la participación de personas físicas o jurídicas para la presentación de propuestas innovadoras destinadas a dar respuesta a cuatro retos en el campo de la Ciberseguridad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/objectives/objective-011",
+"label": "evaluar las capacidades del mercado y definir las especificaciones funcionales…",
+"description": "evaluar las capacidades del mercado y definir las especificaciones funcionales que impliquen innovación y sean factibles de alcanzarse"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/objectives/objective-012",
+"label": "identificar infraestructuras completas de botnets, es decir, los bots que las c…",
+"description": "identificar infraestructuras completas de botnets, es decir, los bots que las componen, sus servidores de comando y control, etc."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/objectives/objective-013",
+"label": "descubrir nuevos servicios ilícitos ocultos para mejorar el servicio de monitor…",
+"description": "descubrir nuevos servicios ilícitos ocultos para mejorar el servicio de monitorización y para incrementar el conocimiento de la red TOR y de sus usuarios"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/objectives/objective-014",
+"label": "generar información y conocimiento de alto valor para la atribución de ataques…",
+"description": "generar información y conocimiento de alto valor para la atribución de ataques reales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/objectives/objective-001",
+"label": "el desarrollo de un sistema robotizado para la realización de tareas quirúrgica…",
+"description": "el desarrollo de un sistema robotizado para la realización de tareas quirúrgicas específicas en cirugía laparoscópica de forma autónoma, aunque siempre permitiendo al cirujano un control discreto durante la intervención"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/objectives/objective-002",
+"label": "la concepción, el diseño, desarrollo, instalación, testeo y validación en entor…",
+"description": "la concepción, el diseño, desarrollo, instalación, testeo y validación en entorno real del concepto tecnológico altamente innovador de un sistema de robot quirúrgico para la automatización de tareas y procesos quirúrgicos específicos en cirugía laparoscópica a una escala demostrativa, así como para la formación en el área"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/objectives/objective-003",
+"label": "obtener información de los operadores de mercado en la robótica quirúrgica para…",
+"description": "obtener información de los operadores de mercado en la robótica quirúrgica para poder definir adecuadamente la potencial futura licitación de compra pública precomercial"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/objectives/objective-004",
+"label": "informar adecuadamente a los operadores económicos de los planes del órgano de…",
+"description": "informar adecuadamente a los operadores económicos de los planes del órgano de contratación y de los requisitos que se exigirán en la potencial futura licitación de compra pública precomercial"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/objectives/objective-005",
+"label": "conocer los avances, alternativas, novedades y precios del mercado para identif…",
+"description": "conocer los avances, alternativas, novedades y precios del mercado para identificar necesidades y definir en los pliegos las características del objeto a contratar"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/objectives/objective-006",
+"label": "promover la participación de operadores económicos activos en el mercado en la…",
+"description": "promover la participación de operadores económicos activos en el mercado en la presentación de propuestas innovadoras"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/objectives/objective-007",
+"label": "reducir las dosis administradas en los pacientes",
+"description": "reducir las dosis administradas en los pacientes"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/objectives/objective-008",
+"label": "el diseño, desarrollo, fabricación y validación de dos prototipos de vehículos…",
+"description": "el diseño, desarrollo, fabricación y validación de dos prototipos de vehículos celulares de DPyP"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/objectives/objective-009",
+"label": "se mejore su operatividad, confortabilidad, seguridad, vigilancia, resistencia…",
+"description": "se mejore su operatividad, confortabilidad, seguridad, vigilancia, resistencia y durabilidad."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/objectives/objective-010",
+"label": "Demostrar cómo la Inteligencia Artificial (IA), los datos, la robótica y las so…",
+"description": "Demostrar cómo la Inteligencia Artificial (IA), los datos, la robótica y las soluciones de automatización pueden apoyar al equipo quirúrgico en el desempeño de tareas quirúrgicas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/objectives/objective-011",
+"label": "Reconocer órganos, tejidos y objetivos quirúrgicos para ejecutar una tarea supe…",
+"description": "Reconocer órganos, tejidos y objetivos quirúrgicos para ejecutar una tarea supervisada por un cirujano o de forma automática"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/objectives/objective-012",
+"label": "Aumentar las capacidades de los sistemas robóticos mediante la detección y cara…",
+"description": "Aumentar las capacidades de los sistemas robóticos mediante la detección y caracterización de determinadas maniobras (sangrado, sutura, corte, etc.)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/objectives/objective-013",
+"label": "Aplicar el metaverso y sus tecnologías asociadas para proporcionar entornos for…",
+"description": "Aplicar el metaverso y sus tecnologías asociadas para proporcionar entornos formativos integrados basados en situaciones clínicas reales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/objectives/objective-014",
+"label": "Usar los entornos formativos para robótica quirúrgica basados en metaverso para…",
+"description": "Usar los entornos formativos para robótica quirúrgica basados en metaverso para proporcionar datos fiables, relevantes y robustos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/objectives/objective-001",
+"label": "provide early market notification on the buyers' needs",
+"description": "provide early market notification on the buyers' needs"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/objectives/objective-002",
+"label": "assess the appetite, capacity, and capability of the supply chain to respond th…",
+"description": "assess the appetite, capacity, and capability of the supply chain to respond the buyers unmet need for rapid detection, management, and control solutions for antimicrobial resistance (AMR)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/objectives/objective-003",
+"label": "understand the supply-side challenges and barriers to market",
+"description": "understand the supply-side challenges and barriers to market"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/objectives/objective-004",
+"label": "refine the clinical requirements for each buyer and finalise their clinical dem…",
+"description": "refine the clinical requirements for each buyer and finalise their clinical demand definition"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/objectives/objective-005",
+"label": "Understand the timeframes over which these solutions can be mobilised or become…",
+"description": "Understand the timeframes over which these solutions can be mobilised or become available."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/objectives/objective-006",
+"label": "Inform the buyers group as to how they can support suppliers and innovators to…",
+"description": "Inform the buyers group as to how they can support suppliers and innovators to deliver innovative solutions to meet these needs."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/objectives/objective-007",
+"label": "open a dialogue with the supply chain",
+"description": "open a dialogue with the supply chain"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/objectives/objective-008",
+"label": "Explore what solutions are or could be available given the right market conditi…",
+"description": "Explore what solutions are or could be available given the right market conditions to address the unmet needs and requirements identified by the buyers group"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/objectives/objective-009",
+"label": "refine their clinical demand specification and design a procurement strategy",
+"description": "refine their clinical demand specification and design a procurement strategy"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/objectives/objective-010",
+"label": "define ambitious but credible requirements that accurately reflect the buyers n…",
+"description": "define ambitious but credible requirements that accurately reflect the buyers needs and have scope for scalability and impact"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/objectives/objective-001",
+"label": "preparación del procedimiento de contratación de gestor de interoperabilidad se…",
+"description": "preparación del procedimiento de contratación de gestor de interoperabilidad semántica de la Red Valenciana de Biobancos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/objectives/objective-002",
+"label": "extrapolarlo a otros requerimientos de integración de distintas aplicaciones in…",
+"description": "extrapolarlo a otros requerimientos de integración de distintas aplicaciones informáticas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/objectives/objective-003",
+"label": "solicitar información al mercado sobre las posibles soluciones",
+"description": "solicitar información al mercado sobre las posibles soluciones"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/objectives/objective-004",
+"label": "desarrollo e implantación de un módulo de Interoperabilidad Semántica que permi…",
+"description": "desarrollo e implantación de un módulo de Interoperabilidad Semántica que permita estandarizar la incorporación, recuperación y representación de la información clínica asociada a las muestras biológicas dentro del Sistema de Gestión de la Información (SGI) de la Red Valenciana de Biobancos (RVB) así como facilite su integración con otros sistemas de gestión de información de la Conselleria de Sanitat Universal i Salut Pública (CSUiSP)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/objectives/objective-005",
+"label": "Desarrollo de un módulo de interoperabilidad semántica basado en la terminologí…",
+"description": "Desarrollo de un módulo de interoperabilidad semántica basado en la terminología clínica SNOMED CT que se incorpore en la estructura de módulos del SGI de la RVB."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/objectives/objective-006",
+"label": "Integración del SGI de la RVB con el Sistema de Información en Cáncer (NEOS) ha…",
+"description": "Integración del SGI de la RVB con el Sistema de Información en Cáncer (NEOS) haciendo uso de los servicios desarrollados en el punto 1."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/objectives/objective-007",
+"label": "Integración del SGI de la RVB con el Sistema de Gestión Clínica de Paciente Hos…",
+"description": "Integración del SGI de la RVB con el Sistema de Gestión Clínica de Paciente Hospitalario (ORION CLINIC) haciendo uso de los servicios desarrollados en el punto 1."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/objectives/objective-008",
+"label": "Integración del SGI de la RVB con el Sistema de Medicina Computacional-CPD de A…",
+"description": "Integración del SGI de la RVB con el Sistema de Medicina Computacional-CPD de Alto Rendimiento (HPC) haciendo uso de los servicios desarrollados en el punto 1."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/objectives/objective-001",
+"label": "la búsqueda y desarrollo de una solución innovadora que permita el diagnóstico…",
+"description": "la búsqueda y desarrollo de una solución innovadora que permita el diagnóstico y seguimiento de enfermedades mediante imagen molecular de alta sensibilidad tanto a nivel instrumental como a nivel de tratamiento de datos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/objectives/objective-002",
+"label": "Mejorar la detección de las lesiones de menor tamaño",
+"description": "Mejorar la detección de las lesiones de menor tamaño"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/objectives/objective-003",
+"label": "Aumento de la tasa de detección actual y ampliación del campo de visión longitu…",
+"description": "Aumento de la tasa de detección actual y ampliación del campo de visión longitudinal"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/objectives/objective-004",
+"label": "Mejorar la calidad asistencial, con diagnósticos más precisos y cuantificables",
+"description": "Mejorar la calidad asistencial, con diagnósticos más precisos y cuantificables"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/objectives/objective-005",
+"label": "Realización de estudios dinámicos , visualizando simultáneamente procesos fisio…",
+"description": "Realización de estudios dinámicos , visualizando simultáneamente procesos fisiológicos de regiones distantes del cuerpo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/objectives/objective-006",
+"label": "Reducción del tiempo de exploración",
+"description": "Reducción del tiempo de exploración"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/objectives/objective-007",
+"label": "Aumentar el número de pacientes tratados por día",
+"description": "Aumentar el número de pacientes tratados por día"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/objectives/objective-008",
+"label": "Realizar exámenes repetidos con dosis bajas de radiotrazador",
+"description": "Realizar exámenes repetidos con dosis bajas de radiotrazador"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/objectives/objective-009",
+"label": "Minimizar las riesgos asociados a la radiación",
+"description": "Minimizar las riesgos asociados a la radiación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/objectives/objective-010",
+"label": "Reducción de las dosis de radiofármacos administrados",
+"description": "Reducción de las dosis de radiofármacos administrados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/objectives/objective-011",
+"label": "Utilizacián en pacientes pediátricos con dosis de radiación muy bajas",
+"description": "Utilizacián en pacientes pediátricos con dosis de radiación muy bajas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/objectives/objective-012",
+"label": "PET de cuerpo completo de uso clinico",
+"description": "PET de cuerpo completo de uso clinico"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/objectives/objective-013",
+"label": "Aumento sustancial (objetivo al menos un factor 10) de la sensibilidad en la de…",
+"description": "Aumento sustancial (objetivo al menos un factor 10) de la sensibilidad en la detección PET"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/objectives/objective-014",
+"label": "Aumento sustancial (objetivo al menos un factor 5) del campo volumen de visión…",
+"description": "Aumento sustancial (objetivo al menos un factor 5) del campo volumen de visión PET"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/objectives/objective-015",
+"label": "Disminución sustancial (objetivo al menos un factor 2) del tiempo de exploración",
+"description": "Disminución sustancial (objetivo al menos un factor 2) del tiempo de exploración"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/objectives/objective-016",
+"label": "Aumento sustancial de la precisión en la calidad de imagen y en la información…",
+"description": "Aumento sustancial de la precisión en la calidad de imagen y en la información generada como biomarcadores de imagen de alta precisión"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/objectives/objective-017",
+"label": "Dos demostradores del tipo cristal inorgánico y LXe",
+"description": "Dos demostradores del tipo cristal inorgánico y LXe"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/objectives/objective-018",
+"label": "Un escáner de cuerpo completo",
+"description": "Un escáner de cuerpo completo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/objectives/objective-019",
+"label": "Biomarcadores dinamicosde alta resolución espacial y temporal para demostradore…",
+"description": "Biomarcadores dinamicosde alta resolución espacial y temporal para demostradores PET de cuerpo completo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/objectives/objective-020",
+"label": "Platafoma con Inteligencia Artificial deprocesado de imágenes para estudios y e…",
+"description": "Platafoma con Inteligencia Artificial deprocesado de imágenes para estudios y ensayos clinicos en la Comunidad Valenciana"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/objectives/objective-021",
+"label": "recabar la infommación necesaria para preparar una eventual contratación públic…",
+"description": "recabar la infommación necesaria para preparar una eventual contratación pública de Innovación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/objectives/objective-001",
+"label": "conocer el estado del arte previo a la preparación de un contrato",
+"description": "conocer el estado del arte previo a la preparación de un contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/objectives/objective-002",
+"label": "determinar soluciones que doten al Servicio de Salud de las Islas Baleares de l…",
+"description": "determinar soluciones que doten al Servicio de Salud de las Islas Baleares de la consecución de los dos proyectos arriba mencionados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/objectives/objective-001",
+"label": "el diseño e implementación en EMASESA del nuevo modelo integrado de gestión de…",
+"description": "el diseño e implementación en EMASESA del nuevo modelo integrado de gestión de lodos de depuración y de otros residuos orgánicos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/objectives/objective-002",
+"label": "preparar correctamente futuras licitaciones e informar a los operadores económi…",
+"description": "preparar correctamente futuras licitaciones e informar a los operadores económicos acerca de los planes de contratación de la Empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/objectives/objective-003",
+"label": "el diseño de la solución general y (2) la implementación de la solución de prue…",
+"description": "el diseño de la solución general y (2) la implementación de la solución de prueba en EMASESA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/objectives/objective-004",
+"label": "cerrar correctamente el ciclo urbano del agua en el municipio de cabecera y en…",
+"description": "cerrar correctamente el ciclo urbano del agua en el municipio de cabecera y en los municipios asociados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/objectives/objective-005",
+"label": "tratar y transformar estos residuos para producir un nuevo producto que pueda c…",
+"description": "tratar y transformar estos residuos para producir un nuevo producto que pueda crear valor para su entorno"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/objectives/objective-006",
+"label": "resolver específicamente las afecciones ambientales a la población que presenta…",
+"description": "resolver específicamente las afecciones ambientales a la población que presenta el sistema actual"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/objectives/objective-007",
+"label": "crear valor para su entorno a partir de los residuos generados por la actividad",
+"description": "crear valor para su entorno a partir de los residuos generados por la actividad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/objectives/objective-008",
+"label": "ofreciendo un modelo de referencia para el cierre del ciclo urbano del agua vál…",
+"description": "ofreciendo un modelo de referencia para el cierre del ciclo urbano del agua válido para la generalidad de los municipios de España"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/objectives/objective-009",
+"label": "recopilar la información necesaria para preparar una eventual contratación públ…",
+"description": "recopilar la información necesaria para preparar una eventual contratación pública de innovación, e informar a los operadores económicos acerca de sus planes y requisitos de contratación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/objectives/objective-010",
+"label": "evaluar las capacidades del mercado y definir las especificaciones funcionales…",
+"description": "evaluar las capacidades del mercado y definir las especificaciones funcionales que impliquen innovación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/objectives/objective-011",
+"label": "desarrollar un novedoso modelo integrado de gestión de residuos que permita la…",
+"description": "desarrollar un novedoso modelo integrado de gestión de residuos que permita la valorización de los mismos y un positivo impacto medioambiental"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/objectives/objective-001",
+"label": "la creación de ecosistemas empresariales sostenibles en gobernanza y gestión de…",
+"description": "la creación de ecosistemas empresariales sostenibles en gobernanza y gestión de recursos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/objectives/objective-002",
+"label": "Mejorar de los servicios públicos en parques empresariales inteligentes.",
+"description": "Mejorar de los servicios públicos en parques empresariales inteligentes."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/objectives/objective-003",
+"label": "Incrementar la innovación en la fabricación y la transformación avanzada.",
+"description": "Incrementar la innovación en la fabricación y la transformación avanzada."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/objectives/objective-004",
+"label": "Incrementar la capacidad para desarrollar nuevos o mejorados productos.",
+"description": "Incrementar la capacidad para desarrollar nuevos o mejorados productos."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/objectives/objective-005",
+"label": "Incrementar la capacidad para creación de empleo.",
+"description": "Incrementar la capacidad para creación de empleo."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/objectives/objective-006",
+"label": "Incrementar la actitud emprendedora.",
+"description": "Incrementar la actitud emprendedora."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/objectives/objective-007",
+"label": "Incrementar la protección de los activos materiales de los parques empresariale…",
+"description": "Incrementar la protección de los activos materiales de los parques empresariales."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/objectives/objective-008",
+"label": "Incrementar la sostenibilidad de los parques empresariales mediante el ahorro e…",
+"description": "Incrementar la sostenibilidad de los parques empresariales mediante el ahorro energético e hídrico."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/objectives/objective-009",
+"label": "Impulsar la transformación de los espacios productivos locales en Parques Empre…",
+"description": "Impulsar la transformación de los espacios productivos locales en Parques Empresariales Inteligentes."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/objectives/objective-010",
+"label": "Mejorar la seguridad y la gestión de emergencias en parques empresariales intel…",
+"description": "Mejorar la seguridad y la gestión de emergencias en parques empresariales inteligentes."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/objectives/objective-011",
+"label": "Prestar un servicio público de apoyo específico a la investigación, desarrollo…",
+"description": "Prestar un servicio público de apoyo específico a la investigación, desarrollo y demostración, así como a la estandarización y certificación cuando corresponda, en el ámbito de los sistemas de fabricación avanzados (Tecnología Facilitadora Esencial, KET)."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/objectives/objective-012",
+"label": "Impulsar la cooperación empresarial para la innovación en el marco de la Indust…",
+"description": "Impulsar la cooperación empresarial para la innovación en el marco de la Industria 4.0."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/objectives/objective-013",
+"label": "Reducir la huella ecológica de los espacios productivos.",
+"description": "Reducir la huella ecológica de los espacios productivos."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/objectives/objective-014",
+"label": "Impulsar el Open Data en el municipio.",
+"description": "Impulsar el Open Data en el municipio."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/objectives/objective-001",
+"label": "obtener información sobre la capacidad del mercado y el estado de la tecnología…",
+"description": "obtener información sobre la capacidad del mercado y el estado de la tecnología de los operadores económicos sobre los retos planteados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/objectives/objective-002",
+"label": "que los operadores definan una solución innovadora a través de servicios de I+D…",
+"description": "que los operadores definan una solución innovadora a través de servicios de I+D para resolver la necesidad planteada en la definición de los retos tecnológicos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/objectives/objective-003",
+"label": "se analizará si las necesidades pueden ser satisfechas mediante I+D y si existe…",
+"description": "se analizará si las necesidades pueden ser satisfechas mediante I+D y si existen suficientes operadores para generar una competencia efectiva"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/objectives/objective-004",
+"label": "Eliminación de aceros.",
+"description": "Eliminación de aceros."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/objectives/objective-005",
+"label": "Permitir un tratamiento rápido y eficaz de limpieza y eliminación de los residu…",
+"description": "Permitir un tratamiento rápido y eficaz de limpieza y eliminación de los residuos generados en las celdas que eviten la inutilización del vehículo en servicio."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/objectives/objective-006",
+"label": "evite lo máximo posible que la escolta tenga que proceder a abrochar manualment…",
+"description": "evite lo máximo posible que la escolta tenga que proceder a abrochar manualmente al interno"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/objectives/objective-007",
+"label": "evitar aperturas no autorizadas",
+"description": "evitar aperturas no autorizadas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/objectives/objective-008",
+"label": "Garantizar unas condiciones mínimas de confort en situaciones adversas",
+"description": "Garantizar unas condiciones mínimas de confort en situaciones adversas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/objectives/objective-009",
+"label": "reduzcan las emisiones contaminantes",
+"description": "reduzcan las emisiones contaminantes"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/objectives/objective-010",
+"label": "blindar la seguridad y la confidencialidad de los datos del vehículo, equipos a…",
+"description": "blindar la seguridad y la confidencialidad de los datos del vehículo, equipos así como de las comunicaciones"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/objectives/objective-001",
+"label": "ejecutar físicamente y validar diseños del ITC de una desaladora experimental d…",
+"description": "ejecutar físicamente y validar diseños del ITC de una desaladora experimental de agua de mar por osmosis inversa de 2.500 m3/d con alta eficiencia y con el mínimo consumo energético del mercado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/objectives/objective-002",
+"label": "generar nuevo conocimiento en materia de eficiencia energética en desalación, c…",
+"description": "generar nuevo conocimiento en materia de eficiencia energética en desalación, capacitar a nuevos investigadores y crear una masa crítica de expertos y empresas canarias que quieran replicar el desarrollo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/objectives/objective-003",
+"label": "tratar de bajar de los 2,0 kWh/m3",
+"description": "tratar de bajar de los 2,0 kWh/m3"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/objectives/objective-001",
+"label": "proporcionar apoyo integral al emprendimiento e innovación en Castilla y León",
+"description": "proporcionar apoyo integral al emprendimiento e innovación en Castilla y León"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/objectives/objective-002",
+"label": "crear un entorno digital para relacionarse de una manera más abierta con empren…",
+"description": "crear un entorno digital para relacionarse de una manera más abierta con emprendedores, empresas, y otros agentes del sistema de ciencia e innovación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/objectives/objective-003",
+"label": "atraer y captar talento y nuevas empresas a la región",
+"description": "atraer y captar talento y nuevas empresas a la región"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/objectives/objective-004",
+"label": "ser más proactivo y anticiparse a las necesidades de los clientes",
+"description": "ser más proactivo y anticiparse a las necesidades de los clientes"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/objectives/objective-005",
+"label": "poner en contacto a todo el ecosistema regional de innovación",
+"description": "poner en contacto a todo el ecosistema regional de innovación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/objectives/objective-006",
+"label": "conocer el estado del arte sobre los sistemas digitales existentes de apoyo al…",
+"description": "conocer el estado del arte sobre los sistemas digitales existentes de apoyo al emprendimiento e innovación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/objectives/objective-007",
+"label": "la identificación de propuestas innovadoras destinadas a dar respuesta al reto…",
+"description": "la identificación de propuestas innovadoras destinadas a dar respuesta al reto SENDA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/objectives/objective-008",
+"label": "evaluar las capacidades del mercado y definir las especificaciones funcionales",
+"description": "evaluar las capacidades del mercado y definir las especificaciones funcionales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/objectives/objective-009",
+"label": "generar la mejor comunidad de innovación abierta que permita a todos los agente…",
+"description": "generar la mejor comunidad de innovación abierta que permita a todos los agentes mejorar su interacción e incrementar sus resultados anuales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/objectives/objective-010",
+"label": "atender con éxito a un mayor número de proyectos emprendedores e innovadores",
+"description": "atender con éxito a un mayor número de proyectos emprendedores e innovadores"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/objectives/objective-011",
+"label": "crear un entorno digital que permita al ICE relacionarse de una manera más abie…",
+"description": "crear un entorno digital que permita al ICE relacionarse de una manera más abierta con emprendedores, empresas, y otros agentes del sistema de ciencia e innovación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/objectives/objective-012",
+"label": "que Castilla y León gane visibilidad y capacidades de atracción de talento y nu…",
+"description": "que Castilla y León gane visibilidad y capacidades de atracción de talento y nuevas empresas a la región"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/objectives/objective-013",
+"label": "mejorar su apoyo a la comunidad de emprendimiento e innovación en Castilla y Le…",
+"description": "mejorar su apoyo a la comunidad de emprendimiento e innovación en Castilla y León desarrollando un papel más proactivo en el territorio para atender con éxito a un mayor número de proyectos emprendedores e innovadores"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/objectives/objective-014",
+"label": "facilitando la coordinación e integración de información entre los miembros de…",
+"description": "facilitando la coordinación e integración de información entre los miembros de la Red de Emprendimiento e Innovación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/objectives/objective-015",
+"label": "la creación de una plataforma disruptiva cuyo alcance integre todas las áreas d…",
+"description": "la creación de una plataforma disruptiva cuyo alcance integre todas las áreas de innovación abierta de una entidad como ICE"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/objectives/objective-001",
+"label": "verificar la posible viabilidad técnica y económica del desarrollo de una noved…",
+"description": "verificar la posible viabilidad técnica y económica del desarrollo de una novedosa herramienta software avanzada"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/objectives/objective-002",
+"label": "informar ampliamente al mercado sobre esta iniciativa y poder contar así con to…",
+"description": "informar ampliamente al mercado sobre esta iniciativa y poder contar así con toda la información necesaria de éste en cuanto a su posible capacidad de respuesta -oferta y capacidades-"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/objectives/objective-003",
+"label": "Contar con la retroalimentación del mercado para poder verificar la viabilidad…",
+"description": "Contar con la retroalimentación del mercado para poder verificar la viabilidad técnica y económica, el alcance, las características tecnológicas y funcionales y los plazos requeridos para el desarrollo del Proyecto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/objectives/objective-004",
+"label": "Asistir el diseño, planificación, ejecución y mantenimiento ágil y a gran escal…",
+"description": "Asistir el diseño, planificación, ejecución y mantenimiento ágil y a gran escala de viviendas plurifamiliares protegidas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/objectives/objective-005",
+"label": "reducir los plazos de ejecución de vivienda entre un 30 y un 50%, reducir en un…",
+"description": "reducir los plazos de ejecución de vivienda entre un 30 y un 50%, reducir en un 30% las emisiones en las viviendas de nueva planta, posibilitar ahorros de hasta el 60% en el consumo de materiales y conseguir reducciones de hasta el 90% en la generación de residuos in situ"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/objectives/objective-006",
+"label": "Mejorar y agilizar los procesos operativos y flujos de trabajo de AVRA",
+"description": "Mejorar y agilizar los procesos operativos y flujos de trabajo de AVRA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/objectives/objective-007",
+"label": "Ampliar y optimizar su capacidad de actuación a gran escala y reducir su tiempo…",
+"description": "Ampliar y optimizar su capacidad de actuación a gran escala y reducir su tiempo de respuesta ante las crecientes necesidades de vivienda protegida en Andalucía"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/objectives/objective-008",
+"label": "incentivar la concurrencia y la participación activa de personas físicas o jurí…",
+"description": "incentivar la concurrencia y la participación activa de personas físicas o jurídicas en la presentación y desarrollo tecnológico de propuestas innovadoras que permitan valorar la viabilidad técnica y económica del potencial despliegue del proyecto Near Zero Energy Industrialized Social Housing Building (NZEISHB)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/objectives/objective-009",
+"label": "generará un modelo de sistema flexible que permita edificar viviendas protegida…",
+"description": "generará un modelo de sistema flexible que permita edificar viviendas protegidas plurifamiliares a gran escala, adaptándose a las particularidades climáticas y de emplazamiento y cumpliendo los requisitos de la vivienda protegida y de los edificios de consumo energético casi nulo, y hacerlo en el menor plazo y con la mayor calidad posible aprovechando las ventajas de la construcción industrializada."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/objectives/objective-010",
+"label": "mejorar la eficacia de AVRA incrementando su capacidad para atender un mayor nú…",
+"description": "mejorar la eficacia de AVRA incrementando su capacidad para atender un mayor número de necesidades habitacionales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/objectives/objective-011",
+"label": "promover más viviendas en menos tiempo, con más calidad, a menor coste y cumpli…",
+"description": "promover más viviendas en menos tiempo, con más calidad, a menor coste y cumpliendo, o incluso mejorando, las exigencias normativas sobre edificios de consumo energético casi nulo."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/objectives/objective-012",
+"label": "reducir el gasto energético de las familias y las situaciones de pobreza energé…",
+"description": "reducir el gasto energético de las familias y las situaciones de pobreza energética"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/objectives/objective-013",
+"label": "ser reconocido con el distintivo de calidad medioambiental del Sello Verde",
+"description": "ser reconocido con el distintivo de calidad medioambiental del Sello Verde"
+}
+]

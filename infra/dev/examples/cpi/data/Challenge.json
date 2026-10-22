@@ -1,0 +1,547 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/challenges/challenge-001",
+"label": "Mejorar la comunicación e interacción de las personas con discapacidad auditiva…",
+"description": "Mejorar la comunicación e interacción de las personas con discapacidad auditiva severa y su entorno en tiempo real, de forma bidireccional y sin necesidad de estar apoyadas por otra persona para lograr la comunicación e interacción."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/challenges/challenge-002",
+"label": "Abordar la imposibilidad de acceder a estudios superiores de forma presencial.",
+"description": "Abordar la imposibilidad de acceder a estudios superiores de forma presencial."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/challenges/challenge-003",
+"label": "Abordar la dificultad a la hora de acceder al mercado laboral.",
+"description": "Abordar la dificultad a la hora de acceder al mercado laboral."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/challenges/challenge-004",
+"label": "Abordar las barreras de comunicación con su médico.",
+"description": "Abordar las barreras de comunicación con su médico."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/challenges/challenge-005",
+"label": "Abordar los problemas de comunicación y el acceso limitado a los servicios que…",
+"description": "Abordar los problemas de comunicación y el acceso limitado a los servicios que impiden su plena participación social; politica; cultural y económica."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/challenges/challenge-001",
+"label": "Desarrollar una capa de acceso unificado basada en Inteligencia Artificial sobr…",
+"description": "Desarrollar una capa de acceso unificado basada en Inteligencia Artificial sobre navegación web y tramitación electrónica por sede que facilite el acceso del ciudadano a la consulta, información y gestión administrativa, y reduzca la brecha digital."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/challenges/challenge-002",
+"label": "Dotar de procedimientos automáticos de copia de seguridad y restauración, con u…",
+"description": "Dotar de procedimientos automáticos de copia de seguridad y restauración, con un sistema de permisos que contemple la determinación de diversos perfiles de usuario."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/challenges/challenge-003",
+"label": "Aprovechar el dato para añadir valor a los servicios del ayuntamiento.",
+"description": "Aprovechar el dato para añadir valor a los servicios del ayuntamiento."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/challenges/challenge-001",
+"label": "Desarrollar una plataforma robótica para cirugía laparoscópica que mejore los s…",
+"description": "Desarrollar una plataforma robótica para cirugía laparoscópica que mejore los sistemas ya existentes en el mercado y ofrezca mayor precisión, maniobrabilidad y calidad en los procedimientos quirúrgicos mínimamente invasivos."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/challenges/challenge-002",
+"label": "Desarrollar una plataforma robótica teleoperada para llevar a cabo procedimient…",
+"description": "Desarrollar una plataforma robótica teleoperada para llevar a cabo procedimientos de microcirugía abierta con microinstrumentos articulados e intercambiables."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/challenges/challenge-003",
+"label": "Aplicar la cirugía robótica a nuevos procedimientos y abordajes quirúrgicos, in…",
+"description": "Aplicar la cirugía robótica a nuevos procedimientos y abordajes quirúrgicos, incluidos los recientes abordajes laparoscópicos."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/challenges/challenge-004",
+"label": "Mejorar y personalizar las condiciones ergonómicas de los cirujanos, actualment…",
+"description": "Mejorar y personalizar las condiciones ergonómicas de los cirujanos, actualmente limitadas."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/challenges/challenge-005",
+"label": "Proporcionar herramientas de asistencia quirúrgica a todo el equipo mediante té…",
+"description": "Proporcionar herramientas de asistencia quirúrgica a todo el equipo mediante técnicas de imagen 3D, virtual, aumentada y mixta, frente al limitado acceso a la visión 3D y a la grabación de la imagen 3D del procedimiento."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/challenges/challenge-006",
+"label": "Ofrecer herramientas portables para la formación a distancia en cirugía laparos…",
+"description": "Ofrecer herramientas portables para la formación a distancia en cirugía laparoscópica robótica, compatibles con tecnologías de visión 3D, dispositivos móviles y servicios online."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/challenges/challenge-007",
+"label": "Desarrollar estudios iniciales para definir las especificaciones clínicas y téc…",
+"description": "Desarrollar estudios iniciales para definir las especificaciones clínicas y técnicas de los instrumentos microquirúrgicos."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/challenges/challenge-008",
+"label": "Diseñar e implementar un set de microinstrumentos robóticos multiarticulados.",
+"description": "Diseñar e implementar un set de microinstrumentos robóticos multiarticulados."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/challenges/challenge-009",
+"label": "Diseñar e implementar un sistema de control intuitivo de los microinstrumentos…",
+"description": "Diseñar e implementar un sistema de control intuitivo de los microinstrumentos robóticos que permita eliminar los temblores fisiológicos del cirujano durante el manejo del instrumental quirúrgico."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/challenges/challenge-010",
+"label": "Permitir procedimientos microquirúrgicos vasculares y linfáticos con precisión…",
+"description": "Permitir procedimientos microquirúrgicos vasculares y linfáticos con precisión y seguridad y validar la plataforma teleoperada para microcirugía en procedimientos microquirúrgicos básicos."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/challenges/challenge-001",
+"label": "Detección de bots y servidores de comando y control (C&C) para identificar infr…",
+"description": "Detección de bots y servidores de comando y control (C&C) para identificar infraestructuras completas de botnets y obtener información propia relativa a estas amenazas."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/challenges/challenge-002",
+"label": "Detección de dominios .onion en la red TOR no indexados por fuentes públicas pa…",
+"description": "Detección de dominios .onion en la red TOR no indexados por fuentes públicas para descubrir nuevos servicios ilícitos ocultos y mejorar el servicio de monitorización."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/challenges/challenge-003",
+"label": "Detección, categorización y predicción automatizada de ciberataques ante el núm…",
+"description": "Detección, categorización y predicción automatizada de ciberataques ante el número elevado de conexiones a los Honeypots y la baja automatización de estas tareas."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/challenges/challenge-004",
+"label": "Servicios avanzados para la atribución de ciber-incidentes que generen informac…",
+"description": "Servicios avanzados para la atribución de ciber-incidentes que generen información y conocimiento de alto valor para la atribución de ataques reales, ante la complejidad de las preguntas sobre el «quién» y el «por qué» de un ataque."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/challenges/challenge-001",
+"label": "Desarrollar un sistema robotizado para realizar tareas y procedimientos específ…",
+"description": "Desarrollar un sistema robotizado para realizar tareas y procedimientos específicos en cirugía laparoscópica de forma autónoma, con supervisión o control discreto del cirujano, y llevar su aplicación a entornos clínicos reales."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/challenges/challenge-002",
+"label": "Reconocer órganos, tejidos y objetivos quirúrgicos para facilitar la ejecución…",
+"description": "Reconocer órganos, tejidos y objetivos quirúrgicos para facilitar la ejecución de una tarea mediante robótica quirúrgica, supervisada por un cirujano o de forma autónoma."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/challenges/challenge-003",
+"label": "Detectar y caracterizar maniobras como sangrado, sutura y corte para aumentar l…",
+"description": "Detectar y caracterizar maniobras como sangrado, sutura y corte para aumentar las capacidades de los sistemas robóticos y avanzar en su automatización."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/challenges/challenge-004",
+"label": "Desarrollar entornos formativos integrados basados en situaciones clínicas real…",
+"description": "Desarrollar entornos formativos integrados basados en situaciones clínicas reales y en el metaverso para la formación de profesionales clínicos en robótica quirúrgica."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/challenges/challenge-005",
+"label": "Usar entornos formativos de robótica quirúrgica basados en metaverso para propo…",
+"description": "Usar entornos formativos de robótica quirúrgica basados en metaverso para proporcionar datos fiables, relevantes y robustos que contribuyan al desarrollo de robots autónomos en cirugía laparoscópica."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/challenges/challenge-006",
+"label": "Desarrollar un escáner PET dedicado al cerebro de alta sensibilidad y resolució…",
+"description": "Desarrollar un escáner PET dedicado al cerebro de alta sensibilidad y resolución espacial para la detección temprana del Alzheimer y otras enfermedades neurológicas."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/challenges/challenge-007",
+"label": "Reducir las dosis administradas a los pacientes en las imágenes obtenidas con r…",
+"description": "Reducir las dosis administradas a los pacientes en las imágenes obtenidas con radiación ionizante, como la técnica PET."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/challenges/challenge-008",
+"label": "Diseñar, desarrollar, fabricar y validar dos prototipos de vehículos celulares…",
+"description": "Diseñar, desarrollar, fabricar y validar dos prototipos de vehículos celulares para el traslado de DPyP, mejorando su operatividad, confortabilidad, seguridad, vigilancia, resistencia y durabilidad."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/challenges/challenge-009",
+"label": "Abordar los costes de adquisición elevados debidos a la imposibilidad de fabric…",
+"description": "Abordar los costes de adquisición elevados debidos a la imposibilidad de fabricar los vehículos en serie."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/challenges/challenge-010",
+"label": "Abordar las tareas de mantenimiento deficientes de los vehículos destinados al…",
+"description": "Abordar las tareas de mantenimiento deficientes de los vehículos destinados al traslado de DPyP."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/challenges/challenge-011",
+"label": "Abordar el aumento del consumo de combustible asociado al empleo de materiales…",
+"description": "Abordar el aumento del consumo de combustible asociado al empleo de materiales pesados, principalmente aceros, en los vehículos."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/challenges/challenge-012",
+"label": "Integrar plenamente un Centro de Control (CECO) con la flota de vehículos.",
+"description": "Integrar plenamente un Centro de Control (CECO) con la flota de vehículos."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/challenges/challenge-001",
+"label": "Desarrollar una holistic solution que permita gold standard AMR management and…",
+"description": "Desarrollar una holistic solution que permita gold standard AMR management and control mediante un integrated package of measures adaptable a cada healthcare facility para la detección y el control proactivos de multidrug-resistant organisms."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/challenges/challenge-002",
+"label": "Abordar la detección rápida de multidrug-resistant organisms (MDROs), cuyos res…",
+"description": "Abordar la detección rápida de multidrug-resistant organisms (MDROs), cuyos resultados pueden tardar de 24 a 72 horas, para que los clínicos no tengan que decidir el tratamiento sin saber qué MDRO está implicado."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/challenges/challenge-003",
+"label": "Responder al global problem of antimicrobial resistance, que hace que las infec…",
+"description": "Responder al global problem of antimicrobial resistance, que hace que las infecciones sean más difíciles de tratar y contener y favorece la prescripción de broad-spectrum antibiotics cuando falta información."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/challenges/challenge-004",
+"label": "Disponer de rapid tests at point of care en atención primaria que distingan las…",
+"description": "Disponer de rapid tests at point of care en atención primaria que distingan las infecciones virales de las bacterianas, difíciles de diferenciar solo por signos y síntomas."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/challenges/challenge-005",
+"label": "Mejorar el acceso y la gestión de la información a lo largo del AMR workflow an…",
+"description": "Mejorar el acceso y la gestión de la información a lo largo del AMR workflow ante la falta de joined up systems y las diferencias entre los sistemas y entornos IT de los centros sanitarios."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/challenges/challenge-001",
+"label": "Disponer de capacidad de desarrollo modular de la aplicación cuando el nº de va…",
+"description": "Disponer de capacidad de desarrollo modular de la aplicación cuando el nº de variables y sus atributos son indeterminados a priori."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/challenges/challenge-002",
+"label": "Desarrollar un módulo de interoperabilidad semántica basado en SNOMED CT que es…",
+"description": "Desarrollar un módulo de interoperabilidad semántica basado en SNOMED CT que estandarice la incorporación, recuperación y representación de la información clínica asociada a las muestras biológicas, que puede partir de descriptores en texto libre, codificaciones locales o codificaciones estándar."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/challenges/challenge-003",
+"label": "Facilitar la integración con otros sistemas de gestión de información de la CSU…",
+"description": "Facilitar la integración con otros sistemas de gestión de información de la CSUiSP y extrapolar el módulo a otros requerimientos de integración de distintas aplicaciones informáticas."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/challenges/challenge-004",
+"label": "Integrar el SGI de la RVB con el Sistema de Información en Cáncer (NEOS) hacien…",
+"description": "Integrar el SGI de la RVB con el Sistema de Información en Cáncer (NEOS) haciendo uso de los servicios desarrollados para el módulo de interoperabilidad semántica."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/challenges/challenge-005",
+"label": "Integrar el SGI de la RVB con el Sistema de Gestión Clínica de Paciente Hospita…",
+"description": "Integrar el SGI de la RVB con el Sistema de Gestión Clínica de Paciente Hospitalario (ORION CLINIC) haciendo uso de los servicios desarrollados para el módulo de interoperabilidad semántica."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/challenges/challenge-006",
+"label": "Integrar el SGI de la RVB con el Sistema de Medicina Computacional-CPD de Alto…",
+"description": "Integrar el SGI de la RVB con el Sistema de Medicina Computacional-CPD de Alto Rendimiento (HPC) haciendo uso de los servicios desarrollados para el módulo de interoperabilidad semántica."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/challenges/challenge-001",
+"label": "Fortalecimiento del sector sanitario, aportar valor social, trasformar digitalm…",
+"description": "Fortalecimiento del sector sanitario, aportar valor social, trasformar digitalmente los procesos y desarrollar una cultura sanitaria que busca un cambio de comportamiento a largo plazo y sostenible en el tiempo."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/challenges/challenge-002",
+"label": "Solucionar la falta de resolución espacial (x, Y, 2), de sensibilidad y de dosi…",
+"description": "Solucionar la falta de resolución espacial (x, Y, 2), de sensibilidad y de dosis de radiación en las pruebas diagnósticas PET, mejorar la detección de las lesiones de menor tamaño y aumentar la sensibilidad en la detección PET."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/challenges/challenge-003",
+"label": "Desarrollar un PET de cuerpo completo en una única adquisición y de uso clinico…",
+"description": "Desarrollar un PET de cuerpo completo en una única adquisición y de uso clinico, con un escáner que maximice la sensibilidad para generar la imagen de todo el cuerpo y amplíe el campo de visión longitudinal."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/challenges/challenge-004",
+"label": "Desarrollar un PET de cuerpo completo para niños, con dosis de radiación muy ba…",
+"description": "Desarrollar un PET de cuerpo completo para niños, con dosis de radiación muy bajas."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/challenges/challenge-005",
+"label": "Desarrollar un PET de alta resolución para cerebro.",
+"description": "Desarrollar un PET de alta resolución para cerebro."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/challenges/challenge-006",
+"label": "Realizar exámenes repetidos con dosis bajas de radiotrazador, reducir las dosis…",
+"description": "Realizar exámenes repetidos con dosis bajas de radiotrazador, reducir las dosis de radiofármacos administrados y minimizar las riesgos asociados a la radiación."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/challenges/challenge-007",
+"label": "Realizar estudios dinámicos que visualicen simultáneamente procesos fisiológico…",
+"description": "Realizar estudios dinámicos que visualicen simultáneamente procesos fisiológicos de regiones distantes del cuerpo y desarrollar biomarcadores dinamicosde alta resolución espacial y temporal para demostradores PET de cuerpo completo."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/challenges/challenge-008",
+"label": "Aumentar la precisión en la calidad de imagen y en la información generada como…",
+"description": "Aumentar la precisión en la calidad de imagen y en la información generada como biomarcadores de imagen de alta precisión."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/challenges/challenge-009",
+"label": "Reducir el tiempo de exploración y aumentar el número de pacientes tratados por…",
+"description": "Reducir el tiempo de exploración y aumentar el número de pacientes tratados por día."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/challenges/challenge-010",
+"label": "Desarrollar dos demostradores del tipo cristal inorgánico y LXe.",
+"description": "Desarrollar dos demostradores del tipo cristal inorgánico y LXe."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/challenges/challenge-011",
+"label": "Desarrollar una Platafoma con Inteligencia Artificial deprocesado de imágenes p…",
+"description": "Desarrollar una Platafoma con Inteligencia Artificial deprocesado de imágenes para estudios y ensayos clinicos en la Comunidad Valenciana."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/challenges/challenge-012",
+"label": "Mejorar la calidad asistencial con diagnósticos más precisos y cuantificables p…",
+"description": "Mejorar la calidad asistencial con diagnósticos más precisos y cuantificables para el diagnóstico y seguimiento de enfermedades mediante imagen molecular de alta sensibilidad."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/challenges/challenge-001",
+"label": "Gestión Inteligente de las Emergencias del 061.",
+"description": "Gestión Inteligente de las Emergencias del 061."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/challenges/challenge-002",
+"label": "Registro Automatizado Inteligente de Pacientes Desplazados.",
+"description": "Registro Automatizado Inteligente de Pacientes Desplazados."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/challenges/challenge-001",
+"label": "El tratamiento de lodos de depuración para cerrar correctamente el ciclo urbano…",
+"description": "El tratamiento de lodos de depuración para cerrar correctamente el ciclo urbano del agua en el municipio de cabecera y en los municipios asociados, ofreciendo un modelo de referencia válido para la generalidad de los municipios de España, incluidos los pequeños y medianos que no disponen de medios y escala suficiente para tratar los lodos."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/challenges/challenge-002",
+"label": "Desarrollar e implementar en EMASESA un modelo integrado de gestión de lodos de…",
+"description": "Desarrollar e implementar en EMASESA un modelo integrado de gestión de lodos de depuración y de otros residuos orgánicos, nuevo o significativamente mejorado, adecuado para el largo plazo y con el desarrollo tecnológico y la adecuación específica que requieren las necesidades expuestas."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/challenges/challenge-003",
+"label": "Mantener la valorización agrícola mediante cocompostaje y tratar y transformar…",
+"description": "Mantener la valorización agrícola mediante cocompostaje y tratar y transformar los residuos para producir un nuevo producto que cree valor para su entorno, ante las limitaciones operativas y las restricciones a la valorización agrícola de los lodos de depuración."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/challenges/challenge-004",
+"label": "Resolver las afecciones ambientales a la población, como el olor, que presenta…",
+"description": "Resolver las afecciones ambientales a la población, como el olor, que presenta el sistema actual."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/challenges/challenge-005",
+"label": "Cumplir los nuevos requerimientos legales establecidos y afrontar el riesgo de…",
+"description": "Cumplir los nuevos requerimientos legales establecidos y afrontar el riesgo de imposibilidad de cumplimiento legal en agosto de 2021."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/challenges/challenge-006",
+"label": "Dar tratamiento de higienización a los lodos de la EDAR Ranilla.",
+"description": "Dar tratamiento de higienización a los lodos de la EDAR Ranilla."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/challenges/challenge-001",
+"label": "Adaptar los modelos de gestión e infraestructuras a los requerimientos de la cu…",
+"description": "Adaptar los modelos de gestión e infraestructuras a los requerimientos de la cuarta revolución industrial para impulsar la transformación de los espacios productivos locales en Parques Empresariales Inteligentes, con una gestión integral del espacio productivo y mejores servicios públicos."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/challenges/challenge-002",
+"label": "Impulsar la investigación y desarrollo de nuevos productos y servicios, increme…",
+"description": "Impulsar la investigación y desarrollo de nuevos productos y servicios, incrementar la capacidad para desarrollar nuevos o mejorados productos y disponer de una plataforma tecnológica paralela para el desarrollo y pruebas de nuevos prototipos."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/challenges/challenge-003",
+"label": "Abordar los retos de ciberseguridad de los parques empresariales y las empresas…",
+"description": "Abordar los retos de ciberseguridad de los parques empresariales y las empresas alojadas en ellos mediante actividades de concienciación, ante las vulnerabilidades en infraestructuras críticas como el alumbrado público o la gestión del agua o energía."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/challenges/challenge-004",
+"label": "Desarrollar una arquitectura de servicios en capas e integrar componentes que e…",
+"description": "Desarrollar una arquitectura de servicios en capas e integrar componentes que existen por separado pero aún no se han integrado."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/challenges/challenge-005",
+"label": "Incrementar la protección de los activos materiales de los parques empresariale…",
+"description": "Incrementar la protección de los activos materiales de los parques empresariales y mejorar la seguridad y la gestión de emergencias."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/challenges/challenge-006",
+"label": "Incrementar la sostenibilidad de los parques empresariales mediante el ahorro e…",
+"description": "Incrementar la sostenibilidad de los parques empresariales mediante el ahorro energético y reducir la huella ecológica de los espacios productivos."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/challenges/challenge-007",
+"label": "Desarrollar nuevos componentes e integraciones para la gestión hídrica, ante la…",
+"description": "Desarrollar nuevos componentes e integraciones para la gestión hídrica, ante la falta de una metodología combinada con aspectos económicos, energéticos y ambientales, y favorecer el ahorro hídrico."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/challenges/challenge-008",
+"label": "Incrementar la innovación en la fabricación y la transformación avanzada e impu…",
+"description": "Incrementar la innovación en la fabricación y la transformación avanzada e impulsar la cooperación empresarial para la innovación en el marco de la Industria 4.0."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/challenges/challenge-009",
+"label": "Incrementar la capacidad para creación de empleo.",
+"description": "Incrementar la capacidad para creación de empleo."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/challenges/challenge-010",
+"label": "Incrementar la actitud emprendedora.",
+"description": "Incrementar la actitud emprendedora."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/challenges/challenge-011",
+"label": "Impulsar el Open Data en el municipio.",
+"description": "Impulsar el Open Data en el municipio."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/challenges/challenge-001",
+"label": "En el Reto Traslado de Presos, abordar un traslado lento y costoso y el empleo…",
+"description": "En el Reto Traslado de Presos, abordar un traslado lento y costoso y el empleo de gran nº de agentes."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/challenges/challenge-002",
+"label": "Abordar la interacción con el resto de usuarios y la conflictividad social.",
+"description": "Abordar la interacción con el resto de usuarios y la conflictividad social."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/challenges/challenge-003",
+"label": "Abordar lo nombrado en todas las normativas, pero no definido.",
+"description": "Abordar lo nombrado en todas las normativas, pero no definido."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/challenges/challenge-004",
+"label": "Incorporar nuevos materiales y eliminar aceros en un vehículo obsoleto.",
+"description": "Incorporar nuevos materiales y eliminar aceros en un vehículo obsoleto."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/challenges/challenge-005",
+"label": "Adaptar nuevas motorizaciones y técnicas eco al sistema que reduzcan las emisio…",
+"description": "Adaptar nuevas motorizaciones y técnicas eco al sistema que reduzcan las emisiones contaminantes, frente a un vehículo todo sólo diesel."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/challenges/challenge-006",
+"label": "Incluir nuevos sistemas de generación.",
+"description": "Incluir nuevos sistemas de generación."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/challenges/challenge-007",
+"label": "Abordar la tecnología deficiente y la incorporación de sistemas sobre la marcha…",
+"description": "Abordar la tecnología deficiente y la incorporación de sistemas sobre la marcha mediante un elemento del sistema de mando y control en la conducción de DPyP."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/challenges/challenge-008",
+"label": "Garantizar unas condiciones mínimas de confort en situaciones adversas frente a…",
+"description": "Garantizar unas condiciones mínimas de confort en situaciones adversas frente a sistemas rudimentarios de iluminación y climatización."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/challenges/challenge-009",
+"label": "Abordar los problemas de calidad de los trabajos de mantenimiento.",
+"description": "Abordar los problemas de calidad de los trabajos de mantenimiento."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/challenges/challenge-010",
+"label": "Abordar el vehículo obsoleto mediante un diseño de vanguardia.",
+"description": "Abordar el vehículo obsoleto mediante un diseño de vanguardia."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/challenges/challenge-011",
+"label": "Permitir un tratamiento rápido y eficaz de limpieza y eliminación de los residu…",
+"description": "Permitir un tratamiento rápido y eficaz de limpieza y eliminación de los residuos generados en las celdas que evite la inutilización del vehículo en servicio."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/challenges/challenge-012",
+"label": "Evitar lo máximo posible que la escolta tenga que proceder a abrochar manualmen…",
+"description": "Evitar lo máximo posible que la escolta tenga que proceder a abrochar manualmente al interno."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/challenges/challenge-013",
+"label": "Abordar las precarias medidas de seguridad y evitar aperturas no autorizadas.",
+"description": "Abordar las precarias medidas de seguridad y evitar aperturas no autorizadas."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/challenges/challenge-014",
+"label": "Adaptar la seguridad a las nuevas tecnologías mediante seguridad operativa y ci…",
+"description": "Adaptar la seguridad a las nuevas tecnologías mediante seguridad operativa y ciber protección para blindar la seguridad y la confidencialidad de los datos del vehículo, equipos y comunicaciones."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/challenges/challenge-001",
+"label": "Ejecutar físicamente y validar diseños del ITC de una desaladora experimental d…",
+"description": "Ejecutar físicamente y validar diseños del ITC de una desaladora experimental de agua de mar por osmosis inversa de 2.500 m3/d y realizar ensayos y verificaciones a escala real bajo criterios de diseño optimizados, ya que no existe en la actualidad una planta desaladora con las mencionadas características."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/challenges/challenge-002",
+"label": "Reducir con garantías el consumo de energía al mínimo posible y tratar de bajar…",
+"description": "Reducir con garantías el consumo de energía al mínimo posible y tratar de bajar de los 2,0 kWh/m3, dado que solo muy pocos equipos del mercado consiguen alta eficiencia."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/challenges/challenge-003",
+"label": "Generar nuevo conocimiento en materia de eficiencia energética en desalación, c…",
+"description": "Generar nuevo conocimiento en materia de eficiencia energética en desalación, capacitar a nuevos investigadores y crear una masa crítica de expertos y empresas canarias que quieran replicar el desarrollo."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/challenges/challenge-001",
+"label": "Desarrollar el sistema experto en la nube de diagnóstico y acompañamiento para…",
+"description": "Desarrollar el sistema experto en la nube de diagnóstico y acompañamiento para proporcionar apoyo integral al emprendimiento y la innovación y servicios de apoyo personalizados en remoto."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/challenges/challenge-002",
+"label": "Abordar la captura y tratamiento de datos no estructurados y la falta de conoci…",
+"description": "Abordar la captura y tratamiento de datos no estructurados y la falta de conocimiento de todo el universo de emprendedores y empresas para mejorar la identificación de proyectos."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/challenges/challenge-003",
+"label": "Impulsar la virtualización de servicios y la proposición de forma autónoma de i…",
+"description": "Impulsar la virtualización de servicios y la proposición de forma autónoma de itinerarios para anticiparse a las necesidades de los clientes y adecuar el portfolio de servicios a sus necesidades específicas."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/challenges/challenge-004",
+"label": "Abordar la integración de los diferentes elementos y la escalabilidad futura de…",
+"description": "Abordar la integración de los diferentes elementos y la escalabilidad futura del proyecto, facilitando la coordinación e integración de información entre los miembros de la Red de Emprendimiento e Innovación."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/challenges/challenge-005",
+"label": "Crear un entorno digital para relacionarse de una manera más abierta con empren…",
+"description": "Crear un entorno digital para relacionarse de una manera más abierta con emprendedores, empresas y otros agentes, y poner en contacto a todo el ecosistema regional de innovación."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/challenges/challenge-006",
+"label": "Mejorar el apoyo del ICE a la comunidad de emprendimiento e innovación para ate…",
+"description": "Mejorar el apoyo del ICE a la comunidad de emprendimiento e innovación para atender con éxito a un mayor número de proyectos emprendedores e innovadores, ante la dispersión geográfica y el número reducido de recursos económicos y humanos."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/challenges/challenge-007",
+"label": "Ofrecer acompañamiento a los emprendedores innovadores y formación en los ámbit…",
+"description": "Ofrecer acompañamiento a los emprendedores innovadores y formación en los ámbitos de la gestión de proyectos y de la I+D+i."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/challenges/challenge-008",
+"label": "Atraer y captar talento y nuevas empresas a la región y lograr que Castilla y L…",
+"description": "Atraer y captar talento y nuevas empresas a la región y lograr que Castilla y León gane visibilidad."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/challenges/challenge-001",
+"label": "Reactivar a gran escala y a corto plazo la promoción de vivienda plurifamiliar…",
+"description": "Reactivar a gran escala y a corto plazo la promoción de vivienda plurifamiliar protegida de consumo energético casi nulo, ante la demanda insatisfecha, dentro de límites de precio asequible."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/challenges/challenge-002",
+"label": "Preparar a los promotores de vivienda protegida para la aplicación de esta norm…",
+"description": "Preparar a los promotores de vivienda protegida para la aplicación de esta normativa y cumplir las exigencias sobre edificios de consumo energético casi nulo."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/challenges/challenge-003",
+"label": "Desarrollar una herramienta software avanzada que permita obtener rápidamente s…",
+"description": "Desarrollar una herramienta software avanzada que permita obtener rápidamente soluciones alternativas de diseño para el conjunto envolvente / instalaciones y apoyar la toma de decisiones con criterios de precio máximo, coste de ciclo de vida y consumo energético casi nulo."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/challenges/challenge-004",
+"label": "Desarrollar un modelo de sistema flexible de construcción industrializada para…",
+"description": "Desarrollar un modelo de sistema flexible de construcción industrializada para diseñar, ejecutar y mantener viviendas plurifamiliares protegidas a gran escala, adaptadas al clima y al emplazamiento, frente a las experiencias escasas y las soluciones parciales existentes."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/challenges/challenge-005",
+"label": "Reducir los plazos de ejecución, las emisiones, el consumo de materiales y la g…",
+"description": "Reducir los plazos de ejecución, las emisiones, el consumo de materiales y la generación de residuos en las viviendas de nueva planta."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/challenges/challenge-006",
+"label": "Mejorar y agilizar los procesos operativos y flujos de trabajo de AVRA para amp…",
+"description": "Mejorar y agilizar los procesos operativos y flujos de trabajo de AVRA para ampliar su capacidad de actuación y reducir su tiempo de respuesta ante las necesidades de vivienda protegida."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/challenges/challenge-007",
+"label": "Reducir el gasto energético de las familias y las situaciones de pobreza energé…",
+"description": "Reducir el gasto energético de las familias y las situaciones de pobreza energética."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/challenges/challenge-008",
+"label": "Ser reconocido con el distintivo de calidad medioambiental del Sello Verde.",
+"description": "Ser reconocido con el distintivo de calidad medioambiental del Sello Verde."
+}
+]

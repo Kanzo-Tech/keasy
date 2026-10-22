@@ -1,0 +1,394 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/producto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/prototipos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/solution-specifications/tender-001-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/prototipo-funcional"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/plataforma"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/solution-specifications/tender-001-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/prototipo-de-la-solucion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/solution-specifications/tender-001-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/version-beta-del-desarrollo-sw-de-la-solucion-de-capa-de-ia-y-accesibilidad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/solution-specifications/tender-001-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/marcos-conversacionales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/solution-specifications/tender-001-solution-004",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/interfaz-grafica-accesible"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/solution-specifications/tender-001-solution-004",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/web-del-ayuntamiento-de-alicante-con-las-mejoras-de-accesibilidad-propuestas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/prototipo-final-validado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/prototipo-funcional"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-001-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/pinzas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-001-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/portaagujas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-001-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/tijeras"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-001-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/consola-de-control"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-002-lot-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/prototipo-final-validado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-002-lot-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/prototipo-final-validado-y-demostrador"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-002-lot-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/prototipo-funcional"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-002-lot-002-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/prototipo-final-validado-y-demostrador"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-002-lot-002-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/prototipo-final-validado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-002-lot-002-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/prototipo-funcional"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/informe-de-pruebas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/nuevos-servicios-ocultos-en-tor"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/prototipo-software-final"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/prototipo-software-inicial"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/solution-specifications/tender-001-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/estado-activo-o-inactivo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/prototipo-funcional"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/solution-specifications/tender-001-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/entornos-formativos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/herramienta-digital"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/kpis-calculados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/posibles-predicciones"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/recomendaciones"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-001-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/indicadores-clave-de-rendimiento-kpis"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-001-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/predicciones-o-recomendaciones"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-001-solution-004",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/dashboards-y-reportes-visuales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-001-solution-004",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/informes-personalizables"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-002-lot-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/resultados-del-test"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-002-lot-002-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/resultados-del-test"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-002-lot-003-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/analisis-retrospectivos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-002-lot-003-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/cuadros-de-mando"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-002-lot-003-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/resumen-de-los-datos-del-paciente"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-003-lot-002-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/pruebas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-003-lot-003-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/datos-basicos-de-las-secuencias"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-003-lot-003-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/datos-estadisticos-de-los-ensamblajes-y-metricas-completas-de-calidad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-003-lot-003-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/ensamblaje-de-los-genomas-y-epigenomas-plasmidos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/unico-componente-software"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/prototipo-de-cobertura-axial-superior-a-70-cm"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/solution-specifications/tender-001-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/ambos-demostradores-y-o-prototipos-de-15-cm"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/solution-specifications/tender-001-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/plataforma-de-reconstruccion-procesado-y-extraccion-de-biomarcadores-de-imagen"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/obras"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/solution-specifications/tender-001-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/producto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/solution-specifications/tender-001-solution-005",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/matricula"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/solution-specifications/tender-001-solution-007",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/documentacion-necesaria"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/solution-specifications/tender-001-solution-007",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/pantallas-de-supervision-y-mando"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/solution-specifications/tender-002-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/obras"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/solution-specifications/tender-002-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/biogas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/solution-specifications/tender-002-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/biosolido-higienizado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/solution-specifications/tender-002-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/informacion-sobre-las-variables-de-funcionamiento-de-la-hidrolisis-termica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/prototipo-funcional"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/solution-specifications/tender-001-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/base-de-datos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/solution-specifications/tender-001-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/prueba-de-concepto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/solution-specifications/tender-001-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/analitica-predictiva"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/solution-specifications/tender-001-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/cuadros-de-mando"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/solution-specifications/tender-001-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/informe-de-resultados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/solution-specifications/tender-001-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/informes"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/solution-specifications/tender-001-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/plan-de-pruebas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/solution-specifications/tender-001-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/prototipo-funcional"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/solution-specifications/tender-001-solution-005",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/cluster"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/solution-specifications/tender-001-solution-005",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/prototipo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/solution-specifications/tender-001-solution-006",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/documento-de-analisis-y-diseno-de-la-solucion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/solution-specifications/tender-001-solution-006",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/plan-de-capacitacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/prototipos-descritos-en-la-linea-1-sistemas-avanzados-de-deteccion-y-localizacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/planta-desaladora-experimental"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/proyecto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/solution-specifications/tender-001-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/pruebas-de-rendimiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/solution-specifications/tender-001-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/contenedores"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/solution-specifications/tender-001-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/losa-de-hormigon"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/solution-specifications/tender-001-solution-004",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/sistema-de-postratamiento-compacto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/solution-specifications/tender-001-solution-005",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/datos-de-operacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/solution-specifications/tender-001-solution-005",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/programacion-abierta-del-sistema-de-control"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/modulos-habilitantes-y-funcionales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/plataforma-base"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/pmv-pack-1"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/pmv-pack-2"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/pmv-pack-3"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/solution-specifications/tender-001-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/plataforma-base"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/solution-specifications/tender-001-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/modulo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/solution-specifications/tender-001-solution-004",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/interfaz"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/solution-specifications/tender-001-solution-005",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/contenidos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/solution-specifications/tender-001-solution-006",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/contenidos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/solution-specifications/tender-001-solution-007",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/herramientas-y-espacios"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/solution-specifications/tender-001-solution-008",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/procesos-de-interaccion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/solution-specifications/tender-001-solution-009",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/cuadro-de-mando"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/solution-specifications/tender-001-solution-010",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/actividades-de-dinamizacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/solution-specifications/tender-001-solution-011",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/pmv"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/sistema-experto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/solution-specifications/tender-001-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/catalogo-libreria-virtual-de-elementos-constructivos-modulares"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/solution-specifications/tender-001-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/expected-output-type/piloto-demostrador-experimental-virtual-en-bim"
+}
+]

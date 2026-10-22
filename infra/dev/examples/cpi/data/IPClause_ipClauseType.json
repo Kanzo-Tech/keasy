@@ -1,0 +1,694 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/ip-clauses/tender-001-ip-001-clause-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/contrato-de-explotacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/ip-clauses/tender-001-ip-001-clause-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/propiedad-intelectual-preexistente"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/ip-clauses/tender-001-ip-001-clause-003",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/notificacion-de-nueva-propiedad-intelectual-o-industrial"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/ip-clauses/tender-001-ip-001-clause-004",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/informacion-sobre-los-trabajos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/ip-clauses/tender-001-ip-001-clause-005",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/derechos-de-terceros"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/ip-clauses/tender-001-ip-001-clause-006",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/separacion-de-resultados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/ip-clauses/tender-001-ip-001-clause-007",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/registro-de-resultados-patentables"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/ip-clauses/tender-001-ip-001-clause-008",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/registro-de-marca"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/ip-clauses/tender-001-ip-001-clause-009",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/cesion-de-derechos-de-explotacion-a-terceros"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/ip-clauses/tender-001-ip-001-clause-010",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/duracion-del-contrato-de-explotacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/ip-clauses/tender-001-ip-001-clause-011",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/informacion-y-liquidacion-de-derechos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/ip-clauses/tender-001-ip-001-clause-012",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/referencia-a-la-financiacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/ip-clauses/tender-001-ip-001-clause-013",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/conocimiento-confidencial-de-la-administracion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/ip-clauses/tender-001-ip-002-clause-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/derechos-preexistentes"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/ip-clauses/tender-001-ip-002-clause-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/variacion-respecto-de-la-documentacion-previa-presentada"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/ip-clauses/tender-001-ip-002-clause-003",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/derechos-preexistentes"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/ip-clauses/tender-001-ip-002-clause-004",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/derechos-de-propiedad-industrial-de-las-soluciones-aportadas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/ip-clauses/tender-001-ip-002-clause-005",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/tecnologias-propietarias"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/ip-clauses/tender-001-ip-002-clause-006",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/licencias-de-tecnologias-de-terceros"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/ip-clauses/tender-001-ip-002-clause-007",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/licencias-floss"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/ip-clauses/tender-001-ip-002-clause-008",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/tecnologias-propietarias"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/ip-clauses/tender-001-ip-002-clause-009",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/licencias-de-tecnologias-de-terceros"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/ip-clauses/tender-001-ip-002-clause-010",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/derechos-de-uso-y-de-modificacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/ip-clauses/tender-001-ip-002-clause-011",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/tecnologias-propietarias-aportadas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/ip-clauses/tender-001-ip-002-clause-012",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/licencias-de-terceros"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/ip-clauses/tender-001-ip-002-clause-013",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/licencias-de-uso-adquiridas-de-terceros"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/ip-clauses/tender-001-ip-002-clause-014",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/debida-constancia-publica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/ip-clauses/tender-001-ip-002-clause-015",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/incumplimiento-de-esta-obligacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/ip-clauses/tender-001-ip-002-clause-016",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/conocimientos-previos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/ip-clauses/tender-001-ip-002-clause-017",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/original"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/ip-clauses/tender-001-ip-002-clause-018",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/transmision-de-la-titularidad-de-los-dpi"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/ip-clauses/tender-001-ip-002-clause-019",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/consentimiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-clauses/tender-001-ip-001-clause-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/comunicacion-de-resultados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-clauses/tender-001-ip-001-clause-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/comunicacion-de-solicitudes-de-registro"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-clauses/tender-001-ip-001-clause-003",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/renuncia-a-titulos-y-transferencia-de-derechos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-clauses/tender-001-ip-001-clause-004",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/renuncia-a-titulos-y-transferencia-de-derechos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-clauses/tender-001-ip-001-clause-005",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/publicaciones-cientificas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-clauses/tender-001-ip-001-clause-006",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/originalidad-y-reclamaciones-de-terceros"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-clauses/tender-001-ip-001-clause-007",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/mantenimiento-evolucion-y-mejoras"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-clauses/tender-001-ip-001-clause-008",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/call-back-provision"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-clauses/tender-002-ip-001-clause-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/limites-de-uso-y-explotacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-clauses/tender-002-ip-001-clause-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/comunicacion-de-registros"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-clauses/tender-002-ip-001-clause-003",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/renuncia-y-transferencia-de-derechos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-clauses/tender-002-ip-001-clause-004",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/renuncia-y-transferencia-de-derechos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-clauses/tender-002-ip-001-clause-005",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/publicaciones-cientificas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-clauses/tender-002-ip-001-clause-006",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/originalidad-y-reclamaciones-de-terceros"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-clauses/tender-002-ip-001-clause-007",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/actualizaciones-y-mejoras"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-clauses/tender-002-ip-001-clause-008",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/falta-de-explotacion-de-derechos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-clauses/tender-002-ip-002-clause-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/clausula-26-del-pliego-de-clausulas-administrativas-particulares"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-clauses/tender-002-lot-001-ip-001-clause-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/mantenimiento-y-evolucion-o-mejora-de-la-solucion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-clauses/tender-002-lot-002-ip-001-clause-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/mantenimiento-y-evolucion-o-mejora-de-la-solucion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/ip-clauses/tender-001-ip-001-clause-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/derechos-de-propiedad-intelectual-preexistentes"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/ip-clauses/tender-001-ip-001-clause-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/derechos-de-propiedad-intelectual-preexistentes"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/ip-clauses/tender-001-ip-001-clause-003",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/derechos-de-propiedad-intelectual-preexistentes"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/ip-clauses/tender-001-ip-001-clause-004",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/informacion-sobre-los-resultados-aptos-para-la-explotacion-patentables-o-no"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/ip-clauses/tender-001-ip-001-clause-005",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/informacion-sobre-los-resultados-aptos-para-la-explotacion-patentables-o-no"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/ip-clauses/tender-001-ip-001-clause-006",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/licencia-de-los-resultados-de-la-investigacion-y-desarrollo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/ip-clauses/tender-001-ip-001-clause-007",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/licencia-de-los-resultados-de-la-investigacion-y-desarrollo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/ip-clauses/tender-001-ip-001-clause-008",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/obligaciones-de-la-empresa-o-empresas-adjudicatarias-en-relacion-a-los-dpi-generados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/ip-clauses/tender-001-ip-001-clause-009",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/devolucion-de-los-dpi"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/ip-clauses/tender-001-ip-001-clause-010",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/devolucion-de-los-dpi"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/ip-clauses/tender-001-ip-001-clause-011",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/devolucion-de-los-dpi"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/ip-clauses/tender-001-ip-001-clause-012",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/devolucion-de-los-dpi"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/ip-clauses/tender-001-ip-001-clause-013",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/control-de-la-explotacion-comercializacion-de-las-soluciones-innovadoras"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/ip-clauses/tender-001-ip-001-clause-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/declaracion-de-derechos-preexistentes"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/ip-clauses/tender-001-ip-001-clause-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/ambito-territorial-de-la-licencia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/ip-clauses/tender-001-ip-001-clause-003",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/ambito-territorial-de-la-licencia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/ip-clauses/tender-001-ip-001-clause-004",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/codigo-fuente"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/ip-clauses/tender-001-ip-001-clause-005",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/mejoras-y-perfeccionamientos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/ip-clauses/tender-001-ip-001-clause-006",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/transferencia-de-conocimiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/ip-clauses/tender-001-ip-001-clause-007",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/licencias-a-terceros"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/ip-clauses/tender-001-ip-001-clause-008",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/transmision-de-derechos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/ip-clauses/tender-001-ip-001-clause-009",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/recuperacion-de-derechos-por-falta-de-explotacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/ip-clauses/tender-001-ip-001-clause-010",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/recuperacion-de-derechos-por-falta-de-defensa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/ip-clauses/tender-001-ip-001-clause-011",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/vigencia-de-los-retornos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/ip-clauses/tender-001-ip-001-clause-012",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/explotacion-por-terceros"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-clauses/tender-001-ip-001-clause-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/resultados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-clauses/tender-001-ip-001-clause-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/software"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-clauses/tender-001-ip-001-clause-003",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/cesion-en-exclusiva"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-clauses/tender-001-ip-001-clause-004",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/contenidos-de-terceros"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-clauses/tender-001-ip-001-clause-005",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/reclamaciones-de-terceros"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-clauses/tender-001-ip-002-clause-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/resultados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-clauses/tender-001-ip-002-clause-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/obras-materiales-o-contenidos-de-terceros"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-clauses/tender-001-ip-002-clause-003",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/accion-o-reclamacion-de-terceros"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-clauses/tender-001-ip-002-clause-004",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/transferencia-de-conocimiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-clauses/tender-002-ip-001-clause-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/salvo-que-se-prevea-de-lo-contrario-en-la-documentacion-contractual"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-clauses/tender-002-ip-002-clause-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/derechos-preexistentes"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-clauses/tender-002-ip-002-clause-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/documentacion-justificativa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-clauses/tender-002-ip-002-clause-003",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/reclamaciones"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-clauses/tender-002-ip-002-clause-004",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/defensa-judicial-o-extrajudicial"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-clauses/tender-002-ip-002-clause-005",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/sustitucion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-clauses/tender-002-ip-002-clause-006",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/sustitucion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-clauses/tender-003-ip-001-clause-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/derechos-de-cesion-permisos-y-autorizaciones"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-clauses/tender-003-ip-001-clause-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/propiedad-industrial-y-comercial"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-clauses/tender-003-ip-002-clause-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/titularidad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-clauses/tender-003-ip-002-clause-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/derechos-preexistentes"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-clauses/tender-003-ip-002-clause-003",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/reclamaciones"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-clauses/tender-003-ip-002-clause-004",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/sustitucion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-clauses/tender-003-ip-002-clause-005",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/sustitucion-por-terceros"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/ip-clauses/tender-001-ip-001-clause-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/originalidad-y-reclamaciones-de-terceros"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/ip-clauses/tender-001-ip-001-clause-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/explotacion-comercializacion-y-derechos-de-terceros"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/ip-clauses/tender-001-ip-001-clause-003",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/proteccion-registral"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/ip-clauses/tender-001-ip-001-clause-004",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/cliente-de-referencia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/ip-clauses/tender-001-ip-001-clause-005",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/codigo-fuente-y-documentacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/ip-clauses/tender-001-ip-001-clause-006",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/modificaciones-sin-resultados-comerciales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/ip-clauses/tender-001-ip-001-clause-007",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/informacion-sobre-tecnologias-y-licencias-en-la-oferta"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/ip-clauses/tender-001-ip-002-clause-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/traspaso-del-conocimiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/ip-clauses/tender-001-ip-001-clause-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/declaracion-de-derechos-preexistentes"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/ip-clauses/tender-001-ip-001-clause-003",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/codigo-fuente-y-facultades-de-uso"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/ip-clauses/tender-001-ip-001-clause-004",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/originalidad-y-reclamaciones-de-terceros"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/ip-clauses/tender-001-ip-001-clause-005",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/explotacion-y-comercializacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/ip-clauses/tender-001-ip-001-clause-006",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/transmision-de-titularidad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/ip-clauses/tender-001-ip-001-clause-007",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/sucesion-administrativa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/ip-clauses/tender-001-ip-001-clause-008",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/comunicacion-de-resultados-y-mejoras"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/ip-clauses/tender-001-ip-001-clause-009",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/mantenimiento-y-evolucion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/ip-clauses/tender-001-ip-001-clause-010",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/proteccion-y-registro"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/ip-clauses/tender-001-ip-001-clause-011",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/devolucion-de-resultados-call-back"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/ip-clauses/tender-001-ip-001-clause-013",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/subcontratacion-y-dpi"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/ip-clauses/tender-001-ip-001-clause-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/responsabilidad-del-contratista"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/ip-clauses/tender-001-ip-001-clause-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/confidencialidad-de-la-oferta-de-la-contratista"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/ip-clauses/tender-001-ip-002-clause-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/propiedad-intelectual-de-cisco"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/ip-clauses/tender-001-ip-002-clause-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/derechos-de-explotacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/ip-clauses/tender-001-ip-002-clause-003",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/terceros"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/ip-clauses/tender-001-ip-002-clause-004",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/licencias-de-software"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/ip-clauses/tender-001-ip-002-clause-005",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/transferencia-de-conocimiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/ip-clauses/tender-001-ip-002-clause-006",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/documentacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/ip-clauses/tender-001-ip-001-clause-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/confidencialidad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/ip-clauses/tender-001-ip-002-clause-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/entrega-de-licencias"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/ip-clauses/tender-001-ip-002-clause-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/titular-de-las-licencias"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/ip-clauses/tender-002-ip-001-clause-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/confidencialidad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/ip-clauses/tender-001-ip-001-clause-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/restriccion-de-uso-y-comercializacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/ip-clauses/tender-001-ip-001-clause-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/entrega-de-materiales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/ip-clauses/tender-001-ip-001-clause-004",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/transferencia-del-conocimiento-y-la-tecnologia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/ip-clauses/tender-001-ip-001-clause-005",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/explotacion-comercial"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/ip-clauses/tender-001-ip-002-clause-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/entrega-de-codigo-fuente"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/ip-clauses/tender-001-ip-002-clause-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/identificacion-de-autoria-y-licencias"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/ip-clauses/tender-001-ip-002-clause-003",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/licencias-adicionales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/ip-clauses/tender-001-ip-002-clause-004",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/licencias-de-terceros"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/ip-clauses/tender-001-ip-002-clause-005",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/cesion-de-datos-a-terceros"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/ip-clauses/tender-001-ip-001-clause-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/dpi-previo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/ip-clauses/tender-001-ip-001-clause-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/acreditacion-de-dpi-preexistentes"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/ip-clauses/tender-001-ip-001-clause-003",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/codigo-fuente"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/ip-clauses/tender-001-ip-001-clause-004",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/originalidad-y-reclamaciones-de-terceros"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/ip-clauses/tender-001-ip-001-clause-005",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/solicitudes-de-proteccion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/ip-clauses/tender-001-ip-001-clause-006",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/devolucion-de-los-dpi-o-call-back-provision"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/ip-clauses/tender-001-ip-001-clause-007",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/comunicacion-de-ventas-y-pago"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/ip-clauses/tender-001-ip-001-clause-008",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/accionariado-y-royalties"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/ip-clauses/tender-001-ip-001-clause-009",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/subcontratistas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/ip-clauses/tender-001-ip-001-clause-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/derechos-preexistentes"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/ip-clauses/tender-001-ip-001-clause-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/modificaciones-del-diseno"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/ip-clauses/tender-001-ip-002-clause-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/programacion-abierta-del-sistema-de-control"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/ip-clauses/tender-001-ip-002-clause-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/informacion-necesaria-para-interpretar-tanto-los-archivos-como-las-tablas-de-datos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/ip-clauses/tender-001-ip-001-clause-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/derechos-preexistentes"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/ip-clauses/tender-001-ip-001-clause-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/declaracion-de-derechos-preexistentes"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/ip-clauses/tender-001-ip-002-clause-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/codigo-fuente"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/ip-clauses/tender-001-ip-002-clause-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/resultados-generados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/ip-clauses/tender-001-ip-002-clause-003",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/registro-de-derechos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/ip-clauses/tender-001-ip-002-clause-004",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/renuncia-a-titulos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/ip-clauses/tender-001-ip-002-clause-005",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/subcontratacion-y-derechos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/ip-clauses/tender-001-ip-002-clause-006",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/reclamaciones-de-terceros"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/ip-clauses/tender-001-ip-003-clause-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/remision-al-pcap"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/ip-clauses/tender-001-ip-003-clause-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/transferencia-de-conocimiento-y-traspaso-del-sistema"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/ip-clauses/tender-001-ip-001-clause-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/alcance-de-las-licencias"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/ip-clauses/tender-001-ip-001-clause-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/entregables"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/ip-clauses/tender-001-ip-001-clause-003",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/mejoras"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/ip-clauses/tender-001-ip-001-clause-004",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/tecnologias-de-terceros"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/ip-clauses/tender-001-ip-001-clause-005",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/propiedad-preexistente"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/ip-clauses/tender-001-ip-001-clause-006",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/licencias-de-terceros"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/ip-clauses/tender-001-ip-001-clause-007",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/publicacion-de-resultados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/ip-clauses/tender-001-ip-001-clause-008",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/difusion-de-resultados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/ip-clauses/tender-001-ip-001-clause-009",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/penalidad-por-falta-de-explotacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/ip-clauses/tender-001-ip-001-clause-010",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/penalidad-por-obligaciones-de-proteccion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/ip-clauses/tender-001-ip-001-clause-011",
+"o": "https://example.org/cpi-demo/id/vocab/ip-clause-type/penalidad-por-infraccion-de-derechos-de-acceso"
+}
+]

@@ -1,0 +1,994 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/milestones/tender-001-stage-001-milestone-001",
+"label": "especificación de detalle del sistema",
+"description": "justificar la viabilidad de la consecución de los requisitos funcionales especificados en la cláusula 2",
+"dueDate": null,
+"sequenceNumber": null,
+"title": "especificación de detalle del sistema"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/milestones/tender-001-stage-002-milestone-001",
+"label": "nivel de madurez necesario para iniciar las pruebas en un entorno real (TRL 7)",
+"description": "El prototipo a la finalización de esta fase deberá alcanzar el nivel de madurez necesario para iniciar las pruebas en un entorno real (TRL 7).",
+"dueDate": null,
+"sequenceNumber": null,
+"title": "nivel de madurez necesario para iniciar las pruebas en un entorno real (TRL 7)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-001-stage-001-milestone-001",
+"label": "Hito 1: Simulación de la solución innovadora",
+"description": "presentar una simulación inicial de la solución innovadora ofertada",
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "Hito 1: Simulación de la solución innovadora"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-001-stage-001-milestone-002",
+"label": "Simulación de la solución innovadora",
+"description": "validar el diseño de la solución innovadora que se haya presentado en la oferta",
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "Simulación de la solución innovadora"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-001-stage-002-milestone-001",
+"label": "Desarrollo y validación de prototipo funcional en entorno simulado",
+"description": "desarrollar y validar un primer prototipo funcional",
+"dueDate": null,
+"sequenceNumber": 2,
+"title": "Desarrollo y validación de prototipo funcional en entorno simulado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-001-stage-002-milestone-002",
+"label": "Instalación del prototipo funcional en la Fundación CCMIJU",
+"description": "instalación, puesta en marcha y realización de pruebas funcionamiento del prototipo funcional",
+"dueDate": null,
+"sequenceNumber": 3,
+"title": "Instalación del prototipo funcional en la Fundación CCMIJU"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-001-stage-002-milestone-003",
+"label": "Validación del prototipo funcional final en un entorno clínico experimental",
+"description": "realizar la validación en un entorno clínico experimental del prototipo resultante del desarrollo de los Hitos 1, 2 y 3",
+"dueDate": null,
+"sequenceNumber": 4,
+"title": "Validación del prototipo funcional final en un entorno clínico experimental"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-002-lot-001-stage-001-milestone-001",
+"label": "Desarrollo del prototipo funcional",
+"description": "Construir un prototipo funcional",
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "Desarrollo del prototipo funcional"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-002-lot-001-stage-001-milestone-002",
+"label": "Validación en un entorno simulado",
+"description": "Probar y validar el primer prototipo funcional",
+"dueDate": null,
+"sequenceNumber": 2,
+"title": "Validación en un entorno simulado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-002-lot-001-stage-002-milestone-001",
+"label": "Instalación y puesta en marcha del prototipo funcional en la Fundación CCMIJU",
+"description": "El prototipo deberá ser instalado en el quirófano correspondiente del Área Quirúrgica de la Fundación CCMIJU",
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "Instalación y puesta en marcha del prototipo funcional en la Fundación CCMIJU"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-002-lot-001-stage-002-milestone-002",
+"label": "Pruebas de funcionamiento del sistema en la Fundación CCMIJU",
+"description": "una serie de pruebas para comprobar el correcto funcionamiento del mismo",
+"dueDate": null,
+"sequenceNumber": 2,
+"title": "Pruebas de funcionamiento del sistema en la Fundación CCMIJU"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-002-lot-001-stage-002-milestone-003",
+"label": "Elaboración y presentación de protocolos de validación",
+"description": "redacción de los protocolos utilizados para la validación del uso del prototipo",
+"dueDate": null,
+"sequenceNumber": 3,
+"title": "Elaboración y presentación de protocolos de validación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-002-lot-001-stage-003-milestone-001",
+"label": "éste será evaluado por un panel de expertos",
+"description": "éste será evaluado por un panel de expertos",
+"dueDate": null,
+"sequenceNumber": 1,
+"title": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-002-lot-001-stage-003-milestone-002",
+"label": "Validación de cirugías en modelo experimental",
+"description": "Validación, por un panel de expertos en cirugía laparoscópica y robótica",
+"dueDate": null,
+"sequenceNumber": 2,
+"title": "Validación de cirugías en modelo experimental"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-002-lot-002-stage-001-milestone-001",
+"label": "Desarrollo y validación de prototipo funcional en entorno simulado",
+"description": null,
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "Desarrollo y validación de prototipo funcional en entorno simulado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-002-lot-002-stage-001-milestone-002",
+"label": "Instalación del prototipo funcional en la Fundación CCMIJU",
+"description": null,
+"dueDate": null,
+"sequenceNumber": 2,
+"title": "Instalación del prototipo funcional en la Fundación CCMIJU"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-002-lot-002-stage-001-milestone-003",
+"label": "Validación del prototipo funcional final",
+"description": null,
+"dueDate": null,
+"sequenceNumber": 3,
+"title": "Validación del prototipo funcional final"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-002-stage-001-milestone-001",
+"label": "Desarrollo y validación de prototipo funcional en entorno simulado",
+"description": null,
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "Desarrollo y validación de prototipo funcional en entorno simulado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-002-stage-001-milestone-002",
+"label": "Instalación del prototipo funcional en la Fundación CCMIJU",
+"description": null,
+"dueDate": null,
+"sequenceNumber": 2,
+"title": "Instalación del prototipo funcional en la Fundación CCMIJU"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-002-stage-001-milestone-003",
+"label": "Prototipo funcional validado en un entorno clínico experimental",
+"description": null,
+"dueDate": null,
+"sequenceNumber": 3,
+"title": "Prototipo funcional validado en un entorno clínico experimental"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-002-stage-003-milestone-001",
+"label": "Desarrollo del prototipo funcional",
+"description": "Construir un prototipo funcional",
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "Desarrollo del prototipo funcional"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-002-stage-003-milestone-002",
+"label": "Validación en un entorno simulado",
+"description": "Probar y validar el primer prototipo funcional en un entorno controlado y simulado",
+"dueDate": null,
+"sequenceNumber": 2,
+"title": "Validación en un entorno simulado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-002-stage-004-milestone-001",
+"label": "Instalación y puesta en marcha del prototipo funcional en la Fundación CCMIJU",
+"description": "El prototipo deberá ser instalado en las instalaciones de la Fundación CCMIJU",
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "Instalación y puesta en marcha del prototipo funcional en la Fundación CCMIJU"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-002-stage-004-milestone-002",
+"label": "Elaboración y presentación del protocolo de validación aparente",
+"description": "redacción y presentación del protocolo de validación aparente",
+"dueDate": null,
+"sequenceNumber": 2,
+"title": "Elaboración y presentación del protocolo de validación aparente"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-002-stage-005-milestone-001",
+"label": "Validación aparente",
+"description": "Evaluación para validar el realismo, las capacidades formativas del prototipo y su integración con la solución desarrollada en el Lote 1",
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "Validación aparente"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-002-stage-005-milestone-002",
+"label": "Elaboración y presentación del protocolo de validación de contenidos",
+"description": "redacción y presentación del protocolo de validación de contenidos",
+"dueDate": null,
+"sequenceNumber": 2,
+"title": "Elaboración y presentación del protocolo de validación de contenidos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-002-stage-005-milestone-003",
+"label": "se evaluará si los contenidos formativos de la solución desarrollada cubren de…",
+"description": "se evaluará si los contenidos formativos de la solución desarrollada cubren de forma adecuada las habilidades técnicas y cognitivas",
+"dueDate": null,
+"sequenceNumber": 3,
+"title": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-002-stage-005-milestone-004",
+"label": "Elaboración y presentación del protocolo de validación constructiva",
+"description": "redacción y presentación del protocolo de validación constructiva",
+"dueDate": null,
+"sequenceNumber": 4,
+"title": "Elaboración y presentación del protocolo de validación constructiva"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-002-stage-005-milestone-005",
+"label": "Validación constructiva",
+"description": "se evaluará la validez constructiva",
+"dueDate": null,
+"sequenceNumber": 5,
+"title": "Validación constructiva"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/milestones/tender-001-stage-001-milestone-001",
+"label": "reunión de lanzamiento del proyecto",
+"description": "Durante el primer mes desde la firma del contrato se establecerá una reunión de lanzamiento del proyecto con los contratistas.",
+"dueDate": null,
+"sequenceNumber": null,
+"title": "reunión de lanzamiento del proyecto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/milestones/tender-001-stage-001-milestone-002",
+"label": "Hito de Entrega 1.1. Estado del arte.",
+"description": "Primera versión del informe inicial de investigación ( E1 ).",
+"dueDate": null,
+"sequenceNumber": null,
+"title": "Hito de Entrega 1.1. Estado del arte."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/milestones/tender-001-stage-001-milestone-003",
+"label": "Hito de Entrega 1.2 . Propuesta de técnicas a utilizar y evolucionar.",
+"description": "Segunda versión del informe inicial de investigación ( E2 ).",
+"dueDate": null,
+"sequenceNumber": null,
+"title": "Hito de Entrega 1.2 . Propuesta de técnicas a utilizar y evolucionar."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/milestones/tender-001-stage-001-milestone-004",
+"label": "Hito de Entrega 1.3 . Construcción y prueba del prototipo software inicial.",
+"description": "Informe final de investigación ( E3 ).  Prototipo software ( E4 ).  Informe de pruebas ( E5 ).",
+"dueDate": null,
+"sequenceNumber": null,
+"title": "Hito de Entrega 1.3 . Construcción y prueba del prototipo software inicial."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/milestones/tender-001-stage-001-milestone-005",
+"label": "Evaluación de resultadosde la Fase 1",
+"description": "análisis de cumplimiento de condiciones de elegibilidad para el pase a la Fase 2",
+"dueDate": null,
+"sequenceNumber": null,
+"title": "Evaluación de resultadosde la Fase 1"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/milestones/tender-001-stage-001-milestone-006",
+"label": "prototipo software inicial",
+"description": "se debe demostrar la viabilidad del software a través de estudios analíticos y de laboratorio, y se deben obtener resultados satisfactorios de las pruebas realizadas",
+"dueDate": null,
+"sequenceNumber": null,
+"title": "prototipo software inicial"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/milestones/tender-001-stage-002-milestone-001",
+"label": "Inicio de los trabajos de la Fase 2",
+"description": null,
+"dueDate": null,
+"sequenceNumber": null,
+"title": "Inicio de los trabajos de la Fase 2"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/milestones/tender-001-stage-002-milestone-002",
+"label": "Hitos de Entrega 2.1, 2.2, 2.3, 2.4, 2.5 y 2.6.",
+"description": "Entrega iterativa del prototipo software y de la documentación asociada.",
+"dueDate": null,
+"sequenceNumber": null,
+"title": "Hitos de Entrega 2.1, 2.2, 2.3, 2.4, 2.5 y 2.6."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/milestones/tender-001-stage-002-milestone-003",
+"label": "Fin de la Fase 2",
+"description": "Entrega del prototitpo software final y recepción formal por parte del Equipo de Supervición y Control (ESyC) en base a informe técnico favorable.",
+"dueDate": null,
+"sequenceNumber": null,
+"title": "Fin de la Fase 2"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/milestones/tender-001-stage-002-milestone-004",
+"label": "prototipo software final",
+"description": "el sistema debe ser probado y validado en un entorno de simulación",
+"dueDate": null,
+"sequenceNumber": null,
+"title": "prototipo software final"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/milestones/tender-001-stage-002-milestone-001",
+"label": "1º EJECUCIÓN INTERMEDIA DE LA FASE II",
+"description": "El Equipo Responsable del Contrato, si lo estima oportuno, puede establecer, como máximo, 2 (dos) fases/hitos intermedios",
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "1º EJECUCIÓN INTERMEDIA DE LA FASE II"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/milestones/tender-001-stage-001-milestone-001",
+"label": "fin de la fase de desarrollo",
+"description": "fin de la fase de desarrollo (mes 5 aprox.)",
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "fin de la fase de desarrollo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/milestones/tender-001-stage-001-milestone-002",
+"label": "reunión de Kick-off",
+"description": "definir cómo se ejecutará el proceso de seguimiento durante la ejecución del contrato",
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "reunión de Kick-off"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/milestones/tender-001-stage-001-milestone-003",
+"label": "desarrollo de la solución",
+"description": null,
+"dueDate": null,
+"sequenceNumber": 2,
+"title": "desarrollo de la solución"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/milestones/tender-001-stage-002-milestone-001",
+"label": "finalización de la fase de despliegue y uso",
+"description": null,
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "finalización de la fase de despliegue y uso"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/milestones/tender-001-stage-002-milestone-002",
+"label": "Recogida de elementos a monitorear",
+"description": "cada dos meses desde el despliegue",
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "Recogida de elementos a monitorear"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/milestones/tender-001-stage-003-milestone-001",
+"label": "transferencia de conocimiento",
+"description": "entrega de la documentación que se estime oportuna",
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "transferencia de conocimiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/milestones/tender-002-lot-003-stage-001-milestone-001",
+"label": "MS1. Informe de inicio de sesión aprobado de entrega (SOR)",
+"description": null,
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "MS1. Informe de inicio de sesión aprobado de entrega (SOR)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/milestones/tender-002-lot-003-stage-002-milestone-001",
+"label": "MS2. Informe de resultados provisionales aprobado (IOR)",
+"description": null,
+"dueDate": null,
+"sequenceNumber": 2,
+"title": "MS2. Informe de resultados provisionales aprobado (IOR)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/milestones/tender-002-lot-003-stage-003-milestone-001",
+"label": "MS3. Informe de fin de proyecto aprobado (EOR)",
+"description": null,
+"dueDate": null,
+"sequenceNumber": 3,
+"title": "MS3. Informe de fin de proyecto aprobado (EOR)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/milestones/tender-002-stage-001-milestone-001",
+"label": "MS1. Informe de inicio de sesión aprobado de entrega (SOR)",
+"description": null,
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "MS1. Informe de inicio de sesión aprobado de entrega (SOR)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/milestones/tender-002-stage-002-milestone-001",
+"label": "MS2. Informe de resultados provisionales aprobado (IOR)",
+"description": null,
+"dueDate": null,
+"sequenceNumber": 2,
+"title": "MS2. Informe de resultados provisionales aprobado (IOR)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/milestones/tender-002-stage-003-milestone-001",
+"label": "MS3. Informe de fin de proyecto aprobado (EOR)",
+"description": null,
+"dueDate": null,
+"sequenceNumber": 3,
+"title": "MS3. Informe de fin de proyecto aprobado (EOR)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/milestones/tender-003-stage-001-milestone-001",
+"label": "MS1. Informe de inicio de sesión aprobado de entrega (SOR)",
+"description": "Prueba de aceptación superada, operativa y aprobada por la MT (M1).",
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "MS1. Informe de inicio de sesión aprobado de entrega (SOR)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/milestones/tender-003-stage-002-milestone-001",
+"label": "MS2. Informe de resultados provisionales aprobado (IOR)",
+"description": null,
+"dueDate": null,
+"sequenceNumber": 2,
+"title": "MS2. Informe de resultados provisionales aprobado (IOR)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/milestones/tender-003-stage-003-milestone-001",
+"label": "MS3. Informe de final de proyecto aprobado (EOR)",
+"description": null,
+"dueDate": null,
+"sequenceNumber": 3,
+"title": "MS3. Informe de final de proyecto aprobado (EOR)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/milestones/tender-001-stage-003-milestone-001",
+"label": "Despliegue en el entorno de Producción.",
+"description": null,
+"dueDate": null,
+"sequenceNumber": null,
+"title": "Despliegue en el entorno de Producción."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/milestones/tender-001-stage-010-milestone-001",
+"label": "acta de acepta ción",
+"description": "Al final de esta fase se firmará un acta de acepta ción.",
+"dueDate": null,
+"sequenceNumber": null,
+"title": "acta de acepta ción"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/milestones/tender-001-stage-001-milestone-001",
+"label": "Inicio de la Fase 1: planificación de la integración del elemento detector bási…",
+"description": null,
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "Inicio de la Fase 1: planificación de la integración del elemento detector básico para cada una de las tecnologías"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/milestones/tender-001-stage-001-milestone-002",
+"label": "Realización de las simulaciones Monte Carlo de cada uno de los demostradores",
+"description": null,
+"dueDate": null,
+"sequenceNumber": 2,
+"title": "Realización de las simulaciones Monte Carlo de cada uno de los demostradores"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/milestones/tender-001-stage-001-milestone-003",
+"label": "Reconstrucción de las imágenes con datos simulados de los demostradores",
+"description": null,
+"dueDate": null,
+"sequenceNumber": 3,
+"title": "Reconstrucción de las imágenes con datos simulados de los demostradores"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/milestones/tender-001-stage-001-milestone-004",
+"label": "Prueba de los demostradores",
+"description": null,
+"dueDate": null,
+"sequenceNumber": 4,
+"title": "Prueba de los demostradores"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/milestones/tender-001-stage-001-milestone-005",
+"label": "Definición de la propuesta de escalabilidad, estrategia de adquisición de datos…",
+"description": null,
+"dueDate": null,
+"sequenceNumber": 5,
+"title": "Definición de la propuesta de escalabilidad, estrategia de adquisición de datos y reconstrucción de la imagen en el sistema de cuerpo completo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/milestones/tender-001-stage-001-milestone-006",
+"label": "Caracterización del demostrador y posible desarrollo del prototipo",
+"description": null,
+"dueDate": null,
+"sequenceNumber": 6,
+"title": "Caracterización del demostrador y posible desarrollo del prototipo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/milestones/tender-001-stage-002-milestone-001",
+"label": "Inicio de la Fase 2: planificación de la adquisición del bloque de detectores y…",
+"description": null,
+"dueDate": null,
+"sequenceNumber": 7,
+"title": "Inicio de la Fase 2: planificación de la adquisición del bloque de detectores y de la electrónica de lectura para el prototipo final"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/milestones/tender-001-stage-002-milestone-002",
+"label": "Propuesta de nuevas aplicaciones para el equipo de cuerpo completo",
+"description": null,
+"dueDate": null,
+"sequenceNumber": 8,
+"title": "Propuesta de nuevas aplicaciones para el equipo de cuerpo completo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/milestones/tender-001-stage-002-milestone-003",
+"label": "Reconstrucción de las imágenes con datos simulados del sistema de cuerpo comple…",
+"description": null,
+"dueDate": null,
+"sequenceNumber": 9,
+"title": "Reconstrucción de las imágenes con datos simulados del sistema de cuerpo completo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/milestones/tender-001-stage-002-milestone-004",
+"label": "Prueba de integración de todos los componentes del prototipo final (elementos d…",
+"description": null,
+"dueDate": null,
+"sequenceNumber": 10,
+"title": "Prueba de integración de todos los componentes del prototipo final (elementos detectores, electrónica de lectura)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/milestones/tender-001-stage-002-milestone-005",
+"label": "Prueba de integración de la camilla y del TC en el prototipo",
+"description": null,
+"dueDate": null,
+"sequenceNumber": 11,
+"title": "Prueba de integración de la camilla y del TC en el prototipo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/milestones/tender-001-stage-002-milestone-006",
+"label": "Desarrollo del escáner de cuerpo completo y plataforma de reconstrucción, proce…",
+"description": null,
+"dueDate": null,
+"sequenceNumber": 12,
+"title": "Desarrollo del escáner de cuerpo completo y plataforma de reconstrucción, procesado y extracción de biomarcadores de imagen"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/milestones/tender-001-stage-001-milestone-001",
+"label": "Reunión de coordinación",
+"description": null,
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "Reunión de coordinación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/milestones/tender-001-stage-001-milestone-002",
+"label": "Pruebas de Conformidad Técnica",
+"description": null,
+"dueDate": null,
+"sequenceNumber": 2,
+"title": "Pruebas de Conformidad Técnica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/milestones/tender-001-stage-002-milestone-001",
+"label": "REUNIÓN DE SEGUIMIENTO, INFORME EVALUACIÓN ANS",
+"description": "esta reunión deberá realizarse una semana antes de la presentación de la factura trimestral",
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "REUNIÓN DE SEGUIMIENTO, INFORME EVALUACIÓN ANS"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/milestones/tender-002-stage-003-milestone-001",
+"label": "fases con agua y vapor y con 1/3 de lodo diluido",
+"description": "fases con agua y vapor y con 1/3 de lodo diluido",
+"dueDate": null,
+"sequenceNumber": null,
+"title": "fases con agua y vapor y con 1/3 de lodo diluido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/milestones/tender-002-stage-004-milestone-001",
+"label": "Las pruebas y puesta a punto finales",
+"description": "Las pruebas y puesta a punto finales, a 2/3 y plena carga de lodo en la instalación",
+"dueDate": null,
+"sequenceNumber": null,
+"title": "Las pruebas y puesta a punto finales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/milestones/tender-001-stage-001-milestone-001",
+"label": "Hito 1",
+"description": "Toma de requisitos, análisis y presentación de una propuesta tecnológica",
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "Hito 1"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/milestones/tender-001-stage-001-milestone-002",
+"label": "Hito 2",
+"description": "Puesta en marcha y configuración completa Componente 4 (IaaS)",
+"dueDate": null,
+"sequenceNumber": 2,
+"title": "Hito 2"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/milestones/tender-001-stage-001-milestone-003",
+"label": "Hito 3",
+"description": "Instalación y puesta en marcha cámaras y nodos de inteligencia artificial. Aceptación Componente 2 (Blockchain)",
+"dueDate": null,
+"sequenceNumber": 3,
+"title": "Hito 3"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/milestones/tender-001-stage-001-milestone-004",
+"label": "Hito 4",
+"description": "Prototipo funcional (Componente 1)",
+"dueDate": null,
+"sequenceNumber": 4,
+"title": "Hito 4"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/milestones/tender-001-stage-001-milestone-005",
+"label": "Hito 5",
+"description": "Aceptación parcial Casos Uso",
+"dueDate": null,
+"sequenceNumber": 5,
+"title": "Hito 5"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/milestones/tender-001-stage-001-milestone-006",
+"label": "Hito 6",
+"description": "Aceptación completa Componente 1 (Sistema de visión artificial e IA) Aceptación completa Componente 3 (Sistema de Inteligencia) Aceptación completa Componente 5 (Computación distribuida) Aceptación completa Casos de Uso",
+"dueDate": null,
+"sequenceNumber": 6,
+"title": "Hito 6"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/milestones/tender-001-stage-003-milestone-001",
+"label": "Toma de requisitos, análisis y presentación de una propuesta tecnológica",
+"description": null,
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "Toma de requisitos, análisis y presentación de una propuesta tecnológica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/milestones/tender-001-stage-004-milestone-001",
+"label": "Prototipo funcional",
+"description": "demostrar la viabilidad técnica de la solución antes de su despliegue en todas las ubicaciones",
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "Prototipo funcional"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/milestones/tender-001-stage-007-milestone-001",
+"label": "Implantación de la arquitectura big data",
+"description": null,
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "Implantación de la arquitectura big data"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/milestones/tender-001-stage-007-milestone-002",
+"label": "Ingesta de datos",
+"description": null,
+"dueDate": null,
+"sequenceNumber": 2,
+"title": "Ingesta de datos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/milestones/tender-001-stage-007-milestone-003",
+"label": "Preparación del dato",
+"description": null,
+"dueDate": null,
+"sequenceNumber": 3,
+"title": "Preparación del dato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/milestones/tender-001-stage-007-milestone-004",
+"label": "Carga del dato único",
+"description": null,
+"dueDate": null,
+"sequenceNumber": 4,
+"title": "Carga del dato único"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/milestones/tender-001-stage-008-milestone-001",
+"label": "Toma de presentación tecnológica",
+"description": "requisitos, análisis y de una propuesta",
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "Toma de presentación tecnológica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/milestones/tender-001-stage-008-milestone-002",
+"label": "Puesta en",
+"description": "marcha y configuración",
+"dueDate": null,
+"sequenceNumber": 2,
+"title": "Puesta en"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/milestones/tender-001-stage-008-milestone-003",
+"label": "Instalación y puesta en marcha cámaras y nodos de inteligencia artificial. Acep…",
+"description": null,
+"dueDate": null,
+"sequenceNumber": 3,
+"title": "Instalación y puesta en marcha cámaras y nodos de inteligencia artificial. Aceptación Componente 2 (Blockchain)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/milestones/tender-001-stage-008-milestone-004",
+"label": "Prototipo funcional (Componente 1)",
+"description": null,
+"dueDate": null,
+"sequenceNumber": 4,
+"title": "Prototipo funcional (Componente 1)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/milestones/tender-001-stage-008-milestone-005",
+"label": "Aceptación parcial Casos Uso",
+"description": null,
+"dueDate": null,
+"sequenceNumber": 5,
+"title": "Aceptación parcial Casos Uso"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/milestones/tender-001-stage-008-milestone-006",
+"label": "Aceptación completa Componente 1 (Sistema de visión artificial e IA) Aceptación…",
+"description": null,
+"dueDate": "2023-06-15",
+"sequenceNumber": 6,
+"title": "Aceptación completa Componente 1 (Sistema de visión artificial e IA) Aceptación completa Componente 3 (Sistema de Inteligencia) Aceptación completa Componente 5 (Computación distribuida) Aceptación completa Casos de Uso"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/milestones/tender-001-stage-001-milestone-001",
+"label": "Justificación Fase I",
+"description": null,
+"dueDate": "2022-01-17",
+"sequenceNumber": null,
+"title": "Justificación Fase I"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/milestones/tender-001-stage-001-milestone-002",
+"label": "Evaluación y certificación Fase I",
+"description": null,
+"dueDate": null,
+"sequenceNumber": null,
+"title": "Evaluación y certificación Fase I"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/milestones/tender-001-stage-002-milestone-001",
+"label": "Desarrollo y pruebas internas de la solución",
+"description": null,
+"dueDate": "2022-11-15",
+"sequenceNumber": null,
+"title": "Desarrollo y pruebas internas de la solución"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/milestones/tender-001-stage-002-milestone-002",
+"label": "Justificación Fase II",
+"description": null,
+"dueDate": "2022-11-16",
+"sequenceNumber": null,
+"title": "Justificación Fase II"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/milestones/tender-001-stage-002-milestone-003",
+"label": "Evaluación y certificación Fase II",
+"description": null,
+"dueDate": null,
+"sequenceNumber": null,
+"title": "Evaluación y certificación Fase II"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/milestones/tender-001-stage-003-milestone-001",
+"label": "Traslado, instalación, integración (física y lógica) y configuración de los pro…",
+"description": null,
+"dueDate": "2023-01-31",
+"sequenceNumber": null,
+"title": "Traslado, instalación, integración (física y lógica) y configuración de los prototipos en las ubicaciones designadas por Guardia Civil"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/milestones/tender-001-stage-003-milestone-002",
+"label": "Sesiones de formación, verificación pre-operacional y soporte técnico en las ub…",
+"description": null,
+"dueDate": null,
+"sequenceNumber": null,
+"title": "Sesiones de formación, verificación pre-operacional y soporte técnico en las ubicaciones designadas por Guardia Civil"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/milestones/tender-001-stage-003-milestone-003",
+"label": "Justificación Fase III",
+"description": null,
+"dueDate": "2023-03-17",
+"sequenceNumber": null,
+"title": "Justificación Fase III"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/milestones/tender-001-stage-003-milestone-004",
+"label": "Evaluación y certificación Fase III",
+"description": null,
+"dueDate": "2023-03-31",
+"sequenceNumber": null,
+"title": "Evaluación y certificación Fase III"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/milestones/tender-001-stage-001-milestone-001",
+"label": "Obra civil en Pozo Izquierdo terminada",
+"description": "Obra civil en Pozo Izquierdo terminada - 5%",
+"dueDate": null,
+"sequenceNumber": null,
+"title": "Obra civil en Pozo Izquierdo terminada"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/milestones/tender-001-stage-001-milestone-002",
+"label": "Estructura de bastidor planteada con tubos totalmente instalados",
+"description": "Estructura de bastidor planteada con tubos totalmente instalados, canalizaciones hidráulicas y grupos de bombeo pre-instalados - 10%",
+"dueDate": null,
+"sequenceNumber": null,
+"title": "Estructura de bastidor planteada con tubos totalmente instalados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/milestones/tender-001-stage-001-milestone-003",
+"label": "Cuadros eléctricos totalmente terminados",
+"description": "Cuadros eléctricos totalmente terminados - 10%",
+"dueDate": null,
+"sequenceNumber": null,
+"title": "Cuadros eléctricos totalmente terminados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/milestones/tender-001-stage-005-milestone-001",
+"label": "pruebas de arranque y puesta en marcha de la planta",
+"description": "integrando el bombeo de agua de mar existente, comprobando el correcto funcionamiento de todos los equipos suministrados.",
+"dueDate": null,
+"sequenceNumber": null,
+"title": "pruebas de arranque y puesta en marcha de la planta"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/milestones/tender-001-stage-005-milestone-002",
+"label": "pruebas de rendimiento",
+"description": "Metodología a seguir para realizar las pruebas de rendimiento que permitirán certificar el consumo específico de energía del proceso de desalación instalado y compararlo con lo ofertado/proyecciones",
+"dueDate": null,
+"sequenceNumber": null,
+"title": "pruebas de rendimiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/milestones/tender-001-stage-006-milestone-001",
+"label": "firma del acta final",
+"description": "La formación tendrá una duración mínima de 3 jornadas de trabajo (mínimo 24 horas).",
+"dueDate": null,
+"sequenceNumber": null,
+"title": "firma del acta final"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/milestones/tender-001-stage-001-milestone-001",
+"label": "H1.2: Plan de Proyecto",
+"description": "Documento de planificación del proyecto",
+"dueDate": null,
+"sequenceNumber": 2,
+"title": "H1.2: Plan de Proyecto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/milestones/tender-001-stage-001-milestone-002",
+"label": "H1.1: Análisis de situación",
+"description": "Análisis de partida de la situación en cuanto a los sistemas de información existentes.",
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "H1.1: Análisis de situación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/milestones/tender-001-stage-002-milestone-001",
+"label": "H2.1: Plataforma Base",
+"description": "Definición y prueba de muestra del front-end, diseño gráfico, soportes y usabilidad de la plataforma.",
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "H2.1: Plataforma Base"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/milestones/tender-001-stage-002-milestone-002",
+"label": "H2.2: Módulos Habilitantes y Funcionales",
+"description": "desarrollo, interconexión de los módulos funcionales, la utilización de los habilitantes y su interacción con la plataforma base",
+"dueDate": null,
+"sequenceNumber": 2,
+"title": "H2.2: Módulos Habilitantes y Funcionales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/milestones/tender-001-stage-003-milestone-001",
+"label": "H3.1: PMV Pack 1",
+"description": "Prueba funcional y aprobación de los PMV definidos en el primer pack",
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "H3.1: PMV Pack 1"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/milestones/tender-001-stage-003-milestone-002",
+"label": "H3.2: PMV Pack 2",
+"description": "Prueba funcional y aprobación de los PMV definidos en el segundo pack",
+"dueDate": null,
+"sequenceNumber": 2,
+"title": "H3.2: PMV Pack 2"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/milestones/tender-001-stage-003-milestone-003",
+"label": "H3.3: PMV Pack 3",
+"description": "Prueba funcional y aprobación de los PMV definidos en el tercer pack",
+"dueDate": null,
+"sequenceNumber": 3,
+"title": "H3.3: PMV Pack 3"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/milestones/tender-001-stage-003-milestone-004",
+"label": "H3.4: Test y Pruebas",
+"description": "Documento de informe de los test y pruebas realizadas a todas las funcionalidades de la plataforma.",
+"dueDate": null,
+"sequenceNumber": 4,
+"title": "H3.4: Test y Pruebas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/milestones/tender-001-stage-004-milestone-001",
+"label": "H4.1: Puesta en funcionamiento",
+"description": "Proceso de despliegue en entorno demostrativo del Sistema",
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "H4.1: Puesta en funcionamiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/milestones/tender-001-stage-004-milestone-002",
+"label": "H4.2: Test de Estrés",
+"description": "Documento de informe de 'test de estrés' realizado en diferentes condiciones aceptadas previamente",
+"dueDate": null,
+"sequenceNumber": 2,
+"title": "H4.2: Test de Estrés"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/milestones/tender-001-stage-005-milestone-001",
+"label": "H5.1: Plan de Dinamización",
+"description": "Ajuste y adecuación si procede del plan de dinamización definidos en el H1",
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "H5.1: Plan de Dinamización"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/milestones/tender-001-stage-005-milestone-002",
+"label": "H5.2: Sensibilización",
+"description": "Ejecución del plan de sensibilización",
+"dueDate": null,
+"sequenceNumber": 2,
+"title": "H5.2: Sensibilización"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/milestones/tender-001-stage-005-milestone-003",
+"label": "H5.3: Formación",
+"description": "Ejecución del plan de formación.",
+"dueDate": null,
+"sequenceNumber": 3,
+"title": "H5.3: Formación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/milestones/tender-001-stage-005-milestone-004",
+"label": "H5.4: Comunicación",
+"description": "Ejecución del plan de comunicación",
+"dueDate": null,
+"sequenceNumber": 4,
+"title": "H5.4: Comunicación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/milestones/tender-001-stage-006-milestone-001",
+"label": "H6.1: Aprobación final",
+"description": "Al menos 1 mes de realización de pruebas y testeos con usuarios reales por parte de SENDA",
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "H6.1: Aprobación final"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/milestones/tender-001-stage-001-milestone-001",
+"label": "prueba de concepto",
+"description": "confirmar y demostrar la integración de las funcionalidades de simulación arquitectónica (diseño, proyecto y calculo estructural) y constructiva (industrialización)",
+"dueDate": null,
+"sequenceNumber": null,
+"title": "prueba de concepto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/milestones/tender-001-stage-003-milestone-001",
+"label": "ajustes necesarios de funcionamiento y calibración del sistema",
+"description": "identificar y realizar los últimos ajustes necesarios de funcionamiento y calibración del sistema",
+"dueDate": null,
+"sequenceNumber": null,
+"title": "ajustes necesarios de funcionamiento y calibración del sistema"
+}
+]

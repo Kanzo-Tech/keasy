@@ -1,0 +1,611 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/documents/adjudicacion-1b1b4140",
+"label": "Anuncio de adjudicación",
+"identifier": "adjudicacion-1b1b4140",
+"sourcePath": "input/award/adjudicacion.pdf",
+"title": "Anuncio de adjudicación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/adjudicacion-232f9242",
+"label": "Anuncio de adjudicación",
+"identifier": "adjudicacion-232f9242",
+"sourcePath": "input/award/adjudicación.pdf",
+"title": "Anuncio de adjudicación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/adjudicacion-5fafe5b6",
+"label": "Anuncio de adjudicación",
+"identifier": "adjudicacion-5fafe5b6",
+"sourcePath": "input/award/adjudicación.pdf",
+"title": "Anuncio de adjudicación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/adjudicacion-6b892ef5",
+"label": "Anuncio de adjudicación",
+"identifier": "adjudicacion-6b892ef5",
+"sourcePath": "input/award/adjudicacion.pdf",
+"title": "Anuncio de adjudicación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/adjudicacion-834f2cc3",
+"label": "Anuncio de adjudicación",
+"identifier": "adjudicacion-834f2cc3",
+"sourcePath": "input/award/adjudicacion.pdf",
+"title": "Anuncio de adjudicación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/adjudicacion-946897dc",
+"label": "Ayuntamiento de Madrid",
+"identifier": "adjudicacion-946897dc",
+"sourcePath": "input/award/adjudicacion.pdf",
+"title": "Ayuntamiento de Madrid"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/adjudicacion-9f53951e",
+"label": "Anuncio de adjudicación",
+"identifier": "adjudicacion-9f53951e",
+"sourcePath": "input/award/adjudicación.pdf",
+"title": "Anuncio de adjudicación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/adjudicacion-a07b455a",
+"label": "Datos de publicación:",
+"identifier": "adjudicacion-a07b455a",
+"sourcePath": "input/award/adjudicacion.pdf",
+"title": "Datos de publicación:"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/adjudicacion-a6870626",
+"label": "Anuncio de adjudicación",
+"identifier": "adjudicacion-a6870626",
+"sourcePath": "input/award/adjudicacion.pdf",
+"title": "Anuncio de adjudicación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/caratula-pcap-55e65309",
+"label": "CARÁTULA DEL PLIEGO DE CLÁUSULAS ADMINISTRATIVAS PARTICULARES CONTRATACIÓN DEL…",
+"identifier": "caratula-pcap-55e65309",
+"sourcePath": "input/tender/expediente-1/carátula-PCAP.pdf",
+"title": "CARÁTULA DEL PLIEGO DE CLÁUSULAS ADMINISTRATIVAS PARTICULARES CONTRATACIÓN DEL DESARROLLO DE UNA HERRAMIENTA DIGITAL (RADAR EVALUATION DIGITAL PLATFORM) DE RECOGIDA, ANÁLISIS Y VISUALIZACIÓN DE INDICA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/ciber-1-de5bcb1b",
+"label": "RETO 1 Detección de bots y servidores de comando y control (C&C)",
+"identifier": "ciber-1-de5bcb1b",
+"sourcePath": "input/cpm/CIBER_1.pdf",
+"title": "RETO 1 Detección de bots y servidores de comando y control (C&C)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/ciber-2-c9c9bf8e",
+"label": "RETO 2 Detección de dominios .onion en la red TOR no indexados por fuentes públ…",
+"identifier": "ciber-2-c9c9bf8e",
+"sourcePath": "input/cpm/CIBER_2.pdf",
+"title": "RETO 2 Detección de dominios .onion en la red TOR no indexados por fuentes públicas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/ciber-3-85b90042",
+"label": "RETO 3 Detección, categorización y predicción automatizada de ciberataques.",
+"identifier": "ciber-3-85b90042",
+"sourcePath": "input/cpm/CIBER_3.pdf",
+"title": "RETO 3 Detección, categorización y predicción automatizada de ciberataques."
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/ciber-4-85464485",
+"label": "RETO 4: Servicios avanzados para la atribución de ciber-incidentes",
+"identifier": "ciber-4-85464485",
+"sourcePath": "input/cpm/CIBER_4.pdf",
+"title": "RETO 4: Servicios avanzados para la atribución de ciber-incidentes"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/conclusiones-13c7e179",
+"label": "INFORME FINAL DE LAS ACTUACIONES DE LA CONSULTA PRELIMINAR DEL MERCADO PARA \"LA…",
+"identifier": "conclusiones-13c7e179",
+"sourcePath": "input/cpm/conclusiones.pdf",
+"title": "INFORME FINAL DE LAS ACTUACIONES DE LA CONSULTA PRELIMINAR DEL MERCADO PARA \"LA BÚSQUEDA DE SOLUCIONES INNOVADORAS A LA COMUNICACIÓN E INTERACCIÓN DE LAS PERSONAS CON DISCAPACIDAD AUDITIVA SEVERA\" DE "
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/conclusiones-2a528da5",
+"label": "INFORME FINAL DE RESULTADOS DE LA CONSULTA PRELIMINAR AL MERCADO PARA EL RETO '…",
+"identifier": "conclusiones-2a528da5",
+"sourcePath": "input/cpm/conclusiones.pdf",
+"title": "INFORME FINAL DE RESULTADOS DE LA CONSULTA PRELIMINAR AL MERCADO PARA EL RETO ' CAPA DE ACCESO UNIFICADO BASADA EN INTELIGENCIA ARTIFICIAL SOBRE NAVEGACIÓN WEB Y TRAMITACIÓN ELECTRÓNICA POR SEDE ' PLA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/conclusiones-2d1e2ae8",
+"label": "Rapid Detection and Control Systems for Antimicrobial Resistance",
+"identifier": "conclusiones-2d1e2ae8",
+"sourcePath": "input/cpm/conclusiones.pdf",
+"title": "Rapid Detection and Control Systems for Antimicrobial Resistance"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/conclusiones-611de2c0",
+"label": "INFORME FINAL SOBRE LA CONSULTA PRELIMINAR AL MERCADO SOBRE LOS RETOS EN MATERI…",
+"identifier": "conclusiones-611de2c0",
+"sourcePath": "input/cpm/conclusiones.pdf",
+"title": "INFORME FINAL SOBRE LA CONSULTA PRELIMINAR AL MERCADO SOBRE LOS RETOS EN MATERIA DE CIBERSEGURIDAD, PUBLICADA MEDIANTE RESOLUCIÓN DE 20 DE JULIO DE 2018 DE LA PRESIDENTA DEL INSTITUTO PARA LA COMPETIV"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/conclusiones-77baea34",
+"label": "INFORME DE CONCLUSIONES DE LA CONSULTA PRELIMINAR DEL MERCADO DEL RETO DESARROL…",
+"identifier": "conclusiones-77baea34",
+"sourcePath": "input/cpm/conclusiones.pdf",
+"title": "INFORME DE CONCLUSIONES DE LA CONSULTA PRELIMINAR DEL MERCADO DEL RETO DESARROLLO DE TECNOLOGÍA EN EL ÁMBITO DE LA AUTOMATIZACIÓN DE TAREAS Y PROCESOS EN SISTEMAS DE ROBOTIZACIÓN QUIRÚRGICA CON CARGO "
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/conclusiones-8cb55f18",
+"label": "INFORME FINAL CPM 2017-01",
+"identifier": "conclusiones-8cb55f18",
+"sourcePath": "input/cpm/conclusiones.pdf",
+"title": "INFORME FINAL CPM 2017-01"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/conclusiones-dfa3f47a",
+"label": "INFORME FINAL DELRESULTADO DE LA CONSULTA PRELIMINAR AL MERCADO",
+"identifier": "conclusiones-dfa3f47a",
+"sourcePath": "input/cpm/conclusiones.pdf",
+"title": "INFORME FINAL DELRESULTADO DE LA CONSULTA PRELIMINAR AL MERCADO"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/conclusiones-ed961b21",
+"label": "Informe final del resultado de la Consulta preliminar del Mercado en el marco d…",
+"identifier": "conclusiones-ed961b21",
+"sourcePath": "input/cpm/conclusiones.pdf",
+"title": "Informe final del resultado de la Consulta preliminar del Mercado en el marco de la iniciativa MITLOP, 'Modelo integrado de gestión de lodos de depuración y de otros residuos orgánicos'."
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/conclusiones-f3129ed4",
+"label": "SISTEMA DE VIVIENDA PROTEGIDA INDUSTRIALIZADA DE CONSUMO ENERGÉTICO CASI NULO -…",
+"identifier": "conclusiones-f3129ed4",
+"sourcePath": "input/cpm/conclusiones.pdf",
+"title": "SISTEMA DE VIVIENDA PROTEGIDA INDUSTRIALIZADA DE CONSUMO ENERGÉTICO CASI NULO - nZEISHB (Near Zero Energy Industrialized Social Housing"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/convocatoria-0e51aebf",
+"label": "Resolución del Director General del Servicio de Salud de las Illes Balears por…",
+"identifier": "convocatoria-0e51aebf",
+"sourcePath": "input/cpm/convocatoria.pdf",
+"title": "Resolución del Director General del Servicio de Salud de las Illes Balears por la cual se aprueba la convocatoria de la consulta preliminar al mercado para la investigación de soluciones dentro del ma"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/convocatoria-1059c4cb",
+"label": "Bases de la convocatoria de la Consulta Preliminar al Mercado en el marco de la…",
+"identifier": "convocatoria-1059c4cb",
+"sourcePath": "input/cpm/convocatoria.pdf",
+"title": "Bases de la convocatoria de la Consulta Preliminar al Mercado en el marco de la iniciativa MITLOP, 'Modelo integrado de gestión de lodos de depuración y de otros residuos orgánicos'."
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/convocatoria-2ecbebea",
+"label": "Se convoca la Consulta Preliminar del Mercado, para la búsqueda de soluciones i…",
+"identifier": "convocatoria-2ecbebea",
+"sourcePath": "input/cpm/convocatoria.pdf",
+"title": "Se convoca la Consulta Preliminar del Mercado, para la búsqueda de soluciones innovadoras en proyectos de innovación relacionados con el Gestor de interoperabilidad semántica de la red valenciana de B"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/convocatoria-3d803a29",
+"label": "SISTEMA DE VIVIENDA PROTEGIDA INDUSTRIALIZADA DE CONSUMO ENERGÉTICO CASI NULO n…",
+"identifier": "convocatoria-3d803a29",
+"sourcePath": "input/cpm/convocatoria.pdf",
+"title": "SISTEMA DE VIVIENDA PROTEGIDA INDUSTRIALIZADA DE CONSUMO ENERGÉTICO CASI NULO nZEISHB"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/convocatoria-a0181e7c",
+"label": "Director General de Innovación y Promoción de la Ciudad",
+"identifier": "convocatoria-a0181e7c",
+"sourcePath": "input/cpm/convocatoria.pdf",
+"title": "Director General de Innovación y Promoción de la Ciudad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/convocatoria-e334bc5d",
+"label": "Rapid Detection and Control Systems for Antimicrobial Resistance Call for innov…",
+"identifier": "convocatoria-e334bc5d",
+"sourcePath": "input/cpm/convocatoria.pdf",
+"title": "Rapid Detection and Control Systems for Antimicrobial Resistance Call for innovative solutions"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/convocatoria-e3a5246f",
+"label": "Código Seguro de Verificación: 5b254b7a-c9a4-4211-a1af-605f8a91dd1d Origen: Adm…",
+"identifier": "convocatoria-e3a5246f",
+"sourcePath": "input/cpm/convocatoria.pdf",
+"title": "Código Seguro de Verificación: 5b254b7a-c9a4-4211-a1af-605f8a91dd1d Origen: Administración Identificador documento original: ES_L01030149_2021_11431705 Fecha de impresión: 23/02/2021 13:45:21"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/convocatoria-fa3fba7d",
+"label": "RESOLUCIÓN DEL DIRECTOR GENERAL DEL CENTRO PARA EL DESARROLLO TECNOLÓGICO Y LA…",
+"identifier": "convocatoria-fa3fba7d",
+"sourcePath": "input/cpm/convocatoria.pdf",
+"title": "RESOLUCIÓN DEL DIRECTOR GENERAL DEL CENTRO PARA EL DESARROLLO TECNOLÓGICO Y LA INNOVACIÓN. E.P.E. (CDTI) DE CONVOCATORIA DE CONSULTA PRELIMINAR DEL MERCADO PARA CONOCER EL GRADO DE DESARROLLO DE DIVER"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/convocatoria1-48474000",
+"label": "Detalles de la Consulta Preliminar del Mercado",
+"identifier": "convocatoria1-48474000",
+"sourcePath": "input/cpm/convocatoria1.pdf",
+"title": "Detalles de la Consulta Preliminar del Mercado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/convocatoria2-3310ce88",
+"label": "Jornada Técnica Compra Pública Innovadora Reto Traslado de Presos",
+"identifier": "convocatoria2-3310ce88",
+"sourcePath": "input/cpm/convocatoria2.pdf",
+"title": "Jornada Técnica Compra Pública Innovadora Reto Traslado de Presos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/desalro-2-o-ajudicacion-70a1e26f",
+"label": "Anuncio de adjudicación",
+"identifier": "desalro-2-o-ajudicacion-70a1e26f",
+"sourcePath": "input/award/DESALRO 2.O_Ajudicacion.pdf",
+"title": "Anuncio de adjudicación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/desalro-2-o-cpti-memoria-a381745a",
+"label": "MEMORIA JUSTIFICATIVA DE CONTRATO MAYOR. SOLICITUD: 0565/2022",
+"identifier": "desalro-2-o-cpti-memoria-a381745a",
+"sourcePath": "input/cpm/DESALRO 2.O_CPTI_Memoria.pdf",
+"title": "MEMORIA JUSTIFICATIVA DE CONTRATO MAYOR. SOLICITUD: 0565/2022"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/desalro-2-o-licitacion-pcap-3b242a51",
+"label": "PLIEGO DE CLÁUSULAS ADMINISTRATIVAS PARTICULARES PARA LA CONTRATACIÓN DENOMINAD…",
+"identifier": "desalro-2-o-licitacion-pcap-3b242a51",
+"sourcePath": "input/tender/DESALRO 2.O_Licitacion_PCAP.pdf",
+"title": "PLIEGO DE CLÁUSULAS ADMINISTRATIVAS PARTICULARES PARA LA CONTRATACIÓN DENOMINADA:"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/desalro-2-o-licitacion-ptt-1722bad8",
+"label": "Pliego de Prescripciones Técnicas para la contratación denominada ' Obras de co…",
+"identifier": "desalro-2-o-licitacion-ptt-1722bad8",
+"sourcePath": "input/tender/DESALRO 2.O_Licitacion_PTT.pdf",
+"title": "Pliego de Prescripciones Técnicas para la contratación denominada ' Obras de construcción de una planta desaladora experimental de 2.500 m3/d por ósmosis inversa de agua de mar en las instalaciones de"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/desalro-2-o-modificacion-contrato-d08736ff",
+"label": "Anuncio de modificación de contrato",
+"identifier": "desalro-2-o-modificacion-contrato-d08736ff",
+"sourcePath": "input/award/DESALRO 2.O_Modificacion_Contrato.pdf",
+"title": "Anuncio de modificación de contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/informe-conclusiones-0a7d22c0",
+"label": "Consulta Preliminar al Mercado del servicio de diseño, desarrollo, implantación…",
+"identifier": "informe-conclusiones-0a7d22c0",
+"sourcePath": "input/cpm/informe_conclusiones.pdf",
+"title": "Consulta Preliminar al Mercado del servicio de diseño, desarrollo, implantación, mantenimiento y soporte de una Plataforma Tecnológica para la Gestión de Parques Empresariales Inteligentes"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/pcap-0266549f",
+"label": "CONDICIONES DE CONTRATACIÓN DE LA COMPRA PUBLICA PRECOMERCIAL DE LOS SERVICIOS…",
+"identifier": "pcap-0266549f",
+"sourcePath": "input/tender/PCAP.pdf",
+"title": "CONDICIONES DE CONTRATACIÓN DE LA COMPRA PUBLICA PRECOMERCIAL DE LOS SERVICIOS DE PARA DESARROLLAR UNA SOLUCIÓN EN EL ÁMBITO DE LA COMUNICACIÓN E INTERACCIÓN DE LAS PERSONAS CON DISCAPACIDAD AUDITIVA "
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/pcap-11a93f8d",
+"label": "PLIEGO DE CLÁUSULAS ADMINISTRATIVAS PARTICULARES DEL ANTEPROYECTO PARA LA CONST…",
+"identifier": "pcap-11a93f8d",
+"sourcePath": "input/tender/expediente-2/PCAP.pdf",
+"title": "PLIEGO DE CLÁUSULAS ADMINISTRATIVAS PARTICULARES DEL ANTEPROYECTO PARA LA CONSTRUCCIÓN DE UNA PLANTA DE HIDRÓLISIS TÉRMICA EN LA EDAR RANILLA, ALCALÁ DE GUADAIRA (SEVILLA)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/pcap-2cd1d84c",
+"label": "COMUNIDAD AUTÓNOMA DE LAS ILLES BALEARS",
+"identifier": "pcap-2cd1d84c",
+"sourcePath": "input/tender/PCAP.pdf",
+"title": "COMUNIDAD AUTÓNOMA DE LAS ILLES BALEARS"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/pcap-373c89cd",
+"label": "Aviso legal: Este documento es una traducción automática y no es el documento o…",
+"identifier": "pcap-373c89cd",
+"sourcePath": "input/tender/expediente-2/PCAP.pdf",
+"title": "Aviso legal: Este documento es una traducción automática y no es el documento oficial, puede tener alguna variación o error respecto al oficial, por favor; consulte siempre la versión en catalán. Reco"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/pcap-40ab644a",
+"label": "Nº Expte:",
+"identifier": "pcap-40ab644a",
+"sourcePath": "input/tender/PCAP.pdf",
+"title": "Nº Expte:"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/pcap-4e122f33",
+"label": "Una manera de hacer Europa",
+"identifier": "pcap-4e122f33",
+"sourcePath": "input/tender/expediente-1/PCAP.pdf",
+"title": "Una manera de hacer Europa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/pcap-73511535",
+"label": "ÍNDICE",
+"identifier": "pcap-73511535",
+"sourcePath": "input/tender/PCAP.pdf",
+"title": "ÍNDICE"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/pcap-c985adf9",
+"label": "PLIEGO TIPO DE CLÁUSULAS ADMINISTRATIVAS PARTICULARES PARA LA CONTRATACIÓN, MED…",
+"identifier": "pcap-c985adf9",
+"sourcePath": "input/tender/expediente-3/PCAP.pdf",
+"title": "PLIEGO TIPO DE CLÁUSULAS ADMINISTRATIVAS PARTICULARES PARA LA CONTRATACIÓN, MEDIANTE PROCEDIMIENTO ABIERTO, DE UN SUMINISTRO PARA EL LABORATORI DE REFERÈNCIA DE CATALUNYA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/pcap-d97fe9cf",
+"label": "PLIEGO DE CLÁUSULAS ADMINISTRATIVAS PARTICULARES PARA LA CONTRATACIÓN DEL DESAR…",
+"identifier": "pcap-d97fe9cf",
+"sourcePath": "input/tender/expediente-1/PCAP.pdf",
+"title": "PLIEGO DE CLÁUSULAS ADMINISTRATIVAS PARTICULARES PARA LA CONTRATACIÓN DEL DESARROLLO DE UNA HERRAMIENTA DIGITAL (RADAR EVALUATION DIGITAL PLATFORM) DE RECOGIDA, ANÁLISIS Y VISUALIZACIÓN DE INDICADORES"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/pcap-edc05163",
+"label": "0. ENTIDAD ADJUDICADORA.",
+"identifier": "pcap-edc05163",
+"sourcePath": "input/tender/PCAP.pdf",
+"title": "0. ENTIDAD ADJUDICADORA."
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/pcap-ppt-30c1b294",
+"label": "Expte. CPP 05/2021 AB (DCCPI/OCPI) DE LICITACIÓN DE COMPRA PÚBLICA PRECOMERCIAL…",
+"identifier": "pcap-ppt-30c1b294",
+"sourcePath": "input/tender/PCAP-PPT.pdf",
+"title": "Expte. CPP 05/2021 AB (DCCPI/OCPI) DE LICITACIÓN DE COMPRA PÚBLICA PRECOMERCIAL PARA EL DESARROLLO DE SOLUCIONES TECNOLÓGICAS EN EL ÁMBITO DE LA SEGURIDAD EN EL MEDIO RURAL."
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/pcap-ppt-6fe97e58",
+"label": "DOCUMENTO REGULADOR DE LAS CONDICIONES QUE REGIRÁN LA CONTRATACIÓN, MEDIANTE LA…",
+"identifier": "pcap-ppt-6fe97e58",
+"sourcePath": "input/tender/PCAP-PPT.pdf",
+"title": "DOCUMENTO REGULADOR DE LAS CONDICIONES QUE REGIRÁN LA CONTRATACIÓN, MEDIANTE LA MODALIDAD DE COMPRA PÚBLICA PRECOMERCIAL, DEL SERVICIO DE DESARROLLO Y FASE DE DEMOSTRACIÓN DE UN EQUIPO PET DE ALTA COB"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/pcap-ppt-bdf6a8b6",
+"label": "Consejería de Fomento, Articulación del Territorio y Vivienda Agencia de Vivien…",
+"identifier": "pcap-ppt-bdf6a8b6",
+"sourcePath": "input/tender/PCAP-PPT.pdf",
+"title": "Consejería de Fomento, Articulación del Territorio y Vivienda Agencia de Vivienda y Rehabilitación de Andalucía"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/pcap-ppt-c3536c1a",
+"label": "Exp. CPP 02/2024 AB (DCCPI/OCPI)",
+"identifier": "pcap-ppt-c3536c1a",
+"sourcePath": "input/tender/PCAP-PPT.pdf",
+"title": "Exp. CPP 02/2024 AB (DCCPI/OCPI)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/ppt-1e453d1c",
+"label": "| DOCUMENTO DOCUMENT ANEXAT | ÓRGANO NN.TT. INNOVACIÓN E INFORMÁTICA | REFERENC…",
+"identifier": "ppt-1e453d1c",
+"sourcePath": "input/tender/PPT.pdf",
+"title": "| DOCUMENTO DOCUMENT ANEXAT | ÓRGANO NN.TT. INNOVACIÓN E INFORMÁTICA | REFERENCIA NTCT2021000057 |"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/ppt-6d0c4a80",
+"label": "1. INTRODUCCION",
+"identifier": "ppt-6d0c4a80",
+"sourcePath": "input/tender/PPT.pdf",
+"title": "1. INTRODUCCION"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/ppt-84122621",
+"label": "FONDO [UROPEO",
+"identifier": "ppt-84122621",
+"sourcePath": "input/tender/PPT.PDF",
+"title": "FONDO [UROPEO"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/ppt-8e40836e",
+"label": "PLIEGO DE PRESCRIPCIONES TÉCNICAS PARA LA CONTRATACIÓN DEL DESARROLLO DE UNA HE…",
+"identifier": "ppt-8e40836e",
+"sourcePath": "input/tender/expediente-1/PPT.pdf",
+"title": "PLIEGO DE PRESCRIPCIONES TÉCNICAS PARA LA CONTRATACIÓN DEL DESARROLLO DE UNA HERRAMIENTA DIGITAL (RADAR EVALUATION DIGITAL PLATFORM) DE RECOGIDA, ANÁLISIS Y VISUALIZACIÓN DE INDICADORES PARA LA EVALUA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/ppt-c23cda37",
+"label": "Subdirección de Tecnología de la Información",
+"identifier": "ppt-c23cda37",
+"sourcePath": "input/tender/PPT.pdf",
+"title": "Subdirección de Tecnología de la Información"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/ppt-c3dec593",
+"label": "Aviso legal: Este documento es una traducción automática y no es el documento o…",
+"identifier": "ppt-c3dec593",
+"sourcePath": "input/tender/expediente-2/PPT.pdf",
+"title": "Aviso legal: Este documento es una traducción automática y no es el documento oficial, puede tener alguna variación o error respecto al oficial, por favor; consulte siempre la versión en catalán. Reco"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/ppt-db62efde",
+"label": "PLIEGO DE PRESCRIPCIONES TÉCNICAS PARA LA CONTRATACIÓN DEL SUMINISTRO DEL MATER…",
+"identifier": "ppt-db62efde",
+"sourcePath": "input/tender/expediente-3/PPT.pdf",
+"title": "PLIEGO DE PRESCRIPCIONES TÉCNICAS PARA LA CONTRATACIÓN DEL SUMINISTRO DEL MATERIAL NECESARIO PARA LLEVAR A CABO EL PROYECTO RADAR IMPULSADO POR LRC-MAR-CSC*: Detección rápida de resistencias antibióti"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/ppt-e28ddcee",
+"label": "Nº Expte: 005/21",
+"identifier": "ppt-e28ddcee",
+"sourcePath": "input/tender/expediente-2/PPT.pdf",
+"title": "Nº Expte: 005/21"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/ppt-e52b10f3",
+"label": "PROYECTO PARA LA CONSTRUCCIÓN DEL COMPLEJO AMBIENTAL COPERO. DOS HERMANAS (SEVI…",
+"identifier": "ppt-e52b10f3",
+"sourcePath": "input/tender/expediente-1/PPT.pdf",
+"title": "PROYECTO PARA LA CONSTRUCCIÓN DEL COMPLEJO AMBIENTAL COPERO. DOS HERMANAS (SEVILLA)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/resolucion-47909f55",
+"label": "RESOLUCIÓN DE LA SUBSECRETARIA DE SANITAT UNIVERSAL I SALUT PUBLICA",
+"identifier": "resolucion-47909f55",
+"sourcePath": "input/award/resolucion.pdf",
+"title": "RESOLUCIÓN DE LA SUBSECRETARIA DE SANITAT UNIVERSAL I SALUT PUBLICA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/resolucion-4bace3eb",
+"label": "RESOLUCIÓN del Órgano de Contratación por el que se adjudica definitivamente el…",
+"identifier": "resolucion-4bace3eb",
+"sourcePath": "input/award/resolución.pdf",
+"title": "RESOLUCIÓN del Órgano de Contratación por el que se adjudica definitivamente el EXPEDIENTE 2018-06 relativo a la CONTRATACIÓN DEL DESARROLLO Y SOPORTE TÉCNICO PARA LA CREACIÓN DEL GESTOR DE INTEROPERA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/resolucion-621f3136",
+"label": "Agencia de Vivienda y Rehabilitación de Andalucía",
+"identifier": "resolucion-621f3136",
+"sourcePath": "input/award/resolucion.pdf",
+"title": "Agencia de Vivienda y Rehabilitación de Andalucía"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/resolucion-90e0a111",
+"label": "Resolució d'adjudicació del contracte",
+"identifier": "resolucion-90e0a111",
+"sourcePath": "input/award/expediente-3/resolucion.pdf",
+"title": "Resolució d'adjudicació del contracte"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/resolucion-d4d3b0bc",
+"label": "RESOLUCIÓN DE ADJUDICACIÓN DEL EXPEDIENTE 'PROYECTO PARA LA CONSTRUCCIÓN DEL CO…",
+"identifier": "resolucion-d4d3b0bc",
+"sourcePath": "input/award/expediente-1/resolucion.pdf",
+"title": "RESOLUCIÓN DE ADJUDICACIÓN DEL EXPEDIENTE 'PROYECTO PARA LA CONSTRUCCIÓN DEL COMPLEJO AMBIENTAL COPERO. DOS HERMANAS (SEVILLA)'. NÚMERO 126/20"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/resolucion-ef33be2a",
+"label": "CONTRATACIÓN DEL DESARROLLO DE UNA HERRAMIENTA DIGITAL (RADAR EVALUATION DIGITA…",
+"identifier": "resolucion-ef33be2a",
+"sourcePath": "input/award/expediente-1/resolucion.pdf",
+"title": "CONTRATACIÓN DEL DESARROLLO DE UNA HERRAMIENTA DIGITAL (RADAR EVALUATION DIGITAL PLATFORM) DE RECOGIDA, ANÁLISIS Y VISUALIZACIÓN DE INDICADORES PARA LA EVALUACIÓN DE LA IMPLEMENTACIÓN DE LAS SOLUCIONE"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/resolucion-fb0aaf30",
+"label": "RESOLUCIÓN DE ADJUDICACIÓN DEL EXPEDIENTE 'ANTEPROYECTO PARA LA CONSTRUCCIÓN DE…",
+"identifier": "resolucion-fb0aaf30",
+"sourcePath": "input/award/expediente-2/resolucion.pdf",
+"title": "RESOLUCIÓN DE ADJUDICACIÓN DEL EXPEDIENTE 'ANTEPROYECTO PARA LA CONSTRUCCIÓN DE UNA PLANTA DE HIDRÓLISIS TÉRMICA EN EDAR RANILLA (ALCALÁ DE GUADAIRA-SEVILLA). PROYECTO MITLOP (CPI-2019-34-1-MIT-04). M"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/resolucion-fd8b2a8b",
+"label": "Aquest projecte ha rebut finançament del Programa COSME de la Unió Europea (Aco…",
+"identifier": "resolucion-fd8b2a8b",
+"sourcePath": "input/award/expediente-2/resolucion.pdf",
+"title": "Aquest projecte ha rebut finançament del Programa COSME de la Unió Europea (Acord de Subvenció N° 101036228 sota la Convocatòria de Proposades 'Cofinançament de la contractació pública de consorcis d'"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/sbp-adjudicacion-f7e64687",
+"label": "Expediente JGL/2022/20",
+"identifier": "sbp-adjudicacion-f7e64687",
+"sourcePath": "input/award/SBP_Adjudicacion.pdf",
+"title": "Expediente JGL/2022/20"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/sbp-modificacion-contrato-8c99fc28",
+"label": "CERTIFICADO",
+"identifier": "sbp-modificacion-contrato-8c99fc28",
+"sourcePath": "input/award/SBP_Modificacion_Contrato.pdf",
+"title": "CERTIFICADO"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/sbp-pcap-a050890c",
+"label": "Pliego de cláusulas administrativas particulares que habrán de regir la contrat…",
+"identifier": "sbp-pcap-a050890c",
+"sourcePath": "input/tender/SBP_PCAP.pdf",
+"title": "Pliego de cláusulas administrativas particulares que habrán de regir la contratación del servicio de definición y desarrollo de una nueva solución tecnológica que permita la monitorización y control d"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/sbp-ppt-68095083",
+"label": "PLIEGO DE PRESCRIPCIONES TÉCNICAS",
+"identifier": "sbp-ppt-68095083",
+"sourcePath": "input/tender/SBP_PPT.pdf",
+"title": "PLIEGO DE PRESCRIPCIONES TÉCNICAS"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/senda-adjudicacion-5531c4b0",
+"label": "Anuncio de adjudicación",
+"identifier": "senda-adjudicacion-5531c4b0",
+"sourcePath": "input/award/SENDA_Adjudicación.pdf",
+"title": "Anuncio de adjudicación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/senda-bocyl-d-11012021-6-fbb6ac8d",
+"label": "BOCYL",
+"identifier": "senda-bocyl-d-11012021-6-fbb6ac8d",
+"sourcePath": "input/cpm/SENDA_BOCYL-D-11012021-6.pdf",
+"title": "BOCYL"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/senda-cpm-informe-2d547096",
+"label": "Reto SENDA",
+"identifier": "senda-cpm-informe-2d547096",
+"sourcePath": "input/cpm/SENDA_CPM_Informe.pdf",
+"title": "Reto SENDA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/senda-licitacion-pcap-8ed11bd4",
+"label": "1. DATOS ORGÁNICOS",
+"identifier": "senda-licitacion-pcap-8ed11bd4",
+"sourcePath": "input/tender/SENDA_Licitacion_PCAP.pdf",
+"title": "1. DATOS ORGÁNICOS"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/senda-licitacion-ppt-4712af6a",
+"label": "Fondo saropeo Regional",
+"identifier": "senda-licitacion-ppt-4712af6a",
+"sourcePath": "input/tender/SENDA_Licitacion_PPT.pdf",
+"title": "Fondo saropeo Regional"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/tremirs-adjudicacion-lote1-6245bec6",
+"label": "Anuncio de adjudicación",
+"identifier": "tremirs-adjudicacion-lote1-6245bec6",
+"sourcePath": "input/award/lote1/TREMIRS_Adjudicacion_Lote1.pdf",
+"title": "Anuncio de adjudicación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/tremirs-adjudicacion-lote2-5684c019",
+"label": "Anuncio de adjudicación",
+"identifier": "tremirs-adjudicacion-lote2-5684c019",
+"sourcePath": "input/award/lote2/TREMIRS_Adjudicacion_Lote2.pdf",
+"title": "Anuncio de adjudicación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/tremirs-convocatoria-cpm-e8e4df26",
+"label": "Bases de la convocatoria en el marco del proyecto 'Sistemas de cirugía robótica…",
+"identifier": "tremirs-convocatoria-cpm-e8e4df26",
+"sourcePath": "input/cpm/TREMIRS_Convocatoria_CPM.pdf",
+"title": "Bases de la convocatoria en el marco del proyecto 'Sistemas de cirugía robótica de mínima invasión (TREMIRS)', de la Fundación Centro de Cirugía de Mínima Invasión Jesús Usón."
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/tremirs-informe-conclusiones-cpm-dab1b3ea",
+"label": "Consulta Preliminar al Mercado para la elaboración de prescripciones técnicas a…",
+"identifier": "tremirs-informe-conclusiones-cpm-dab1b3ea",
+"sourcePath": "input/cpm/TREMIRS_Informe_CONCLUSIONES_CPM.pdf",
+"title": "Consulta Preliminar al Mercado para la elaboración de prescripciones técnicas a incluir en el expediente de contratación CPMO1/2021"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/tremirs-licitacion-pcap-lote1-12251a1f",
+"label": "Pliego de Condiciones que han de regir la contratación de una solución innovado…",
+"identifier": "tremirs-licitacion-pcap-lote1-12251a1f",
+"sourcePath": "input/tender/lote1/TREMIRS_Licitacion_PCAP_Lote1.pdf",
+"title": "Pliego de Condiciones que han de regir la contratación de una solución innovadora para el reto de plataforma robótica de microcirugía del proyecto 'Sistemas de cirugía robótica de mínima invasión (TRE"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/tremirs-licitacion-pcap-lote2-7c6a2521",
+"label": "Pliego de Cláusulas Administrativas Particulares que han de regir la contrataci…",
+"identifier": "tremirs-licitacion-pcap-lote2-7c6a2521",
+"sourcePath": "input/tender/lote2/TREMIRS_Licitacion_PCAP_Lote2.pdf",
+"title": "Pliego de Cláusulas Administrativas Particulares que han de regir la contratación de dos soluciones innovadoras para el reto de plataforma robótica de cirugía laparoscópica del proyecto 'Sistemas de c"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/tremirs-licitacion-ppt-lote1-46214526",
+"label": "Solución innovadora para el reto de plataforma robótica de microcirugía del pro…",
+"identifier": "tremirs-licitacion-ppt-lote1-46214526",
+"sourcePath": "input/tender/lote1/TREMIRS_Licitacion_PPT_Lote1.pdf",
+"title": "Solución innovadora para el reto de plataforma robótica de microcirugía del proyecto 'Sistemas de cirugía robótica de mínima invasión (TREMIRS)', en el marco de un proceso de Compra Pública Precomerci"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/tremirs-licitacion-ppt-lote2-75add81b",
+"label": "Soluciones innovadoras para el reto de plataforma robótica de cirugía laparoscó…",
+"identifier": "tremirs-licitacion-ppt-lote2-75add81b",
+"sourcePath": "input/tender/lote2/TREMIRS_Licitacion_PPT_Lote2.pdf",
+"title": "Soluciones innovadoras para el reto de plataforma robótica de cirugía laparoscópica del proyecto 'Sistemas de cirugía robótica de mínima invasión (TREMIRS)', en el marco de un proceso de Compra Públic"
+}
+]

@@ -1,0 +1,248 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/ip-licenses/tender-001-ip-001-license-001",
+"label": "órgano de contratación se reserva el derecho a exigir a los contratistas que co…",
+"description": "órgano de contratación se reserva el derecho a exigir a los contratistas que concedan licencias de las soluciones desarrolladas a terceros proveedores en condiciones de mercado equitativas y razonables .",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/ip-licenses/tender-001-ip-002-license-001",
+"label": "En el caso de que la solución/resultados incluya DPI o de otra naturaleza preex…",
+"description": "En el caso de que la solución/resultados incluya DPI o de otra naturaleza preexistentes titularidad del adjudicatario y necesarias para el desarrollo de las actividades del proyecto relativo al contrato, así como para el cumplimiento de los compromisos posteriores, el Ayuntamiento de Alicante dispondrá de una licencia en las mismas condiciones que las expuestas anteriormente.",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-licenses/tender-001-ip-001-license-001",
+"label": "La licencia afectará a todos los desarrollos, aplicativos y productos generados…",
+"description": "La licencia afectará a todos los desarrollos, aplicativos y productos generados durante la ejecución de la solución innovadora desarrollada y entregada.",
+"exclusive": false
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-licenses/tender-001-ip-001-license-002",
+"label": "Esta licencia, también, redundará en beneficio del Servicio Extremeño de Salud",
+"description": "Esta licencia, también, redundará en beneficio del Servicio Extremeño de Salud",
+"exclusive": false
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-licenses/tender-001-ip-001-license-003",
+"label": "Proporcionar licencia de uso gratuito de las aplicaciones software necesarias p…",
+"description": "Proporcionar licencia de uso gratuito de las aplicaciones software necesarias para el correcto funcionamiento del prototipo.",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-licenses/tender-001-ip-002-license-001",
+"label": "Proporcionar licencia de uso gratuito de las aplicaciones software necesarias p…",
+"description": "Proporcionar licencia de uso gratuito de las aplicaciones software necesarias para el correcto funcionamiento del prototipo.",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-licenses/tender-002-ip-001-license-001",
+"label": "La licencia afectará a todos los desarrollos, aplicativos y productos generados…",
+"description": "La licencia afectará a todos los desarrollos, aplicativos y productos generados durante la ejecución de la solución innovadora desarrollada y entregada.",
+"exclusive": false
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-licenses/tender-002-ip-001-license-002",
+"label": "Esta licencia, también, redundará en beneficio del Servicio Extremeño de Salud",
+"description": "Esta licencia, también, redundará en beneficio del Servicio Extremeño de Salud",
+"exclusive": false
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-licenses/tender-002-lot-001-ip-001-license-001",
+"label": "Licencia de uso gratuito de las aplicaciones software necesarias para el correc…",
+"description": "Licencia de uso gratuito de las aplicaciones software necesarias para el correcto funcionamiento del prototipo.",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-licenses/tender-002-lot-002-ip-001-license-001",
+"label": "Licencia de uso gratuito de las aplicaciones software necesarias para el correc…",
+"description": "Licencia de uso gratuito de las aplicaciones software necesarias para el correcto funcionamiento del prototipo.",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/ip-licenses/tender-001-ip-001-license-001",
+"label": "exclusivamente para las finalidades de uso interno relacionadas con posibles nu…",
+"description": "exclusivamente para las finalidades de uso interno relacionadas con posibles nuevas pruebas de concepto o con la formación de nuevos usuarios sobre las soluciones desarrolladas a lo largo de la ejecución del contrato, así como para",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/ip-licenses/tender-001-ip-001-license-002",
+"label": "reservando para la administración contratante, para la Junta de Castilla y León…",
+"description": "reservando para la administración contratante, para la Junta de Castilla y León, para INCIBE o para otras administraciones públicas o terceros indicados por la administración contratante licencias sobre los resultados",
+"exclusive": false
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/ip-licenses/tender-001-ip-001-license-001",
+"label": "El CDTI (y/o cualquiera de sus filiales) se reserva una licencia de uso no excl…",
+"description": "El CDTI (y/o cualquiera de sus filiales) se reserva una licencia de uso no exclusiva, irrevocable, gratuita y perpetua (o, en su caso hasta la expiración de los correspondientes derechos), con facultad de sublicenciar en el sector público",
+"exclusive": false
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/ip-licenses/tender-001-ip-001-license-002",
+"label": "En el caso de que la solución/resultados incluya derechos de PI o de otra natur…",
+"description": "En el caso de que la solución/resultados incluya derechos de PI o de otra naturaleza preexistentes titularidad del adjudicatario o terceros, CDTI y la Entidad usuaria dispondrán de una licencia en las mismas condiciones que las expuestas anteriormente.",
+"exclusive": false
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/ip-licenses/tender-001-ip-001-license-003",
+"label": "Cuando así lo requiera el CDTI, o la Entidad usuaria, se suscribirá entre el CD…",
+"description": "Cuando así lo requiera el CDTI, o la Entidad usuaria, se suscribirá entre el CDTI y la Entidad Pública usuaria, de un lado, y el adjudicatario, de otro, el contrato de licencia de uso, conforme al modelo que se adjunta como ANEXO XI",
+"exclusive": false
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-licenses/tender-002-lot-003-ip-001-license-001",
+"label": "El proveedor se encargará de proveer las licencias para trabajar con el sistema…",
+"description": "El proveedor se encargará de proveer las licencias para trabajar con el sistema de información, tendrán que ser como mínimo las necesarias para que pudiera trabajar un equipo de '50' profesionales, además de la inclusión de las vinculadas que se utilicen para integrar con otros softwares.",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-licenses/tender-003-ip-003-license-001",
+"label": "Las licencias las continuará aportando el adjudicatario.",
+"description": "Las licencias las continuará aportando el adjudicatario.",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/ip-licenses/tender-001-ip-001-license-001",
+"label": "la concesión a favor de FISABIO de una licencia de uso no exclusiva e ilimitada…",
+"description": "la concesión a favor de FISABIO de una licencia de uso no exclusiva e ilimitada en el tiempo",
+"exclusive": false
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/ip-licenses/tender-001-ip-002-license-001",
+"label": "establecer la cesión de uso a otras entidades",
+"description": "establecer la cesión de uso a otras entidades",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/ip-licenses/tender-001-ip-001-license-001",
+"label": "para el uso o explotación de los DPI generados en el contrato para las finalida…",
+"description": "para el uso o explotación de los DPI generados en el contrato para las finalidades de uso interno",
+"exclusive": false
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/ip-licenses/tender-001-ip-001-license-002",
+"label": "de estos resultados para el uso en investigación y docencia.",
+"description": "de estos resultados para el uso en investigación y docencia.",
+"exclusive": false
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/ip-licenses/tender-001-ip-001-license-003",
+"label": "en condiciones de mercado equitativas y razonables.",
+"description": "en condiciones de mercado equitativas y razonables.",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/ip-licenses/tender-001-ip-001-license-004",
+"label": "En este caso, el Organismo Contratante se reserva el derecho de sublicenciar su…",
+"description": "En este caso, el Organismo Contratante se reserva el derecho de sublicenciar su derecho de uso a terceros en condiciones razonables de mercado.",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/ip-licenses/tender-001-ip-002-license-001",
+"label": "El contratista cede su desarrollo únicamente para su uso por parte del Servicio…",
+"description": "El contratista cede su desarrollo únicamente para su uso por parte del Servicio de Salud no quedando permitido en ningún caso su reproducción, cesión, distribución o transformación, comprometiéndose el Servicio de Salud a no ceder su uso parcial o total de ninguna forma, ni ponerlo a disposición de terceros.",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/ip-licenses/tender-001-ip-002-license-001",
+"label": "1 licencia para Supervisory Client w/ HistClient 2020, MSCAL incluido plugging…",
+"description": "1 licencia para Supervisory Client w/ HistClient 2020, MSCAL incluido plugging Acces Anywhere o versión más actualizada que utilice EMASESA.",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/ip-licenses/tender-001-ip-002-license-002",
+"label": "1 licencia para Supervisory Client w/ HistClient 2020, no MSCAL o versión más a…",
+"description": "1 licencia para Supervisory Client w/ HistClient 2020, no MSCAL o versión más actualizada que utilice EMASESA.",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/ip-licenses/tender-002-ip-002-license-001",
+"label": "Licencias de uso de los programas utilizados y sistema operativo.",
+"description": "Licencias de uso de los programas utilizados y sistema operativo.",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/ip-licenses/tender-001-ip-001-license-001",
+"label": "En caso de que se proponga la utilización de licencias de terceros para determi…",
+"description": "En caso de que se proponga la utilización de licencias de terceros para determinadas partes del proyecto, se justificará su utilización y se describirá su coste, necesidades técnicas y de renovación.",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/ip-licenses/tender-001-ip-002-license-001",
+"label": "el software deberá ser de código abierto y no requerirá de mantenimiento anual…",
+"description": "el software deberá ser de código abierto y no requerirá de mantenimiento anual de licencias",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/ip-licenses/tender-001-ip-001-license-001",
+"label": "sobre los resultados que se obtengan durante las diferentes fases del proceso d…",
+"description": "sobre los resultados que se obtengan durante las diferentes fases del proceso de licitación, aunque no lleguen a la fase final",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/ip-licenses/tender-001-ip-001-license-002",
+"label": "de los resultados del contrato, y de todos los DPI derivados de los mismos, per…",
+"description": "de los resultados del contrato, y de todos los DPI derivados de los mismos, perpetua (o en su caso hasta la expiración de los derechos) para su uso interno, sin que en ningún caso pueda destinarse a su explotación comercial",
+"exclusive": false
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/ip-licenses/tender-001-ip-001-license-003",
+"label": "En el caso de que la solución/resultados incluya DPI o de otra naturaleza preex…",
+"description": "En el caso de que la solución/resultados incluya DPI o de otra naturaleza preexistentes titularidad del adjudicatario",
+"exclusive": false
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/ip-licenses/tender-001-ip-001-license-004",
+"label": "en condiciones de mercado equitativas y razonables",
+"description": "en condiciones de mercado equitativas y razonables",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/ip-licenses/tender-001-ip-001-license-001",
+"label": "sobre todos los derechos de explotación relativos al diseño realizado, sus posi…",
+"description": "sobre todos los derechos de explotación relativos al diseño realizado, sus posibles modificaciones para ser adaptado a otros emplazamientos, así como los datos de operación de la planta",
+"exclusive": true
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/ip-licenses/tender-001-ip-002-license-001",
+"label": "éstas han de incluirse como parte del suministro y su vigencia ha de ser vitali…",
+"description": "éstas han de incluirse como parte del suministro y su vigencia ha de ser vitalicia o con una caducidad superior a 5 años",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/ip-licenses/tender-001-ip-002-license-001",
+"label": "La entidad contratista con la firma del contrato se obliga a conceder en favor…",
+"description": "La entidad contratista con la firma del contrato se obliga a conceder en favor del ICE una licencia de uso perpetua, universal, no exclusiva y gratuita de los DPII sobre los nuevos bienes, tecnologías o soluciones desarrolladas en el ámbito del contrato hasta la expiración de los respectivos DPII, y si es necesario, los Derechos preexistentes mencionados anteriormente, con facultad para sublicenciar a terceros, en condiciones de mercado.",
+"exclusive": false
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/ip-licenses/tender-001-ip-003-license-001",
+"label": "Suministrar una plataforma base ya testada, flexible y escalable que contenga l…",
+"description": "Suministrar una plataforma base ya testada, flexible y escalable que contenga los elementos mínimos como punto de partida para el desarrollo del sistema, con licencia ilimitada para su utilización por parte de ICE.",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/ip-licenses/tender-001-ip-003-license-002",
+"label": "Software y licencias requeridas durante el periodo de ejecución y plazo de gara…",
+"description": "Software y licencias requeridas durante el periodo de ejecución y plazo de garantía del proyecto",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/ip-licenses/tender-001-ip-001-license-001",
+"label": "se extenderá a cualquier mejora o perfeccionamiento posterior de los resultados…",
+"description": "se extenderá a cualquier mejora o perfeccionamiento posterior de los resultados y durante toda la vida del derecho",
+"exclusive": false
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/ip-licenses/tender-001-ip-001-license-002",
+"label": "en caso de ausencia de explotación por el titular en un plazo de tres años",
+"description": "en caso de ausencia de explotación por el titular en un plazo de tres años",
+"exclusive": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/ip-licenses/tender-001-ip-001-license-003",
+"label": "las entidades contratistas estarán obligadas a conceder, a su costa, licencias…",
+"description": "las entidades contratistas estarán obligadas a conceder, a su costa, licencias de uso a terceros en condiciones razonables de mercado",
+"exclusive": null
+}
+]

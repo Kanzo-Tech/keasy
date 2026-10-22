@@ -1,0 +1,46 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-002",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-002-lot-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-002-lot-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/lots/tender-001-lot-001",
+"o": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/tenders/tender-001"
+}
+]

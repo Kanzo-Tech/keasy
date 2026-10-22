@@ -1,0 +1,68 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/ip-royalties/tender-001-ip-001-royalty-001",
+"label": "Los licitadores ofertarán el porcentaje del valor neto de los ingresos de la ex…",
+"description": "Los licitadores ofertarán el porcentaje del valor neto de los ingresos de la explotación de la solución desarrollada ylo adaptaciones resultados generados, que habrá de ser como mínimo del 0,1% y hasta un máximo del 5%.-",
+"royaltyPercentage": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-royalties/tender-001-ip-001-royalty-001",
+"label": "quedando exentos del pago de licencias o royalties sobre los productos desarrol…",
+"description": "quedando exentos del pago de licencias o royalties sobre los productos desarrollados para los fines indicados",
+"royaltyPercentage": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-royalties/tender-002-ip-001-royalty-001",
+"label": "quedando exentos del pago de licencias o royalties sobre los productos desarrol…",
+"description": "quedando exentos del pago de licencias o royalties sobre los productos desarrollados para los fines indicados",
+"royaltyPercentage": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/ip-royalties/tender-001-ip-001-royalty-001",
+"label": "CDTI tendrá derecho a percibir retornos económicos, que serán calculados como e…",
+"description": "CDTI tendrá derecho a percibir retornos económicos, que serán calculados como el porcentaje indicado en la oferta económica de las ventas anuales netas derivadas de la futura explotación del resultado comercial del servicio objeto del siguiente contrato por parte del adjudicatario o de cualquier entidad a la que ceda los mismos, y que, como mínimo, habrá de ser del 2%.",
+"royaltyPercentage": 2.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/ip-royalties/tender-001-ip-001-royalty-002",
+"label": "Se establece un mínimo del 2% y hasta un máximo del 20% del porcentaje de venta…",
+"description": "Se establece un mínimo del 2% y hasta un máximo del 20% del porcentaje de ventas netas obtenidas por la explotación del resultado de I+D como retorno económico para CDTI.",
+"royaltyPercentage": 20.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/ip-royalties/tender-001-ip-001-royalty-001",
+"label": "un …………. % de los retornos económicos futuros (royalties), del valor neto de lo…",
+"description": "un …………. % de los retornos económicos futuros (royalties), del valor neto de los ingresos de la explotación de la solución desarrollada y/o adaptaciones, en beneficio del Ayuntamiento de Alcalá de Guadaíra.",
+"royaltyPercentage": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/ip-royalties/tender-001-ip-001-royalty-001",
+"label": "El importe máximo de los mismos corresponderá al importe efectivamente abonado…",
+"description": "El importe máximo de los mismos corresponderá al importe efectivamente abonado por CDTI a cada adjudicatario por los servicios realizados en el marco del presente contrato. Esta obligación se entenderá cumplida una vez se abone dicho importe máximo o subsidiariamente hayan transcurrido 10 años desde la certificación final por parte de CDTI.",
+"royaltyPercentage": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/ip-royalties/tender-001-ip-001-royalty-002",
+"label": "Se establece un mínimo del 1% y hasta un máximo del 10%",
+"description": "Se establece un mínimo del 1% y hasta un máximo del 10%",
+"royaltyPercentage": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/ip-royalties/tender-001-ip-001-royalty-003",
+"label": "En el supuesto de que el adjudicatario no explote los resultados del contrato d…",
+"description": "En el supuesto de que el adjudicatario no explote los resultados del contrato directamente sino a través de un tercero u otra entidad perteneciente a su mismo grupo empresarial, el cesionario se subroga en esta obligación de mantener al CDTI sus derechos",
+"royaltyPercentage": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/ip-royalties/tender-001-ip-001-royalty-001",
+"label": "sin que eso conlleve a ningún tipo de canon para el adjudicatario",
+"description": "sin que eso conlleve a ningún tipo de canon para el adjudicatario",
+"royaltyPercentage": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/ip-royalties/tender-001-ip-002-royalty-001",
+"label": "quedando exento en cualquier caso del pago en concepto de licencias o royalties…",
+"description": "quedando exento en cualquier caso del pago en concepto de licencias o royalties sobre los productos desarrollados.",
+"royaltyPercentage": null
+}
+]

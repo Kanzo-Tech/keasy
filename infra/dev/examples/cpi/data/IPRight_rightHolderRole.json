@@ -1,0 +1,198 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/ip-rights/tender-001-ip-001-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/el-contratista"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/ip-rights/tender-001-ip-001-right-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/el-organo-de-contratacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/ip-rights/tender-001-ip-001-right-003",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/el-ayuntamiento-de-madrid"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/ip-rights/tender-001-ip-001-right-004",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/el-ayuntamiento-de-madrid"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/ip-rights/tender-001-ip-002-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/ayuntamiento-de-alicante"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/ip-rights/tender-001-ip-002-right-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/ayuntamiento-de-alicante"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-rights/tender-001-ip-001-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/entidad-contratista"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-rights/tender-001-ip-001-right-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/fundacion-ccmiju-y-el-servicio-extremeno-de-salud"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-rights/tender-001-ip-001-right-003",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/fundacion-ccmiju"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-rights/tender-002-ip-001-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/entidad-contratista"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-rights/tender-002-ip-001-right-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/fundacion-ccmiju-y-el-servicio-extremeno-de-salud"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-rights/tender-002-ip-002-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/la-fundacion-ccmiju"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/ip-rights/tender-001-ip-001-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/la-empresa-o-empresas-adjudicatarias"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/ip-rights/tender-001-ip-001-right-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/la-empresa-o-empresas-adjudicatarias"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/ip-rights/tender-001-ip-001-right-003",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/la-administracion-contratante-a-la-junta-de-castilla-y-leon-y-a-incibe"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/ip-rights/tender-001-ip-001-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/adjudicatario"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/ip-rights/tender-001-ip-001-right-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/cdti"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/ip-rights/tender-001-ip-001-right-003",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/cdti"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/ip-rights/tender-001-ip-001-right-004",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/cdti"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/ip-rights/tender-001-ip-001-right-005",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/cdti"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-rights/tender-001-ip-001-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/biogipuzkoa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-rights/tender-001-ip-001-right-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/biogipuzkoa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-rights/tender-001-ip-001-right-003",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/biogipuzkoa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-rights/tender-001-ip-002-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/biogipuzkoa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-rights/tender-001-ip-002-right-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/biogipuzkoa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-rights/tender-002-ip-001-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/administracion-contratante"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-rights/tender-002-ip-001-right-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/entes-organismos-y-entidades-pertenecientes-al-sector-publico"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-rights/tender-002-ip-002-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/los-contratistas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-rights/tender-003-ip-002-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/los-contratistas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/ip-rights/tender-001-ip-001-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/contratista"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/ip-rights/tender-001-ip-001-right-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/fisabio"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/ip-rights/tender-001-ip-002-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/otras-entidades"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/ip-rights/tender-001-ip-001-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/el-contratista"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/ip-rights/tender-001-ip-001-right-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/el-organismo-contratante-y-a-terceros-directamente-vinculados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/ip-rights/tender-001-ip-001-right-003",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/el-organismo-contratante"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/ip-rights/tender-001-ip-001-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/la-administracion-contratante"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/ip-rights/tender-001-ip-002-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/ib-salut"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/ip-rights/tender-001-ip-002-right-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/servicio-de-salud"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/ip-rights/tender-001-ip-001-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/ayuntamiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/ip-rights/tender-001-ip-001-right-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/ayuntamiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/ip-rights/tender-001-ip-001-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/adjudicatario"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/ip-rights/tender-001-ip-001-right-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/cdti"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/ip-rights/tender-001-ip-001-right-003",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/cdti"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/ip-rights/tender-001-ip-001-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/itc"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/ip-rights/tender-001-ip-001-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/las-partes"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/ip-rights/tender-001-ip-002-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/el-ice"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/ip-rights/tender-001-ip-002-right-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/el-ice"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/ip-rights/tender-001-ip-003-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/ice"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/ip-rights/tender-001-ip-001-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/avra-u-otras-empresas-designadas-por-ella"
+}
+]

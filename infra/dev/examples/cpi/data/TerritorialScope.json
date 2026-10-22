@@ -1,0 +1,47 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/territories/autonomous-community/01",
+"label": "Andalucía",
+"prefLabel": "Andalucía"
+},
+{
+"iri": "https://example.org/cpi-demo/id/territories/autonomous-community/04",
+"label": "Illes Balears",
+"prefLabel": "Illes Balears"
+},
+{
+"iri": "https://example.org/cpi-demo/id/territories/autonomous-community/05",
+"label": "Canarias",
+"prefLabel": "Canarias"
+},
+{
+"iri": "https://example.org/cpi-demo/id/territories/autonomous-community/07",
+"label": "Castilla y León",
+"prefLabel": "Castilla y León"
+},
+{
+"iri": "https://example.org/cpi-demo/id/territories/autonomous-community/10",
+"label": "Comunitat Valenciana",
+"prefLabel": "Comunitat Valenciana"
+},
+{
+"iri": "https://example.org/cpi-demo/id/territories/autonomous-community/11",
+"label": "Extremadura",
+"prefLabel": "Extremadura"
+},
+{
+"iri": "https://example.org/cpi-demo/id/territories/municipality/03014",
+"label": "Alacant/Alicante",
+"prefLabel": "Alacant/Alicante"
+},
+{
+"iri": "https://example.org/cpi-demo/id/territories/municipality/28079",
+"label": "Madrid",
+"prefLabel": "Madrid"
+},
+{
+"iri": "https://example.org/cpi-demo/id/territories/municipality/41004",
+"label": "Alcalá de Guadaíra",
+"prefLabel": "Alcalá de Guadaíra"
+}
+]

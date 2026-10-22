@@ -1,0 +1,94 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-002-lot-001-solution-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-002-lot-001-solution-001-deliverable-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-002-lot-001-solution-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-002-lot-001-solution-001-deliverable-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-002-lot-001-solution-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-002-lot-001-solution-001-deliverable-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-002-lot-001-solution-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-002-lot-001-solution-001-deliverable-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-002-lot-001-solution-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-002-lot-001-solution-001-deliverable-005"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-002-lot-001-solution-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-002-lot-001-solution-001-deliverable-006"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-002-lot-001-solution-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-002-lot-001-solution-001-deliverable-007"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-002-lot-001-solution-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-002-lot-001-solution-001-deliverable-008"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-002-lot-001-solution-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-002-lot-001-solution-001-deliverable-009"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-002-lot-001-solution-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-002-lot-001-solution-001-deliverable-010"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-001-solution-001-deliverable-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-002-lot-001-solution-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-002-lot-001-solution-001-deliverable-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/deliverables/tender-001-solution-001-deliverable-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/deliverables/tender-001-solution-001-deliverable-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/solution-specifications/tender-001-solution-004",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/deliverables/tender-001-solution-004-deliverable-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/solution-specifications/tender-002-solution-001",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/deliverables/tender-002-solution-001-deliverable-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/solution-specifications/tender-002-solution-003",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/deliverables/tender-002-solution-003-deliverable-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/solution-specifications/tender-002-solution-003",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/deliverables/tender-002-solution-003-deliverable-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/solution-specifications/tender-002-solution-003",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/deliverables/tender-002-solution-003-deliverable-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/solution-specifications/tender-002-solution-003",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/deliverables/tender-002-solution-003-deliverable-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/solution-specifications/tender-001-solution-002",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/deliverables/tender-001-solution-002-deliverable-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/solution-specifications/tender-001-solution-002",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/deliverables/tender-001-solution-002-deliverable-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/deliverables/tender-001-solution-001-deliverable-001"
+}
+]

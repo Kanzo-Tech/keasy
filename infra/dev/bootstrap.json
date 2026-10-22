@@ -42,6 +42,16 @@
       "target": { "url": "s3://keasy-dev/examples/nobel/shapes/", "kind": "vocab", "direction": "source" }
     },
     {
+      "name": "CPI España",
+      "secret": "Dev S3",
+      "target": { "url": "s3://keasy-dev/examples/cpi/data/", "kind": "data", "direction": "source" }
+    },
+    {
+      "name": "CPI España shapes",
+      "secret": "Dev S3",
+      "target": { "url": "s3://keasy-dev/examples/cpi/shapes/", "kind": "vocab", "direction": "source" }
+    },
+    {
       "name": "Workspace output",
       "secret": "Dev S3",
       "target": { "url": "s3://keasy-dev/output/", "kind": "data", "direction": "sink" }

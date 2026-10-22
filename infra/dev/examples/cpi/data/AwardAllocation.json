@@ -1,0 +1,52 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-allocations/award-001-participation-001-allocation-001",
+"allocatedAmount": 52200.0,
+"currency": "€"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-allocations/award-001-participation-001-allocation-002",
+"allocatedAmount": 1893200.0,
+"currency": "€"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-allocations/award-001-participation-002-allocation-001",
+"allocatedAmount": 28000.0,
+"currency": "€"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-allocations/award-001-participation-002-allocation-002",
+"allocatedAmount": 1820000.0,
+"currency": "€"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-allocations/award-001-participation-001-allocation-001",
+"allocatedAmount": 100000.0,
+"currency": "euros"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-allocations/award-001-participation-001-allocation-002",
+"allocatedAmount": 2500000.0,
+"currency": "euros"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-allocations/award-001-participation-001-allocation-003",
+"allocatedAmount": 826500.0,
+"currency": "euros"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-allocations/award-001-participation-002-allocation-001",
+"allocatedAmount": 99500.0,
+"currency": "euros"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-allocations/award-001-participation-002-allocation-002",
+"allocatedAmount": 2487500.0,
+"currency": "euros"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-allocations/award-001-participation-002-allocation-003",
+"allocatedAmount": 865650.0,
+"currency": "euros"
+}
+]

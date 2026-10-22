@@ -1,0 +1,158 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-003-criterion-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-003-criterion-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-003-criterion-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-003-criterion-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-003-criterion-005"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-003-criterion-006"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-003-criterion-007"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-003-criterion-008"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-003-criterion-009"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-003-criterion-010"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-004-criterion-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-004-criterion-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-004-criterion-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-004-criterion-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-004-criterion-005"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-004-criterion-006"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-004-criterion-007"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-004-criterion-008"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-004-criterion-009"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-004-criterion-010"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-003-lot-001-criterion-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-003-lot-001-criterion-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-003-lot-001-criterion-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-003-lot-001-criterion-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-003-lot-001-criterion-005"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-003-lot-002-criterion-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-003-lot-002-criterion-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-003-lot-002-criterion-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-003-lot-002-criterion-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-003-lot-002-criterion-005"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-003-lot-002-criterion-006"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-003-lot-002-criterion-007"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-003-lot-003-criterion-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-003-lot-003-criterion-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-003-lot-003-criterion-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-003-lot-003-criterion-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-003-lot-003-criterion-005"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-003-lot-003-criterion-006"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-003-lot-003-criterion-007"
+}
+]

@@ -1,0 +1,286 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/deliverables/tender-001-stage-001-deliverable-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/deliverables/tender-001-stage-001-deliverable-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/execution-stages/tender-001-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/deliverables/tender-001-stage-002-deliverable-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/execution-stages/tender-001-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/deliverables/tender-001-stage-002-deliverable-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/execution-stages/tender-001-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/deliverables/tender-001-stage-002-deliverable-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/execution-stages/tender-001-stage-004",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/deliverables/tender-001-stage-004-deliverable-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/execution-stages/tender-001-stage-004",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/deliverables/tender-001-stage-004-deliverable-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/execution-stages/tender-001-stage-004",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/deliverables/tender-001-stage-004-deliverable-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/execution-stages/tender-001-stage-004",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/deliverables/tender-001-stage-004-deliverable-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/execution-stages/tender-001-stage-005",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/deliverables/tender-001-stage-005-deliverable-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/execution-stages/tender-001-stage-005",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/deliverables/tender-001-stage-005-deliverable-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/execution-stages/tender-001-stage-006",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/deliverables/tender-001-stage-006-deliverable-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/execution-stages/tender-001-stage-006",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/deliverables/tender-001-stage-006-deliverable-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/execution-stages/tender-001-stage-006",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/deliverables/tender-001-stage-006-deliverable-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/execution-stages/tender-001-stage-006",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/deliverables/tender-001-stage-006-deliverable-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/execution-stages/tender-001-stage-006",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/deliverables/tender-001-stage-006-deliverable-005"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/execution-stages/tender-001-stage-007",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/deliverables/tender-001-stage-007-deliverable-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-001-stage-001-deliverable-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-001-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-001-stage-002-deliverable-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-001-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-001-stage-002-deliverable-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-001-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-001-stage-002-deliverable-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-001-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-001-stage-002-deliverable-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-001-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-001-stage-002-deliverable-005"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-001-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-001-stage-002-deliverable-006"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-001-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-001-stage-002-deliverable-007"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-001-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-001-stage-002-deliverable-008"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/deliverables/tender-001-stage-001-deliverable-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/deliverables/tender-001-stage-001-deliverable-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/execution-stages/tender-001-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/deliverables/tender-001-stage-002-deliverable-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/execution-stages/tender-001-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/deliverables/tender-001-stage-002-deliverable-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/execution-stages/tender-001-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/deliverables/tender-001-stage-002-deliverable-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-001-stage-001-deliverable-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/execution-stages/tender-002-lot-003-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-002-lot-003-stage-001-deliverable-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/execution-stages/tender-002-lot-003-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-002-lot-003-stage-001-deliverable-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/execution-stages/tender-002-lot-003-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-002-lot-003-stage-002-deliverable-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/execution-stages/tender-002-lot-003-stage-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-002-lot-003-stage-003-deliverable-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/execution-stages/tender-002-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-002-stage-001-deliverable-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/execution-stages/tender-002-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-002-stage-002-deliverable-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/execution-stages/tender-002-stage-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-002-stage-003-deliverable-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/execution-stages/tender-001-stage-008",
+"o": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/deliverables/tender-001-stage-008-deliverable-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/execution-stages/tender-001-stage-008",
+"o": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/deliverables/tender-001-stage-008-deliverable-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/execution-stages/tender-001-stage-010",
+"o": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/deliverables/tender-001-stage-010-deliverable-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/execution-stages/tender-001-stage-011",
+"o": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/deliverables/tender-001-stage-011-deliverable-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/execution-stages/tender-001-stage-011",
+"o": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/deliverables/tender-001-stage-011-deliverable-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/execution-stages/tender-001-stage-011",
+"o": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/deliverables/tender-001-stage-011-deliverable-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/execution-stages/tender-001-stage-012",
+"o": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/deliverables/tender-001-stage-012-deliverable-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/execution-stages/tender-001-stage-012",
+"o": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/deliverables/tender-001-stage-012-deliverable-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/execution-stages/tender-001-stage-012",
+"o": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/deliverables/tender-001-stage-012-deliverable-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/deliverables/tender-001-stage-001-deliverable-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/deliverables/tender-001-stage-001-deliverable-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/deliverables/tender-001-stage-001-deliverable-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/deliverables/tender-001-stage-001-deliverable-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/deliverables/tender-001-stage-001-deliverable-005"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/execution-stages/tender-001-stage-003",
+"o": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/deliverables/tender-001-stage-003-deliverable-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/execution-stages/tender-001-stage-003",
+"o": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/deliverables/tender-001-stage-003-deliverable-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/execution-stages/tender-002-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/deliverables/tender-002-stage-001-deliverable-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/execution-stages/tender-002-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/deliverables/tender-002-stage-002-deliverable-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/execution-stages/tender-002-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/deliverables/tender-002-stage-002-deliverable-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/execution-stages/tender-002-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/deliverables/tender-002-stage-002-deliverable-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/execution-stages/tender-001-stage-003",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/deliverables/tender-001-stage-003-deliverable-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/execution-stages/tender-001-stage-003",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/deliverables/tender-001-stage-003-deliverable-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/execution-stages/tender-001-stage-007",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/deliverables/tender-001-stage-007-deliverable-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/execution-stages/tender-001-stage-007",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/deliverables/tender-001-stage-007-deliverable-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/execution-stages/tender-001-stage-007",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/deliverables/tender-001-stage-007-deliverable-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/execution-stages/tender-001-stage-007",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/deliverables/tender-001-stage-007-deliverable-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/deliverables/tender-001-stage-001-deliverable-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/execution-stages/tender-001-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/deliverables/tender-001-stage-002-deliverable-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/execution-stages/tender-001-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/deliverables/tender-001-stage-002-deliverable-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/execution-stages/tender-001-stage-003",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/deliverables/tender-001-stage-003-deliverable-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/execution-stages/tender-001-stage-003",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/deliverables/tender-001-stage-003-deliverable-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/execution-stages/tender-001-stage-006",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/deliverables/tender-001-stage-006-deliverable-001"
+}
+]

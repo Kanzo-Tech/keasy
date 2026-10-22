@@ -1,0 +1,350 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/documents/adjudicacion-1b1b4140",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/award"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/adjudicacion-232f9242",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/award"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/adjudicacion-5fafe5b6",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/award"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/adjudicacion-6b892ef5",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/award"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/adjudicacion-834f2cc3",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/award"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/adjudicacion-946897dc",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/award"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/adjudicacion-9f53951e",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/award"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/adjudicacion-a07b455a",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/award"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/adjudicacion-a6870626",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/award"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/caratula-pcap-55e65309",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/tender"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/ciber-1-de5bcb1b",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/cpm"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/ciber-2-c9c9bf8e",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/cpm"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/ciber-3-85b90042",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/cpm"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/ciber-4-85464485",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/cpm"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/conclusiones-13c7e179",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/cpm"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/conclusiones-2a528da5",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/cpm"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/conclusiones-2d1e2ae8",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/cpm"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/conclusiones-611de2c0",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/cpm"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/conclusiones-77baea34",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/cpm"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/conclusiones-8cb55f18",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/cpm"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/conclusiones-dfa3f47a",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/cpm"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/conclusiones-ed961b21",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/cpm"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/conclusiones-f3129ed4",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/cpm"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/convocatoria-0e51aebf",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/cpm"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/convocatoria-1059c4cb",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/cpm"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/convocatoria-2ecbebea",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/cpm"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/convocatoria-3d803a29",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/cpm"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/convocatoria-a0181e7c",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/cpm"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/convocatoria-e334bc5d",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/cpm"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/convocatoria-e3a5246f",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/cpm"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/convocatoria-fa3fba7d",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/cpm"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/convocatoria1-48474000",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/cpm"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/convocatoria2-3310ce88",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/cpm"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/desalro-2-o-ajudicacion-70a1e26f",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/award"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/desalro-2-o-cpti-memoria-a381745a",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/cpm"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/desalro-2-o-licitacion-pcap-3b242a51",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/tender"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/desalro-2-o-licitacion-ptt-1722bad8",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/tender"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/desalro-2-o-modificacion-contrato-d08736ff",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/award"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/informe-conclusiones-0a7d22c0",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/cpm"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/pcap-0266549f",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/tender"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/pcap-11a93f8d",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/tender"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/pcap-2cd1d84c",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/tender"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/pcap-373c89cd",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/tender"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/pcap-40ab644a",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/tender"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/pcap-4e122f33",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/tender"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/pcap-73511535",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/tender"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/pcap-c985adf9",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/tender"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/pcap-d97fe9cf",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/tender"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/pcap-edc05163",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/tender"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/pcap-ppt-30c1b294",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/tender"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/pcap-ppt-6fe97e58",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/tender"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/pcap-ppt-bdf6a8b6",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/tender"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/pcap-ppt-c3536c1a",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/tender"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/ppt-1e453d1c",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/tender"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/ppt-6d0c4a80",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/tender"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/ppt-84122621",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/tender"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/ppt-8e40836e",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/tender"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/ppt-c23cda37",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/tender"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/ppt-c3dec593",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/tender"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/ppt-db62efde",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/tender"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/ppt-e28ddcee",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/tender"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/ppt-e52b10f3",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/tender"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/resolucion-47909f55",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/award"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/resolucion-4bace3eb",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/award"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/resolucion-621f3136",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/award"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/resolucion-90e0a111",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/award"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/resolucion-d4d3b0bc",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/award"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/resolucion-ef33be2a",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/award"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/resolucion-fb0aaf30",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/award"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/resolucion-fd8b2a8b",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/award"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/sbp-adjudicacion-f7e64687",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/award"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/sbp-modificacion-contrato-8c99fc28",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/award"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/sbp-pcap-a050890c",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/tender"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/sbp-ppt-68095083",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/tender"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/senda-adjudicacion-5531c4b0",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/award"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/senda-bocyl-d-11012021-6-fbb6ac8d",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/cpm"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/senda-cpm-informe-2d547096",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/cpm"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/senda-licitacion-pcap-8ed11bd4",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/tender"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/senda-licitacion-ppt-4712af6a",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/tender"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/tremirs-adjudicacion-lote1-6245bec6",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/award"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/tremirs-adjudicacion-lote2-5684c019",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/award"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/tremirs-convocatoria-cpm-e8e4df26",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/cpm"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/tremirs-informe-conclusiones-cpm-dab1b3ea",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/cpm"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/tremirs-licitacion-pcap-lote1-12251a1f",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/tender"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/tremirs-licitacion-pcap-lote2-7c6a2521",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/tender"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/tremirs-licitacion-ppt-lote1-46214526",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/tender"
+},
+{
+"iri": "https://example.org/cpi-demo/id/documents/tremirs-licitacion-ppt-lote2-75add81b",
+"o": "https://example.org/cpi-demo/id/vocab/document-type/tender"
+}
+]

@@ -1,0 +1,1871 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/organizations/a3d-additive-printer",
+"label": "A3D Additive Printer",
+"altLabel": null,
+"kind": "Organización",
+"title": "A3D Additive Printer"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/acid-tango-sl",
+"label": "ACID TANGO SL",
+"altLabel": null,
+"kind": "Organización",
+"title": "ACID TANGO SL"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/actividades-de-consultoria-tecnica-investigacion-y-servicios-avanzados-sl",
+"label": "ACTIVIDADES DE CONSULTORÍA TÉCNICA, INVESTIGACIÓN Y SERVICIOS AVANZADOS SL",
+"altLabel": null,
+"kind": "Organización",
+"title": "ACTIVIDADES DE CONSULTORÍA TÉCNICA, INVESTIGACIÓN Y SERVICIOS AVANZADOS SL"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/aensis-ciberseguridad-s-l",
+"label": "Aensis Ciberseguridad S.L.",
+"altLabel": "AENSIS CIBERSEGURIDAD",
+"kind": "Organización",
+"title": "Aensis Ciberseguridad S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/afca-teccom",
+"label": "AFCA TECCOM",
+"altLabel": null,
+"kind": "Organización",
+"title": "AFCA TECCOM"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/agencia-de-vivienda-y-rehabilitacion-de-andalucia-avra",
+"label": "Agencia de Vivienda y Rehabilitación de Andalucía (AVRA)",
+"altLabel": null,
+"kind": "Entidad pública",
+"title": "Agencia de Vivienda y Rehabilitación de Andalucía (AVRA)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/agrupacion-empresarial-innovacora-para-la-seguridad-de-las-redes-y-los-sistemas-de-informacion",
+"label": "AGRUPACION EMPRESARIAL INNOVACORA PARA LA SEGURIDAD DE LAS REDES Y LOS SISTEMAS…",
+"altLabel": null,
+"kind": "Organización",
+"title": "AGRUPACION EMPRESARIAL INNOVACORA PARA LA SEGURIDAD DE LAS REDES Y LOS SISTEMAS DE INFORMACION"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/aicia-grupo-de-termotecnia",
+"label": "AICIA - Grupo de Termotecnia",
+"altLabel": null,
+"kind": "Organización",
+"title": "AICIA - Grupo de Termotecnia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/alifax-spain-sl",
+"label": "ALIFAX SPAIN, SL",
+"altLabel": null,
+"kind": "Organización",
+"title": "ALIFAX SPAIN, SL"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/alpha-syltec-ingenieria-s-l",
+"label": "Alpha Syltec Ingeniería, S.L.",
+"altLabel": "ALPHA SYLTEC",
+"kind": "Organización",
+"title": "Alpha Syltec Ingeniería, S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/altair-health-sl",
+"label": "ALTAIR HEALTH, SL",
+"altLabel": null,
+"kind": "Organización",
+"title": "ALTAIR HEALTH, SL"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/apogea-consultores-s-l",
+"label": "Apogea Consultores S.L.",
+"altLabel": null,
+"kind": "Organización",
+"title": "Apogea Consultores S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/ariema",
+"label": "ARIEMA",
+"altLabel": null,
+"kind": "Organización",
+"title": "ARIEMA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/arquimea-research-center-s-l-u",
+"label": "ARQUIMEA RESEARCH CENTER S.L.U",
+"altLabel": null,
+"kind": "Organización",
+"title": "ARQUIMEA RESEARCH CENTER S.L.U"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/asociacion-de-investigacion-y-cooperacion-industrial-de-andalucia",
+"label": "ASOCIACIÓN DE INVESTIGACIÓN Y COOPERACION INDUSTRIAL DE ANDALUCIA",
+"altLabel": null,
+"kind": "Organización",
+"title": "ASOCIACIÓN DE INVESTIGACIÓN Y COOPERACION INDUSTRIAL DE ANDALUCIA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/atem-nuevas-tecnologias-s-l",
+"label": "ATEM Nuevas Tecnologías, S.L.",
+"altLabel": "ATEM",
+"kind": "Organización",
+"title": "ATEM Nuevas Tecnologías, S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/atommodular-sl",
+"label": "ATOMMODULAR SL",
+"altLabel": null,
+"kind": "Organización",
+"title": "ATOMMODULAR SL"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/avintia-proyectos-y-construcciones-sl",
+"label": "AVINTIA PROYECTOS Y CONSTRUCCIONES SL",
+"altLabel": null,
+"kind": "Organización",
+"title": "AVINTIA PROYECTOS Y CONSTRUCCIONES SL"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/ayuntamiento-de-alcala-de-guadaira",
+"label": "Ayuntamiento de Alcalá de Guadaíra",
+"altLabel": null,
+"kind": "Entidad pública",
+"title": "Ayuntamiento de Alcalá de Guadaíra"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/ayuntamiento-de-alicante",
+"label": "Ayuntamiento de Alicante",
+"altLabel": null,
+"kind": "Entidad pública",
+"title": "Ayuntamiento de Alicante"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/ayuntamiento-de-madrid",
+"label": "Ayuntamiento de Madrid",
+"altLabel": null,
+"kind": "Entidad pública",
+"title": "Ayuntamiento de Madrid"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/barrabes",
+"label": "Barrabés",
+"altLabel": null,
+"kind": "Organización",
+"title": "Barrabés"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/bauen-constructora-s-a-u",
+"label": "Bauen Constructora S.A.U",
+"altLabel": null,
+"kind": "Organización",
+"title": "Bauen Constructora S.A.U"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/bilba-construccion-e-infraestructuras-sl",
+"label": "BILBA CONSTRUCCION E INFRAESTRUCTURAS SL",
+"altLabel": null,
+"kind": "Organización",
+"title": "BILBA CONSTRUCCION E INFRAESTRUCTURAS SL"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/biomasa-peninsular-ute",
+"label": "BIOMASA PENINSULAR UTE",
+"altLabel": "BIOMASA PENINSULAR",
+"kind": "Organización",
+"title": "BIOMASA PENINSULAR UTE"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/biovic",
+"label": "BIOVIC",
+"altLabel": null,
+"kind": "Organización",
+"title": "BIOVIC"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/blueliv",
+"label": "BLUELIV",
+"altLabel": null,
+"kind": "Organización",
+"title": "BLUELIV"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/bravent-13-s-l",
+"label": "BRAVENT 13 S.L.",
+"altLabel": null,
+"kind": "Organización",
+"title": "BRAVENT 13 S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/building-blocks-games-sl",
+"label": "BUILDING BLOCKS GAMES SL",
+"altLabel": null,
+"kind": "Organización",
+"title": "BUILDING BLOCKS GAMES SL"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/cabling-system-valladolid-s-l",
+"label": "CABLING SYSTEM VALLADOLID, S.L.",
+"altLabel": null,
+"kind": "Organización",
+"title": "CABLING SYSTEM VALLADOLID, S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/cadagua",
+"label": "CADAGUA",
+"altLabel": null,
+"kind": "Organización",
+"title": "CADAGUA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/canaragua-concesiones-s-a-u",
+"label": "Canaragua Concesiones, S.A.U.",
+"altLabel": "CANARAGUA CONCESIONES, SAU",
+"kind": "Organización",
+"title": "Canaragua Concesiones, S.A.U."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/canon-medical-systems-sa",
+"label": "Canon Medical Systems SA.",
+"altLabel": null,
+"kind": "Organización",
+"title": "Canon Medical Systems SA."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/capgemini-espana-s-l",
+"label": "CAPGEMINI ESPAÑA S.L.",
+"altLabel": null,
+"kind": "Organización",
+"title": "CAPGEMINI ESPAÑA S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/castano-y-asociados-s-l",
+"label": "Castaño y Asociados S.L.",
+"altLabel": null,
+"kind": "Organización",
+"title": "Castaño y Asociados S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/cellnex",
+"label": "CELLNEX",
+"altLabel": "Cellnex Telecom",
+"kind": "Organización",
+"title": "CELLNEX"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/centro-de-estudios-de-materiales-y-control-de-obra-sau-cemosa",
+"label": "CENTRO DE ESTUDIOS DE MATERIALES Y CONTROL DE OBRA SAU (CEMOSA)",
+"altLabel": null,
+"kind": "Organización",
+"title": "CENTRO DE ESTUDIOS DE MATERIALES Y CONTROL DE OBRA SAU (CEMOSA)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/centro-de-investigacion-y-desarrollo-en-automocion-y-transporte-cidaut",
+"label": "Centro de Investigación y Desarrollo en Automoción y Transporte (CIDAUT)",
+"altLabel": "CIDAUT",
+"kind": "Organización",
+"title": "Centro de Investigación y Desarrollo en Automoción y Transporte (CIDAUT)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/centro-de-las-nuevas-tecnologias-del-agua",
+"label": "Centro de las Nuevas Tecnologías del Agua",
+"altLabel": "CENTA",
+"kind": "Organización",
+"title": "Centro de las Nuevas Tecnologías del Agua"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/centro-de-supercomputacion-de-castilla-y-leon-scayle",
+"label": "Centro de Supercomputación de Castilla y León (SCAYLE)",
+"altLabel": "SCAYLE",
+"kind": "Organización",
+"title": "Centro de Supercomputación de Castilla y León (SCAYLE)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/centro-internacional-de-metodos-numericos-en-ingenieria-cimne",
+"label": "Centro Internacional de Métodos Numéricos en Ingeniería (CIMNE)",
+"altLabel": "CIMNE",
+"kind": "Organización",
+"title": "Centro Internacional de Métodos Numéricos en Ingeniería (CIMNE)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/centro-para-el-desarrollo-tecnologico-y-la-innovacion-e-p-e",
+"label": "Centro para el Desarrollo Tecnológico y la Innovación, E.P.E.",
+"altLabel": "CDTI",
+"kind": "Entidad pública",
+"title": "Centro para el Desarrollo Tecnológico y la Innovación, E.P.E."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/centro-regional-de-servicios-avanzados-csa",
+"label": "Centro Regional de Servicios Avanzados (CSA)",
+"altLabel": "CSA",
+"kind": "Organización",
+"title": "Centro Regional de Servicios Avanzados (CSA)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/cepheid-iberia-s-l-u",
+"label": "CEPHEID IBERIA, S.L.U",
+"altLabel": null,
+"kind": "Organización",
+"title": "CEPHEID IBERIA, S.L.U"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/citiservi-europe-s-l",
+"label": "CITISERVI EUROPE S.L.",
+"altLabel": null,
+"kind": "Organización",
+"title": "CITISERVI EUROPE S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/citythinking-s-l",
+"label": "Citythinking S.L.",
+"altLabel": null,
+"kind": "Organización",
+"title": "Citythinking S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/connectis-ict-services-sau-getronics",
+"label": "Connectis ICT Services SAU (Getronics)",
+"altLabel": null,
+"kind": "Organización",
+"title": "Connectis ICT Services SAU (Getronics)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/conselleria-de-sanitat-universal-i-salut-publica",
+"label": "Conselleria de Sanitat Universal i Salut Pública",
+"altLabel": "Conselleria de Sanidad Universal y Salud Pública",
+"kind": "Entidad pública",
+"title": "Conselleria de Sanitat Universal i Salut Pública"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/construyendo-futuro-informatico-s-l",
+"label": "CONSTRUYENDO FUTURO INFORMATICO, S.L.",
+"altLabel": null,
+"kind": "Organización",
+"title": "CONSTRUYENDO FUTURO INFORMATICO, S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/cyber-surgery",
+"label": "CYBER SURGERY",
+"altLabel": null,
+"kind": "Organización",
+"title": "CYBER SURGERY"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/cyrity-sl",
+"label": "CYRITY SL",
+"altLabel": "CYRITY",
+"kind": "Organización",
+"title": "CYRITY SL"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/david-nieto",
+"label": "David Nieto",
+"altLabel": null,
+"kind": "Organización",
+"title": "David Nieto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/deep-insight-s-l",
+"label": "DEEP INSIGHT, S.L.",
+"altLabel": null,
+"kind": "Organización",
+"title": "DEEP INSIGHT, S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/defcon8",
+"label": "DEFCON8",
+"altLabel": null,
+"kind": "Organización",
+"title": "DEFCON8"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/deloitte-consulting-s-l",
+"label": "Deloitte Consulting, S.L.",
+"altLabel": "DELOITTE",
+"kind": "Organización",
+"title": "Deloitte Consulting, S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/disruptive-consulting-s-l",
+"label": "DISRUPTIVE CONSULTING, S.L.",
+"altLabel": null,
+"kind": "Organización",
+"title": "DISRUPTIVE CONSULTING, S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/divisa-it",
+"label": "DIVISA IT",
+"altLabel": null,
+"kind": "Organización",
+"title": "DIVISA IT"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/drainware-systems-s-l",
+"label": "DRAINWARE SYSTEMS S.L.",
+"altLabel": "DRAINWARE",
+"kind": "Organización",
+"title": "DRAINWARE SYSTEMS S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/durviz-s-l",
+"label": "DURVIZ, S.L.",
+"altLabel": null,
+"kind": "Organización",
+"title": "DURVIZ, S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/eddea-arquitectura-y-urbanismo-slp",
+"label": "EDDEA ARQUITECTURA Y URBANISMO SLP",
+"altLabel": null,
+"kind": "Organización",
+"title": "EDDEA ARQUITECTURA Y URBANISMO SLP"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/edosoft-factory-s-l",
+"label": "EDOSOFT FACTORY, S.L.",
+"altLabel": "EDOSOFT FACTORY",
+"kind": "Organización",
+"title": "EDOSOFT FACTORY, S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/eforglobal-technology-s-l",
+"label": "EFORGLOBAL TECHNOLOGY S.L.",
+"altLabel": null,
+"kind": "Organización",
+"title": "EFORGLOBAL TECHNOLOGY S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/elem-biotech",
+"label": "ELEM Biotech",
+"altLabel": null,
+"kind": "Organización",
+"title": "ELEM Biotech"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/elmasa-tecnologia-del-agua-s-a-u",
+"label": "ELMASA Tecnología del Agua, S.A.U.",
+"altLabel": "ELMASA TECNOLOGÍA DEL AGUA, SAU",
+"kind": "Organización",
+"title": "ELMASA Tecnología del Agua, S.A.U."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/emetel-sistemas-sl",
+"label": "EMETEL SISTEMAS SL",
+"altLabel": "EMETEL",
+"kind": "Organización",
+"title": "EMETEL SISTEMAS SL"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/empresa-metropolitana-de-abastecimiento-y-saneamiento-de-aguas-de-sevilla-s-a",
+"label": "Empresa Metropolitana de Abastecimiento y Saneamiento de Aguas de Sevilla, S.A.",
+"altLabel": "EMASESA",
+"kind": "Entidad pública",
+"title": "Empresa Metropolitana de Abastecimiento y Saneamiento de Aguas de Sevilla, S.A."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/enginyeria-de-l-edificacio-i-project-management-slp",
+"label": "ENGINYERIA DE L'EDIFICACIÓ I PROJECT MANAGEMENT SLP",
+"altLabel": null,
+"kind": "Organización",
+"title": "ENGINYERIA DE L'EDIFICACIÓ I PROJECT MANAGEMENT SLP"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/enoges-consultores-s-l",
+"label": "Enoges Consultores, S.L.",
+"altLabel": "Enoges Consultores, S.L",
+"kind": "Organización",
+"title": "Enoges Consultores, S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/escribano-mechanical-engineering-s-l",
+"label": "ESCRIBANO MECHANICAL & ENGINEERING, S.L.",
+"altLabel": null,
+"kind": "Organización",
+"title": "ESCRIBANO MECHANICAL & ENGINEERING, S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/everis-spain-slu",
+"label": "Everis Spain SLU",
+"altLabel": "EVERIS SPAIN S.L.U.",
+"kind": "Organización",
+"title": "Everis Spain SLU"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/export-blue-market-sl-exportun",
+"label": "Export Blue Market SL (EXPORTUN)",
+"altLabel": null,
+"kind": "Organización",
+"title": "Export Blue Market SL (EXPORTUN)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/eyeseetea-s-l",
+"label": "EYESEETEA S.L.",
+"altLabel": null,
+"kind": "Organización",
+"title": "EYESEETEA S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/fcc-aqualia-s-a",
+"label": "FCC AQUALIA, S.A.",
+"altLabel": null,
+"kind": "Organización",
+"title": "FCC AQUALIA, S.A."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/fcc-medio-ambiente-s-a-u",
+"label": "FCC MEDIO AMBIENTE, S.A.U.",
+"altLabel": null,
+"kind": "Organización",
+"title": "FCC MEDIO AMBIENTE, S.A.U."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/fctivc",
+"label": "FCTIVC",
+"altLabel": null,
+"kind": "Organización",
+"title": "FCTIVC"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/federacion-de-empresas-de-tecnologias-de-la-informacion-comunicaciones-y-electronica-de-castilla-y-leon-aetical",
+"label": "Federación de Empresas de Tecnologías de la Información, Comunicaciones y Elect…",
+"altLabel": "AETICAL",
+"kind": "Organización",
+"title": "Federación de Empresas de Tecnologías de la Información, Comunicaciones y Electrónica de Castilla y León (AETICAL)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/ferrovial-construccion-sa",
+"label": "FERROVIAL CONSTRUCCIÓN SA",
+"altLabel": null,
+"kind": "Organización",
+"title": "FERROVIAL CONSTRUCCIÓN SA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/fius",
+"label": "FIUS",
+"altLabel": null,
+"kind": "Organización",
+"title": "FIUS"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/fluidmecanicasur-s-l",
+"label": "FluidMecanicaSur S.L.",
+"altLabel": null,
+"kind": "Organización",
+"title": "FluidMecanicaSur S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/fomento-agricola-castellonense-s-a",
+"label": "Fomento Agrícola Castellonense, S.A.",
+"altLabel": "FACSA",
+"kind": "Organización",
+"title": "Fomento Agrícola Castellonense, S.A."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/foqum-analytics-s-l",
+"label": "FOQUM ANALYTICS S.L.",
+"altLabel": null,
+"kind": "Organización",
+"title": "FOQUM ANALYTICS S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/full-body-insight",
+"label": "Full Body Insight",
+"altLabel": "FULL BODY INSIGHT SL",
+"kind": "Organización",
+"title": "Full Body Insight"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/fundacio-de-recerca-clinic-barcelina-institut-d-invetsigacions-biomediques-august-pi-i-sunyer",
+"label": "Fundació de Recerca Clínic Barcelina - Institut d'Invetsigacions Biomèdiques Au…",
+"altLabel": null,
+"kind": "Organización",
+"title": "Fundació de Recerca Clínic Barcelina - Institut d'Invetsigacions Biomèdiques August Pi i Sunyer"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/fundacion-cartif",
+"label": "Fundación CARTIF",
+"altLabel": "CARTIF",
+"kind": "Organización",
+"title": "Fundación CARTIF"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/fundacion-centro-de-cirugia-de-minima-invasion-jesus-uson",
+"label": "Fundación Centro de Cirugía de Mínima Invasión Jesús Usón",
+"altLabel": null,
+"kind": "Entidad pública",
+"title": "Fundación Centro de Cirugía de Mínima Invasión Jesús Usón"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/fundacion-centro-de-investigacion-de-recursos-y-consumos-energeticos",
+"label": "Fundación Centro de Investigación de Recursos y Consumos Energéticos",
+"altLabel": "CIRCE",
+"kind": "Organización",
+"title": "Fundación Centro de Investigación de Recursos y Consumos Energéticos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/fundacion-centro-de-tecnologias-de-interaccion-visual-y-comunicaciones-vicomtech",
+"label": "Fundación Centro de Tecnologías de Interacción Visual y Comunicaciones Vicomtech",
+"altLabel": "FUNDACIÓN CENTRO DE TECNOLOGÍAS DE INTERACCIÓN VISUAL Y COMUNICACIONES VICOMTECH",
+"kind": "Organización",
+"title": "Fundación Centro de Tecnologías de Interacción Visual y Comunicaciones Vicomtech"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/fundacion-centro-tecnoloxico-de-telecomunicacions-de-galicia",
+"label": "Fundación Centro Tecnolóxico de Telecomunicacións de Galicia",
+"altLabel": "GRADIANT",
+"kind": "Organización",
+"title": "Fundación Centro Tecnolóxico de Telecomunicacións de Galicia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/fundacion-ctic-centro-tecnologico",
+"label": "Fundación CTIC Centro Tecnológico",
+"altLabel": "CTIC",
+"kind": "Organización",
+"title": "Fundación CTIC Centro Tecnológico"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/fundacion-instituto-internacional-de-investigacion",
+"label": "Fundación Instituto Internacional de Investigación",
+"altLabel": "Fundación Inst Internacional de Investigación",
+"kind": "Organización",
+"title": "Fundación Instituto Internacional de Investigación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/fundacion-para-el-desarrollo-y-la-innovacion-tecnologica-funditec",
+"label": "Fundación para el Desarrollo y la Innovación Tecnológica (FUNDITEC)",
+"altLabel": "FUNDITEC",
+"kind": "Organización",
+"title": "Fundación para el Desarrollo y la Innovación Tecnológica (FUNDITEC)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/fundacion-para-la-investigacion-sanitaria-y-biomedica-de-la-comunitat-valenciana-fisabio",
+"label": "Fundación para la Investigación Sanitaria y Biomédica de la Comunitat Valenciana",
+"altLabel": "FISABIO",
+"kind": "Entidad pública",
+"title": "Fundación para la Investigación Sanitaria y Biomédica de la Comunitat Valenciana"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/fundacion-tecnalia-research-innovation",
+"label": "Fundación TECNALIA Research & Innovation",
+"altLabel": "FUNDACION TECNALIA RESEARCH & INNOVATION",
+"kind": "Organización",
+"title": "Fundación TECNALIA Research & Innovation"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/fundacion-tekniker",
+"label": "FUNDACION TEKNIKER",
+"altLabel": null,
+"kind": "Organización",
+"title": "FUNDACION TEKNIKER"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/future-space-s-a",
+"label": "FUTURE SPACE S.A.",
+"altLabel": null,
+"kind": "Organización",
+"title": "FUTURE SPACE S.A."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/gabinete-javier-terrados",
+"label": "Gabinete Javier Terrados",
+"altLabel": null,
+"kind": "Organización",
+"title": "Gabinete Javier Terrados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/general-electric-healthcare-espana-s-a-u",
+"label": "General Electric Healthcare España, S.A.U.",
+"altLabel": "GE Healthcare",
+"kind": "Organización",
+"title": "General Electric Healthcare España, S.A.U."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/ghenova-digital-s-l-u",
+"label": "GHENOVA DIGITAL S.L.U.",
+"altLabel": "GHENOVA",
+"kind": "Organización",
+"title": "GHENOVA DIGITAL S.L.U."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/ghenova-ingenieria-sl",
+"label": "GHENOVA INGENIERÍA SL",
+"altLabel": null,
+"kind": "Organización",
+"title": "GHENOVA INGENIERÍA SL"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/global-omnium-medioambiente-s-l",
+"label": "GLOBAL OMNIUM MEDIOAMBIENTE, S.L.",
+"altLabel": null,
+"kind": "Organización",
+"title": "GLOBAL OMNIUM MEDIOAMBIENTE, S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/global-rosetta",
+"label": "Global Rosetta",
+"altLabel": null,
+"kind": "Organización",
+"title": "Global Rosetta"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/globant",
+"label": "Globant",
+"altLabel": null,
+"kind": "Organización",
+"title": "Globant"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/gmv-soluciones-globales-internet-s-a",
+"label": "GMV Soluciones Globales Internet, S.A.",
+"altLabel": "GMV",
+"kind": "Organización",
+"title": "GMV Soluciones Globales Internet, S.A."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/groupement-d-interet-public-reseau-des-acheteurs-hospitaliers-gip-resah",
+"label": "Groupement d'intérêt public - Réseau des acheteurs hospitaliers (GIP Resah)",
+"altLabel": "GIP Resah",
+"kind": "Entidad pública",
+"title": "Groupement d'intérêt public - Réseau des acheteurs hospitaliers (GIP Resah)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/grupo-mecanica-del-vuelo-sistemas-sau",
+"label": "Grupo Mecánica del Vuelo Sistemas, SAU",
+"altLabel": "GMV",
+"kind": "Organización",
+"title": "Grupo Mecánica del Vuelo Sistemas, SAU"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/guardia-civil-gc",
+"label": "GUARDIA CIVIL (GC)",
+"altLabel": "Guardia Civil",
+"kind": "Entidad pública",
+"title": "GUARDIA CIVIL (GC)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/gvam-guias-interactivas-s-l",
+"label": "GVAM Guías Interactivas, S.L.",
+"altLabel": "GVAM",
+"kind": "Organización",
+"title": "GVAM Guías Interactivas, S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/hcp-architectures-and-engineering",
+"label": "HCP ARCHITECTURES AND ENGINEERING",
+"altLabel": null,
+"kind": "Organización",
+"title": "HCP ARCHITECTURES AND ENGINEERING"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/heliopol-s-a-u",
+"label": "HELIOPOL, S.A.U.",
+"altLabel": null,
+"kind": "Organización",
+"title": "HELIOPOL, S.A.U."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/hi-self-sistemas-constructivos-s-l",
+"label": "Hi-Self Sistemas Constructivos S.L.",
+"altLabel": null,
+"kind": "Organización",
+"title": "Hi-Self Sistemas Constructivos S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/hombre-de-piedra-arquitectos",
+"label": "Hombre de Piedra Arquitectos",
+"altLabel": null,
+"kind": "Organización",
+"title": "Hombre de Piedra Arquitectos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/hp-printing-and-computing-solutions-s-l",
+"label": "HP Printing and Computing Solutions, S.L.",
+"altLabel": "HP",
+"kind": "Organización",
+"title": "HP Printing and Computing Solutions, S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/hp-solutions-creation-and-development-services-s-l-hp-scds",
+"label": "HP Solutions Creation and Development Services, S.L. (HP SCDS)",
+"altLabel": "HPSCDS",
+"kind": "Organización",
+"title": "HP Solutions Creation and Development Services, S.L. (HP SCDS)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/humedo-valley-sl",
+"label": "HUMEDO VALLEY SL",
+"altLabel": null,
+"kind": "Organización",
+"title": "HUMEDO VALLEY SL"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/iaxxon",
+"label": "IAXXON",
+"altLabel": null,
+"kind": "Organización",
+"title": "IAXXON"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/incibe",
+"label": "INCIBE",
+"altLabel": null,
+"kind": "Organización",
+"title": "INCIBE"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/indizen-technologies-sl",
+"label": "INDIZEN TECHNOLOGIES SL",
+"altLabel": "Indizen",
+"kind": "Organización",
+"title": "INDIZEN TECHNOLOGIES SL"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/indra-soluciones-tecnologias-de-la-informacion-s-l",
+"label": "Indra Soluciones Tecnologías de la Información, S.L.",
+"altLabel": "INDRA/MINSAIT",
+"kind": "Organización",
+"title": "Indra Soluciones Tecnologías de la Información, S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/inespro",
+"label": "INESPRO",
+"altLabel": null,
+"kind": "Organización",
+"title": "INESPRO"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/informatica-medica-s-l",
+"label": "INFORMÀTICA MÈDICA, S.L.",
+"altLabel": null,
+"kind": "Organización",
+"title": "INFORMÀTICA MÈDICA, S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/ingecid-sl",
+"label": "INGECID SL",
+"altLabel": null,
+"kind": "Organización",
+"title": "INGECID SL"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/innova-next",
+"label": "Innova Next (Grupo Barrabés)",
+"altLabel": "Innova Next",
+"kind": "Organización",
+"title": "Innova Next (Grupo Barrabés)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/innovaciones-tecnologicas-del-sur-s-l",
+"label": "INNOVACIONES TECNOLÓGICAS DEL SUR S.L.",
+"altLabel": "Innovaciones Tecnológicas del Sur S.L.",
+"kind": "Organización",
+"title": "INNOVACIONES TECNOLÓGICAS DEL SUR S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/institut-catala-d-oncologia-ico",
+"label": "Institut Català d'Oncologia (ICO)",
+"altLabel": null,
+"kind": "Entidad pública",
+"title": "Institut Català d'Oncologia (ICO)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/instituto-leones-de-desarrollo-economico-formacion-y-empleo-ildefe",
+"label": "Instituto Leonés de Desarrollo Económico, Formación y Empleo (ILDEFE)",
+"altLabel": "ILDEFE",
+"kind": "Organización",
+"title": "Instituto Leonés de Desarrollo Económico, Formación y Empleo (ILDEFE)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/instituto-para-la-competitividad-empresarial-de-castilla-y-leon",
+"label": "Instituto para la Competitividad Empresarial de Castilla y León",
+"altLabel": null,
+"kind": "Entidad pública",
+"title": "Instituto para la Competitividad Empresarial de Castilla y León"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/instituto-tecnologico-de-canarias-s-a",
+"label": "Instituto Tecnológico de Canarias, S.A.",
+"altLabel": null,
+"kind": "Entidad pública",
+"title": "Instituto Tecnológico de Canarias, S.A."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/investigacion-y-tratamiento-en-salud-mental-y-discapacidad-intras",
+"label": "Investigación y Tratamiento en Salud Mental y Discapacidad (INTRAS)",
+"altLabel": "INTRAS",
+"kind": "Organización",
+"title": "Investigación y Tratamiento en Salud Mental y Discapacidad (INTRAS)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/itelligent-information-technologies-s-l",
+"label": "Itelligent Information Technologies S.L.",
+"altLabel": "Itelligent",
+"kind": "Organización",
+"title": "Itelligent Information Technologies S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/kapsch-trafficcom-transportation-s-a-u",
+"label": "KAPSCH TRAFFICCOM TRANSPORTATION S.A.U.",
+"altLabel": null,
+"kind": "Organización",
+"title": "KAPSCH TRAFFICCOM TRANSPORTATION S.A.U."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/la-csuisp",
+"label": "la CSUiSP",
+"altLabel": null,
+"kind": "Organización",
+"title": "la CSUiSP"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/lazarus",
+"label": "LAZARUS",
+"altLabel": null,
+"kind": "Organización",
+"title": "LAZARUS"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/leasba-consulting-s-l",
+"label": "Leasba Consulting, S.L.",
+"altLabel": "LEASBA",
+"kind": "Organización",
+"title": "Leasba Consulting, S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/linx-view-s-l",
+"label": "LINX VIEW, S.L.",
+"altLabel": null,
+"kind": "Organización",
+"title": "LINX VIEW, S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/logicalis-spain-s-l-u",
+"label": "Logicalis Spain, S.L.U.",
+"altLabel": null,
+"kind": "Organización",
+"title": "Logicalis Spain, S.L.U."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/lucentia-lab-s-l",
+"label": "LUCENTIA LAB S.L.",
+"altLabel": null,
+"kind": "Organización",
+"title": "LUCENTIA LAB S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/maderas-impregnadas-para-exterior-s-l",
+"label": "Maderas Impregnadas para Exterior, S.L.",
+"altLabel": null,
+"kind": "Organización",
+"title": "Maderas Impregnadas para Exterior, S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/magtel",
+"label": "MAGTEL",
+"altLabel": null,
+"kind": "Organización",
+"title": "MAGTEL"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/marion-immersive-ltd",
+"label": "Marion Immersive Ltd",
+"altLabel": null,
+"kind": "Organización",
+"title": "Marion Immersive Ltd"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/marketeer-co",
+"label": "Marketeer co.",
+"altLabel": null,
+"kind": "Organización",
+"title": "Marketeer co."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/mediaroom-solutions",
+"label": "MEDIAROOM SOLUTIONS",
+"altLabel": "MEDIA ROOM SOLUTIONS",
+"kind": "Organización",
+"title": "MEDIAROOM SOLUTIONS"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/medical-micro-instrument-spa",
+"label": "Medical Micro Instrument SpA",
+"altLabel": "MMI SpA",
+"kind": "Organización",
+"title": "Medical Micro Instrument SpA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/medical-simulator-s-l",
+"label": "Medical Simulator, S.L.",
+"altLabel": "MEDICAL SIMULATOR, S.L.",
+"kind": "Organización",
+"title": "Medical Simulator, S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/medtronic-iberica-sa",
+"label": "Medtronic Ibérica SA",
+"altLabel": "Medtronic Ibérica, S.A.",
+"kind": "Organización",
+"title": "Medtronic Ibérica SA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/mnemo-evolution-integration-services-s-a",
+"label": "MNEMO Evolution & Integration Services, S.A.",
+"altLabel": "MNEMO",
+"kind": "Organización",
+"title": "MNEMO Evolution & Integration Services, S.A."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/monlab-sl",
+"label": "MONLAB, SL",
+"altLabel": null,
+"kind": "Organización",
+"title": "MONLAB, SL"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/moonshot-innovation-s-l",
+"label": "Moonshot Innovation, S.L.",
+"altLabel": "MOONSHOT INNOVATION S.L.",
+"kind": "Organización",
+"title": "Moonshot Innovation, S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/movilidad-ampliada-s-l",
+"label": "MOVILIDAD AMPLIADA S.L.",
+"altLabel": null,
+"kind": "Organización",
+"title": "MOVILIDAD AMPLIADA S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/msig-smart-management",
+"label": "MSIG Smart Management",
+"altLabel": null,
+"kind": "Organización",
+"title": "MSIG Smart Management"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/mv-international-bim-services-sl",
+"label": "MV INTERNATIONAL BIM SERVICES SL",
+"altLabel": null,
+"kind": "Organización",
+"title": "MV INTERNATIONAL BIM SERVICES SL"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/nedgia",
+"label": "NEDGIA",
+"altLabel": null,
+"kind": "Organización",
+"title": "NEDGIA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/next-comunicaciones-s-a",
+"label": "Next Comunicaciones S.A.",
+"altLabel": null,
+"kind": "Organización",
+"title": "Next Comunicaciones S.A."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/nidus-lab-slu",
+"label": "NIDUS LAB SLU",
+"altLabel": null,
+"kind": "Organización",
+"title": "NIDUS LAB SLU"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/ntt-data-spain-s-l-u",
+"label": "NTT DATA Spain, S.L.U.",
+"altLabel": "EVERIS SPAIN, S.L.U.",
+"kind": "Organización",
+"title": "NTT DATA Spain, S.L.U."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/oncovision",
+"label": "Oncovision",
+"altLabel": null,
+"kind": "Organización",
+"title": "Oncovision"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/ove-arup-and-partners-sau",
+"label": "Ove Arup and Partners SAU",
+"altLabel": null,
+"kind": "Organización",
+"title": "Ove Arup and Partners SAU"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/oxentia-europe-s-l",
+"label": "Oxentia Europe, S.L.",
+"altLabel": "OXENTIA EUROPE",
+"kind": "Organización",
+"title": "Oxentia Europe, S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/peninsula-corporate-innovation-s-l",
+"label": "PENINSULA CORPORATE INNOVATION S.L.",
+"altLabel": null,
+"kind": "Organización",
+"title": "PENINSULA CORPORATE INNOVATION S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/perez-del-pulgar-gonzalez-parrilla-arquitectos-s-l-p",
+"label": "PÉREZ DEL PULGAR GONZALEZ PARRILLA ARQUITECTOS S.L.P",
+"altLabel": null,
+"kind": "Organización",
+"title": "PÉREZ DEL PULGAR GONZALEZ PARRILLA ARQUITECTOS S.L.P"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/philips-electronic-netherland",
+"label": "Philips Electronic Netherland",
+"altLabel": null,
+"kind": "Organización",
+"title": "Philips Electronic Netherland"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/plain-concepts-s-l",
+"label": "Plain Concepts S.L.",
+"altLabel": null,
+"kind": "Organización",
+"title": "Plain Concepts S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/pricewaterhousecoopers-asesores-de-negocios-sl",
+"label": "PRICEWATERHOUSECOOPERS ASESORES DE NEGOCIOS SL",
+"altLabel": null,
+"kind": "Organización",
+"title": "PRICEWATERHOUSECOOPERS ASESORES DE NEGOCIOS SL"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/proconsi",
+"label": "PROCONSI",
+"altLabel": null,
+"kind": "Organización",
+"title": "PROCONSI"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/prosegur-soluciones-integrales-de-seguridad-espana-s-l",
+"label": "PROSEGUR SOLUCIONES INTEGRALES DE SEGURIDAD ESPAÑA S.L.",
+"altLabel": "PROSEGUR",
+"kind": "Organización",
+"title": "PROSEGUR SOLUCIONES INTEGRALES DE SEGURIDAD ESPAÑA S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/qualud-s-l",
+"label": "QUALUD S.L.",
+"altLabel": null,
+"kind": "Organización",
+"title": "QUALUD S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/quantia",
+"label": "QUANTIA",
+"altLabel": null,
+"kind": "Organización",
+"title": "QUANTIA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/quantion-s-l",
+"label": "Quantion, S.L.",
+"altLabel": null,
+"kind": "Organización",
+"title": "Quantion, S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/r2m-solution-spain-sl",
+"label": "R2M SOLUTION SPAIN SL",
+"altLabel": null,
+"kind": "Organización",
+"title": "R2M SOLUTION SPAIN SL"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/radar-consortium",
+"label": "RaDAR consortium",
+"altLabel": null,
+"kind": "Entidad pública",
+"title": "RaDAR consortium"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/recoletos-consultores",
+"label": "RECOLETOS CONSULTORES",
+"altLabel": null,
+"kind": "Organización",
+"title": "RECOLETOS CONSULTORES"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/retineo-ingenieria-s-l-u",
+"label": "Retineo Ingeniería S.L.U",
+"altLabel": null,
+"kind": "Organización",
+"title": "Retineo Ingeniería S.L.U"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/riam-intelearning-lab-s-l",
+"label": "RIAM INTELEARNING LAB S.L.",
+"altLabel": null,
+"kind": "Organización",
+"title": "RIAM INTELEARNING LAB S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/rioglass",
+"label": "RIOGLASS",
+"altLabel": null,
+"kind": "Organización",
+"title": "RIOGLASS"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/rodrigo-aguado-santa",
+"label": "RODRIGO AGUADO SANTA",
+"altLabel": null,
+"kind": "Organización",
+"title": "RODRIGO AGUADO SANTA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/ruiz-larrea-arquitectura-slp",
+"label": "RUIZ LARREA ARQUITECTURA SLP",
+"altLabel": null,
+"kind": "Organización",
+"title": "RUIZ LARREA ARQUITECTURA SLP"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/s-a-de-obras-y-servicios-copasa",
+"label": "S.A. DE OBRAS Y SERVICIOS, COPASA",
+"altLabel": null,
+"kind": "Organización",
+"title": "S.A. DE OBRAS Y SERVICIOS, COPASA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/salvador-rueda",
+"label": "Salvador Rueda",
+"altLabel": null,
+"kind": "Organización",
+"title": "Salvador Rueda"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/sando",
+"label": "SANDO",
+"altLabel": null,
+"kind": "Organización",
+"title": "SANDO"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/scassi-spain",
+"label": "SCASSI SPAIN",
+"altLabel": "SCASSI Spain",
+"kind": "Organización",
+"title": "SCASSI SPAIN"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/servei-de-salut-de-les-illes-balears",
+"label": "Servei de Salut de les Illes Balears",
+"altLabel": "IB-Salut",
+"kind": "Entidad pública",
+"title": "Servei de Salut de les Illes Balears"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/servicio-vasco-de-salud-osakidetza-osak",
+"label": "Servicio Vasco de Salud Osakidetza (OSAK)",
+"altLabel": null,
+"kind": "Entidad pública",
+"title": "Servicio Vasco de Salud Osakidetza (OSAK)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/servocad-microtronics-sl",
+"label": "SERVOCAD MICROTRONICS SL",
+"altLabel": null,
+"kind": "Organización",
+"title": "SERVOCAD MICROTRONICS SL"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/showleap-technologies-sl",
+"label": "Showleap Technologies SL",
+"altLabel": "SHOWLEAP TECHNOLOGIES, S.L.",
+"kind": "Organización",
+"title": "Showleap Technologies SL"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/sowlers-technologies-s-l",
+"label": "SOWLERS TECHNOLOGIES S.L.",
+"altLabel": "SOWLERS TECHNO-LOGIES",
+"kind": "Organización",
+"title": "SOWLERS TECHNOLOGIES S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/suez",
+"label": "SUEZ",
+"altLabel": null,
+"kind": "Organización",
+"title": "SUEZ"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/t-systems-itc-iberia-s-a",
+"label": "T-Systems ITC Iberia, S.A.",
+"altLabel": "T-Systems",
+"kind": "Organización",
+"title": "T-Systems ITC Iberia, S.A."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/talestech",
+"label": "Talestech",
+"altLabel": null,
+"kind": "Organización",
+"title": "Talestech"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/te-consulting-house-4-plus-sl",
+"label": "TE CONSULTING HOUSE 4 PLUS, SL",
+"altLabel": "teCH4+",
+"kind": "Organización",
+"title": "TE CONSULTING HOUSE 4 PLUS, SL"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/tecnica-y-proyectos-sa",
+"label": "TÉCNICA Y PROYECTOS SA",
+"altLabel": null,
+"kind": "Organización",
+"title": "TÉCNICA Y PROYECTOS SA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/tecnicas-y-proyectos-s-a-typsa--e0954db2",
+"label": "Técnicas y Proyectos S.A. TYPSA",
+"altLabel": null,
+"kind": "Organización",
+"title": "Técnicas y Proyectos S.A. TYPSA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/telecomunicaciones-los-ocho-canos-s-l",
+"label": "Telecomunicaciones Los Ocho Caños S.L.",
+"altLabel": "OCHO CAÑOS",
+"kind": "Organización",
+"title": "Telecomunicaciones Los Ocho Caños S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/telecyl-s-a",
+"label": "TELECYL, S.A.",
+"altLabel": "TELECYL (MADISON MK)",
+"kind": "Organización",
+"title": "TELECYL, S.A."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/telefonica-moviles-espana-s-a-u",
+"label": "TELEFÓNICA MÓVILES ESPAÑA, S.A.U",
+"altLabel": null,
+"kind": "Organización",
+"title": "TELEFÓNICA MÓVILES ESPAÑA, S.A.U"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/telefonica-s-a",
+"label": "TELEFONICA S.A.",
+"altLabel": "Telefónica",
+"kind": "Organización",
+"title": "TELEFONICA S.A."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/traco",
+"label": "TRACO",
+"altLabel": null,
+"kind": "Organización",
+"title": "TRACO"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/trc-informatica-s-l",
+"label": "TRC INFORMATICA, S.L.",
+"altLabel": null,
+"kind": "Organización",
+"title": "TRC INFORMATICA, S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/trinomio",
+"label": "Trinomio",
+"altLabel": null,
+"kind": "Organización",
+"title": "Trinomio"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/typsa-digital-solutions-s-l",
+"label": "Typsa Digital Solutions S.L",
+"altLabel": "TYPSA DIGITAL SOLUTIONS SL",
+"kind": "Organización",
+"title": "Typsa Digital Solutions S.L"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/tysec",
+"label": "TYSEC",
+"altLabel": null,
+"kind": "Organización",
+"title": "TYSEC"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/ubikare-zainketak-s-l",
+"label": "UBIKARE ZAINKETAK, S.L.",
+"altLabel": "UBIKARE ZAINKETAK SOCIEDAD LIMITADA",
+"kind": "Organización",
+"title": "UBIKARE ZAINKETAK, S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/universidad-de-alcala",
+"label": "UNIVERSIDAD DE ALCALÁ",
+"altLabel": null,
+"kind": "Organización",
+"title": "UNIVERSIDAD DE ALCALÁ"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/universidad-de-murcia",
+"label": "Universidad de Murcia",
+"altLabel": "UNIVERSIDAD DE MURCIA",
+"kind": "Organización",
+"title": "Universidad de Murcia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/universidad-de-salamanca",
+"label": "UNIVERSIDAD DE SALAMANCA",
+"altLabel": null,
+"kind": "Organización",
+"title": "UNIVERSIDAD DE SALAMANCA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/universidad-de-sevilla-us",
+"label": "Universidad de Sevilla",
+"altLabel": "UNIVERSIDAD DE SEVILLA",
+"kind": "Organización",
+"title": "Universidad de Sevilla"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/universidad-de-sevilla-us--2a78ba00",
+"label": "Universidad de Sevilla (US)",
+"altLabel": null,
+"kind": "Organización",
+"title": "Universidad de Sevilla (US)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/universidad-de-valladolid",
+"label": "Universidad de Valladolid",
+"altLabel": "UNIVERSIDAD DE VALLADOLID",
+"kind": "Organización",
+"title": "Universidad de Valladolid"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/universidad-de-zaragoza",
+"label": "UNIVERSIDAD DE ZARAGOZA",
+"altLabel": null,
+"kind": "Organización",
+"title": "UNIVERSIDAD DE ZARAGOZA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/universidad-politecnica-de-madrid",
+"label": "Universidad Politécnica de Madrid",
+"altLabel": "UNIVERSIDAD POLITÉCNICA DE MADRID",
+"kind": "Organización",
+"title": "Universidad Politécnica de Madrid"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/universidad-valladolid-uva",
+"label": "Universidad Valladolid (UVa)",
+"altLabel": null,
+"kind": "Organización",
+"title": "Universidad Valladolid (UVa)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/universita-degli-studi-di-napoli-federico-ii",
+"label": "Università degli Studi di Napoli Federico II",
+"altLabel": null,
+"kind": "Entidad pública",
+"title": "Università degli Studi di Napoli Federico II"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/urjc",
+"label": "URJC",
+"altLabel": null,
+"kind": "Organización",
+"title": "URJC"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/valenthia-strategy-sl",
+"label": "VALENTHIA STRATEGY SL",
+"altLabel": null,
+"kind": "Organización",
+"title": "VALENTHIA STRATEGY SL"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/valora",
+"label": "Grupo Valora Gestión de Residuos, S.L.U.",
+"altLabel": "VALORA",
+"kind": "Organización",
+"title": "Grupo Valora Gestión de Residuos, S.L.U."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/valoriza",
+"label": "Valoriza Servicios Medioambientales, S.A.",
+"altLabel": "VALORIZA",
+"kind": "Organización",
+"title": "Valoriza Servicios Medioambientales, S.A."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/vector",
+"label": "VECTOR",
+"altLabel": null,
+"kind": "Organización",
+"title": "VECTOR"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/vector-software-factory-sl",
+"label": "Vector Software Factory SL",
+"altLabel": "VECTOR ITC GROUP",
+"kind": "Organización",
+"title": "Vector Software Factory SL"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/veratech-for-health-sl",
+"label": "VERATECH FOR HEALTH SL",
+"altLabel": "Veratech",
+"kind": "Organización",
+"title": "VERATECH FOR HEALTH SL"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/vodafone",
+"label": "Vodafone",
+"altLabel": "VODAFONE ESPAÑA, S.A.U.",
+"kind": "Organización",
+"title": "Vodafone"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/wellness-telecom-s-l",
+"label": "Wellness Telecom S.L.",
+"altLabel": "Wellness TechGroup",
+"kind": "Organización",
+"title": "Wellness Telecom S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/wise-build-sl",
+"label": "WISE BUILD SL",
+"altLabel": "WISE BUILD",
+"kind": "Organización",
+"title": "WISE BUILD SL"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/xeridia",
+"label": "XERIDIA",
+"altLabel": null,
+"kind": "Organización",
+"title": "XERIDIA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/organization-groups/award-001-participation-001-actor",
+"label": "UNIÓN TEMPORAL DE EMPREAS LINX VIEW, S.L.-EFORGLOBAL TECHNOLOGY S.L. LEY 18/82…",
+"altLabel": null,
+"kind": "Agrupación",
+"title": "UNIÓN TEMPORAL DE EMPREAS LINX VIEW, S.L.-EFORGLOBAL TECHNOLOGY S.L. LEY 18/82 DE 26 DE MAYO"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/organization-groups/market-participation-001-001-actor",
+"label": "FOQUM ANALYTICS S.L. Y MOVILIDAD AMPLIADA S.L.",
+"altLabel": null,
+"kind": "Agrupación",
+"title": "FOQUM ANALYTICS S.L. Y MOVILIDAD AMPLIADA S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/organization-groups/market-participation-002-001-actor",
+"label": "FOQUM ANALYTICS S.L. Y MOVILIDAD AMPLIADA S.L.",
+"altLabel": null,
+"kind": "Agrupación",
+"title": "FOQUM ANALYTICS S.L. Y MOVILIDAD AMPLIADA S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/organization-groups/market-participation-003-003-actor",
+"label": "LAZARUS RECOLETOS CONSULTORES",
+"altLabel": null,
+"kind": "Agrupación",
+"title": "LAZARUS RECOLETOS CONSULTORES"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/organization-groups/market-participation-003-005-actor",
+"label": "LAZARUS RECOLETOS CONSULTORES",
+"altLabel": null,
+"kind": "Agrupación",
+"title": "LAZARUS RECOLETOS CONSULTORES"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/organization-groups/market-participation-003-016-actor",
+"label": "EMETEL SISTEMAS, SL_BE:SEC",
+"altLabel": null,
+"kind": "Agrupación",
+"title": "EMETEL SISTEMAS, SL_BE:SEC"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/organization-groups/market-participation-003-021-actor",
+"label": "LAZARUS RECOLETOS CONSULTORES",
+"altLabel": null,
+"kind": "Agrupación",
+"title": "LAZARUS RECOLETOS CONSULTORES"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/organization-groups/market-participation-004-008-actor",
+"label": "RECOLETOS CONSULTORES/LAZARUS",
+"altLabel": null,
+"kind": "Agrupación",
+"title": "RECOLETOS CONSULTORES/LAZARUS"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/organization-groups/award-001-participation-002-actor",
+"label": "UNIÓN TEMPORAL DE EMPRESAS LEY 18/1982",
+"altLabel": null,
+"kind": "Agrupación",
+"title": "UNIÓN TEMPORAL DE EMPRESAS LEY 18/1982"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/organization-groups/market-participation-001-004-actor",
+"label": "1. Fundació de Recerca Clínic Barcelina - Institut d'Invetsigacions Biomèdiques…",
+"altLabel": null,
+"kind": "Agrupación",
+"title": "1. Fundació de Recerca Clínic Barcelina - Institut d'Invetsigacions Biomèdiques August Pi i Sunyer 2. FUNDACIÓN TECNALIA RESEARCH & INNOVATION 3. Quantion, S.L. 4. ELEM Biotech"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/organization-groups/award-001-participation-001-actor",
+"label": "VERATECH E INDIZEN U.T.E.",
+"altLabel": "VERATECH E INDIZEN TECHNOLOGIES SL, UNIÓN TEMPORAL DE EMPRESAS, LEY 18/1982 DE 26 DE MAYO",
+"kind": "Agrupación",
+"title": "VERATECH E INDIZEN U.T.E."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/organization-groups/market-participation-001-002-actor",
+"label": "UTE Veratech-Indizen",
+"altLabel": null,
+"kind": "Agrupación",
+"title": "UTE Veratech-Indizen"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/award-001-participation-001-actor",
+"label": "UTE FCC AQUALIA, S.A. - HELIOPOL, S.A.U. - FCC MEDIO AMBIENTE, S.A.U.",
+"altLabel": null,
+"kind": "Agrupación",
+"title": "UTE FCC AQUALIA, S.A. - HELIOPOL, S.A.U. - FCC MEDIO AMBIENTE, S.A.U."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/award-002-participation-001-actor",
+"label": "UTE S.A. DE OBRAS Y SERVICIOS, COPASA - GLOBAL OMNIUM MEDIOAMBIENTE, S.L.",
+"altLabel": null,
+"kind": "Agrupación",
+"title": "UTE S.A. DE OBRAS Y SERVICIOS, COPASA - GLOBAL OMNIUM MEDIOAMBIENTE, S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-001-001-actor",
+"label": "BIOMASA PENINSULAR UTE",
+"altLabel": null,
+"kind": "Agrupación",
+"title": "BIOMASA PENINSULAR UTE"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-001-002-actor",
+"label": "MAGTEL- TECNALIA- CIRCE",
+"altLabel": null,
+"kind": "Agrupación",
+"title": "MAGTEL- TECNALIA- CIRCE"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-001-006-actor",
+"label": "IAXXON- INESPRO",
+"altLabel": null,
+"kind": "Agrupación",
+"title": "IAXXON- INESPRO"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-001-009-actor",
+"label": "CENTA - RIOGLASS",
+"altLabel": null,
+"kind": "Agrupación",
+"title": "CENTA - RIOGLASS"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-001-011-actor",
+"label": "CENTA - ARIEMA - CIMNE",
+"altLabel": null,
+"kind": "Agrupación",
+"title": "CENTA - ARIEMA - CIMNE"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-001-013-actor",
+"label": "CENTA - UNIVERSIDAD DE SEVILLA",
+"altLabel": null,
+"kind": "Agrupación",
+"title": "CENTA - UNIVERSIDAD DE SEVILLA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-001-014-actor",
+"label": "teCH4+ UNIVERSIDAD DE SEVILLA- UNIVERSIDAD DE VALLADOLID",
+"altLabel": null,
+"kind": "Agrupación",
+"title": "teCH4+ UNIVERSIDAD DE SEVILLA- UNIVERSIDAD DE VALLADOLID"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-001-015-actor",
+"label": "FACSA-VALORA",
+"altLabel": null,
+"kind": "Agrupación",
+"title": "FACSA-VALORA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-001-017-actor",
+"label": "FCTIVC- VICOMTECH",
+"altLabel": null,
+"kind": "Agrupación",
+"title": "FCTIVC- VICOMTECH"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-004-001-actor",
+"label": "BIOMASA PENINSULAR UTE",
+"altLabel": null,
+"kind": "Agrupación",
+"title": "BIOMASA PENINSULAR UTE"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-004-004-actor",
+"label": "FACSA - VALORA",
+"altLabel": null,
+"kind": "Agrupación",
+"title": "FACSA - VALORA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-004-005-actor",
+"label": "MAGTEL - TECNALIA - CIRCE",
+"altLabel": null,
+"kind": "Agrupación",
+"title": "MAGTEL - TECNALIA - CIRCE"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-004-007-actor",
+"label": "TE CONSULTING HOUSE 4 PLUS, SL, Universidad de Sevilla (US) y Universidad Valla…",
+"altLabel": null,
+"kind": "Agrupación",
+"title": "TE CONSULTING HOUSE 4 PLUS, SL, Universidad de Sevilla (US) y Universidad Valladolid (UVa)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/organization-groups/market-participation-001-003-actor",
+"label": "BARRABÉS- INNOVA NEXT",
+"altLabel": null,
+"kind": "Agrupación",
+"title": "BARRABÉS- INNOVA NEXT"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/organization-groups/award-001-participation-001-actor",
+"label": "UTE VODAFONE ESPAÑA, S.A.U. - TRC INFORMATICA, S.L.",
+"altLabel": null,
+"kind": "Agrupación",
+"title": "UTE VODAFONE ESPAÑA, S.A.U. - TRC INFORMATICA, S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/organization-groups/award-001-participation-003-actor",
+"label": "UTE EVERIS SPAIN, S.L.U. - DEEP INSIGHT, S.L. - DISRUPTIVE CONSULTING, S.L.",
+"altLabel": null,
+"kind": "Agrupación",
+"title": "UTE EVERIS SPAIN, S.L.U. - DEEP INSIGHT, S.L. - DISRUPTIVE CONSULTING, S.L."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/organization-groups/award-001-participation-001-actor",
+"label": "UTE CANARAGUA CONCESIONES, SAU - ELMASA TECNOLOGÍA DEL AGUA, SAU",
+"altLabel": null,
+"kind": "Agrupación",
+"title": "UTE CANARAGUA CONCESIONES, SAU - ELMASA TECNOLOGÍA DEL AGUA, SAU"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/organization-groups/award-001-participation-002-actor",
+"label": "UTE CANARAGUA CONCESIONES, SAU - ELMASA TECNOLOGÍA DEL AGUA, SAU",
+"altLabel": null,
+"kind": "Agrupación",
+"title": "UTE CANARAGUA CONCESIONES, SAU - ELMASA TECNOLOGÍA DEL AGUA, SAU"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/organization-groups/market-participation-002-003-actor",
+"label": "ATEM & GVAM",
+"altLabel": null,
+"kind": "Agrupación",
+"title": "ATEM & GVAM"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/award-001-participation-001-actor",
+"label": "UTE GHENOVA TECNALIA, AICIA, GHENOVA DIGITAL SLU",
+"altLabel": null,
+"kind": "Agrupación",
+"title": "UTE GHENOVA TECNALIA, AICIA, GHENOVA DIGITAL SLU"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/award-001-participation-002-actor",
+"label": "UTE Técnicas y Proyectos S.A. TYPSA & Typsa Digital Solutions S.L",
+"altLabel": null,
+"kind": "Agrupación",
+"title": "UTE Técnicas y Proyectos S.A. TYPSA & Typsa Digital Solutions S.L"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/award-001-participation-003-actor",
+"label": "UTE GHENOVA INGENIERÍA SL - FUNDACIÓN TECNALIA RESEARCH & INNOVATION - ASOCIACI…",
+"altLabel": null,
+"kind": "Agrupación",
+"title": "UTE GHENOVA INGENIERÍA SL - FUNDACIÓN TECNALIA RESEARCH & INNOVATION - ASOCIACIÓN DE INVESTIGACIÓN Y COOPERACIÓN INDUSTRIAL DE ANDALUCÍA - GHENOVA DIGITAL SLU - EDDEA ARQUITECTURA Y URBANISMO SLP"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/award-001-participation-004-actor",
+"label": "UTE ACTIVIDADES DE CONSULTORÍA TÉCNICA, INVESTIGACIÓN Y SERVICIOS AVANZADOS SL…",
+"altLabel": null,
+"kind": "Agrupación",
+"title": "UTE ACTIVIDADES DE CONSULTORÍA TÉCNICA, INVESTIGACIÓN Y SERVICIOS AVANZADOS SL - HCP ARCHITECTURES AND ENGINEERING - QUANTIA - TYSEC"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/award-001-participation-005-actor",
+"label": "UTE TÉCNICA Y PROYECTOS SA - TYPSA DIGITAL SOLUTIONS SL",
+"altLabel": null,
+"kind": "Agrupación",
+"title": "UTE TÉCNICA Y PROYECTOS SA - TYPSA DIGITAL SOLUTIONS SL"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/award-001-participation-007-actor",
+"label": "UTE BILBA CONSTRUCCION E INFRAESTRUCTURAS SL - PÉREZ DEL PULGAR GONZALEZ PARRIL…",
+"altLabel": null,
+"kind": "Agrupación",
+"title": "UTE BILBA CONSTRUCCION E INFRAESTRUCTURAS SL - PÉREZ DEL PULGAR GONZALEZ PARRILLA ARQUITECTOS S.L.P"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/award-001-participation-009-actor",
+"label": "UTE VALENTHIA STRATEGY SL - NIDUS LAB SLU - WISE BUILD SL- AVINTIA PROYECTOS Y…",
+"altLabel": null,
+"kind": "Agrupación",
+"title": "UTE VALENTHIA STRATEGY SL - NIDUS LAB SLU - WISE BUILD SL- AVINTIA PROYECTOS Y CONSTRUCCIONES SL"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/award-001-participation-010-actor",
+"label": "UTE INGECID SL - FERROVIAL CONSTRUCCIÓN SA",
+"altLabel": null,
+"kind": "Agrupación",
+"title": "UTE INGECID SL - FERROVIAL CONSTRUCCIÓN SA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/award-001-participation-011-actor",
+"label": "UTE R2M SOLUTION SPAIN SL - ENGINYERIA DE L'EDIFICACIÓ I PROJECT MANAGEMENT SLP…",
+"altLabel": null,
+"kind": "Agrupación",
+"title": "UTE R2M SOLUTION SPAIN SL - ENGINYERIA DE L'EDIFICACIÓ I PROJECT MANAGEMENT SLP - RUIZ LARREA ARQUITECTURA SLP - ATOMMODULAR SL"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/market-participation-003-001-actor",
+"label": "Consorcio FIUS, Hombre de Piedra Arquitectos, Ove Arup and Partners SAU y URJC",
+"altLabel": null,
+"kind": "Agrupación",
+"title": "Consorcio FIUS, Hombre de Piedra Arquitectos, Ove Arup and Partners SAU y URJC"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/market-participation-003-003-actor",
+"label": "Consorcio Bauen Constructora S.A.U y Retineo Ingeniería S.L.U",
+"altLabel": null,
+"kind": "Agrupación",
+"title": "Consorcio Bauen Constructora S.A.U y Retineo Ingeniería S.L.U"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/market-participation-003-004-actor",
+"label": "Consorcio Citythinking S.L., Hi-Self Sistemas Constructivos S.L., Castaño y Aso…",
+"altLabel": null,
+"kind": "Agrupación",
+"title": "Consorcio Citythinking S.L., Hi-Self Sistemas Constructivos S.L., Castaño y Asociados S.L., Plain Concepts S.L., Apogea Consultores S.L. y Salvador Rueda"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/market-participation-003-006-actor",
+"label": "Consorcio Gabinete Javier Terrados, AFCA TECCOM y WISE BUILD",
+"altLabel": null,
+"kind": "Agrupación",
+"title": "Consorcio Gabinete Javier Terrados, AFCA TECCOM y WISE BUILD"
+}
+]

@@ -1,0 +1,254 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/submission-channels/channel-001",
+"label": "Para facilitar la información y la comunicación",
+"description": "Para facilitar la información y la comunicación",
+"email": "comprainnovadora@madrid.es",
+"url": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/submission-channels/channel-002",
+"label": "se dispuso toda la información",
+"description": "se dispuso toda la información",
+"email": null,
+"url": "http://www.madrid.es/comprainnovadora"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/submission-channels/channel-003",
+"label": "peticiones de información presentadas por escrito; por teléfono; por medios ele…",
+"description": "peticiones de información presentadas por escrito; por teléfono; por medios electrónicos o a través de la Web del Ayuntamiento de Madrid",
+"email": null,
+"url": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/submission-channels/channel-004",
+"label": "La presentación de las propuestas se realizará remitiendo la documentación al b…",
+"description": "La presentación de las propuestas se realizará remitiendo la documentación al buzón de correo electrónico",
+"email": "comprainnovadora@madrid.es",
+"url": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/submission-channels/channel-001",
+"label": "Anexo II - Formulario de Participación, a través del cual las entidades interes…",
+"description": "Anexo II - Formulario de Participación, a través del cual las entidades interesadas participan en el proceso con una propuesta innovadora.",
+"email": null,
+"url": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/submission-channels/channel-002",
+"label": "página web del Ayuntamiento de Alicante",
+"description": "página web del Ayuntamiento de Alicante",
+"email": null,
+"url": "https://www.alicante.es/es/contenidos/consulta-preliminar-mercadoaplicacion-tecnologica-ia-web-municipal"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/submission-channels/channel-003",
+"label": "Las propuestas innovadoras, junto con la documentación anexa, se presentarán en…",
+"description": "Las propuestas innovadoras, junto con la documentación anexa, se presentarán enviando un correo electrónico",
+"email": "contratacion@alicante.es",
+"url": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/submission-channels/channel-004",
+"label": "esta documentación deberá entregarse usando un enlace para descargas a través d…",
+"description": "esta documentación deberá entregarse usando un enlace para descargas a través de un sistema de intercambio de archivos en la nube",
+"email": null,
+"url": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/submission-channels/channel-005",
+"label": "enviándo al correo electrónico coordinacion proyectos@alicante.es",
+"description": "enviándo al correo electrónico coordinacion proyectos@alicante.es",
+"email": null,
+"url": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/submission-channels/channel-001",
+"label": "Las propuestas se remitirán a la dirección de correo electrónico concursos@ccmi…",
+"description": "Las propuestas se remitirán a la dirección de correo electrónico concursos@ccmijesususon.com",
+"email": "concursos@ccmijesususon.com",
+"url": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/submission-channels/channel-002",
+"label": "el formulario para que todos los interesados, personas físicas o jurídicas, pud…",
+"description": "el formulario para que todos los interesados, personas físicas o jurídicas, pudieran solicitar su participación en la Consulta y presentar sus soluciones innovadoras",
+"email": null,
+"url": "www.tremirs.com"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/submission-channels/channel-003",
+"label": "Las entrevistas fueron convocadas por correo",
+"description": "Las entrevistas fueron convocadas por correo",
+"email": null,
+"url": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/submission-channels/channel-001",
+"label": "la fecha de cierre de la consulta sobre un reto se anunciará con al menos quinc…",
+"description": "la fecha de cierre de la consulta sobre un reto se anunciará con al menos quince días de antelación, publicándolo en sitio web arriba indicado",
+"email": null,
+"url": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/submission-channels/channel-001",
+"label": "formulario incluido como Anexo II en la publicación de la Consulta Preliminar d…",
+"description": "formulario incluido como Anexo II en la publicación de la Consulta Preliminar del Mercado",
+"email": null,
+"url": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/submission-channels/channel-002",
+"label": "Aclaración de dudas sobre el planteamiento de distintas soluciones y otras duda…",
+"description": "Aclaración de dudas sobre el planteamiento de distintas soluciones y otras dudas de carácter diverso, por correo electrónico",
+"email": null,
+"url": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/submission-channels/channel-003",
+"label": "Las propuestas se enviarán a la siguiente dirección de correo electrónico: ocpi…",
+"description": "Las propuestas se enviarán a la siguiente dirección de correo electrónico: ocpi@cdti.es.",
+"email": "ocpi@cdti.es",
+"url": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/submission-channels/channel-001",
+"label": "collection of feedback via a response form",
+"description": "collection of feedback via a response form",
+"email": null,
+"url": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/submission-channels/channel-002",
+"label": "bi-lateral online market consultation meetings with the Buyers Group",
+"description": "bi-lateral online market consultation meetings with the Buyers Group",
+"email": null,
+"url": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/submission-channels/channel-003",
+"label": "online Market Response Form",
+"description": "online Market Response Form",
+"email": null,
+"url": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/submission-channels/channel-001",
+"label": "sitio web http://fisabio.san.gva.es/perfil-de-contratante",
+"description": "sitio web http://fisabio.san.gva.es/perfil-de-contratante",
+"email": null,
+"url": "http://fisabio.san.gva.es/perfil-de-contratante"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/submission-channels/channel-002",
+"label": "los interesados deberán presentar sus soluciones (Anexo 3) antes de las 14.00 h…",
+"description": "los interesados deberán presentar sus soluciones (Anexo 3) antes de las 14.00 h del 15 del octubre de 2017, en la dirección de correo electrónico: redvalencianabiobancos@gva.es",
+"email": "redvalencianabiobancos@gva.es",
+"url": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/submission-channels/channel-001",
+"label": "un portal, que además de permitir la descarga del anexo en formato editable, co…",
+"description": "un portal, que además de permitir la descarga del anexo en formato editable, contenia la información sobre la convocatoria la posibilidad de aclarar dudas",
+"email": null,
+"url": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/submission-channels/channel-001",
+"label": "Las propuestas deben enviarse al mail cpi@emasesa.com",
+"description": "Las propuestas deben enviarse al mail cpi@emasesa.com",
+"email": "cpi@emasesa.com",
+"url": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/submission-channels/channel-002",
+"label": "se resolvieron las dudas y cuestiones remitidas previamente por las entidades y…",
+"description": "se resolvieron las dudas y cuestiones remitidas previamente por las entidades y que se pueden consultar en la web:",
+"email": null,
+"url": "http://www.emasesa.com/compra-publica-innovadora/"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/submission-channels/channel-003",
+"label": "Las propuestas se enviarán a la siguiente dirección de correo electrónico",
+"description": "Las propuestas se enviarán a la siguiente dirección de correo electrónico",
+"email": "cpi@emasesa.com",
+"url": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/submission-channels/channel-001",
+"label": "perfil del contratante del Ayuntamiento de Alcalá de Guadaíra",
+"description": "perfil del contratante del Ayuntamiento de Alcalá de Guadaíra",
+"email": null,
+"url": "https://contrataciondelestado.es/wps/portal/!ut/p/ b0/04_Sj9CPykssy0xPLMnMz0vMAfIjU1JTC3Iy87KtClKL0jJznPPzSooSSxLzSlL1w_ Wj9KNKkzKTE5OByv2L0hPzgGz9yCBjVQNfyxwX5xSfUFv9gtxcRwBDAzm8/"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/submission-channels/channel-001",
+"label": "mediante el Anexo II al correo cpm@cdti.es",
+"description": "mediante el Anexo II al correo cpm@cdti.es",
+"email": "cpm@cdti.es",
+"url": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/submission-channels/channel-002",
+"label": "Cualquier duda que no aparezca en el documento FAQs, será remitida mediante cor…",
+"description": "Cualquier duda que no aparezca en el documento FAQs, será remitida mediante correo electrónico a la dirección: cpm@cdti.es",
+"email": "cpm@cdti.es",
+"url": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/submission-channels/channel-001",
+"label": "Las propuestas (de acuerdo al formulario Anexo II) deberán remitirse telemática…",
+"description": "Las propuestas (de acuerdo al formulario Anexo II) deberán remitirse telemáticamente a través de www.empresas.jcyl.es",
+"email": null,
+"url": "www.empresas.jcyl.es"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/submission-channels/channel-002",
+"label": "o en su defecto se enviarán a la siguiente dirección de correo electrónico cpi.…",
+"description": "o en su defecto se enviarán a la siguiente dirección de correo electrónico cpi.ice@jcyl.es",
+"email": "cpi.ice@jcyl.es",
+"url": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/submission-channels/channel-001",
+"label": "Perfil del Contratante de la Junta de Andalucía y en las páginas web de la Cons…",
+"description": "Perfil del Contratante de la Junta de Andalucía y en las páginas web de la Consejería de Fomento, Infraestructuras y Ordenación del Territorio y de AVRA",
+"email": null,
+"url": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/submission-channels/channel-002",
+"label": "Consultas",
+"description": "Consultas",
+"email": "consultas.nzeishb.avra@juntadeandalucia.es",
+"url": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/submission-channels/channel-003",
+"label": "Presentación de propuestas",
+"description": "Presentación de propuestas",
+"email": "presenta.nzeishb.avra@juntadeandalucia.es",
+"url": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/submission-channels/channel-004",
+"label": "Atención telefónica: 955405526, en horario de 09:00 a 14:00 horas de lunes a vi…",
+"description": "Atención telefónica: 955405526, en horario de 09:00 a 14:00 horas de lunes a viernes.",
+"email": null,
+"url": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/submission-channels/channel-005",
+"label": "La documentación y el intercambio de información estarán disponibles en el sigu…",
+"description": "La documentación y el intercambio de información estarán disponibles en el siguiente enlace:",
+"email": null,
+"url": "http://www.avrandalucia.es/nzeishb-es"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/submission-channels/channel-006",
+"label": "La presentación de propuestas se realizará utilizando el asunto 'Propuesta de f…",
+"description": "La presentación de propuestas se realizará utilizando el asunto 'Propuesta de ficha'",
+"email": "presentaciones.nzeishb.avra@juntadeandalucia.es",
+"url": null
+}
+]

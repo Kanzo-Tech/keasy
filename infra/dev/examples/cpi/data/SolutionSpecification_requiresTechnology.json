@@ -1,0 +1,570 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/lengua-de-signos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/solution-specifications/tender-001-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/technology/lenguaje-de-signos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/solution-specifications/tender-001-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/technology/voz-en-castellano"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/inteligencia-artificial"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/solution-specifications/tender-001-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/technology/aprendizaje-automatico"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/solution-specifications/tender-001-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/technology/inteligencia-artificial"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/solution-specifications/tender-001-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/technology/nlp-procesamiento-de-lenguaje-natural"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/solution-specifications/tender-001-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/technology/nlu-entendimiento-de-lenguaje-natural"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/solution-specifications/tender-001-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/technology/aprendizaje-automatico"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/solution-specifications/tender-001-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/technology/nlp-procesamiento-de-lenguaje-natural"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/solution-specifications/tender-001-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/technology/nlu-entendimiento-de-lenguaje-natural"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/solution-specifications/tender-001-solution-004",
+"o": "https://example.org/cpi-demo/id/vocab/technology/traduccion-automatica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/solution-specifications/tender-001-solution-004",
+"o": "https://example.org/cpi-demo/id/vocab/technology/transcripcion-y-subtitulacion-automatica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/solution-specifications/tender-001-solution-006",
+"o": "https://example.org/cpi-demo/id/vocab/technology/data-lake"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/solution-specifications/tender-001-solution-006",
+"o": "https://example.org/cpi-demo/id/vocab/technology/ia-y-pnl"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/solution-specifications/tender-001-solution-007",
+"o": "https://example.org/cpi-demo/id/vocab/technology/sistemas-de-vision-y-audio-artificial"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/microscopios-opticos-quirurgicos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/plataforma-robotica-teleoperada"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/teleoperada"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-001-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/technology/coagulacion-bipolar"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-001-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/technology/microinstrumentos-quirurgicos-robotizados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-001-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/technology/control-del-temblor"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-001-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/technology/escalado-de-los-movimientos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-001-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/technology/sistema-de-vision"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-002-lot-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/brazos-roboticos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-002-lot-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/full-hd-y-3d-hd"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-002-lot-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/hardware-y-software"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-002-lot-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/imagen-por-infrarrojos-cercanos-fluorescencia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-002-lot-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/realidad-aumentada-ra"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-002-lot-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/realidad-mixta-rm"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-002-lot-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/tecnologias-3d"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-002-lot-002-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/moviles"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-002-lot-002-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/servicios-online"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-002-lot-002-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/tecnologias-de-vision-3d"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-002-lot-002-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/technology/entorno-virtual-de-formacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-002-lot-002-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/technology/hardware-y-software"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-002-lot-002-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/technology/vision-3d"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/tor"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/solution-specifications/tender-001-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/technology/tor"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/automatica-y-robotica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/gemelos-digitales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/inteligencia-artificial"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/metaverso"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/realidad-extendida"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/solution-specifications/tender-001-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/technology/inteligencia-artificial-ia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/solution-specifications/tender-001-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/technology/vision-por-computador"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/solution-specifications/tender-001-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/technology/digital-twin"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/solution-specifications/tender-001-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/technology/metaverso"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/solution-specifications/tender-001-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/technology/realidad-extendida-realidad-virtual-aumentada-o-mixta"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/saas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-001-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/technology/apis"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-001-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/technology/fhir"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-001-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/technology/hl7"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-001-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/technology/modelo-de-datos-comun-cdm"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-001-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/technology/inteligencia-artificial"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-001-solution-004",
+"o": "https://example.org/cpi-demo/id/vocab/technology/business-intelligence-bi"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-001-solution-004",
+"o": "https://example.org/cpi-demo/id/vocab/technology/inteligencia-artificial"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-002-lot-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/sangre-directa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-002-lot-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/sistema-de-informacion-del-laboratorio-sil"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-002-lot-002-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/hl7"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-002-lot-002-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/sftp"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-002-lot-002-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/wsdl"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-002-lot-003-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/dicom"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-002-lot-003-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/hl7"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-002-lot-003-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/xml"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-003-lot-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/medios-de-cultivo-liquidos-especificos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-003-lot-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/sistema-de-lectura-y-procesamiento-de-muestras-automatizado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-003-lot-002-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/ensayo-inmunocromatografico-de-lectura-colorimetrica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-003-lot-003-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/extractor-de-adn"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-003-lot-003-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/fluorimetro"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-003-lot-003-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/plataforma-bioinformatica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-003-lot-003-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/secuenciador-de-adn"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/solution-specifications/tender-001-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/technology/snomed-ct"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/solution-specifications/tender-001-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/technology/hpc"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/solution-specifications/tender-001-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/technology/neos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/solution-specifications/tender-001-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/technology/orion-clinic"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/detectores-de-xenon-liquido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/tecnologia-innovadora-para-la-lectura-de-materiales-solidos-centelleadores"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/solution-specifications/tender-001-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/technology/cristales-continuos-de-lyso"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/solution-specifications/tender-001-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/technology/xenon-liquido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/solution-specifications/tender-001-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/technology/biomarcadores-de-imagen"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/solution-specifications/tender-001-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/technology/inteligencia-artificial"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/solution-specifications/tender-001-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/technology/machine-learning"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/bbdd-de-cisco"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/solution-specifications/tender-001-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/technology/compostaje"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/solution-specifications/tender-001-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/technology/recirculacion-de-caudales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/solution-specifications/tender-001-solution-004",
+"o": "https://example.org/cpi-demo/id/vocab/technology/biofiltro"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/solution-specifications/tender-001-solution-005",
+"o": "https://example.org/cpi-demo/id/vocab/technology/ocr"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/solution-specifications/tender-001-solution-006",
+"o": "https://example.org/cpi-demo/id/vocab/technology/radiofrecuencia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/solution-specifications/tender-001-solution-007",
+"o": "https://example.org/cpi-demo/id/vocab/technology/base-de-datos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/solution-specifications/tender-001-solution-007",
+"o": "https://example.org/cpi-demo/id/vocab/technology/scada"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/solution-specifications/tender-002-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/hidrolisis-termica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/solution-specifications/tender-002-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/technology/hidrolisis-termica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/solution-specifications/tender-002-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/technology/inter-hidrolisis"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/solution-specifications/tender-002-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/technology/plc"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/solution-specifications/tender-002-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/technology/scada"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/ia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/vision-artificial"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/solution-specifications/tender-001-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/technology/big-data"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/solution-specifications/tender-001-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/technology/blockchain"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/solution-specifications/tender-001-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/technology/nosql"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/solution-specifications/tender-001-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/technology/big-data"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/solution-specifications/tender-001-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/technology/business-intelligence"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/solution-specifications/tender-001-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/technology/camaras-de-vision-artificial"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/solution-specifications/tender-001-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/technology/ngsi-ld"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/solution-specifications/tender-001-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/technology/nodos-de-inteligencia-artificial"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/solution-specifications/tender-001-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/technology/pmml"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/solution-specifications/tender-001-solution-004",
+"o": "https://example.org/cpi-demo/id/vocab/technology/iaas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/solution-specifications/tender-001-solution-005",
+"o": "https://example.org/cpi-demo/id/vocab/technology/codigo-abierto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/solution-specifications/tender-001-solution-005",
+"o": "https://example.org/cpi-demo/id/vocab/technology/computacion-distribuida"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/solution-specifications/tender-001-solution-005",
+"o": "https://example.org/cpi-demo/id/vocab/technology/gpus"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/solution-specifications/tender-001-solution-005",
+"o": "https://example.org/cpi-demo/id/vocab/technology/high-performance-computing-hpc"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/solution-specifications/tender-001-solution-006",
+"o": "https://example.org/cpi-demo/id/vocab/technology/iaas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/redes-de-detectores-sensores-y-o-camaras-portatiles-desplegadas-en-posiciones-terrestres"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/tecnicas-de-inteligencia-artificial"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/vehiculos-aereos-no-tripulados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/solution-specifications/tender-001-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/technology/tecnicas-de-inteligencia-artificial"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/solution-specifications/tender-001-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/technology/tecnologias-de-computacion-de-borde-edge-computing"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/solution-specifications/tender-001-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/technology/vehiculos-aereos-no-tripulados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/osmosis-inversa-de-agua-de-mar"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/solution-specifications/tender-001-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/technology/bombeo-de-alta-presion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/solution-specifications/tender-001-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/technology/membranas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/solution-specifications/tender-001-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/technology/recuperador-de-energia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/solution-specifications/tender-001-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/technology/contenedores-de-alta-capacidad-de-40-ft-pies"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/solution-specifications/tender-001-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/technology/losa-de-hormigon"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/solution-specifications/tender-001-solution-004",
+"o": "https://example.org/cpi-demo/id/vocab/technology/postratamiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/solution-specifications/tender-001-solution-005",
+"o": "https://example.org/cpi-demo/id/vocab/technology/ethernet-10-100-mbits-s"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/solution-specifications/tender-001-solution-005",
+"o": "https://example.org/cpi-demo/id/vocab/technology/modbus-tcp"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/solution-specifications/tender-001-solution-005",
+"o": "https://example.org/cpi-demo/id/vocab/technology/opc-ua"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/solution-specifications/tender-001-solution-005",
+"o": "https://example.org/cpi-demo/id/vocab/technology/plc"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/en-la-nube"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/solution-specifications/tender-001-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/technology/tecnologias-de-virtualizacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/solution-specifications/tender-001-solution-004",
+"o": "https://example.org/cpi-demo/id/vocab/technology/virtualizacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/solution-specifications/tender-001-solution-005",
+"o": "https://example.org/cpi-demo/id/vocab/technology/tecnologias-de-procesamiento-de-la-informacion-y-de-lenguaje"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/solution-specifications/tender-001-solution-007",
+"o": "https://example.org/cpi-demo/id/vocab/technology/virtualizacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/solution-specifications/tender-001-solution-008",
+"o": "https://example.org/cpi-demo/id/vocab/technology/aprendizaje-automatico"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/solution-specifications/tender-001-solution-010",
+"o": "https://example.org/cpi-demo/id/vocab/technology/comunicacion-y-gamificacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/bim"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/deep-learning"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/solution-specifications/tender-001-solution-001",
+"o": "https://example.org/cpi-demo/id/vocab/technology/inteligencia-artificial"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/solution-specifications/tender-001-solution-002",
+"o": "https://example.org/cpi-demo/id/vocab/technology/bim"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/solution-specifications/tender-001-solution-003",
+"o": "https://example.org/cpi-demo/id/vocab/technology/bim"
+}
+]

@@ -1,0 +1,154 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/ip-licenses/tender-001-ip-002-license-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-license-type/licencia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-licenses/tender-001-ip-001-license-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-license-type/licencia-de-uso-perpetua-universal-no-exclusiva-y-gratuita"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-licenses/tender-001-ip-001-license-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-license-type/licencia-de-uso-perpetua-universal-no-exclusiva-y-gratuita"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-licenses/tender-001-ip-001-license-003",
+"o": "https://example.org/cpi-demo/id/vocab/ip-license-type/licencia-de-uso-gratuito"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-licenses/tender-001-ip-002-license-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-license-type/licencia-de-uso-gratuito"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-licenses/tender-002-ip-001-license-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-license-type/licencia-de-uso-perpetua-universal-no-exclusiva-y-gratuita"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-licenses/tender-002-ip-001-license-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-license-type/licencia-de-uso-perpetua-universal-no-exclusiva-y-gratuita"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-licenses/tender-002-lot-001-ip-001-license-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-license-type/licencia-de-uso-gratuito"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-licenses/tender-002-lot-002-ip-001-license-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-license-type/licencia-de-uso-gratuito"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/ip-licenses/tender-001-ip-001-license-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-license-type/licencia-irrevocable-ilimitada-para-todo-el-mundo-totalmente-pagada-y-hasta-la-expiracion-de-los-respectivos-dpl"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/ip-licenses/tender-001-ip-001-license-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-license-type/licencias-no-exclusivas-en-condiciones-de-mercado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/ip-licenses/tender-001-ip-001-license-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-license-type/licencia-de-uso-no-exclusiva-irrevocable-gratuita-y-perpetua"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/ip-licenses/tender-001-ip-001-license-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-license-type/licencia-en-las-mismas-condiciones"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/ip-licenses/tender-001-ip-001-license-003",
+"o": "https://example.org/cpi-demo/id/vocab/ip-license-type/licencia-de-uso"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-licenses/tender-002-lot-003-ip-001-license-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-license-type/licencias-para-trabajar-con-el-sistema-de-informacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/ip-licenses/tender-001-ip-001-license-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-license-type/licencia-de-uso"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/ip-licenses/tender-001-ip-002-license-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-license-type/cesion-de-uso"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/ip-licenses/tender-001-ip-001-license-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-license-type/licencias-de-uso-perpetuas-universales-no-exclusivas-y-gratuitas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/ip-licenses/tender-001-ip-001-license-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-license-type/licencia-ilimitada-no-exclusiva-no-transmisible-y-gratuita"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/ip-licenses/tender-001-ip-001-license-003",
+"o": "https://example.org/cpi-demo/id/vocab/ip-license-type/licencias-de-las-soluciones-desarrolladas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/ip-licenses/tender-001-ip-001-license-004",
+"o": "https://example.org/cpi-demo/id/vocab/ip-license-type/sublicenciar-su-derecho-de-uso"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/ip-licenses/tender-001-ip-002-license-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-license-type/cesion-derechos-de-uso"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/ip-licenses/tender-001-ip-002-license-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-license-type/supervisory-client-w-histclient-2020"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/ip-licenses/tender-001-ip-002-license-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-license-type/supervisory-client-w-histclient-2020"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/ip-licenses/tender-002-ip-002-license-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-license-type/licencias-de-uso"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/ip-licenses/tender-001-ip-001-license-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-license-type/licencias-de-terceros"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/ip-licenses/tender-001-ip-002-license-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-license-type/codigo-abierto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/ip-licenses/tender-001-ip-001-license-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-license-type/licencia-a-cdti-y-a-la-administracion-usuaria-o-un-derecho-de-acceso"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/ip-licenses/tender-001-ip-001-license-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-license-type/licencia-de-uso-no-exclusivo-y-gratuito"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/ip-licenses/tender-001-ip-001-license-003",
+"o": "https://example.org/cpi-demo/id/vocab/ip-license-type/licencia-en-las-mismas-condiciones-que-las-expuestas-anteriormente"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/ip-licenses/tender-001-ip-001-license-004",
+"o": "https://example.org/cpi-demo/id/vocab/ip-license-type/licencias-sobre-las-soluciones-desarrolladas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/ip-licenses/tender-001-ip-001-license-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-license-type/licencia-de-uso-gratuita-indefinida-y-exclusiva"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/ip-licenses/tender-001-ip-002-license-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-license-type/licencias-de-software"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/ip-licenses/tender-001-ip-002-license-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-license-type/licencia-de-uso-perpetua-universal-no-exclusiva-y-gratuita"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/ip-licenses/tender-001-ip-003-license-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-license-type/licencia-ilimitada"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/ip-licenses/tender-001-ip-001-license-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-license-type/licencia-de-uso-gratuita"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/ip-licenses/tender-001-ip-001-license-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-license-type/sublicencias-en-condiciones-de-mercado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/ip-licenses/tender-001-ip-001-license-003",
+"o": "https://example.org/cpi-demo/id/vocab/ip-license-type/licencias-de-uso-a-terceros-en-condiciones-razonables-de-mercado"
+}
+]

@@ -1,0 +1,367 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/needs/need-001",
+"label": "las necesidades funcionales y tecnológicas del proyecto sobre comunicación e in…",
+"description": "las necesidades funcionales y tecnológicas del proyecto sobre comunicación e interacción de las personas con discapacidad auditiva severa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/needs/need-002",
+"label": "La comunicación del oyente discapacitado auditivo severo en tiempo real.",
+"description": "La comunicación del oyente discapacitado auditivo severo en tiempo real."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/needs/need-003",
+"label": "La comunicación del oyente y el discapacitado auditivo severo sin necesidad de…",
+"description": "La comunicación del oyente y el discapacitado auditivo severo sin necesidad de estar apoyado por otra persona que deba realizar una actividad complementaria para lograr la comunicación e interacción."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/needs/need-004",
+"label": "La comunicación auditivo severo deforma bidireccional",
+"description": "La comunicación auditivo severo deforma bidireccional"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/needs/need-005",
+"label": "procurar a todos los ciudadanos la máxima accesibilidad a los mismos",
+"description": "procurar a todos los ciudadanos la máxima accesibilidad a los mismos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/needs/need-006",
+"label": "necesidad de una solución innovadora a la problemática detectada desde esta adm…",
+"description": "necesidad de una solución innovadora a la problemática detectada desde esta administración"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/needs/need-001",
+"label": "las necesidades municipales de acceso por parte del ciudadano a la consulta, in…",
+"description": "las necesidades municipales de acceso por parte del ciudadano a la consulta, información, y gestión administrativa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/needs/need-002",
+"label": "una fácil interacción entre personas y órganos de gobierno",
+"description": "una fácil interacción entre personas y órganos de gobierno"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/needs/need-001",
+"label": "las necesidades del Sistema Sanitario Extremeño y Español en el ámbito de la ci…",
+"description": "las necesidades del Sistema Sanitario Extremeño y Español en el ámbito de la cirugía mínimamente invasiva"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/needs/need-002",
+"label": "recabar información del mercado sobre los siguientes Retos para su correcta eje…",
+"description": "recabar información del mercado sobre los siguientes Retos para su correcta ejecución"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/needs/need-003",
+"label": "disponer de una plataforma robotizada para cirugía laparoscópica que mejore los…",
+"description": "disponer de una plataforma robotizada para cirugía laparoscópica que mejore los sistemas ya existentes en el mercado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/needs/need-004",
+"label": "disponibilidad de herramientas de formación compatibles con tecnologías de visi…",
+"description": "disponibilidad de herramientas de formación compatibles con tecnologías de visión 3D, dispositivos móviles y servicios online"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/needs/need-001",
+"label": "obtención de información propia relativa a amenazas (en este caso concreto botn…",
+"description": "obtención de información propia relativa a amenazas (en este caso concreto botnet 1 )"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/needs/need-002",
+"label": "Obtención de información relativa a servicios ilícitos ocultos en la red TOR.",
+"description": "Obtención de información relativa a servicios ilícitos ocultos en la red TOR."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/needs/need-003",
+"label": "obtención de conocimientos y servicios que permitan dar soporte a su nuevo mode…",
+"description": "obtención de conocimientos y servicios que permitan dar soporte a su nuevo modelo de inteligencia, en especial, en los aspectos relativos a la atribución de ciber incidentes"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/needs/need-004",
+"label": "contar con el conocimiento suficiente sobre las soluciones más innovadoras exis…",
+"description": "contar con el conocimiento suficiente sobre las soluciones más innovadoras existentes en el mercado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/needs/need-001",
+"label": "esta necesidad pública que no puede ser satisfecha a través de soluciones ya ex…",
+"description": "esta necesidad pública que no puede ser satisfecha a través de soluciones ya existentes en el mercado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/needs/need-002",
+"label": "un escáner PET dedicado al cerebro de altísima sensibilidad (>15% en el centro…",
+"description": "un escáner PET dedicado al cerebro de altísima sensibilidad (>15% en el centro del escáner) y resolución (1mm) para la detección temprana del Alzheimer y otras enfermedades neurológicas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/needs/need-003",
+"label": "un proceso de remodelación y mejora de la flota existente",
+"description": "un proceso de remodelación y mejora de la flota existente"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/needs/need-004",
+"label": "Dotar al Servicio de Material Móvil y a la Unidad de Protección y Seguridad (UP…",
+"description": "Dotar al Servicio de Material Móvil y a la Unidad de Protección y Seguridad (UPROSE) de la Guardia Civil de los servicios de innovación para el desarrollo de dos prototipos de vehículos destinados al traslado de DPyP"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/needs/need-005",
+"label": "Reconocimiento de órganos, tejidos y objetivos quirúrgicos para facilitar la ej…",
+"description": "Reconocimiento de órganos, tejidos y objetivos quirúrgicos para facilitar la ejecución de una tarea mediante robótica quirúrgica, bien sea supervisada por un cirujano o de forma autónoma"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/needs/need-006",
+"label": "Detección y caracterización de determinadas maniobras (sangrado, sutura, corte,…",
+"description": "Detección y caracterización de determinadas maniobras (sangrado, sutura, corte, etc.) que permitan avanzar en el proceso de automatización de los sistemas robóticos quirúrgicos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/needs/need-007",
+"label": "Desarrollo de entornos formativos integrados basados en situaciones clínicas re…",
+"description": "Desarrollo de entornos formativos integrados basados en situaciones clínicas reales para la formación de los profesionales clínicos en robótica quirúrgica a través del metaverso."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/needs/need-008",
+"label": "Uso de entornos formativos para robótica quirúrgica basados en metaverso para p…",
+"description": "Uso de entornos formativos para robótica quirúrgica basados en metaverso para proporcionar datos fiables, relevantes y robustos para contribuir al desarrollar de robots autónomos en cirugía laparoscópica."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/needs/need-001",
+"label": "an unmet need for rapid detection of multi-drug resistant microorganisms (MDROs…",
+"description": "an unmet need for rapid detection of multi-drug resistant microorganisms (MDROs) and antimicrobial resistance (AMR) management and control systems"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/needs/need-002",
+"label": "an unmet need for a holistic solution that enables gold standard AMR management…",
+"description": "an unmet need for a holistic solution that enables gold standard AMR management and control"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/needs/need-003",
+"label": "rapid detection of multidrug resistant microorganisms (MDROs) and antimicrobial…",
+"description": "rapid detection of multidrug resistant microorganisms (MDROs) and antimicrobial resistance (AMR) management and control systems"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/needs/need-004",
+"label": "unmet needs were found right across the clinical workflow, relating to both the…",
+"description": "unmet needs were found right across the clinical workflow, relating to both the detection and subsequent management of AMR situations"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/needs/need-005",
+"label": "rapid detection systems that may be standalone or may be implemented together w…",
+"description": "rapid detection systems that may be standalone or may be implemented together with smart AMR management mechanisms"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/needs/need-006",
+"label": "a holistic solution that enables gold standard AMR management and control",
+"description": "a holistic solution that enables gold standard AMR management and control"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/needs/need-007",
+"label": "an integrated package of measures that can be tailored to the healthcare facili…",
+"description": "an integrated package of measures that can be tailored to the healthcare facility and be flexibly deployed for the effective and pro-active detection and control of multidrug-resistant organisms"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/needs/need-008",
+"label": "rapid tests at point of care at the primary care level that distinguishes viral…",
+"description": "rapid tests at point of care at the primary care level that distinguishes viral and bacterial infections"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/needs/need-001",
+"label": "Existe necesidad de capacidad de desarrollo modular de la aplicación.",
+"description": "Existe necesidad de capacidad de desarrollo modular de la aplicación."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/needs/need-002",
+"label": "disponer de un Gestor de interoperabilidad semántica para la red valenciana de…",
+"description": "disponer de un Gestor de interoperabilidad semántica para la red valenciana de Biobancos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/needs/need-001",
+"label": "La necesidad de un PET de cuerpo completo en una única adquisición",
+"description": "La necesidad de un PET de cuerpo completo en una única adquisición"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/needs/need-002",
+"label": "PET de cuerpo completo para niños y PET de alta resolución para cerebro",
+"description": "PET de cuerpo completo para niños y PET de alta resolución para cerebro"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/needs/need-001",
+"label": "soluciones innovadoras que puedan dar respuesta a dos retos",
+"description": "soluciones innovadoras que puedan dar respuesta a dos retos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/needs/need-001",
+"label": "implementar un sistema de gestión de lodos de depuración nuevo o significativam…",
+"description": "implementar un sistema de gestión de lodos de depuración nuevo o significativamente mejorado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/needs/need-002",
+"label": "adecuado para el largo plazo, sostenible en sus tres dimensiones (social, econó…",
+"description": "adecuado para el largo plazo, sostenible en sus tres dimensiones (social, económica y medioambiental)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/needs/need-003",
+"label": "un desarrollo tecnológico y adecuación específica para el proyecto",
+"description": "un desarrollo tecnológico y adecuación específica para el proyecto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/needs/need-004",
+"label": "una solución significativamente mejorada, que mantenga la valorización agrícola…",
+"description": "una solución significativamente mejorada, que mantenga la valorización agrícola mediante cocompostaje"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/needs/need-005",
+"label": "quedarían pendientes de dar tratamiento de higienización a los lodos de la EDAR…",
+"description": "quedarían pendientes de dar tratamiento de higienización a los lodos de la EDAR Ranilla"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/needs/need-001",
+"label": "una gestión integral del espacio productivo",
+"description": "una gestión integral del espacio productivo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/needs/need-002",
+"label": "desarrollar una arquitectura de servicios en capas",
+"description": "desarrollar una arquitectura de servicios en capas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/needs/need-003",
+"label": "una plataforma tecnológica paralela (pre-producción) que posibilite el desarrol…",
+"description": "una plataforma tecnológica paralela (pre-producción) que posibilite el desarrollo y pruebas de nuevos prototipos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/needs/need-004",
+"label": "desarrollando nuevos componentes e integraciones para alcanzar los resultados e…",
+"description": "desarrollando nuevos componentes e integraciones para alcanzar los resultados esperados en el ámbito de la gestión hídrica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/needs/need-005",
+"label": "la realización de actividades de concienciación sobre ciberseguridad en las emp…",
+"description": "la realización de actividades de concienciación sobre ciberseguridad en las empresas de alojadas en los parques empresariales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/needs/need-001",
+"label": "Incorporar nuevos materiales.",
+"description": "Incorporar nuevos materiales."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/needs/need-002",
+"label": "Adaptar nuevas motorizaciones.",
+"description": "Adaptar nuevas motorizaciones."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/needs/need-003",
+"label": "Incluir nuevos sistemas de generación.",
+"description": "Incluir nuevos sistemas de generación."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/needs/need-004",
+"label": "Adaptar técnicas eco al sistema.",
+"description": "Adaptar técnicas eco al sistema."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/needs/need-005",
+"label": "Elemento esencial del sistema de mando y control en la conducción de DPyP.",
+"description": "Elemento esencial del sistema de mando y control en la conducción de DPyP."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/needs/need-006",
+"label": "Seguridad Operativa / Ciber protección.",
+"description": "Seguridad Operativa / Ciber protección."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/needs/need-007",
+"label": "Confort.",
+"description": "Confort."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/needs/need-008",
+"label": "Diseño vanguardia.",
+"description": "Diseño vanguardia."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/needs/need-001",
+"label": "realizar ensayos y verificaciones a escala real bajo criterios de diseño optimi…",
+"description": "realizar ensayos y verificaciones a escala real bajo criterios de diseño optimizados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/needs/need-002",
+"label": "reducir con garantías el consumo de energía al mínimo posible",
+"description": "reducir con garantías el consumo de energía al mínimo posible"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/needs/need-001",
+"label": "la necesidad de acompañamiento y apoyo integral al emprendimiento y a la innova…",
+"description": "la necesidad de acompañamiento y apoyo integral al emprendimiento y a la innovación en Castilla y León"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/needs/need-002",
+"label": "la necesidad de percibir servicios de apoyo personalizados en remoto",
+"description": "la necesidad de percibir servicios de apoyo personalizados en remoto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/needs/need-003",
+"label": "ofrecer una respuesta integrada a los requerimientos de los diversos agentes",
+"description": "ofrecer una respuesta integrada a los requerimientos de los diversos agentes"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/needs/need-004",
+"label": "el conocimiento previo del espacio de las soluciones factibles",
+"description": "el conocimiento previo del espacio de las soluciones factibles"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/needs/need-005",
+"label": "la definición de estructuras de datos necesaria y la implantación de procedimie…",
+"description": "la definición de estructuras de datos necesaria y la implantación de procedimientos que canalicen las necesidades, potencialidades y sinergias de los agentes involucrados hacia SENDA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/needs/need-006",
+"label": "necesidad de acompañamiento y apoyo integral al emprendimiento y a la innovació…",
+"description": "necesidad de acompañamiento y apoyo integral al emprendimiento y a la innovación en Castilla y León a través de un sistema inteligente en la nube"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/needs/need-007",
+"label": "el acompañamiento a los emprendedores innovadores, la formación en los ámbitos…",
+"description": "el acompañamiento a los emprendedores innovadores, la formación en los ámbitos de la gestión de proyectos y de la I+D+i, o la percepción de servicios de apoyo personalizados en remoto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/needs/need-001",
+"label": "herramientas y soluciones agiles, eficientes y eficaces que permitan reducir si…",
+"description": "herramientas y soluciones agiles, eficientes y eficaces que permitan reducir significativamente el ciclo de diseño, promoción y ejecución maximizando la productividad y sostenibilidad económica, social y ambiental"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/needs/need-002",
+"label": "los recursos tecnológicos avanzados necesarios para abordar con garantías el im…",
+"description": "los recursos tecnológicos avanzados necesarios para abordar con garantías el importante desafío de promoción de vivienda pública en los próximos años"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/needs/need-003",
+"label": "La gran carencia y necesidad se concentra actualmente en la vivienda plurifamil…",
+"description": "La gran carencia y necesidad se concentra actualmente en la vivienda plurifamiliar protegida"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/needs/need-004",
+"label": "tenga conocimiento suficiente de las soluciones más novedosas y óptimas que pud…",
+"description": "tenga conocimiento suficiente de las soluciones más novedosas y óptimas que pudieran estar disponibles a corto plazo en el mercado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/needs/need-005",
+"label": "construir miles de viviendas protegidas de consumo energético casi nulo y, adem…",
+"description": "construir miles de viviendas protegidas de consumo energético casi nulo y, además, hacerlo en un plazo lo más corto posible"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/needs/need-006",
+"label": "cumplir con estas exigencias de sostenibilidad",
+"description": "cumplir con estas exigencias de sostenibilidad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/needs/need-007",
+"label": "hacerlo dentro de límites de precio asequible propios de la vivienda protegida",
+"description": "hacerlo dentro de límites de precio asequible propios de la vivienda protegida"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/needs/need-008",
+"label": "reimpulsar la promoción de viviendas protegidas.",
+"description": "reimpulsar la promoción de viviendas protegidas."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/needs/need-009",
+"label": "la obtención rápida de soluciones alternativas de diseño para el conjunto envol…",
+"description": "la obtención rápida de soluciones alternativas de diseño para el conjunto envolvente / instalaciones y la propia toma de decisiones sobre las mismas"
+}
+]

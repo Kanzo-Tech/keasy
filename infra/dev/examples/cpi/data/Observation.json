@@ -1,0 +1,362 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/observations/award-001-observation-001",
+"label": "Número de licitadores presentados: 1",
+"description": "Número de licitadores presentados: 1"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/observations/award-001-observation-002",
+"label": "Precio (Con impuestos): 331.700,93 euros",
+"description": "Precio (Con impuestos): 331.700,93 euros"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/observations/award-001-observation-003",
+"label": "Fecha adjudicación: 10/07/2018",
+"description": "Fecha adjudicación: 10/07/2018"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/observations/award-001-observation-004",
+"label": "Fecha formalización de contrato: 13/07/2018",
+"description": "Fecha formalización de contrato: 13/07/2018"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/observations/award-001-observation-005",
+"label": "Estado:Formalización (Difusión 18/07/2018 11:38)",
+"description": "Estado:Formalización (Difusión 18/07/2018 11:38)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/observations/award-001-observation-001",
+"label": "Ofertas recibidas 3",
+"description": "Ofertas recibidas 3"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/observations/award-001-observation-002",
+"label": "Número de ofertas recibidas de PYMEs 0",
+"description": "Número de ofertas recibidas de PYMEs 0"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/observations/award-001-observation-001",
+"label": "Ofertas recibidas 2",
+"description": "Ofertas recibidas 2"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/observations/award-001-observation-002",
+"label": "Se han excluido ofertas por ser anormalmente bajas No",
+"description": "Se han excluido ofertas por ser anormalmente bajas No"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/observations/award-002-observation-001",
+"label": "Nº de Lotes: 2",
+"description": "Nº de Lotes: 2"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/observations/award-002-observation-002",
+"label": "Nº de Lotes cuyo resultado se indica en este anuncio: 1",
+"description": "Nº de Lotes cuyo resultado se indica en este anuncio: 1"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/observations/award-002-observation-003",
+"label": "Ofertas recibidas 1",
+"description": "Ofertas recibidas 1"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/observations/award-001-observation-001",
+"label": "Ofertas recibidas 4",
+"description": "Ofertas recibidas 4"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/observations/award-001-observation-002",
+"label": "Motivación Ofertas con mejor relación calidad precio",
+"description": "Motivación Ofertas con mejor relación calidad precio"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/observations/award-001-observation-001",
+"label": "Ofertas recibidas 4",
+"description": "Ofertas recibidas 4"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/observations/award-001-observation-002",
+"label": "se prevé un número máximo de cuatro adjudicatarios para satisfacer los objetivo…",
+"description": "se prevé un número máximo de cuatro adjudicatarios para satisfacer los objetivos de la siguiente fase de ejecución del contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/observations/award-001-observation-001",
+"label": "a la exclusión de dos de las cinco licitadoras",
+"description": "a la exclusión de dos de las cinco licitadoras"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/observations/award-001-observation-002",
+"label": "90.090,00 euros (IVA excluido)",
+"description": "90.090,00 euros (IVA excluido)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/observations/award-001-observation-003",
+"label": "18.918,90 euros (21% IVA)",
+"description": "18.918,90 euros (21% IVA)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/observations/award-001-observation-004",
+"label": "Formalizar el contrato que corresponda en un plazo no superior a quince (15) dí…",
+"description": "Formalizar el contrato que corresponda en un plazo no superior a quince (15) días hábiles siguientes a aquél en que se realice la notificación de esta adjudicación."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/observations/award-001-observation-001",
+"label": "Fecha del Acuerdo 12/06/2018",
+"description": "Fecha del Acuerdo 12/06/2018"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/observations/award-001-observation-002",
+"label": "Importe total ofertado (con impuestos) 152.944 EUR.",
+"description": "Importe total ofertado (con impuestos) 152.944 EUR."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/observations/award-001-observation-003",
+"label": "Ofertas recibidas 3",
+"description": "Ofertas recibidas 3"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/observations/award-001-observation-004",
+"label": "Número de ofertas recibidas de PYMEs 2",
+"description": "Número de ofertas recibidas de PYMEs 2"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/observations/award-001-observation-005",
+"label": "Precio de la oferta más baja 120.000 EUR.",
+"description": "Precio de la oferta más baja 120.000 EUR."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/observations/award-001-observation-006",
+"label": "Precio de la oferta más alta 134.854,28 EUR.",
+"description": "Precio de la oferta más alta 134.854,28 EUR."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/observations/award-001-observation-007",
+"label": "La formalización del contrato deberá efectuarse no más tarde de los quince días…",
+"description": "La formalización del contrato deberá efectuarse no más tarde de los quince días hábiles siguientes a aquél en que se reciba la notificación de la adjudicación a los licitadores y candidatos."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/observations/award-001-observation-008",
+"label": "VERATECH FOR HEALTH SL (65% participación) INDIZEN TECHNOLOGIES SL (35% partici…",
+"description": "VERATECH FOR HEALTH SL (65% participación) INDIZEN TECHNOLOGIES SL (35% participación)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/observations/award-001-observation-009",
+"label": "21,00% IVA: 26.544,00 €",
+"description": "21,00% IVA: 26.544,00 €"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/observations/award-001-observation-010",
+"label": "Total 152.944,00 €",
+"description": "Total 152.944,00 €"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/observations/award-001-observation-001",
+"label": "El adjudicatario es una PYME : Sí",
+"description": "El adjudicatario es una PYME : Sí"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/observations/award-001-observation-002",
+"label": "Ofertas recibidas 1",
+"description": "Ofertas recibidas 1"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/observations/award-001-observation-003",
+"label": "Número de ofertas recibidas de PYMEs 1",
+"description": "Número de ofertas recibidas de PYMEs 1"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/observations/award-001-observation-004",
+"label": "Para la adjudicación del presente contrato procede constituir un Comité de Expe…",
+"description": "Para la adjudicación del presente contrato procede constituir un Comité de Expertos para el examen, evaluación de las ofertas y redacción del informe técnico proponiendo a la Mesa de Contratación la valoración de cada una de las empresas."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/observations/award-001-observation-005",
+"label": "Designar como miembros del Comité de Expertos a:",
+"description": "Designar como miembros del Comité de Expertos a:"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/observations/award-001-observation-001",
+"label": "Oferta mejor valorada.",
+"description": "Oferta mejor valorada."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/observations/award-001-observation-002",
+"label": "Ofertas recibidas 3",
+"description": "Ofertas recibidas 3"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/observations/award-001-observation-003",
+"label": "Número de ofertas recibidas de PYMEs 0",
+"description": "Número de ofertas recibidas de PYMEs 0"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/observations/award-001-observation-001",
+"label": "Continuar la tramitación del expediente hasta la formalización del contrato com…",
+"description": "Continuar la tramitación del expediente hasta la formalización del contrato como se indica en los pliegos de condiciones."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/observations/award-002-observation-001",
+"label": "por ser su oferta la que mayor puntuación ha obtenido",
+"description": "por ser su oferta la que mayor puntuación ha obtenido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/observations/award-002-observation-002",
+"label": "un plazo de ejecución de 63 semanas completas",
+"description": "un plazo de ejecución de 63 semanas completas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/observations/award-002-observation-003",
+"label": "Continuar la tramitación del expediente hasta la formalización del contrato",
+"description": "Continuar la tramitación del expediente hasta la formalización del contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/observations/award-001-observation-001",
+"label": "TOTAL PUNTUACIÓN CRITERIOS SUBJETIVOS | 22,25 | 25,5 | 49",
+"description": "TOTAL PUNTUACIÓN CRITERIOS SUBJETIVOS | 22,25 | 25,5 | 49"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/observations/award-001-observation-002",
+"label": "Un 1% de los retornos económicos futuros, royalties, sobre los ingresos que el…",
+"description": "Un 1% de los retornos económicos futuros, royalties, sobre los ingresos que el adjudicatario va a obtener con la explotación de la solución desarrollada, así como de sus sucesivas adaptaciones;"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/observations/award-001-observation-003",
+"label": "Ampliación del plazo de garantía por un año, de manera que el mismo pasa a ser…",
+"description": "Ampliación del plazo de garantía por un año, de manera que el mismo pasa a ser de 3 años con arreglo al apartado 6 del Anexo I del PCAP; y"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/observations/award-001-observation-004",
+"label": "Ejecución de labores de mantenimiento y/o servicios de la solución durante 10 a…",
+"description": "Ejecución de labores de mantenimiento y/o servicios de la solución durante 10 años por los importes fijados en su oferta."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/observations/award-001-observation-005",
+"label": "El correspondiente contrato fue formalizado el día 11 de julio de 2022",
+"description": "El correspondiente contrato fue formalizado el día 11 de julio de 2022"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/observations/award-001-observation-006",
+"label": "incrementando el precio en 106.385,10 € IVA excluido (128.725,97 € IVA incluido)",
+"description": "incrementando el precio en 106.385,10 € IVA excluido (128.725,97 € IVA incluido)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/observations/award-001-observation-007",
+"label": "Ampliar el plazo de ejecución del contrato hasta el 30 de septiembre de 2023.",
+"description": "Ampliar el plazo de ejecución del contrato hasta el 30 de septiembre de 2023."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/observations/award-001-observation-001",
+"label": "Se adjudica el contrato de servicios de I+D, para el desarrollo de soluciones e…",
+"description": "Se adjudica el contrato de servicios de I+D, para el desarrollo de soluciones en el ámbito de la seguridad en el entorno rural, a las dos empresas clasificadas en primer lugar."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/observations/award-001-observation-002",
+"label": "Ofertas recibidas 12",
+"description": "Ofertas recibidas 12"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/observations/award-001-observation-003",
+"label": "Número de ofertas recibidas de PYMEs 1",
+"description": "Número de ofertas recibidas de PYMEs 1"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/observations/award-001-observation-004",
+"label": "Royalties: DIEZ POR CIENTO (10%).",
+"description": "Royalties: DIEZ POR CIENTO (10%)."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/observations/award-001-observation-001",
+"label": "Ofertas recibidas 2",
+"description": "Ofertas recibidas 2"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/observations/award-001-observation-002",
+"label": "Plazo de Formalización Del 05/09/2022 al 12/09/2022",
+"description": "Plazo de Formalización Del 05/09/2022 al 12/09/2022"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/observations/award-001-observation-003",
+"label": "Número de modificación 2",
+"description": "Número de modificación 2"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/observations/award-001-observation-004",
+"label": "Fecha de modificación 17/11/2023",
+"description": "Fecha de modificación 17/11/2023"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/observations/award-001-observation-005",
+"label": "Importe total de la modificación (sin impuestos) 0 EUR.",
+"description": "Importe total de la modificación (sin impuestos) 0 EUR."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/observations/award-001-observation-006",
+"label": "Importe total (sin impuestos) 1.448.903,15 EUR.",
+"description": "Importe total (sin impuestos) 1.448.903,15 EUR."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/observations/award-001-observation-007",
+"label": "Plazo total tras la modificación 216 Día(s)",
+"description": "Plazo total tras la modificación 216 Día(s)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/observations/award-001-observation-001",
+"label": "Ofertas recibidas 5",
+"description": "Ofertas recibidas 5"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/observations/award-001-observation-002",
+"label": "Se han excluido ofertas por ser anormalmente bajas Sí",
+"description": "Se han excluido ofertas por ser anormalmente bajas Sí"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/observations/award-001-observation-003",
+"label": "Motivación Oferta con mejor relación calidad precio.",
+"description": "Motivación Oferta con mejor relación calidad precio."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/observations/award-001-observation-001",
+"label": "El 5 de junio de 2026 se han formalizado sendos contratos",
+"description": "El 5 de junio de 2026 se han formalizado sendos contratos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/observations/award-001-observation-002",
+"label": "Ambas entidades desarrollaran la FASE I del proyecto, pasando a las fases poste…",
+"description": "Ambas entidades desarrollaran la FASE I del proyecto, pasando a las fases posteriores únicamente la solución que haya registrado mayor avance y mejores resultados."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/observations/award-001-observation-003",
+"label": "9",
+"description": "9"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/observations/award-001-observation-004",
+"label": "2.176.969,38 €",
+"description": "2.176.969,38 €"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/observations/award-001-observation-005",
+"label": "2.634.132,95 €",
+"description": "2.634.132,95 €"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/observations/award-001-observation-006",
+"label": "un total de 9 ofertas",
+"description": "un total de 9 ofertas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/observations/award-001-observation-007",
+"label": "cinco propuestas que pasarían a la segunda fase del proceso",
+"description": "cinco propuestas que pasarían a la segunda fase del proceso"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/observations/award-001-observation-008",
+"label": "presentaron oferta final cuatro de las cinco empresas invitadas",
+"description": "presentaron oferta final cuatro de las cinco empresas invitadas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/observations/award-001-observation-009",
+"label": "Antes de la formalización del contrato",
+"description": "Antes de la formalización del contrato"
+}
+]

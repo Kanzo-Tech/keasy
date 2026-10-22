@@ -1,0 +1,86 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-003-term-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-003-term-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-003-term-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-003-term-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-003-term-005"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-003-term-006"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-003-term-007"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-003-term-008"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-003-term-009"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-003-term-010"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-004-term-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-004-term-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-004-term-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-004-term-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-004-term-005"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-004-term-006"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-004-term-007"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-004-term-008"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-004-term-009"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-004-term-010"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-002-lot-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-002-lot-002-term-001"
+}
+]

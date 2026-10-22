@@ -1,0 +1,867 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/market-participations/market-participation-001-001",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/market-participations/market-participation-001-002",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/market-participations/market-participation-002-001",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/market-participations/market-participation-003-001",
+"label": "respuestas recibidas vía correo electrónico en fecha 17 de abril de 2017",
+"description": "respuestas recibidas vía correo electrónico en fecha 17 de abril de 2017"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/market-participations/market-participation-001-001",
+"label": "AIICECA",
+"description": "AIICECA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/market-participations/market-participation-001-002",
+"label": "ALDA-IA",
+"description": "ALDA-IA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/market-participations/market-participation-001-003",
+"label": "AEM FORMS",
+"description": "AEM FORMS"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/market-participations/market-participation-001-004",
+"label": "eVA",
+"description": "eVA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/market-participations/market-participation-001-005",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/market-participations/market-participation-001-006",
+"label": "MiaIT",
+"description": "MiaIT"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/market-participations/market-participation-001-007",
+"label": "IA_Chatbot",
+"description": "IA_Chatbot"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/market-participations/market-participation-001-008",
+"label": "TAAC",
+"description": "TAAC"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/market-participations/market-participation-001-009",
+"label": "AI CIP",
+"description": "AI CIP"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/market-participations/market-participation-002-001",
+"label": "AIICECA",
+"description": "AIICECA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/market-participations/market-participation-002-002",
+"label": "ALDA-IA",
+"description": "ALDA-IA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/market-participations/market-participation-002-003",
+"label": "AEM FORMS",
+"description": "AEM FORMS"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/market-participations/market-participation-002-004",
+"label": "eVA",
+"description": "eVA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/market-participations/market-participation-002-005",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/market-participations/market-participation-002-006",
+"label": "MiaIT",
+"description": "MiaIT"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/market-participations/market-participation-002-007",
+"label": "IA_Chatbot",
+"description": "IA_Chatbot"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/market-participations/market-participation-002-008",
+"label": "TAAC",
+"description": "TAAC"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-participations/market-participation-002-001",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/market-participations/market-participation-002-002",
+"label": "Reto Nº1 de Laparoscopia y Reto Nº2 de Microcirugía",
+"description": "Reto Nº1 de Laparoscopia y Reto Nº2 de Microcirugía"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-001-001",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-001-002",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-001-003",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-001-004",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-001-005",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-001-006",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-001-007",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-001-008",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-001-009",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-001-010",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-001-011",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-001-012",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-001-013",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-001-014",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-001-015",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-001-016",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-001-017",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-002-001",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-002-002",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-002-003",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-002-004",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-002-005",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-002-006",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-002-007",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-002-008",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-002-009",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-002-010",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-002-011",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-002-012",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-002-013",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-002-014",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-002-015",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-002-016",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-002-017",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-001",
+"label": "RETO 1",
+"description": "RETO 1"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-002",
+"label": "RETO 1",
+"description": "RETO 1"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-003",
+"label": "RETO 1",
+"description": "RETO 1"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-004",
+"label": "RETO 2",
+"description": "RETO 2"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-005",
+"label": "RETO 2",
+"description": "RETO 2"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-006",
+"label": "RETO 2",
+"description": "RETO 2"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-007",
+"label": "RETO 3",
+"description": "RETO 3"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-008",
+"label": "RETO 3",
+"description": "RETO 3"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-009",
+"label": "RETO 3",
+"description": "RETO 3"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-010",
+"label": "RETO 3",
+"description": "RETO 3"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-011",
+"label": "RETO 3",
+"description": "RETO 3"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-012",
+"label": "RETO 3",
+"description": "RETO 3"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-013",
+"label": "RETO 3",
+"description": "RETO 3"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-014",
+"label": "RETO 3",
+"description": "RETO 3"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-015",
+"label": "RETO 3",
+"description": "RETO 3"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-016",
+"label": "RETO 3",
+"description": "RETO 3"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-017",
+"label": "RETO 3",
+"description": "RETO 3"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-018",
+"label": "RETO 3",
+"description": "RETO 3"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-019",
+"label": "RETO 3",
+"description": "RETO 3"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-020",
+"label": "RETO 4",
+"description": "RETO 4"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-021",
+"label": "RETO 4",
+"description": "RETO 4"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-022",
+"label": "RETO 4",
+"description": "RETO 4"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-023",
+"label": "RETO 4",
+"description": "RETO 4"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-024",
+"label": "RETO 4",
+"description": "RETO 4"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-003-025",
+"label": "RETO 4",
+"description": "RETO 4"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-004-001",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-004-002",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-004-003",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-004-004",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-004-005",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-004-006",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-004-007",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-004-008",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-004-009",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-004-010",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-004-011",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-004-012",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-004-013",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-004-014",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-004-015",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-004-016",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-004-017",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-004-018",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/market-participations/market-participation-004-019",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/market-participations/market-participation-001-001",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/market-participations/market-participation-001-002",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/market-participations/market-participation-001-003",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/market-participations/market-participation-001-004",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/market-participations/market-participation-001-001",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/market-participations/market-participation-001-002",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/market-participations/market-participation-001-001",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/market-participations/market-participation-001-002",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/market-participations/market-participation-001-003",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/market-participations/market-participation-001-004",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/market-participations/market-participation-001-005",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/market-participations/market-participation-001-006",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-001-001",
+"label": "LeF Match",
+"description": "LeF Match"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-001-002",
+"label": "Trecycle",
+"description": "Trecycle"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-001-003",
+"label": "Fergar",
+"description": "Fergar"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-001-004",
+"label": "Galgreen",
+"description": "Galgreen"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-001-005",
+"label": "Biosec",
+"description": "Biosec"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-001-006",
+"label": "Túnel Alcolea",
+"description": "Túnel Alcolea"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-001-007",
+"label": "HTC",
+"description": "HTC"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-001-008",
+"label": "Retorna",
+"description": "Retorna"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-001-009",
+"label": "Lodosol",
+"description": "Lodosol"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-001-010",
+"label": "Valorecia",
+"description": "Valorecia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-001-011",
+"label": "HyCool",
+"description": "HyCool"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-001-012",
+"label": "Gelosuez",
+"description": "Gelosuez"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-001-013",
+"label": "EcoLEnz",
+"description": "EcoLEnz"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-001-014",
+"label": "GIRO",
+"description": "GIRO"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-001-015",
+"label": "Giro",
+"description": "Giro"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-001-016",
+"label": "Evcua",
+"description": "Evcua"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-001-017",
+"label": "Digiest 4.0",
+"description": "Digiest 4.0"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-001-018",
+"label": "VSM",
+"description": "VSM"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-004-001",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-004-002",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-004-003",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-004-004",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-004-005",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-004-006",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/market-participations/market-participation-004-007",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/market-participations/market-participation-001-001",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/market-participations/market-participation-001-002",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/market-participations/market-participation-001-003",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/market-participations/market-participation-001-004",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/market-participations/market-participation-001-005",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/market-participations/market-participation-001-006",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/market-participations/market-participation-001-007",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/market-participations/market-participation-001-008",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/market-participations/market-participation-001-009",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/market-participations/market-participation-001-010",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-participations/market-participation-002-001",
+"label": "INVEST-ICE",
+"description": "INVEST-ICE"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-participations/market-participation-002-002",
+"label": "La SENDA TIMMIS",
+"description": "La SENDA TIMMIS"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-participations/market-participation-002-003",
+"label": "PARISE-MACHINE LEARNING",
+"description": "PARISE-MACHINE LEARNING"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-participations/market-participation-002-004",
+"label": "SENDA+ INNOVACIÓN Y EMPRENDIMIENTO EN CASTILLA Y LEÓN",
+"description": "SENDA+ INNOVACIÓN Y EMPRENDIMIENTO EN CASTILLA Y LEÓN"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-participations/market-participation-002-005",
+"label": "SinerCyL",
+"description": "SinerCyL"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-participations/market-participation-002-006",
+"label": "(Sin acrónimo)",
+"description": "(Sin acrónimo)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-participations/market-participation-002-007",
+"label": "CLIEP - CyL Innovation & Entrepreneurship Platform",
+"description": "CLIEP - CyL Innovation & Entrepreneurship Platform"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-participations/market-participation-002-008",
+"label": "Plataforma LARES (Leadership and Assistance oriented distributed Register and E…",
+"description": "Plataforma LARES (Leadership and Assistance oriented distributed Register and Expert Systems)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-participations/market-participation-002-009",
+"label": "i-Assistant Entrepreneur (i-AE)",
+"description": "i-Assistant Entrepreneur (i-AE)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-participations/market-participation-002-010",
+"label": "E2N",
+"description": "E2N"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-participations/market-participation-002-011",
+"label": "(Sin acrónimo)",
+"description": "(Sin acrónimo)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/market-participations/market-participation-002-012",
+"label": "OXENTIA - SENDA",
+"description": "OXENTIA - SENDA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/market-participations/market-participation-003-001",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/market-participations/market-participation-003-002",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/market-participations/market-participation-003-003",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/market-participations/market-participation-003-004",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/market-participations/market-participation-003-005",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/market-participations/market-participation-003-006",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/market-participations/market-participation-003-007",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/market-participations/market-participation-003-008",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/market-participations/market-participation-003-009",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/market-participations/market-participation-003-010",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/market-participations/market-participation-003-011",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/market-participations/market-participation-003-012",
+"label": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/market-participations/market-participation-003-013",
+"label": null,
+"description": null
+}
+]

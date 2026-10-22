@@ -1,0 +1,2067 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/deliverables/tender-001-deliverable-001",
+"label": "Descripción detallada del sistema",
+"description": "Descripción detallada del sistema; que contenga como mínimo:",
+"sequenceNumber": null,
+"title": "Descripción detallada del sistema"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/deliverables/tender-001-deliverable-002",
+"label": "Propuesta de protocolo de pruebas",
+"description": "Propuesta de protocolo de pruebas que se aplicará para el cumplimiento de la Fase 2",
+"sequenceNumber": null,
+"title": "Propuesta de protocolo de pruebas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/deliverables/tender-001-deliverable-003",
+"label": "prototipo",
+"description": "desarrollar el prototipo y realizar las correspondientes pruebas piloto con muestras reales",
+"sequenceNumber": null,
+"title": "prototipo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/deliverables/tender-001-deliverable-004",
+"label": "informe mensual",
+"description": "Los adjudicatarios deberán presentar un informe mensual",
+"sequenceNumber": null,
+"title": "informe mensual"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/deliverables/tender-001-deliverable-005",
+"label": "Justificación de la ejecución del protocolo de pruebas",
+"description": "Justificación de la ejecución del protocolo de pruebas aprobado para la Fase 2",
+"sequenceNumber": null,
+"title": "Justificación de la ejecución del protocolo de pruebas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/deliverables/tender-001-deliverable-006",
+"label": "5 unidades plenamente funcionales",
+"description": "Entrega de 5 unidades plenamente funcionales con todo el hardware y software necesario para la realización de las pruebas.",
+"sequenceNumber": null,
+"title": "5 unidades plenamente funcionales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/deliverables/tender-001-deliverable-007",
+"label": "informe mensual",
+"description": "Los adjudicatarios deberán presentar un informe mensual",
+"sequenceNumber": null,
+"title": "informe mensual"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/deliverables/tender-001-deliverable-008",
+"label": "Manual de usuario",
+"description": "Manual de usuario",
+"sequenceNumber": null,
+"title": "Manual de usuario"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/deliverables/tender-001-deliverable-009",
+"label": "Plan de explotación comercial de los resultados de I+D",
+"description": "Plan de explotación comercial de los resultados de I+D actualizado en función de los resultados obtenidos",
+"sequenceNumber": null,
+"title": "Plan de explotación comercial de los resultados de I+D"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/deliverables/tender-001-deliverable-010",
+"label": "informe final de resultados de la prueba de campo en tiempo real",
+"description": "aglutinará los resultados de los informes mensuales",
+"sequenceNumber": null,
+"title": "informe final de resultados de la prueba de campo en tiempo real"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/deliverables/tender-001-deliverable-001",
+"label": "plataforma",
+"description": "creación, desarrollo y puesta en marcha de la plataforma",
+"sequenceNumber": null,
+"title": "plataforma"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/deliverables/tender-001-deliverable-002",
+"label": "POLÍTICAS DE SEGURIDAD DE LA INFORMACIÓN",
+"description": "se elaborará un documento denominado 'POLÍTICAS DE SEGURIDAD DE LA INFORMACIÓN' que dará cuenta del cumplimiento de dichas medidas",
+"sequenceNumber": null,
+"title": "POLÍTICAS DE SEGURIDAD DE LA INFORMACIÓN"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/deliverables/tender-001-deliverable-003",
+"label": "documento donde de analicen y evalúen las distintas opciones",
+"description": "Para ello se realizará un benchmarking que incluya un estudio de mercado y se elaborará un documento donde de analicen y evalúen las distintas opciones.",
+"sequenceNumber": null,
+"title": "documento donde de analicen y evalúen las distintas opciones"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/deliverables/tender-001-deliverable-004",
+"label": "documentos de FAQ",
+"description": "documentos de FAQ para la resolución de dudas y/o preguntas relacionadas con el uso de las nuevas herramientas",
+"sequenceNumber": null,
+"title": "documentos de FAQ"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/deliverables/tender-001-stage-001-deliverable-001",
+"label": "Documento de análisis de las infraestructuras TIC existentes",
+"description": "Documento de análisis de las infraestructuras TIC existentes y propuestas de ampliación para la implantación de la nueva solución",
+"sequenceNumber": 1,
+"title": "Documento de análisis de las infraestructuras TIC existentes"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/deliverables/tender-001-stage-001-deliverable-002",
+"label": "Documento de análisis y estudio de requisitos",
+"description": "Documento de análisis y estudio de requisitos para la integración de la nueva solución con el SW/módulos existentes",
+"sequenceNumber": 2,
+"title": "Documento de análisis y estudio de requisitos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/deliverables/tender-001-stage-002-deliverable-001",
+"label": "Documento de diseño de arquitectura de la nueva solución",
+"description": "Documento de diseño de arquitectura de la nueva solución e integración en el catálogo de servicios de la web del Ayuntamiento de Alicante",
+"sequenceNumber": 1,
+"title": "Documento de diseño de arquitectura de la nueva solución"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/deliverables/tender-001-stage-002-deliverable-002",
+"label": "Marcos conversacionales",
+"description": "Marcos conversacionales",
+"sequenceNumber": 2,
+"title": "Marcos conversacionales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/deliverables/tender-001-stage-002-deliverable-003",
+"label": "Interfaz gráfica accesible",
+"description": "Interfaz gráfica accesible",
+"sequenceNumber": 3,
+"title": "Interfaz gráfica accesible"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/deliverables/tender-001-stage-004-deliverable-001",
+"label": "Versión Beta del desarrollo SW de la solución de capa de IA y accesibilidad",
+"description": "Versión Beta del desarrollo SW de la solución de capa de IA y accesibilidad",
+"sequenceNumber": 1,
+"title": "Versión Beta del desarrollo SW de la solución de capa de IA y accesibilidad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/deliverables/tender-001-stage-004-deliverable-002",
+"label": "Despliegue e Integración de la solución en los módulos existentes",
+"description": "Despliegue e Integración de la solución en los módulos existentes",
+"sequenceNumber": 2,
+"title": "Despliegue e Integración de la solución en los módulos existentes"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/deliverables/tender-001-stage-004-deliverable-003",
+"label": "Servicios Web necesarios para las distintas integraciones",
+"description": "Desarrollo y despleigue de los Servicios Web necesarios para las distintas integraciones",
+"sequenceNumber": 3,
+"title": "Servicios Web necesarios para las distintas integraciones"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/deliverables/tender-001-stage-004-deliverable-004",
+"label": "Web del Ayuntamiento de Alicante con las mejoras de accesibilidad propuestas",
+"description": "Web del Ayuntamiento de Alicante con las mejoras de accesibilidad propuestas",
+"sequenceNumber": 4,
+"title": "Web del Ayuntamiento de Alicante con las mejoras de accesibilidad propuestas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/deliverables/tender-001-stage-005-deliverable-001",
+"label": "Prototipo de la solución",
+"description": "Prototipo de la solución y documento de conclusiones de resultados preliminares en casos reales",
+"sequenceNumber": 1,
+"title": "Prototipo de la solución"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/deliverables/tender-001-stage-005-deliverable-002",
+"label": "Diseño preliminar de los contenidos de videos, tutoriales, etc.",
+"description": "Diseño preliminar de los contenidos de videos, tutoriales, etc. y planificación de los contenidos de la formación",
+"sequenceNumber": 2,
+"title": "Diseño preliminar de los contenidos de videos, tutoriales, etc."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/deliverables/tender-001-stage-006-deliverable-001",
+"label": "Documento de fallos y gestión de incidencias",
+"description": "Documento de fallos y gestión de incidencias durante fase de depuración y cierre",
+"sequenceNumber": 1,
+"title": "Documento de fallos y gestión de incidencias"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/deliverables/tender-001-stage-006-deliverable-002",
+"label": "Documento de evaluación de riesgos",
+"description": "Documento de evaluación de riesgos tras la puesta en producción de la nueva capa de IA y accesibilidad",
+"sequenceNumber": 2,
+"title": "Documento de evaluación de riesgos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/deliverables/tender-001-stage-006-deliverable-003",
+"label": "Documentación técnica vinculada a la nueva solución de IA y accesibilidad",
+"description": "Documentación técnica vinculada a la nueva solución de IA y accesibilidad: Código SW suficientemente documentado, diseño arquitectura final y de infraestructuras TIC",
+"sequenceNumber": 3,
+"title": "Documentación técnica vinculada a la nueva solución de IA y accesibilidad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/deliverables/tender-001-stage-006-deliverable-004",
+"label": "Documentación necesaria para el mantenimiento de la solución",
+"description": "Documentación necesaria para el mantenimiento de la solución: necesidades de licencias anuales, actualizaciones, ampliaciones, etc.",
+"sequenceNumber": 4,
+"title": "Documentación necesaria para el mantenimiento de la solución"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/deliverables/tender-001-stage-006-deliverable-005",
+"label": "videos demostrativos para la web",
+"description": "Formación y diseño y realización de videos demostrativos para la web .",
+"sequenceNumber": null,
+"title": "videos demostrativos para la web"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/deliverables/tender-001-stage-007-deliverable-001",
+"label": "acciones formativas",
+"description": "Se realizarán acciones formativas para los técnicos del servicio TIC del Ayuntamiento, sobre la nueva capa de IA desarrollada y la integración con los sistemas existentes",
+"sequenceNumber": null,
+"title": "acciones formativas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-001-deliverable-001",
+"label": "E1. Presentación de la simulación de la solución propuesta",
+"description": "descripción y simulación de la solución innovadora propuesta, así como de sus elementos y funcionamiento",
+"sequenceNumber": 1,
+"title": "E1. Presentación de la simulación de la solución propuesta"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-001-deliverable-002",
+"label": "E2.1. Descripción del prototipo funcional de la solución planteada",
+"description": "Descripción del prototipo funcional de la solución planteada",
+"sequenceNumber": null,
+"title": "E2.1. Descripción del prototipo funcional de la solución planteada"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-001-deliverable-003",
+"label": "Relación y descripción de los estudios y pruebas de validación del prototipo ll…",
+"description": "Relación y descripción de los estudios y pruebas de validación del prototipo llevadas a cabo en el entorno simulado",
+"sequenceNumber": null,
+"title": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-001-deliverable-004",
+"label": "E3.1 Manual de instalación y de usuario del prototipo",
+"description": "Manual de usuario que detalle los pasos a realizar por el usuario para el adecuado manejo del prototipo",
+"sequenceNumber": null,
+"title": "E3.1 Manual de instalación y de usuario del prototipo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-001-deliverable-005",
+"label": "E3.2 Informe de pruebas de funcionamiento del equipo en la Fundación CCMIJU",
+"description": null,
+"sequenceNumber": null,
+"title": "E3.2 Informe de pruebas de funcionamiento del equipo en la Fundación CCMIJU"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-001-deliverable-006",
+"label": "E3.3.1 Protocolo de validación en simulador",
+"description": "plan de validación en simulador",
+"sequenceNumber": null,
+"title": "E3.3.1 Protocolo de validación en simulador"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-001-deliverable-007",
+"label": "E3.3.2 Protocolo de validación en modelo experimental",
+"description": "plan de validación en tareas y procedimiento microquirúrgicos en modelo experimental",
+"sequenceNumber": null,
+"title": "E3.3.2 Protocolo de validación en modelo experimental"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-001-deliverable-008",
+"label": "E4.1 Informe de la validación en simulador",
+"description": "todos los resultados obtenidos de los estudios con simulador llevados a cabo con el prototipo de la plataforma robótica para microcirugía",
+"sequenceNumber": null,
+"title": "E4.1 Informe de la validación en simulador"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-001-deliverable-009",
+"label": "E4.2 Informe de la validación en modelo experimental",
+"description": "Informe de la validación en modelo experimental",
+"sequenceNumber": null,
+"title": "E4.2 Informe de la validación en modelo experimental"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-001-deliverable-010",
+"label": "prototipo final validado",
+"description": "Un prototipo final validado será entregado en la sede de la Fundación CCMIJU",
+"sequenceNumber": null,
+"title": "prototipo final validado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-001-deliverable-011",
+"label": "lnforme Final",
+"description": "informe justificativo del alcance efectivo de los trabajos realizados, con detalle de tareas y entregables",
+"sequenceNumber": null,
+"title": "lnforme Final"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-001-deliverable-012",
+"label": "Informe Técnico de Seguimiento",
+"description": "Este informe detallará los trabajos realizados en el último mes, indicando las tareas y entregables (si procede) llevados a cabo.",
+"sequenceNumber": null,
+"title": "Informe Técnico de Seguimiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-001-stage-001-deliverable-001",
+"label": "Presentación de la simulación de la solución propuesta",
+"description": "descripción y simulación de la solución innovadora propuesta, así como de sus elementos y funcionamiento",
+"sequenceNumber": 1,
+"title": "Presentación de la simulación de la solución propuesta"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-001-stage-002-deliverable-001",
+"label": "Descripción del prototipo funcional de la solución planteada",
+"description": "descripción detallada de la plataforma robótica para microcirugía y de cada uno de los elementos que la componen",
+"sequenceNumber": null,
+"title": "Descripción del prototipo funcional de la solución planteada"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-001-stage-002-deliverable-002",
+"label": "Informe de validación en entorno simulado",
+"description": "Relación y descripción de los estudios y pruebas de validación del prototipo llevadas a cabo en el entorno simulado",
+"sequenceNumber": null,
+"title": "Informe de validación en entorno simulado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-001-stage-002-deliverable-003",
+"label": "Manual de instalación y de usuario del prototipo",
+"description": "Manual de instalación del prototipo y sus elementos en el quirófano",
+"sequenceNumber": null,
+"title": "Manual de instalación y de usuario del prototipo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-001-stage-002-deliverable-004",
+"label": "Informe de pruebas de funcionamiento del equipo en la Fundación CCMIJU",
+"description": "Relación y descripción de los estudios y pruebas de funcionamiento realizadas para comprobar el adecuado funcionamiento del prototipo",
+"sequenceNumber": null,
+"title": "Informe de pruebas de funcionamiento del equipo en la Fundación CCMIJU"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-001-stage-002-deliverable-005",
+"label": "Protocolo de validación en simulador",
+"description": "plan de validación en simulador",
+"sequenceNumber": null,
+"title": "Protocolo de validación en simulador"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-001-stage-002-deliverable-006",
+"label": "Protocolo de validación en modelo experimental",
+"description": "plan de validación en tareas y procedimiento microquirúrgicos en modelo experimental",
+"sequenceNumber": null,
+"title": "Protocolo de validación en modelo experimental"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-001-stage-002-deliverable-007",
+"label": "Informe de la validación en simulador",
+"description": "resultados obtenidos de los estudios con simulador llevados a cabo con el prototipo de la plataforma robótica para microcirugía",
+"sequenceNumber": null,
+"title": "Informe de la validación en simulador"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-001-stage-002-deliverable-008",
+"label": "Informe de la validación en modelo experimental",
+"description": "resultados obtenidos de los estudios llevados a cabo en las diferentes tareas y procedimientos microquirúrgicos en modelo experimental",
+"sequenceNumber": null,
+"title": "Informe de la validación en modelo experimental"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-002-deliverable-001",
+"label": "informe relativo al cumplimiento de las obligaciones que le fueran exigibles le…",
+"description": null,
+"sequenceNumber": null,
+"title": "informe relativo al cumplimiento de las obligaciones que le fueran exigibles legal o contractualmente"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-002-deliverable-002",
+"label": "Informe Técnico de Seguimiento",
+"description": "todos los meses un Informe Técnico de Seguimiento",
+"sequenceNumber": null,
+"title": "Informe Técnico de Seguimiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-002-deliverable-003",
+"label": "lnforme Final",
+"description": "informe justificativo del alcance efectivo de los trabajos realizados, con detalle de tareas y entregables",
+"sequenceNumber": null,
+"title": "lnforme Final"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-002-lot-001-solution-001-deliverable-001",
+"label": "prototipo final validado y demostrador",
+"description": "Un prototipo final validado de cada lote será entregado en las instalaciones de la Fundación CCMIJU",
+"sequenceNumber": null,
+"title": "prototipo final validado y demostrador"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-002-lot-001-solution-001-deliverable-002",
+"label": "E1.1. Descripción del prototipo funcional de la solución planteada",
+"description": "una descripción detallada de la plataforma robótica para cirugía laparoscópica y de cada uno de los elementos que la componen",
+"sequenceNumber": null,
+"title": "E1.1. Descripción del prototipo funcional de la solución planteada"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-002-lot-001-solution-001-deliverable-003",
+"label": "E1.2. Informe de validación en entorno simulado",
+"description": "Relación y descripción de los estudios y pruebas de validación del prototipo",
+"sequenceNumber": null,
+"title": "E1.2. Informe de validación en entorno simulado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-002-lot-001-solution-001-deliverable-004",
+"label": "E2.1 Manual de instalación y de usuario del prototipo",
+"description": "Manual de instalación del prototipo y sus elementos en el quirófano",
+"sequenceNumber": null,
+"title": "E2.1 Manual de instalación y de usuario del prototipo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-002-lot-001-solution-001-deliverable-005",
+"label": "E2.2 Informe de pruebas de funcionamiento del equipo en la Fundación CCMIJU",
+"description": "Relación y descripción de los estudios y pruebas de funcionamiento realizadas",
+"sequenceNumber": null,
+"title": "E2.2 Informe de pruebas de funcionamiento del equipo en la Fundación CCMIJU"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-002-lot-001-solution-001-deliverable-006",
+"label": "E2.3.1 Protocolo de validación en simulador",
+"description": "plan de validación en simulador",
+"sequenceNumber": null,
+"title": "E2.3.1 Protocolo de validación en simulador"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-002-lot-001-solution-001-deliverable-007",
+"label": "E2.3.2 Protocolo de validación en modelo experimental",
+"description": "plan de validación en cirugías en modelo experimental",
+"sequenceNumber": null,
+"title": "E2.3.2 Protocolo de validación en modelo experimental"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-002-lot-001-solution-001-deliverable-008",
+"label": "E3.1.2. Informe de la validación en simulador",
+"description": "todos los resultados obtenidos de los estudios con simulador",
+"sequenceNumber": null,
+"title": "E3.1.2. Informe de la validación en simulador"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-002-lot-001-solution-001-deliverable-009",
+"label": "E3.2.2. Informe de la validación en modelo experimental",
+"description": "todos los resultados obtenidos de los estudios llevados a cabo en los diferentes procedimientos quirúrgicos en modelo experimental",
+"sequenceNumber": null,
+"title": "E3.2.2. Informe de la validación en modelo experimental"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-002-lot-001-solution-001-deliverable-010",
+"label": "Un prototipo final validado de cada lote",
+"description": "Un prototipo final validado de cada lote será entregado en las instalaciones de la Fundación CCMIJU",
+"sequenceNumber": null,
+"title": "Un prototipo final validado de cada lote"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-002-lot-002-deliverable-001",
+"label": "prototipo final validado y demostrador",
+"description": "Un prototipo final validado de cada lote será entregado en las instalaciones de la Fundación CCMIJU",
+"sequenceNumber": null,
+"title": "prototipo final validado y demostrador"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-002-lot-002-deliverable-002",
+"label": "E1.1. Descripción del prototipo funcional de la solución planteada",
+"description": "una descripción detallada del sistema portable de formación en cirugía robótica laparoscópica y de cada uno de los elementos que lo componen",
+"sequenceNumber": null,
+"title": "E1.1. Descripción del prototipo funcional de la solución planteada"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-002-lot-002-deliverable-003",
+"label": "E1.2. Informe de validación en entorno simulado",
+"description": "Relación y descripción de los estudios y pruebas de validación del prototipo",
+"sequenceNumber": null,
+"title": "E1.2. Informe de validación en entorno simulado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-002-lot-002-deliverable-004",
+"label": "E2.1. Manual de instalación y de usuario del prototipo",
+"description": "Manual de instalación del prototipo y todos sus elementos en la Fundación CCMIJU",
+"sequenceNumber": null,
+"title": "E2.1. Manual de instalación y de usuario del prototipo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-002-lot-002-deliverable-005",
+"label": "E2.2. Protocolo de validación aparente",
+"description": "plan de validación aparente del sistema de formación desarrollado",
+"sequenceNumber": null,
+"title": "E2.2. Protocolo de validación aparente"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-002-lot-002-deliverable-006",
+"label": "E3.1. Informe de la validación aparente",
+"description": "todos los resultados obtenidos de los estudios de validación aparente",
+"sequenceNumber": null,
+"title": "E3.1. Informe de la validación aparente"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-002-lot-002-deliverable-007",
+"label": "E3.2. Protocolo de validación de contenidos",
+"description": "plan de validación de contenidos del sistema de formación desarrollado",
+"sequenceNumber": null,
+"title": "E3.2. Protocolo de validación de contenidos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-002-lot-002-deliverable-008",
+"label": "E3.3. Informe de la validación de contenidos",
+"description": "todos los resultados obtenidos del estudio de validación de contenidos",
+"sequenceNumber": null,
+"title": "E3.3. Informe de la validación de contenidos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-002-lot-002-deliverable-009",
+"label": "E3.4. Protocolo de validación constructiva",
+"description": "plan de validación constructiva del sistema de formación desarrollado",
+"sequenceNumber": null,
+"title": "E3.4. Protocolo de validación constructiva"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-002-lot-002-deliverable-010",
+"label": "E3.5. Informe de la validación constructiva",
+"description": "todos resultados obtenidos del estudio de validación constructiva",
+"sequenceNumber": null,
+"title": "E3.5. Informe de la validación constructiva"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-002-lot-002-deliverable-011",
+"label": "Un prototipo final validado de cada lote",
+"description": "Un prototipo final validado de cada lote será entregado en las instalaciones de la Fundación CCMIJU",
+"sequenceNumber": null,
+"title": "Un prototipo final validado de cada lote"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/deliverables/tender-001-deliverable-001",
+"label": "Primera versión del informe inicial de investigación ( E1 )",
+"description": "Primera versión del informe inicial de investigación ( E1 )",
+"sequenceNumber": 1,
+"title": "Primera versión del informe inicial de investigación ( E1 )"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/deliverables/tender-001-deliverable-002",
+"label": "Segunda versión del informe inicial de investigación ( E2 )",
+"description": "Segunda versión del informe inicial de investigación ( E2 )",
+"sequenceNumber": 2,
+"title": "Segunda versión del informe inicial de investigación ( E2 )"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/deliverables/tender-001-deliverable-003",
+"label": "Informe final de investigación ( E3 )",
+"description": "Informe final de investigación ( E3 )",
+"sequenceNumber": 3,
+"title": "Informe final de investigación ( E3 )"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/deliverables/tender-001-deliverable-004",
+"label": "Prototipo software ( E4 )",
+"description": "un prototipo software (código fuente, ejecutable y documentación) con un nivel de madurez de TRL 3-4",
+"sequenceNumber": 4,
+"title": "Prototipo software ( E4 )"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/deliverables/tender-001-deliverable-005",
+"label": "Informe de pruebas ( E5 )",
+"description": "un informe de pruebas donde se demuestre la viabilidad de la obtención de nuevos servicios ilícitos en la red TOR que no hayan sido publicados por las principales fuentes",
+"sequenceNumber": 5,
+"title": "Informe de pruebas ( E5 )"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/deliverables/tender-001-deliverable-006",
+"label": "Informe Técnico de Seguimiento (ITS)",
+"description": "el contratista elaborará todos los meses un Informe Técnico de Seguimiento (ITS)",
+"sequenceNumber": null,
+"title": "Informe Técnico de Seguimiento (ITS)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/deliverables/tender-001-deliverable-007",
+"label": "lnforme Final de la Fase (lFF)",
+"description": "informe justificativo del alcance efectivo de los trabajos realizados, con detalle de entregables, objetivos e hitos conseguidos",
+"sequenceNumber": null,
+"title": "lnforme Final de la Fase (lFF)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/deliverables/tender-001-deliverable-008",
+"label": "plan de comunicación",
+"description": "un plan de comunicación de los objetivos y resultados esperados del proyecto",
+"sequenceNumber": null,
+"title": "plan de comunicación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/deliverables/tender-001-deliverable-009",
+"label": "Especificación de requisitos",
+"description": "Generar y tener actualizada toda la documentación mínima exigida",
+"sequenceNumber": null,
+"title": "Especificación de requisitos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/deliverables/tender-001-deliverable-010",
+"label": "Plan de proyecto *",
+"description": "los documentos marcados con * son opcionales, por lo que sólo se generarán bajo demanda o petición expresa de INCIBE",
+"sequenceNumber": null,
+"title": "Plan de proyecto *"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/deliverables/tender-001-deliverable-011",
+"label": "Análisis Funcional",
+"description": "Generar y tener actualizada toda la documentación mínima exigida",
+"sequenceNumber": null,
+"title": "Análisis Funcional"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/deliverables/tender-001-deliverable-012",
+"label": "Arquitectura *",
+"description": "los documentos marcados con * son opcionales, por lo que sólo se generarán bajo demanda o petición expresa de INCIBE",
+"sequenceNumber": null,
+"title": "Arquitectura *"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/deliverables/tender-001-deliverable-013",
+"label": "Diseño Técnico",
+"description": "Generar y tener actualizada toda la documentación mínima exigida",
+"sequenceNumber": null,
+"title": "Diseño Técnico"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/deliverables/tender-001-deliverable-014",
+"label": "Modelo de datos",
+"description": "Generar y tener actualizada toda la documentación mínima exigida",
+"sequenceNumber": null,
+"title": "Modelo de datos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/deliverables/tender-001-deliverable-015",
+"label": "Diagrama de clases *",
+"description": "los documentos marcados con * son opcionales, por lo que sólo se generarán bajo demanda o petición expresa de INCIBE",
+"sequenceNumber": null,
+"title": "Diagrama de clases *"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/deliverables/tender-001-deliverable-016",
+"label": "Diagrama de secuencia *",
+"description": "los documentos marcados con * son opcionales, por lo que sólo se generarán bajo demanda o petición expresa de INCIBE",
+"sequenceNumber": null,
+"title": "Diagrama de secuencia *"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/deliverables/tender-001-deliverable-017",
+"label": "Informe de pruebas *",
+"description": "los documentos marcados con * son opcionales, por lo que sólo se generarán bajo demanda o petición expresa de INCIBE",
+"sequenceNumber": null,
+"title": "Informe de pruebas *"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/deliverables/tender-001-deliverable-018",
+"label": "Manual de usuario *",
+"description": "los documentos marcados con * son opcionales, por lo que sólo se generarán bajo demanda o petición expresa de INCIBE",
+"sequenceNumber": null,
+"title": "Manual de usuario *"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/deliverables/tender-001-deliverable-019",
+"label": "Manual de despliegue",
+"description": "Generar y tener actualizada toda la documentación mínima exigida",
+"sequenceNumber": null,
+"title": "Manual de despliegue"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/deliverables/tender-001-deliverable-020",
+"label": "Manual de instalación del entorno local",
+"description": "Generar y tener actualizada toda la documentación mínima exigida",
+"sequenceNumber": null,
+"title": "Manual de instalación del entorno local"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/deliverables/tender-001-deliverable-021",
+"label": "Manual de operaciones *",
+"description": "los documentos marcados con * son opcionales, por lo que sólo se generarán bajo demanda o petición expresa de INCIBE",
+"sequenceNumber": null,
+"title": "Manual de operaciones *"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/deliverables/tender-001-deliverable-022",
+"label": "Memoria final o resumen ejecutivo",
+"description": "Generar y tener actualizada toda la documentación mínima exigida",
+"sequenceNumber": null,
+"title": "Memoria final o resumen ejecutivo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/deliverables/tender-001-deliverable-023",
+"label": "Informe Técnico de Seguimiento (ITS)",
+"description": "Para dichas reuniones el contratista elaborará todos los meses un Informe Técnico de Seguimiento (ITS)",
+"sequenceNumber": null,
+"title": "Informe Técnico de Seguimiento (ITS)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/deliverables/tender-001-deliverable-024",
+"label": "lnforme Final de la Fase (lFF)",
+"description": "informe justificativo del alcance efectivo de los trabajos realizados, con detalle de entregables (especificados en detalle en el Informe Propuesta), objetivos e hitos conseguidos",
+"sequenceNumber": null,
+"title": "lnforme Final de la Fase (lFF)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/deliverables/tender-001-deliverable-025",
+"label": "código fuente generado a lo largo del proyecto",
+"description": "correctamente ubicado, documentado y en sus versiones finales/actuales",
+"sequenceNumber": null,
+"title": "código fuente generado a lo largo del proyecto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/deliverables/tender-001-deliverable-026",
+"label": "toda la documentación generada",
+"description": "se deberá hacer entrega de toda la documentación generada",
+"sequenceNumber": null,
+"title": "toda la documentación generada"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/deliverables/tender-001-deliverable-027",
+"label": "actas de reunión",
+"description": "La/s empresa/s adjudicatarias serán responsable de la redacción y distribución de las correspondientes actas de reunión.",
+"sequenceNumber": null,
+"title": "actas de reunión"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/deliverables/tender-001-stage-001-deliverable-001",
+"label": "prototipo software inicial",
+"description": "un prototipo software inicial con un nivel de madurez de la tecnología o TRL, de sus siglas en inglés Technology Readiness Levels , de TRL 3-4",
+"sequenceNumber": null,
+"title": "prototipo software inicial"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/deliverables/tender-001-stage-001-deliverable-002",
+"label": "plan de validación",
+"description": "Desarrollar un plan de validación adecuado a las características del producto finalmente desarrollado.",
+"sequenceNumber": null,
+"title": "plan de validación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/deliverables/tender-001-stage-002-deliverable-001",
+"label": "Prototipo Software desarrollado (código fuente) ( E6 )",
+"description": "Prototipo Software desarrollado (código fuente) ( E6 )",
+"sequenceNumber": 6,
+"title": "Prototipo Software desarrollado (código fuente) ( E6 )"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/deliverables/tender-001-stage-002-deliverable-002",
+"label": "Documentación del prototipo software ( E7 )",
+"description": "Documentación del prototipo software ( E7 )",
+"sequenceNumber": 7,
+"title": "Documentación del prototipo software ( E7 )"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/deliverables/tender-001-stage-002-deliverable-003",
+"label": "prototipo software final",
+"description": "un prototipo software final con un nivel de madurez de la tecnología de TRL 6",
+"sequenceNumber": null,
+"title": "prototipo software final"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/deliverables/tender-001-deliverable-001",
+"label": "ES1.1. Documentación relativa a la metodología de trabajo",
+"description": "Plan de Trabajo y cronograma • Gestión de recursos • Análisis riesgos • Metodología, modelos de organización y dirección del equipo de trabajo • Plan Calidad",
+"sequenceNumber": 1,
+"title": "ES1.1. Documentación relativa a la metodología de trabajo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/deliverables/tender-001-deliverable-002",
+"label": "ES1.2. Análisis y diseño preliminar de sistemas",
+"description": "Descripción de requisitos",
+"sequenceNumber": 2,
+"title": "ES1.2. Análisis y diseño preliminar de sistemas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/deliverables/tender-001-deliverable-003",
+"label": "ES2.2. Análisis y diseño final sistema robótico con tecnología integrada",
+"description": "Análisis y diseño final sistema robótico con tecnología integrada",
+"sequenceNumber": 2,
+"title": "ES2.2. Análisis y diseño final sistema robótico con tecnología integrada"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/deliverables/tender-001-deliverable-004",
+"label": "ES2.3. Informe del desarrollo intermedio",
+"description": "Desarrollo de los actuadores del sistema robótico para cirugía laparoscópica • Desarrollo sistema de control de la plataforma robótica • Desarrollo del sistema de captura de la imagen laparoscópica",
+"sequenceNumber": 3,
+"title": "ES2.3. Informe del desarrollo intermedio"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/deliverables/tender-001-deliverable-005",
+"label": "ES2.4. Informe de integración de los componentes y resultados",
+"description": "Informe de integración de los componentes y resultados",
+"sequenceNumber": 4,
+"title": "ES2.4. Informe de integración de los componentes y resultados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/deliverables/tender-001-deliverable-006",
+"label": "ES2.5. Estudio prospectivo de las prestaciones del equipo",
+"description": "Estudio prospectivo de las prestaciones del equipo",
+"sequenceNumber": 5,
+"title": "ES2.5. Estudio prospectivo de las prestaciones del equipo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/deliverables/tender-001-deliverable-007",
+"label": "ES2.6. Informe de resultados plan de pruebas",
+"description": "Resultados de las pruebas de verificación y testing de los sistemas, softwares y componentes descritos en el ES1.3.",
+"sequenceNumber": 6,
+"title": "ES2.6. Informe de resultados plan de pruebas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/deliverables/tender-001-deliverable-008",
+"label": "ES2.7. Informe desarrollo final",
+"description": "Relación y descripción de los estudios y pruebas del prototipo llevadas a cabo en el entorno simulado/controlado.",
+"sequenceNumber": 7,
+"title": "ES2.7. Informe desarrollo final"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/deliverables/tender-001-deliverable-009",
+"label": "ES2.8. Diseño del plan de validación",
+"description": "Descripción de las pruebas de validación a llevar a cabo en la Fase III en los escenarios de validación seleccionados",
+"sequenceNumber": 8,
+"title": "ES2.8. Diseño del plan de validación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/deliverables/tender-001-deliverable-010",
+"label": "ES3.2. Escenarios de validación del prototipo individual, funcional e integrado",
+"description": "En este informe se detallarán los resultados obtenidos de la ejecución de los estudios de validación llevados a cabo en los escenarios seleccionados",
+"sequenceNumber": 2,
+"title": "ES3.2. Escenarios de validación del prototipo individual, funcional e integrado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/deliverables/tender-001-deliverable-011",
+"label": "ES3.3. Formación",
+"description": "Se llevarán a cabo las actividades de formación de los usuarios receptores del prototipo funcional de acuerdo al plan de formación establecido.",
+"sequenceNumber": 3,
+"title": "ES3.3. Formación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/deliverables/tender-001-deliverable-012",
+"label": "manual de instalación del prototipo y sus elementos, así como un manual de usua…",
+"description": "se desarrollará un manual de instalación del prototipo y sus elementos, así como un manual de usuario",
+"sequenceNumber": null,
+"title": "manual de instalación del prototipo y sus elementos, así como un manual de usuario"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/deliverables/tender-001-deliverable-013",
+"label": "prototipo",
+"description": "trasladará, si no lo ha hecho ya en fase II, el prototipo a las instalaciones designadas por la Entidad usuaria",
+"sequenceNumber": null,
+"title": "prototipo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/deliverables/tender-001-deliverable-014",
+"label": "informes de avance de los trabajos, así como los informes de conclusiones a fin…",
+"description": "los adjudicatarios remitirán a CDTI los informes de avance de los trabajos, así como los informes de conclusiones a final de cada fase incluidos los hitos intermedios de la fase II",
+"sequenceNumber": null,
+"title": "informes de avance de los trabajos, así como los informes de conclusiones a final de cada fase"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-001-deliverable-001",
+"label": "desarrollo de la solución",
+"description": "herramienta digital de recogida, análisis y visualización de indicadores para la evaluación de la implementación de las soluciones adquiridas por los socios compradores del consorcio RaDAR",
+"sequenceNumber": 1,
+"title": "desarrollo de la solución"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-001-deliverable-002",
+"label": "plan de trabajo",
+"description": "se detalle la estrategia para el desarrollo de la plataforma digital (duración de 5 meses) y una fase de despliegue y puesta en marcha (duración de 7 meses)",
+"sequenceNumber": 2,
+"title": "plan de trabajo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-001-deliverable-003",
+"label": "informes de seguimiento",
+"description": "Los informes de seguimiento que deberán obtenerse en cada fase del Proyecto.",
+"sequenceNumber": 3,
+"title": "informes de seguimiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-001-deliverable-004",
+"label": "documentación que se estime oportuna",
+"description": "garantizar el proceso de transferencia de conocimiento, mediante la entrega de la documentación que se estime oportuna",
+"sequenceNumber": 4,
+"title": "documentación que se estime oportuna"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-001-solution-001-deliverable-001",
+"label": "herramienta digital (RaDAR evaluation digital platform)",
+"description": "herramienta digital (RaDAR evaluation digital platform) de recogida, análisis y visualización de indicadores para la evaluación de la implementación de las soluciones adquiridas por los socios compradores del consorcio RaDAR (Francia, Italia y Cataluña)",
+"sequenceNumber": null,
+"title": "herramienta digital (RaDAR evaluation digital platform)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-001-stage-001-deliverable-001",
+"label": "herramienta digital (RaDAR evaluation digital platform)",
+"description": "herramienta digital (RaDAR evaluation digital platform) de recogida, análisis y visualización de indicadores",
+"sequenceNumber": null,
+"title": "herramienta digital (RaDAR evaluation digital platform)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-002-deliverable-001",
+"label": "documentación del proyecto y las leyendas de los planos y documentación técnica…",
+"description": "la empresa contratista debe redactar en lengua catalana la documentación del proyecto y las leyendas de los planos y documentación técnica anexa, tanto en papel como en soporte digital",
+"sequenceNumber": null,
+"title": "documentación del proyecto y las leyendas de los planos y documentación técnica anexa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-002-lot-001-deliverable-001",
+"label": "documentación técnica de los equipamientos",
+"description": "los manuales de descripción técnica, la programación del mantenimiento preventivo y el manual de procedimiento en caso de averías",
+"sequenceNumber": null,
+"title": "documentación técnica de los equipamientos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-002-lot-001-deliverable-002",
+"label": "certificado",
+"description": "conforme cumplen los requisitos especificados por el propio fabricante y que no han sufrido deterioro alguno en el proceso de transporte e instalación",
+"sequenceNumber": null,
+"title": "certificado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-002-lot-001-solution-001-deliverable-001",
+"label": "plan de despliegue",
+"description": "incluya la estrategia para la integración de la solución analizando el estado de la situación en el lugar del proveedor de salud",
+"sequenceNumber": null,
+"title": "plan de despliegue"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-002-lot-002-deliverable-001",
+"label": "plan de despliegue",
+"description": "incluya la estrategia para la integración de la solución analizando el estado de la situación en el lugar del proveedor de salud",
+"sequenceNumber": null,
+"title": "plan de despliegue"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-002-lot-002-deliverable-002",
+"label": "documentación técnica de los equipamientos",
+"description": "los manuales de descripción técnica, la programación del mantenimiento preventivo y el manual de procedimiento en caso de averías",
+"sequenceNumber": null,
+"title": "documentación técnica de los equipamientos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-002-lot-002-deliverable-003",
+"label": "certificado",
+"description": "conforme cumplen los requisitos especificados por el propio fabricante y que no han sufrido deterioro alguno en el proceso de transporte e instalación",
+"sequenceNumber": null,
+"title": "certificado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-002-lot-003-deliverable-001",
+"label": "manual online de 'cómo utilizar'",
+"description": "una guía rápida de instrucciones para su uso y mantenimiento",
+"sequenceNumber": null,
+"title": "manual online de 'cómo utilizar'"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-002-lot-003-stage-001-deliverable-001",
+"label": "Solución integrada y preparada",
+"description": "Prueba de aceptación superada, operativa y aprobada por la MT",
+"sequenceNumber": 1,
+"title": "Solución integrada y preparada"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-002-lot-003-stage-001-deliverable-002",
+"label": "Informe de inicio de aprobación",
+"description": "Informe de inicio de aprobación",
+"sequenceNumber": 1,
+"title": "Informe de inicio de aprobación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-002-lot-003-stage-002-deliverable-001",
+"label": "Informe de resultados provisional",
+"description": "Informe de resultados provisional",
+"sequenceNumber": 2,
+"title": "Informe de resultados provisional"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-002-lot-003-stage-003-deliverable-001",
+"label": "Informe final del proyecto",
+"description": "Informe final del proyecto",
+"sequenceNumber": 3,
+"title": "Informe final del proyecto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-002-stage-001-deliverable-001",
+"label": "Solución integrada y preparada",
+"description": "para operar en la práctica diaria",
+"sequenceNumber": 1,
+"title": "Solución integrada y preparada"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-002-stage-002-deliverable-001",
+"label": "Informe de resultados provisional",
+"description": "Informe de resultados provisional",
+"sequenceNumber": 2,
+"title": "Informe de resultados provisional"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-002-stage-003-deliverable-001",
+"label": "Informe final del proyecto",
+"description": "Informe final del proyecto",
+"sequenceNumber": 3,
+"title": "Informe final del proyecto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-003-deliverable-001",
+"label": "manuales correspondientes",
+"description": "conjuntamente con la entrega de los bienes objeto de este contrato, la empresa contratista debe entregar los manuales correspondientes",
+"sequenceNumber": null,
+"title": "manuales correspondientes"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-003-deliverable-002",
+"label": "documentación técnica",
+"description": "toda la documentación técnica necesaria para que funcione, al menos en lengua catalana",
+"sequenceNumber": null,
+"title": "documentación técnica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-003-deliverable-003",
+"label": "Entregable 1a. Solución integrada y preparada",
+"description": "para operar en la práctica diaria. Prueba de aceptación superada, operativa y aprobada por la MT (M1).",
+"sequenceNumber": 1,
+"title": "Entregable 1a. Solución integrada y preparada"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-003-deliverable-004",
+"label": "Entregable 1b. Informe de inicio de aprobación",
+"description": null,
+"sequenceNumber": 1,
+"title": "Entregable 1b. Informe de inicio de aprobación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-003-deliverable-005",
+"label": "Entregable 2. Informe de resultados provisional",
+"description": null,
+"sequenceNumber": 2,
+"title": "Entregable 2. Informe de resultados provisional"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-003-deliverable-006",
+"label": "Entregable 3. Informe final del proyecto",
+"description": null,
+"sequenceNumber": 3,
+"title": "Entregable 3. Informe final del proyecto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-003-lot-001-deliverable-001",
+"label": "Proyecto técnico",
+"description": "incluyendo sistemas de SAI para los equipos cedidos en uso, para asegurar un funcionamiento ininterrumpido",
+"sequenceNumber": null,
+"title": "Proyecto técnico"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-003-lot-003-deliverable-001",
+"label": "Proyecto técnico",
+"description": "incluyendo sistemas de SAI para los equipos cedidos en uso, para asegurar un funcionamiento ininterrumpido",
+"sequenceNumber": null,
+"title": "Proyecto técnico"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/deliverables/tender-001-deliverable-001",
+"label": "Plan operativo",
+"description": "Plan operativo",
+"sequenceNumber": null,
+"title": "Plan operativo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/deliverables/tender-001-deliverable-002",
+"label": "Documentación",
+"description": "Documentación",
+"sequenceNumber": null,
+"title": "Documentación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/deliverables/tender-001-deliverable-003",
+"label": "código fuente de las soluciones aportadas",
+"description": "En caso de incluir tecnologías o desarrollo propio en la oferta, el contratista, estará obligado a la cesión del código fuente de las soluciones aportadas",
+"sequenceNumber": null,
+"title": "código fuente de las soluciones aportadas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/deliverables/tender-001-deliverable-004",
+"label": "su documentación",
+"description": "su documentación para garantiz ar la posibilidad de mantenimiento y evolución de la base instalada en FISABIO",
+"sequenceNumber": null,
+"title": "su documentación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/deliverables/tender-001-deliverable-005",
+"label": "especificación de requisitos",
+"description": "para ello se confeccionará la especificación de requisitos.",
+"sequenceNumber": null,
+"title": "especificación de requisitos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/deliverables/tender-001-deliverable-006",
+"label": "código fuente",
+"description": "Implementar el código fuente, haciendo uso de prototipos así como pruebas y ensayos para corregir errores.",
+"sequenceNumber": null,
+"title": "código fuente"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/deliverables/tender-001-deliverable-007",
+"label": "modelaciones (UML), pruebas, manuales de usuario, manuales técnicos",
+"description": "Documentar todos los desarrollos realizados, incluyendo modelaciones (UML), pruebas, manuales de usuario, manuales técnicos, et c.",
+"sequenceNumber": null,
+"title": "modelaciones (UML), pruebas, manuales de usuario, manuales técnicos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/deliverables/tender-001-solution-001-deliverable-001",
+"label": "GESTOR DE INTEROPERABILIDAD SEMÁNTICA DE LA RED VALENCIANA DE BIOBANCOS",
+"description": "un único componente software",
+"sequenceNumber": null,
+"title": "GESTOR DE INTEROPERABILIDAD SEMÁNTICA DE LA RED VALENCIANA DE BIOBANCOS"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/deliverables/tender-001-stage-008-deliverable-001",
+"label": "manual de usuario",
+"description": "la realización del manual de usuario y de un manual técnico",
+"sequenceNumber": null,
+"title": "manual de usuario"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/deliverables/tender-001-stage-008-deliverable-002",
+"label": "manual técnico",
+"description": "la realización del manual de usuario y de un manual técnico",
+"sequenceNumber": null,
+"title": "manual técnico"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/deliverables/tender-001-stage-010-deliverable-001",
+"label": "Documentación generada durante la fase de Puesta en marcha",
+"description": "Documentación generada durante la fase de Puesta en marcha",
+"sequenceNumber": null,
+"title": "Documentación generada durante la fase de Puesta en marcha"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/deliverables/tender-001-stage-011-deliverable-001",
+"label": "informes necesarios para mantener informados a los responsables de Fisabio",
+"description": "Elaborar los informes necesarios para mantener informados a los responsables de Fisabio sobre los trabajos realizados",
+"sequenceNumber": null,
+"title": "informes necesarios para mantener informados a los responsables de Fisabio"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/deliverables/tender-001-stage-011-deliverable-002",
+"label": "Documentación técnica (análisis, diseños, etc.)",
+"description": "Documentación técnica (análisis, diseños, etc.) so bre los nuevos procedimientos que se aborden durante la ejecución del proyecto.",
+"sequenceNumber": null,
+"title": "Documentación técnica (análisis, diseños, etc.)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/deliverables/tender-001-stage-011-deliverable-003",
+"label": "Documentación técnica actualizada sobre el inventa rio de activos del servicio",
+"description": "Documentación técnica actualizada sobre el inventa rio de activos del servicio (base de datos de conocimiento y problemas, material formativo, manuales de instalación, guías y buenas prácticas, etc.).",
+"sequenceNumber": null,
+"title": "Documentación técnica actualizada sobre el inventa rio de activos del servicio"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/deliverables/tender-001-stage-012-deliverable-001",
+"label": "Situación de los servicios al final del contrato.",
+"description": "Situación de los servicios al final del contrato.",
+"sequenceNumber": null,
+"title": "Situación de los servicios al final del contrato."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/deliverables/tender-001-stage-012-deliverable-002",
+"label": "Trabajos en curso, proyectos de integración pendientes.",
+"description": "Trabajos en curso, proyectos de integración pendientes.",
+"sequenceNumber": null,
+"title": "Trabajos en curso, proyectos de integración pendientes."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/deliverables/tender-001-stage-012-deliverable-003",
+"label": "Inventarios de activos documentales y otras circunstancias relevantes para la t…",
+"description": "Inventarios de activos documentales y otras circunstancias relevantes para la trasferencia del servicio.",
+"sequenceNumber": null,
+"title": "Inventarios de activos documentales y otras circunstancias relevantes para la trasferencia del servicio."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/deliverables/tender-001-deliverable-001",
+"label": "E1",
+"description": "un informe detallado del proceso que se va a seguir para la composición del elemento detector básico y cómo se va a construir el demostrador o prototipo a pequeña escala de 15 cm para cada una de las tecnologías",
+"sequenceNumber": 1,
+"title": "E1"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/deliverables/tender-001-deliverable-002",
+"label": "E2",
+"description": "los resultados de las simulaciones Monte Carlo del anillo de detectores para cada una de las tecnologías",
+"sequenceNumber": 2,
+"title": "E2"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/deliverables/tender-001-deliverable-003",
+"label": "E3",
+"description": "se proporcionarán las imágenes reconstruidas",
+"sequenceNumber": 3,
+"title": "E3"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/deliverables/tender-001-deliverable-004",
+"label": "E4",
+"description": "un informe mostrando la generación de la señal a nivel de módulo básico de lectura para cada una de las tecnologías",
+"sequenceNumber": 4,
+"title": "E4"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/deliverables/tender-001-deliverable-005",
+"label": "E5",
+"description": "un documento donde conste la estimación de datos que se van a tener que procesar durante las adquisiciones y el tamaño de los datos originales para reconstruir del sistema completo",
+"sequenceNumber": 5,
+"title": "E5"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/deliverables/tender-001-deliverable-006",
+"label": "E6",
+"description": "En la primera parte se presentarán los resultados de la caracterización de los demostradores y/o prototipos a pequeña escala. La segunda parte mostrará los primeros resultados de la plataforma de biomarcadores.",
+"sequenceNumber": 6,
+"title": "E6"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/deliverables/tender-001-deliverable-007",
+"label": "E7",
+"description": "informe donde se desarrollará la estrategia a seguir durante la integración de todos los elementos que forman parte del sistema final (bloque de detectores y electrónica de lectura)",
+"sequenceNumber": 7,
+"title": "E7"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/deliverables/tender-001-deliverable-008",
+"label": "E8",
+"description": "resumen de potenciales aplicaciones obtenidas a través de un estudio realizado tanto en el ámbito clínico como en centros de investigación clínica a nivel internacional",
+"sequenceNumber": 8,
+"title": "E8"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/deliverables/tender-001-deliverable-009",
+"label": "E9",
+"description": "un informe con las imágenes reconstruidas de simulaciones del sistema de cuerpo completo",
+"sequenceNumber": 9,
+"title": "E9"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/deliverables/tender-001-deliverable-010",
+"label": "E10",
+"description": "los resultados de la integración de todos los módulos detectores del sistema completo, caracterización de las señales, mostrando el diseño y la electrónica de lectura, el flujo de la transferencia de datos, la integración en la reconstrucción y el almacenamiento de los mismos",
+"sequenceNumber": 10,
+"title": "E10"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/deliverables/tender-001-deliverable-011",
+"label": "E11",
+"description": "informe de integración de la camilla y el TC al prototipo de cuerpo completo, de un video demostrativo del movimiento de la camilla a través del túnel del equipo y las imágenes de adquisición de TC con la generación del mapa de atenuación correspondiente de un maniquí de calidad de imagen",
+"sequenceNumber": 11,
+"title": "E11"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/deliverables/tender-001-deliverable-012",
+"label": "E12",
+"description": "el equipo de cuerpo completo y junto a él se presentarán los siguientes documentos",
+"sequenceNumber": 12,
+"title": "E12"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/deliverables/tender-001-deliverable-001",
+"label": "informe detallando los trabajos realizados",
+"description": "es necesario que el contratista dentro del período de los 15 días siguientes a la finalización del servicio prestado emita un informe detallando los trabajos realizados",
+"sequenceNumber": null,
+"title": "informe detallando los trabajos realizados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/deliverables/tender-001-deliverable-002",
+"label": "informe sobre el incumplimiento de los ANS",
+"description": "El informe sobre el incumplimiento de los ANS se realizará en base a los datos obtenidos del sistema de gestión de TI del Servei de Salut de les Illes Balears (OTRS) o del sistema de gestión pactado entre el adjudicatario y el servicio de Explotación.",
+"sequenceNumber": null,
+"title": "informe sobre el incumplimiento de los ANS"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/deliverables/tender-001-deliverable-003",
+"label": "informe de seguimiento del ANS",
+"description": "El cálculo de las deducciones formará parte del informe de seguimiento del ANS",
+"sequenceNumber": null,
+"title": "informe de seguimiento del ANS"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/deliverables/tender-001-deliverable-004",
+"label": "acta de coordinación",
+"description": "realización acta de coordinación",
+"sequenceNumber": null,
+"title": "acta de coordinación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/deliverables/tender-001-deliverable-005",
+"label": "Procedimientos de pruebas de Conformidad Técnica",
+"description": "realización Procedimientos de pruebas de Conformidad Técnica",
+"sequenceNumber": null,
+"title": "Procedimientos de pruebas de Conformidad Técnica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/deliverables/tender-001-deliverable-006",
+"label": "Informe de seguimiento trimestre N",
+"description": "realización Informe de seguimiento trimestre N",
+"sequenceNumber": null,
+"title": "Informe de seguimiento trimestre N"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/deliverables/tender-001-deliverable-007",
+"label": "Informe de evaluación del ANS",
+"description": "aportará las evidencias necesarias que justifiquen los valores de todos los indicadores",
+"sequenceNumber": 6,
+"title": "Informe de evaluación del ANS"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/deliverables/tender-001-deliverable-008",
+"label": "informe de seguimiento",
+"description": "El contratista deberá presentar un informe de seguimiento de manera trimestral ( IT0N )",
+"sequenceNumber": 7,
+"title": "informe de seguimiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/deliverables/tender-001-deliverable-009",
+"label": "Informes de Situación CISCO corporativas del IB-Salut",
+"description": "El contratista será el responsable de realizar anualmente Informes de Situación CISCO corporativas del IB-Salut.",
+"sequenceNumber": 8,
+"title": "Informes de Situación CISCO corporativas del IB-Salut"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/deliverables/tender-001-deliverable-010",
+"label": "Informe de Auditoría de Seguridad",
+"description": "En el Informe de Auditoría de Seguridad, deberá reflejarse la siguiente información en formato tabla",
+"sequenceNumber": 9,
+"title": "Informe de Auditoría de Seguridad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/deliverables/tender-001-deliverable-011",
+"label": "DOCUMENTACIÓN INCIDENCIAS",
+"description": "el contratista se compromete a generar para cada incidencia la siguiente documentación",
+"sequenceNumber": 10,
+"title": "DOCUMENTACIÓN INCIDENCIAS"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/deliverables/tender-001-deliverable-012",
+"label": "documentación técnica y manuales de usuario",
+"description": "toda la documentación técnica y manuales de usuario necesarios para el perfecto conocimiento funcional y técnico de las aplicaciones",
+"sequenceNumber": 13,
+"title": "documentación técnica y manuales de usuario"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/deliverables/tender-001-stage-001-deliverable-001",
+"label": "calendario de realización de los trabajos",
+"description": "El calendario de realización de los trabajos presentado por el contratista será validado y ajustado por el IB-Salut",
+"sequenceNumber": 1,
+"title": "calendario de realización de los trabajos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/deliverables/tender-001-stage-001-deliverable-002",
+"label": "Actas de reunión de coordinación",
+"description": "Actas de reunión de coordinación",
+"sequenceNumber": 2,
+"title": "Actas de reunión de coordinación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/deliverables/tender-001-stage-001-deliverable-003",
+"label": "Procedimientos de pruebas de Conformidad Técnica",
+"description": "Procedimientos de pruebas de Conformidad Técnica",
+"sequenceNumber": 3,
+"title": "Procedimientos de pruebas de Conformidad Técnica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/deliverables/tender-001-stage-001-deliverable-004",
+"label": "Informe de pruebas de Conformidad Técnica",
+"description": "Informe de pruebas de Conformidad Técnica",
+"sequenceNumber": 4,
+"title": "Informe de pruebas de Conformidad Técnica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/deliverables/tender-001-stage-001-deliverable-005",
+"label": "Certificado de Conformidad Técnica",
+"description": "Una vez superadas satisfactoriamente todas las pruebas de Conformidad Técnica previstas, se emitirá un Certificado de Conformidad Técnica.",
+"sequenceNumber": 5,
+"title": "Certificado de Conformidad Técnica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/deliverables/tender-001-stage-003-deliverable-001",
+"label": "Plan de Devolución del Servicio",
+"description": "garantizando la transferencia del conocimiento adquirido durante la prestación del mismo",
+"sequenceNumber": 11,
+"title": "Plan de Devolución del Servicio"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/deliverables/tender-001-stage-003-deliverable-002",
+"label": "cualquier documentación generada durante la prestación del servicio en sus últi…",
+"description": "El contratista se compromete a la entrega de cualquier documentación generada durante la prestación del servicio en sus últimas versiones.",
+"sequenceNumber": 12,
+"title": "cualquier documentación generada durante la prestación del servicio en sus últimas versiones"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/deliverables/tender-001-deliverable-001",
+"label": "Comunicación ambiental para proveedores y contratistas GE 175",
+"description": "lo remitirá cumplimentado y firmado al supervisor del contrato junto con las evidencias que procedan",
+"sequenceNumber": null,
+"title": "Comunicación ambiental para proveedores y contratistas GE 175"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/deliverables/tender-001-deliverable-002",
+"label": "Relación de materiales/productos previstos a utilizar en las obras",
+"description": "incluyendo características, marcas, procedencias y acreditación de calidad de los mismos",
+"sequenceNumber": null,
+"title": "Relación de materiales/productos previstos a utilizar en las obras"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/deliverables/tender-001-deliverable-003",
+"label": "resultados que obtenga de los ensayos y controles realizados por su cuenta y en…",
+"description": "control de calidad de producción",
+"sequenceNumber": null,
+"title": "resultados que obtenga de los ensayos y controles realizados por su cuenta y encargo mensualmente"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/deliverables/tender-001-deliverable-004",
+"label": "planos de detalle indispensables",
+"description": "la memoria y cálculos justificativos que se requieran para su mejor comprensión",
+"sequenceNumber": null,
+"title": "planos de detalle indispensables"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/deliverables/tender-001-deliverable-005",
+"label": "informe resultante",
+"description": "inspección interior mediante cámara de TV robotizada, de los colectores instalados",
+"sequenceNumber": null,
+"title": "informe resultante"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/deliverables/tender-001-deliverable-006",
+"label": "documentación de liquidación relativa a las redes e instalaciones",
+"description": "generada de acuerdo a las Especificaciones Técnicas para la Documentación Gráfica de EMASESA (PD 005 09)",
+"sequenceNumber": null,
+"title": "documentación de liquidación relativa a las redes e instalaciones"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/deliverables/tender-001-deliverable-007",
+"label": "documentación necesaria según el Texto Refundido de la Ley del Catastro Inmobil…",
+"description": "para la pertinente comunicación a este de la modificación del bien inmueble",
+"sequenceNumber": null,
+"title": "documentación necesaria según el Texto Refundido de la Ley del Catastro Inmobiliario"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/deliverables/tender-001-deliverable-008",
+"label": "cálculo e informe de la huella de carbono de la ejecución de la obra",
+"description": "bajo los requisitos de la norma UNE EN ISO 14064-1:2018 así como a verificarla por un organismo externo",
+"sequenceNumber": null,
+"title": "cálculo e informe de la huella de carbono de la ejecución de la obra"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/deliverables/tender-001-deliverable-009",
+"label": "Documento funcional",
+"description": "estudio y análisis del sistema, características y funcionalidades, elaboración del Documento funcional",
+"sequenceNumber": null,
+"title": "Documento funcional"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/deliverables/tender-001-deliverable-010",
+"label": "licencias software utilizadas en el proyecto",
+"description": "Todas las licencias de aplicaciones utilizadas deberán ir a nombre de EMASESA.",
+"sequenceNumber": null,
+"title": "licencias software utilizadas en el proyecto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/deliverables/tender-001-solution-001-deliverable-001",
+"label": "obras",
+"description": "Finalizada la ejecución de las obras, se procederá a la recepción de las mismas por EMASESA",
+"sequenceNumber": null,
+"title": "obras"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/deliverables/tender-001-solution-004-deliverable-001",
+"label": "documentación de ingeniería",
+"description": "Completamente funcionando y entrega de documentación de ingeniería.",
+"sequenceNumber": null,
+"title": "documentación de ingeniería"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/deliverables/tender-002-deliverable-001",
+"label": "PROYECTO DE CONSTRUCCIÓN (Extensivo FINAL DE OBRA y ASÍ CONSTRUIDO).",
+"description": "PROYECTO DE CONSTRUCCIÓN (Extensivo FINAL DE OBRA y ASÍ CONSTRUIDO).",
+"sequenceNumber": null,
+"title": "PROYECTO DE CONSTRUCCIÓN (Extensivo FINAL DE OBRA y ASÍ CONSTRUIDO)."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/deliverables/tender-002-deliverable-002",
+"label": "Manuales de Instrucciones de los equipos suministrados",
+"description": "El Contratista entregará un mínimo de dos (2) copias de los Manuales de Instrucciones de los equipos suministrados.",
+"sequenceNumber": null,
+"title": "Manuales de Instrucciones de los equipos suministrados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/deliverables/tender-002-deliverable-003",
+"label": "documentación técnica de todos los equipos a instalar",
+"description": "El Adjudicatario deberá facilitar a la Dirección de Obra la documentación técnica de todos los equipos a instalar",
+"sequenceNumber": null,
+"title": "documentación técnica de todos los equipos a instalar"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/deliverables/tender-002-deliverable-004",
+"label": "estrategia de aclimatación de digestores propuesta",
+"description": "Como mínimo, la estrategia de aclimatación de digestores propuesta debe incluir:",
+"sequenceNumber": null,
+"title": "estrategia de aclimatación de digestores propuesta"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/deliverables/tender-002-solution-001-deliverable-001",
+"label": "obras",
+"description": "obras que se detallan en el Proyecto",
+"sequenceNumber": null,
+"title": "obras"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/deliverables/tender-002-solution-003-deliverable-001",
+"label": "documentación técnica con especificaciones funcionales del sistema y manuales d…",
+"description": "documentación técnica con especificaciones funcionales del sistema y manuales de operador y supervisor del sistema de control",
+"sequenceNumber": null,
+"title": "documentación técnica con especificaciones funcionales del sistema y manuales de operador y supervisor del sistema de control"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/deliverables/tender-002-solution-003-deliverable-002",
+"label": "Copia de seguridad de todas las aplicaciones informáticas utilizadas y las inst…",
+"description": "Copia de seguridad de todas las aplicaciones informáticas utilizadas y las instrucciones de instalación",
+"sequenceNumber": null,
+"title": "Copia de seguridad de todas las aplicaciones informáticas utilizadas y las instrucciones de instalación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/deliverables/tender-002-solution-003-deliverable-003",
+"label": "Licencias de uso de los programas utilizados y sistema operativo.",
+"description": "Licencias de uso de los programas utilizados y sistema operativo.",
+"sequenceNumber": null,
+"title": "Licencias de uso de los programas utilizados y sistema operativo."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/deliverables/tender-002-solution-003-deliverable-004",
+"label": "un esquema que recoja la arquitectura de comunicaciones y control definida",
+"description": "En la documentación de obra se incluirá un esquema que recoja la arquitectura de comunicaciones y control definida.",
+"sequenceNumber": null,
+"title": "un esquema que recoja la arquitectura de comunicaciones y control definida"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/deliverables/tender-002-stage-001-deliverable-001",
+"label": "proyecto constructivo",
+"description": "Redacción del proyecto constructivo",
+"sequenceNumber": null,
+"title": "proyecto constructivo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/deliverables/tender-002-stage-002-deliverable-001",
+"label": "informe resultante",
+"description": "Será imprescindible la entrega del informe resultante y recabar la conformidad de EMASESA",
+"sequenceNumber": null,
+"title": "informe resultante"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/deliverables/tender-002-stage-002-deliverable-002",
+"label": "informes en pdf así como los videos en formato flv",
+"description": "Se presentará en soporte informático que contendrá, al menos, una carpeta con el nombre de la obra, donde se incluirán los informes en pdf así como los videos en formato flv de calidad suficiente para su visualización.",
+"sequenceNumber": null,
+"title": "informes en pdf así como los videos en formato flv"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/deliverables/tender-002-stage-002-deliverable-003",
+"label": "documentación necesaria según el Texto Refundido de la Ley del Catastro Inmobil…",
+"description": "el Contratista deberá entregar la documentación necesaria según el Texto Refundido de la Ley del Catastro Inmobiliario",
+"sequenceNumber": null,
+"title": "documentación necesaria según el Texto Refundido de la Ley del Catastro Inmobiliario"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/deliverables/tender-001-deliverable-001",
+"label": "propuesta tecnológica",
+"description": "Toma de requisitos, análisis y presentación de una propuesta tecnológica",
+"sequenceNumber": 1,
+"title": "propuesta tecnológica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/deliverables/tender-001-deliverable-002",
+"label": "Componente 4 (IaaS)",
+"description": "Puesta en marcha y configuración completa Componente 4 (IaaS)",
+"sequenceNumber": 2,
+"title": "Componente 4 (IaaS)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/deliverables/tender-001-deliverable-003",
+"label": "cámaras y nodos de inteligencia artificial",
+"description": "Instalación y puesta en marcha cámaras y nodos de inteligencia artificial",
+"sequenceNumber": 3,
+"title": "cámaras y nodos de inteligencia artificial"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/deliverables/tender-001-deliverable-004",
+"label": "Componente 2 (Blockchain)",
+"description": "Aceptación Componente 2 (Blockchain)",
+"sequenceNumber": 3,
+"title": "Componente 2 (Blockchain)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/deliverables/tender-001-deliverable-005",
+"label": "Prototipo funcional (Componente 1)",
+"description": "Prototipo funcional (Componente 1)",
+"sequenceNumber": 4,
+"title": "Prototipo funcional (Componente 1)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/deliverables/tender-001-deliverable-006",
+"label": "Casos Uso",
+"description": "Aceptación parcial Casos Uso",
+"sequenceNumber": 5,
+"title": "Casos Uso"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/deliverables/tender-001-deliverable-007",
+"label": "Componente 1 (Sistema de visión artificial e IA)",
+"description": "Aceptación completa Componente 1 (Sistema de visión artificial e IA)",
+"sequenceNumber": 6,
+"title": "Componente 1 (Sistema de visión artificial e IA)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/deliverables/tender-001-deliverable-008",
+"label": "Componente 3 (Sistema de Inteligencia)",
+"description": "Aceptación completa Componente 3 (Sistema de Inteligencia)",
+"sequenceNumber": 6,
+"title": "Componente 3 (Sistema de Inteligencia)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/deliverables/tender-001-deliverable-009",
+"label": "Componente 5 (Computación distribuida)",
+"description": "Aceptación completa Componente 5 (Computación distribuida)",
+"sequenceNumber": 6,
+"title": "Componente 5 (Computación distribuida)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/deliverables/tender-001-deliverable-010",
+"label": "Casos de Uso",
+"description": "Aceptación completa Casos de Uso",
+"sequenceNumber": 6,
+"title": "Casos de Uso"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/deliverables/tender-001-deliverable-011",
+"label": "documentación técnica del fabricante",
+"description": "hojas de producto, manuales (de instalación, de operación, de mantenimiento, de usuario), versiones de software, licencias y listado de fuentes utilizadas junto con el tipo de licencia aplicable a cada una de ellas",
+"sequenceNumber": null,
+"title": "documentación técnica del fabricante"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/deliverables/tender-001-deliverable-012",
+"label": "Prototipo funcional",
+"description": "un prototipo funcional del conjunto cámara y nodo de inteligencia artificial para demostrar la viabilidad técnica de la solución antes de su despliegue en todas las ubicaciones",
+"sequenceNumber": null,
+"title": "Prototipo funcional"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/deliverables/tender-001-deliverable-013",
+"label": "plan de pruebas",
+"description": "el plan de pruebas y el informe de resultados de las pruebas de todos los elementos hardware y software suministrados",
+"sequenceNumber": null,
+"title": "plan de pruebas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/deliverables/tender-001-deliverable-014",
+"label": "tabla de verificación de cumplimiento",
+"description": "una tabla de verificación de cumplimiento de cada uno de los requisitos indicados en el presente Pliego",
+"sequenceNumber": null,
+"title": "tabla de verificación de cumplimiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/deliverables/tender-001-deliverable-015",
+"label": "prueba de concepto",
+"description": "prueba de concepto que aplique al caso de uso de gestión de incidentes y emergencias para demostrar solidez y viabilidad del componente",
+"sequenceNumber": null,
+"title": "prueba de concepto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/deliverables/tender-001-deliverable-016",
+"label": "Diseño de la solución",
+"description": "Diseño de la solución incluyendo arquitectura, detalle de elementos software y solución a desplegar.",
+"sequenceNumber": null,
+"title": "Diseño de la solución"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/deliverables/tender-001-deliverable-017",
+"label": "código fuente correctamente documentado",
+"description": "el código fuente correctamente documentado, los scripts, ejecutables, instalables, etc., que estén asociados a software opensource o desarrollos",
+"sequenceNumber": null,
+"title": "código fuente correctamente documentado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/deliverables/tender-001-deliverable-018",
+"label": "Diseño de la solución",
+"description": "Diseño de la solución incluyendo arquitectura, detalle de elementos software y solución de sistema de inteligencia a desplegar, incluyendo los aspectos particulares de los casos de uso a implementar.",
+"sequenceNumber": null,
+"title": "Diseño de la solución"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/deliverables/tender-001-deliverable-019",
+"label": "Prototipo de la solución",
+"description": "Prototipo de la solución, incluyendo el wireframe",
+"sequenceNumber": null,
+"title": "Prototipo de la solución"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/deliverables/tender-001-deliverable-020",
+"label": "plan de pruebas",
+"description": "el plan de pruebas y el informe de resultados de las pruebas, tanto para el sistema de inteligencia, como para cada uno de los casos de uso a implementar",
+"sequenceNumber": null,
+"title": "plan de pruebas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/deliverables/tender-001-deliverable-021",
+"label": "Documento de análisis y diseño de la solución",
+"description": "análisis, diseño de la solución, con la arquitectura tecnológica, detalle de los servicios incluidos, plan de pruebas, integraciones, chequeo de requisitos de protección de datos",
+"sequenceNumber": null,
+"title": "Documento de análisis y diseño de la solución"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/deliverables/tender-001-deliverable-022",
+"label": "Plan de capacitación",
+"description": "Plan de capacitación en la que se especifique los contenidos a impartir.",
+"sequenceNumber": null,
+"title": "Plan de capacitación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/deliverables/tender-001-deliverable-023",
+"label": "Informe de necesidades de capacitación",
+"description": "Informe de necesidades de capacitación para el personal del Ayuntamiento.",
+"sequenceNumber": null,
+"title": "Informe de necesidades de capacitación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/deliverables/tender-001-deliverable-024",
+"label": "Plan de sostenibilidad y viabilidad económica financiera del proyecto",
+"description": "un Plan de sostenibilidad y viabilidad económica financiera del proyecto, que recoja de forma detallada las acciones necesarias y costes involucrados para realizar el mantenimiento y operación de cada componente",
+"sequenceNumber": null,
+"title": "Plan de sostenibilidad y viabilidad económica financiera del proyecto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/deliverables/tender-001-deliverable-025",
+"label": "matriz de cumplimiento de requisitos",
+"description": "documento de acreditación del cumplimiento de los requisitos técnicos (formalizado a través del envío de una matriz de cumplimiento de requisitos)",
+"sequenceNumber": null,
+"title": "matriz de cumplimiento de requisitos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/deliverables/tender-001-deliverable-026",
+"label": "Test de vulnerabilidad",
+"description": "documento Test de vulnerabilidad",
+"sequenceNumber": null,
+"title": "Test de vulnerabilidad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/deliverables/tender-001-stage-003-deliverable-001",
+"label": "Diseño de la solución",
+"description": "Diseño de la solución incluyendo arquitectura, detalle de elementos y solución a desplegar",
+"sequenceNumber": null,
+"title": "Diseño de la solución"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/deliverables/tender-001-stage-003-deliverable-002",
+"label": "Documentación de análisis funcional",
+"description": "descripción de la solución, requisitos detallados de la misma con trazabilidad clara con los requisitos indicados en el Pliego, interfaces de usuario, casos de uso",
+"sequenceNumber": null,
+"title": "Documentación de análisis funcional"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/deliverables/tender-001-deliverable-001",
+"label": "E.1.1.1 - Memoria técnica de la fase de diseño de la solución",
+"description": "Descripción detallada de los requisitos de la solución y análisis funcional.",
+"sequenceNumber": null,
+"title": "E.1.1.1 - Memoria técnica de la fase de diseño de la solución"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/deliverables/tender-001-deliverable-002",
+"label": "E.2.1.1 - Memoria técnica de la fase de diseño de la solución",
+"description": "Análisis de alternativas de diseño y justificación de la solución finalmente propuesta entre las diferentes alternativas planteadas.",
+"sequenceNumber": null,
+"title": "E.2.1.1 - Memoria técnica de la fase de diseño de la solución"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/deliverables/tender-001-deliverable-003",
+"label": "E.3.1.1 - Memoria técnica de la fase de diseño de la solución",
+"description": "Plan de pruebas previsto y resultados esperados, tanto para la fase de desarrollo (Fase II), como para la fase de verificación pre-operacional (Fase III).",
+"sequenceNumber": null,
+"title": "E.3.1.1 - Memoria técnica de la fase de diseño de la solución"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/deliverables/tender-001-deliverable-004",
+"label": "E.4.1.1 - Memoria técnica de la fase de diseño de la solución",
+"description": "Diseño detallado de la solución finalmente propuesta",
+"sequenceNumber": null,
+"title": "E.4.1.1 - Memoria técnica de la fase de diseño de la solución"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/deliverables/tender-001-deliverable-005",
+"label": "Especificaciones funcionales de la solución desarrollada.",
+"description": "Especificaciones funcionales de la solución desarrollada.",
+"sequenceNumber": null,
+"title": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/deliverables/tender-001-deliverable-006",
+"label": "E.2.2.1 - Memoria técnica de la fase de desarrollo de la solución",
+"description": "Informe de resultados de la ejecución del plan de pruebas diseñado para la fase de desarrollo, incluyendo una comparativa entre los resultados esperados y los realmente obtenidos.",
+"sequenceNumber": null,
+"title": "E.2.2.1 - Memoria técnica de la fase de desarrollo de la solución"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/deliverables/tender-001-deliverable-007",
+"label": "E.3.2.1 - Memoria técnica de la fase de desarrollo de la solución",
+"description": "Arquitectura general de la solución desarrollada.",
+"sequenceNumber": null,
+"title": "E.3.2.1 - Memoria técnica de la fase de desarrollo de la solución"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/deliverables/tender-001-deliverable-008",
+"label": "E.4.2.1 - Memoria técnica de la fase de desarrollo de la solución",
+"description": "Especificaciones funcionales de la solución desarrollada.",
+"sequenceNumber": null,
+"title": "E.4.2.1 - Memoria técnica de la fase de desarrollo de la solución"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/deliverables/tender-001-deliverable-009",
+"label": "E.2.2.2 - Entrega de prototipos desarrollados",
+"description": "incluyendo todos sus componentes HW y SW) así como cualquier otra información necesaria para su uso, incluyendo el código fuente.",
+"sequenceNumber": null,
+"title": "E.2.2.2 - Entrega de prototipos desarrollados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/deliverables/tender-001-deliverable-010",
+"label": "E.3.2.2 - Entrega de prototipos desarrollados",
+"description": "incluyendo todos sus componentes HW y SW) así como cualquier otra información necesaria para su uso, incluyendo el código fuente.",
+"sequenceNumber": null,
+"title": "E.3.2.2 - Entrega de prototipos desarrollados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/deliverables/tender-001-deliverable-011",
+"label": "E.4.2.2 - Entrega de prototipos desarrollados",
+"description": "incluyendo todos sus componentes HW y SW) así como cualquier otra información necesaria para su uso, incluyendo el código fuente.",
+"sequenceNumber": null,
+"title": "E.4.2.2 - Entrega de prototipos desarrollados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/deliverables/tender-001-deliverable-012",
+"label": "E.1.3.1 - Memoria técnica de la fase de verificación pre- operacional de la sol…",
+"description": "Informe de resultados de la ejecución del plan de pruebas diseñado para la fase de verificación pre-operacional, incluyendo una comparativa entre los resultados esperados y los realmente obtenidos.",
+"sequenceNumber": null,
+"title": "E.1.3.1 - Memoria técnica de la fase de verificación pre- operacional de la solución"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/deliverables/tender-001-deliverable-013",
+"label": "E.2.3.1 - Memoria técnica de la fase de verificación preoperacional de la soluc…",
+"description": "Descripción técnica de la solución verificada",
+"sequenceNumber": null,
+"title": "E.2.3.1 - Memoria técnica de la fase de verificación preoperacional de la solución"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/deliverables/tender-001-deliverable-014",
+"label": "E.1.3.2 - Entrega de prototipos verificados",
+"description": "incluyendo todos sus componentes HW y SW) así como cualquier otra información necesaria para su uso, incluyendo el código fuente.",
+"sequenceNumber": null,
+"title": "E.1.3.2 - Entrega de prototipos verificados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/deliverables/tender-001-deliverable-015",
+"label": "E.2.3.2 - Entrega de prototipos verificados",
+"description": "incluyendo todos sus componentes HW y SW) así como cualquier otra información necesaria para su uso, incluyendo el código fuente.",
+"sequenceNumber": null,
+"title": "E.2.3.2 - Entrega de prototipos verificados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/deliverables/tender-001-deliverable-001",
+"label": "memoria técnica final de diseño",
+"description": "memoria técnica final de diseño validada por el Responsable Técnico del ITC",
+"sequenceNumber": null,
+"title": "memoria técnica final de diseño"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/deliverables/tender-001-deliverable-002",
+"label": "Proyecto replanteado y visado",
+"description": "Proyecto replanteado y visado",
+"sequenceNumber": null,
+"title": "Proyecto replanteado y visado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/deliverables/tender-001-deliverable-003",
+"label": "planta totalmente instalada y puesta en marcha",
+"description": "planta totalmente instalada y puesta en marcha en las instalaciones del ITC en Pozo Izquierdo",
+"sequenceNumber": null,
+"title": "planta totalmente instalada y puesta en marcha"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/deliverables/tender-001-deliverable-004",
+"label": "manuales de uso, técnicos y de mantenimiento",
+"description": "manuales de uso, técnicos y de mantenimiento",
+"sequenceNumber": null,
+"title": "manuales de uso, técnicos y de mantenimiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/deliverables/tender-001-stage-007-deliverable-001",
+"label": "Dossier técnico",
+"description": "En la planta habrá en papel y se entregará además en formato editable .doc y .pdf un dossier técnico, donde se incluyan como mínimo, los siguientes documentos.",
+"sequenceNumber": 1,
+"title": "Dossier técnico"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/deliverables/tender-001-stage-007-deliverable-002",
+"label": "Sinóptico hidráulico",
+"description": "Se entregará sinóptico en formato A2, impreso en vinilo y pegado en metacrilato blanco, para colocar en interior del contenedor.",
+"sequenceNumber": 2,
+"title": "Sinóptico hidráulico"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/deliverables/tender-001-stage-007-deliverable-003",
+"label": "Proyecto completo 'as built' de la instalación",
+"description": "Proyecto completo 'as built' de la instalación con el objeto de que ITC pueda legalizar todo el expediente (baja tensión, seguridad industrial, CIAGC) con las separatas de cálculo, descriptiva de equipos, medidas de seguridad y planos necesarios.",
+"sequenceNumber": 3,
+"title": "Proyecto completo 'as built' de la instalación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/deliverables/tender-001-stage-007-deliverable-004",
+"label": "Informe completo resultado pruebas de rendimiento",
+"description": "Informe completo resultado pruebas de rendimiento (siguiendo metodología descrita en anexos de este documento).",
+"sequenceNumber": 4,
+"title": "Informe completo resultado pruebas de rendimiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/deliverables/tender-001-deliverable-001",
+"label": "E4: Informe de Actividad 4",
+"description": "Contenidos: • H4.1: Puesta en funcionamiento • H4.2: Test de Estrés • H5.1: Plan de Dinamización • H5.2: Sensibilización • H5.3: Formación • H5.4: Comunicación • H6.1: Aprobación final",
+"sequenceNumber": 4,
+"title": "E4: Informe de Actividad 4"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/deliverables/tender-001-deliverable-002",
+"label": "Documento de planificación del proyecto",
+"description": "Documento de planificación del proyecto",
+"sequenceNumber": null,
+"title": "Documento de planificación del proyecto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/deliverables/tender-001-deliverable-003",
+"label": "Informe de Actividad 1 (E1)",
+"description": "Entregable 1: Informe de Actividad 1 (E1)",
+"sequenceNumber": 1,
+"title": "Informe de Actividad 1 (E1)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/deliverables/tender-001-deliverable-004",
+"label": "Definición y prueba de muestra del front-end",
+"description": "Definición y prueba de muestra del front-end, diseño gráfico, soportes y usabilidad de la plataforma.",
+"sequenceNumber": null,
+"title": "Definición y prueba de muestra del front-end"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/deliverables/tender-001-deliverable-005",
+"label": "Documento demostrativo y/o demostración, del desarrollo, interconexión de los m…",
+"description": "Documento demostrativo y/o demostración, del desarrollo, interconexión de los módulos funcionales, la utilización de los habilitantes y su interacción con la plataforma base",
+"sequenceNumber": null,
+"title": "Documento demostrativo y/o demostración, del desarrollo, interconexión de los módulos funcionales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/deliverables/tender-001-deliverable-006",
+"label": "Documento de informe de los test y pruebas realizadas a todas las funcionalidad…",
+"description": "Documento de informe de los test y pruebas realizadas a todas las funcionalidades de la plataforma.",
+"sequenceNumber": null,
+"title": "Documento de informe de los test y pruebas realizadas a todas las funcionalidades de la plataforma"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/deliverables/tender-001-deliverable-007",
+"label": "Documento de informe de 'test de estrés'",
+"description": "Documento de informe de 'test de estrés' realizado en diferentes condiciones aceptadas previamente",
+"sequenceNumber": null,
+"title": "Documento de informe de 'test de estrés'"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/deliverables/tender-001-deliverable-008",
+"label": "Manual de usuario de administración, soporte y mantenimiento de la plataforma",
+"description": "Manual de usuario de administración, soporte y mantenimiento de la plataforma",
+"sequenceNumber": null,
+"title": "Manual de usuario de administración, soporte y mantenimiento de la plataforma"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/deliverables/tender-001-solution-002-deliverable-001",
+"label": "Documento demostrativo y/o demostración de la adecuación, parametrización, desa…",
+"description": "Documento demostrativo y/o demostración de la adecuación, parametrización, desarrollo o configuración de la plataforma base que de soporte al proyecto.",
+"sequenceNumber": null,
+"title": "Documento demostrativo y/o demostración de la adecuación, parametrización, desarrollo o configuración de la plataforma base"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/deliverables/tender-001-solution-002-deliverable-002",
+"label": "Documento demostrativo y/o demostración de la incorporación de las fuentes de d…",
+"description": "Documento demostrativo y/o demostración de la incorporación de las fuentes de datos y su conexión con la plataforma base.",
+"sequenceNumber": null,
+"title": "Documento demostrativo y/o demostración de la incorporación de las fuentes de datos y su conexión con la plataforma base"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/deliverables/tender-001-stage-001-deliverable-001",
+"label": "Informe de Actividad 1 (E1)",
+"description": "se recoja o documente la ejecución de los siguientes sub-hitos de ejecución",
+"sequenceNumber": 1,
+"title": "Informe de Actividad 1 (E1)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/deliverables/tender-001-stage-002-deliverable-001",
+"label": "E2: Informe de Actividad 2",
+"description": "Contenidos: • H2.1: Plataforma Base • H2.2: Módulos Habilitantes y Funcionales",
+"sequenceNumber": 2,
+"title": "E2: Informe de Actividad 2"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/deliverables/tender-001-stage-002-deliverable-002",
+"label": "Informe de Actividad 2 (E2)",
+"description": "Entregable 2: Informe de Actividad 2 (E2)",
+"sequenceNumber": 2,
+"title": "Informe de Actividad 2 (E2)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/deliverables/tender-001-stage-003-deliverable-001",
+"label": "E3: Informe de Actividad 3",
+"description": "Contenidos: • H3.1: PMV Pack 1 • H3.2: PMV Pack 2 • H3.3: PMV Pack 3 • H3.4: Test y Pruebas",
+"sequenceNumber": 3,
+"title": "E3: Informe de Actividad 3"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/deliverables/tender-001-stage-003-deliverable-002",
+"label": "Informe de Actividad 3 (E3)",
+"description": "Entregable 3: Informe de Actividad 3 (E3)",
+"sequenceNumber": 3,
+"title": "Informe de Actividad 3 (E3)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/deliverables/tender-001-stage-006-deliverable-001",
+"label": "Informe de Actividad 4 (E4)",
+"description": "Entregable 4: Informe de Actividad 4 (E4)",
+"sequenceNumber": 4,
+"title": "Informe de Actividad 4 (E4)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/deliverables/tender-001-deliverable-001",
+"label": "Estudios de Viabilidad y Pruebas de Concepto",
+"description": "se espera poder contratar en la Fase I el desarrollo de dos Estudios de Viabilidad y Pruebas de Concepto",
+"sequenceNumber": null,
+"title": "Estudios de Viabilidad y Pruebas de Concepto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/deliverables/tender-001-deliverable-002",
+"label": "piloto/demostrador virtual",
+"description": "Desarrollo del piloto/demostrador virtual",
+"sequenceNumber": null,
+"title": "piloto/demostrador virtual"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/deliverables/tender-001-deliverable-003",
+"label": "Informe Justificativo",
+"description": "Al final de cada fase los contratistas deberán presentar un Informe Justificativo acompañando a los entregables previstos en cada una de ellas.",
+"sequenceNumber": null,
+"title": "Informe Justificativo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/deliverables/tender-001-solution-001-deliverable-001",
+"label": "prototipo",
+"description": "Desarrollo experimental del sistema experto y del catálogo (prototipo)",
+"sequenceNumber": null,
+"title": "prototipo"
+}
+]

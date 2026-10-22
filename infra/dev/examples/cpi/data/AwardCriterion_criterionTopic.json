@@ -1,0 +1,646 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/award-criteria/tender-001-criterion-001",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/descripcion-del-sistema"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/award-criteria/tender-001-criterion-002",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/derechos-de-propiedad-intelectual-0-industrial-de-las-tecnologias-o-soluciones-aportadas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/award-criteria/tender-001-criterion-003",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/estudio-de-mercado-potencial"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/award-criteria/tender-001-criterion-004",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/plan-de-comercializacion-de-la-solucion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/award-criteria/tender-001-criterion-005",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/tiempo-de-entrenamiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/award-criteria/tender-001-criterion-006",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/tasa-de-acierto-comprometida"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/award-criteria/tender-001-criterion-007",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/tiempo-de-traduccion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/award-criteria/tender-001-criterion-008",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/conversion-bidireccional-entre-el-lenguaje-de-signos-y-voz-en-castellano"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/award-criteria/tender-001-criterion-009",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/funcionamiento-offline"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/award-criteria/tender-001-criterion-010",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/ios"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/award-criteria/tender-001-criterion-011",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/android"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/award-criteria/tender-001-criterion-012",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/plazo-de-ejecucion-de-la-fase-2"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/award-criteria/tender-001-criterion-013",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/oferta-economica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/award-criteria/tender-001-criterion-014",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/porcentaje-del-valor-neto-de-los-ingresos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/award-criteria/tender-001-criterion-001",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/descripcion-tecnica-de-la-solucion-propuesta"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/award-criteria/tender-001-criterion-002",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/planificacion-metodologia-y-cronograma"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/award-criteria/tender-001-criterion-003",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/plan-de-garantia-de-calidad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/award-criteria/tender-001-criterion-004",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/grado-de-innovacion-de-la-propuesta"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/award-criteria/tender-001-criterion-005",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/plan-de-implantacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/award-criteria/tender-001-criterion-006",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/precio-por-la-creacion-desarrollo-y-puesta-en-marcha-de-la-plataforma"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-001-criterion-001",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/aspectos-generales-de-la-plataforma"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-001-criterion-002",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/sistema-de-actuadores"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-001-criterion-003",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/consola-de-control"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-001-criterion-004",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/la-adecuacion-de-la-metodologia-empleada-en-la-realizacion-de-tareas-y-la-coordinacion-y-planificacion-de-los-trabajos-durante-la-ejecucion-del-contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-001-criterion-005",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/un-plan-metodologico-para-evaluar-la-seguridad-y-la-calidad-de-los-resultados-quirurgicos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-001-criterion-006",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/la-identificacion-de-los-principales-riesgos-la-calidad-de-la-metodologia-empleada-en-la-gestion-de-los-mismos-y-la-adecuacion-de-las-medidas-correctoras"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-001-criterion-007",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/la-viabilidad-tecnica-y-economica-de-la-solucion-innovadora-planteada-por-cada-licitador"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-001-criterion-008",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/oferta-economica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-001-criterion-009",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/la-ampliacion-del-plazo-de-resolucion-de-consultas-tecnicas-reparacion-y-mantenimiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-001-criterion-010",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/un-porcentaje-superior-a-5-de-personas-desempleadas-inscritas-en-las-oficinas-de-empleo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-003-criterion-001",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/oferta-economica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-003-criterion-002",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/plazo-de-resolucion-de-consultas-tecnicas-reparacion-y-mantenimiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-003-criterion-003",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/promocion-de-empleo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-003-criterion-004",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/requisitos-tecnicos-y-funcionales-adicionales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-003-criterion-005",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/aspectos-generales-de-la-plataforma"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-003-criterion-006",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/sistema-de-actuadores"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-003-criterion-007",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/programa-de-trabajo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-003-criterion-008",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/seguridad-y-la-calidad-de-los-resultados-quirurgicos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-003-criterion-009",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/identificacion-de-los-principales-riesgos-la-calidad-de-la-metodologia-empleada-en-la-gestion-de-los-mismos-y-la-adecuacion-de-las-medidas-correctoras"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-003-criterion-010",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/viabilidad-tecnica-y-economica-de-la-solucion-innovadora"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-004-criterion-001",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/oferta-economica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-004-criterion-002",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/plazo-de-resolucion-de-consultas-tecnicas-reparacion-y-mantenimiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-004-criterion-003",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/promocion-de-empleo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-004-criterion-004",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/requisitos-tecnicos-y-funcionales-adicionales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-004-criterion-005",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/aspectos-generales-del-sistema-de-entrenamiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-004-criterion-006",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/consola-de-control"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-004-criterion-007",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/programa-de-trabajo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-004-criterion-008",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/capacidad-formativa-en-aspectos-tecnicos-y-cognitivos-del-sistema-de-entrenamiento-en-cirugia-robotica-laparoscopica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-004-criterion-009",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/identificacion-de-los-principales-riesgos-la-calidad-de-la-metodologia-empleada-en-la-gestion-de-los-mismos-y-la-adecuacion-de-las-medidas-correctoras"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-004-criterion-010",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/viabilidad-tecnica-y-economica-de-la-solucion-innovadora"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/award-criteria/tender-001-criterion-001",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/viabilidad-de-aplicacion-del-concepto-inicial-propuesto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/award-criteria/tender-001-criterion-002",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/capacidad-de-evolucion-del-concepto-propuesto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/award-criteria/tender-001-criterion-003",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/caracter-innovador-del-concepto-inicial-propuesto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/award-criteria/tender-001-criterion-004",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/propuesta-de-ejecucion-de-la-fase-de-investigacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/award-criteria/tender-001-criterion-005",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/propuesta-de-ejecucion-de-la-fase-de-desarrollo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/award-criteria/tender-001-criterion-006",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/propuesta-de-aseguramiento-de-la-calidad-de-la-solucion-software"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/award-criteria/tender-001-criterion-007",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/propuesta-de-proyecto-en-general"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/award-criteria/tender-001-criterion-008",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/plan-de-negocio"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/award-criteria/tender-001-criterion-009",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/plan-de-comunicacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/award-criteria/tender-001-criterion-010",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/precio"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/award-criteria/tender-001-criterion-011",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/no-de-doctores-y-personal-certificado-en-ciberseguridad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/award-criteria/tender-001-criterion-012",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/no-de-patentes-de-investigacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/award-criteria/tender-001-criterion-013",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/no-de-horas-formacion-sobre-la-solucion-adoptada"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/award-criteria/tender-001-criterion-001",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/solucion-tecnica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/award-criteria/tender-001-criterion-002",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/propuesta-de-asignacion-de-recursos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/award-criteria/tender-001-criterion-003",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/propuesta-de-plan-de-trabajo-y-gestion-del-proyecto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/award-criteria/tender-001-criterion-004",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/plan-de-viabilidad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/award-criteria/tender-001-criterion-005",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/precio-total-de-fases"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/award-criteria/tender-001-criterion-006",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/retornos-economicos-futuros-sobre-ventas-netas-anuales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-001",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/acuerdo-de-nivel-de-servicio-sla"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-002",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/actualizaciones-incrementales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-003",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/plan-de-formacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-004",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/plan-de-gestion-de-datos-e-ia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-005",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/otras-fuentes-de-datos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-006",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/plantillas-funcionales-pre-definidas-para-la-ingesta-de-datos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-007",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/deteccion-y-correccion-de-anomalias"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-008",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/normalizacion-y-estandarizacion-de-datos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-009",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/clasificar-automaticamente-la-informacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-010",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/predicciones-o-recomendaciones"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-011",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/visualizacion-inteligente-basada-en-ia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-012",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/generacion-de-explicaciones-automaticas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-013",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/plan-de-proyecto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-014",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/modelo-de-relacion-y-modelo-organizativo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-015",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/plan-de-evaluacion-y-mitigacion-de-riesgos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-016",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/oferta-economica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-017",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/implementacion-adicional-de-idiomas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-018",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/privacidad-y-seguridad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-019",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/gobernanza"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-020",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/inteligencia-artificial"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-021",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/cumplimiento-de-los-estandares-internacionales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-002-criterion-001",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/lactamasas-de-espectro-extendido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-002-criterion-002",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/monitorizacion-del-rendimiento-de-la-solucion-radar"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-002-criterion-003",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/tiempo-de-gestion-del-cambio"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-002-criterion-004",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/procesamiento-natural-del-lenguaje-pnl-aplicando-inteligencia-artificial"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-002-criterion-005",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/capacidad-de-integracion-de-los-indicadores-renave"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/award-criteria/tender-001-criterion-001",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/precio"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/award-criteria/tender-001-criterion-002",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/propuesta-funcional"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/award-criteria/tender-001-criterion-003",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/descripcion-tecnica-de-la-solucion-propuesta"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/award-criteria/tender-001-criterion-004",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/plan-de-proyecto-y-plan-de-negocio"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/award-criteria/tender-001-criterion-005",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/elementos-innovadores"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/award-criteria/tender-001-criterion-001",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/precio"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/award-criteria/tender-001-criterion-003",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/caracteristicas-de-la-solucion-propuesta"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/award-criteria/tender-001-criterion-004",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/grado-de-innovacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/award-criteria/tender-001-criterion-005",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/objetivos-de-desarrollo-sostenible"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/award-criteria/tender-001-criterion-006",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/economia-circular"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/award-criteria/tender-001-criterion-007",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/equipo-humano"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/award-criteria/tender-001-criterion-009",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/activos-o-tecnologia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/award-criteria/tender-001-criterion-011",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/calidad-del-plan-de-riesgos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/award-criteria/tender-001-criterion-012",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/gestion-de-riesgos-y-contingencias"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/award-criteria/tender-001-criterion-001",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/propuesta-economica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-001",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/solucion-tecnologica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-002",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/innovacion-de-la-solucion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-003",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/sistema-de-vision-artificial-e-ia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-004",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/sistema-de-comunicaciones"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-005",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/integracion-con-sistemas-y-plataformas-externas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-006",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/planificacion-metodologia-y-cronograma"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-007",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/fases-del-proyecto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-008",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/sostenibilidad-y-mantenimiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-009",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/plan-de-capacitacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-010",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/seguridad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-012",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/recursos-humanos-y-tecnicos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-013",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/explotacion-comercial"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-014",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/oferta-economica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-015",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/retornos-economicos-futuros"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-016",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/plazo-de-garantia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-017",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/coste-de-mantenimiento-y-o-servicios"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-criteria/tender-001-criterion-001",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/solucion-tecnica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-criteria/tender-001-criterion-002",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/capacidad-de-la-propuesta-para-dar-respuesta-al-reto-planteado-de-manera-innovadora"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-criteria/tender-001-criterion-003",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/estado-del-arte"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-criteria/tender-001-criterion-004",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/grado-de-innovacion-de-la-solucion-propuesta"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-criteria/tender-001-criterion-005",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/otras-caracteristicas-tecnicas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-criteria/tender-001-criterion-006",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/dimensionamiento-del-equipo-humano"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-criteria/tender-001-criterion-007",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/medios-tecnicos-materiales-y-de-infraestructura-e-instalaciones"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-criteria/tender-001-criterion-008",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/metodologia-de-trabajo-y-direccion-empleada"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-criteria/tender-001-criterion-009",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/plan-de-gestion-de-riesgos-y-contingencias"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-criteria/tender-001-criterion-010",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/viabilidad-futura-tecnica-y-economica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-criteria/tender-001-criterion-011",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/derechos-de-propiedad-intelectual-y-o-industrial"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-criteria/tender-001-criterion-012",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/precio-total-de-fases"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-criteria/tender-001-criterion-013",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/porcentaje-de-las-ventas-netas-obtenidas-por-la-futura-explotacion-del-resultado-comercial-del-servicio-objeto-del-presente-contrato-a-percibir-por-el-cdti"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/award-criteria/tender-001-criterion-001",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/diseno-configuracion-y-distribucion-de-equipos-y-contenedores"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/award-criteria/tender-001-criterion-002",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/consumo-especifico-de-energia-sec-promedio-ano-0"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/award-criteria/tender-001-criterion-003",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/valor-de-perdida-de-carga-estimado-en-las-conducciones-de-la-planta-desaladora"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/award-criteria/tender-001-criterion-004",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/oferta-economica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/award-criteria/tender-001-criterion-005",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/mejora-en-garantia-asistencia-tecnica-y-mantenimiento-preventivo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/award-criteria/tender-001-criterion-001",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/grado-de-innovacion-tecnologica-de-los-modulos-funcionales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/award-criteria/tender-001-criterion-002",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/propuesta-de-solucion-tecnica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/award-criteria/tender-001-criterion-003",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/auto-dinamizacion-y-plan-de-dinamizacion-sensibilizacion-formacion-y-comunicacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/award-criteria/tender-001-criterion-004",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/propuesta-de-valor-basada-en-la-incorporacion-de-tecnologias-innovadoras"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/award-criteria/tender-001-criterion-005",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/ejecucion-gestion-y-gobernanza"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/award-criteria/tender-001-criterion-006",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/despliegue-en-entorno-demostrativo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/award-criteria/tender-001-criterion-007",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/plan-de-validacion-de-la-solucion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/award-criteria/tender-001-criterion-008",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/precio-u-oferta-economica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/award-criteria/tender-001-criterion-009",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/anos-de-mantenimiento-evolutivo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/award-criteria/tender-001-criterion-010",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/horas-de-dinamizacion-posterior-al-desarrollo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/award-criteria/tender-001-criterion-011",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/horas-de-formacion-posteriores-al-desarrollo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/award-criteria/tender-001-criterion-001",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/claridad-organizacion-y-concrecion-ambicion-cientificotecnica-capacidad-y-viabilidad-de-generacion-de-un-sistema-fiable"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/award-criteria/tender-001-criterion-002",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/grado-de-innovacion-de-la-solucion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/award-criteria/tender-001-criterion-003",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/analisis-economico-solido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/award-criteria/tender-001-criterion-004",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/la-capacidad-del-sistema-para-definir-aplicar-y-gestionar-la-informacion-necesaria-geometrica-alfanumerica-y-documental-en-cada-fase-del-ciclo-de-vida-del-proyecto-conforme-al-concepto-de-loin"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/award-criteria/tender-001-criterion-005",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/plan-de-viabilidad-tecnica-y-economica-y-de-puesta-en-valor-de-resultados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/award-criteria/tender-001-criterion-006",
+"o": "https://example.org/cpi-demo/id/vocab/criterion-topic/propuesta-economica"
+}
+]

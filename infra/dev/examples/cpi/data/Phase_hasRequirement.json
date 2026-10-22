@@ -1,0 +1,2210 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/145-2017-00380/requirements/tender-001-requirement-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/145-2017-00380/requirements/tender-001-requirement-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/145-2017-00380/requirements/tender-001-requirement-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/145-2017-00380/requirements/tender-001-requirement-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/145-2017-00380/requirements/tender-001-requirement-005"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/145-2017-00380/requirements/tender-001-requirement-006"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/145-2017-00380/requirements/tender-001-requirement-007"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/145-2017-00380/requirements/tender-001-requirement-008"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/145-2017-00380/requirements/tender-001-requirement-009"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/145-2017-00380/requirements/tender-001-requirement-010"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/145-2017-00380/requirements/tender-001-requirement-011"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/145-2017-00380/requirements/tender-001-requirement-012"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/requirements/tender-001-requirement-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/requirements/tender-001-requirement-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/requirements/tender-001-requirement-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/requirements/tender-001-requirement-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/requirements/tender-001-requirement-005"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/requirements/tender-001-requirement-006"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/requirements/tender-001-requirement-007"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/requirements/tender-001-requirement-008"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/requirements/tender-001-requirement-009"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/requirements/tender-001-requirement-010"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/requirements/tender-001-requirement-011"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/requirements/tender-001-requirement-012"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/requirements/tender-001-requirement-013"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/requirements/tender-001-requirement-014"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/requirements/tender-001-requirement-015"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/requirements/tender-001-requirement-016"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/requirements/tender-001-requirement-017"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/requirements/tender-001-requirement-018"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/requirements/tender-001-requirement-019"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/requirements/tender-001-requirement-020"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/requirements/tender-001-requirement-021"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/requirements/tender-001-requirement-022"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/requirements/tender-001-requirement-023"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/requirements/tender-001-requirement-024"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/requirements/tender-001-requirement-025"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/requirements/tender-001-requirement-026"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/requirements/tender-001-requirement-027"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/requirements/tender-001-requirement-028"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/requirements/tender-001-requirement-029"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/requirements/tender-001-requirement-030"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/requirements/tender-001-requirement-031"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/requirements/tender-001-requirement-032"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/requirements/tender-001-requirement-033"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/requirements/tender-001-requirement-034"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/requirements/tender-001-requirement-035"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/requirements/tender-001-requirement-036"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/requirements/tender-001-requirement-037"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/requirements/tender-001-requirement-038"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/requirements/tender-001-requirement-039"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/requirements/tender-001-requirement-040"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/requirements/tender-001-requirement-041"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/requirements/tender-001-requirement-042"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-005"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-006"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-007"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-008"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-009"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-010"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-011"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-012"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-013"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-014"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-015"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-016"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-017"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-018"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-019"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-020"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-021"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-022"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-023"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-024"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-025"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-026"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-027"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-028"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-029"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-030"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-031"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-033"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-034"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-035"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-036"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-037"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-038"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-039"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-040"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-041"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-042"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-043"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-044"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-045"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-046"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-047"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-001-requirement-048"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-requirement-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-requirement-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-requirement-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-requirement-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/requirements/tender-002-requirement-005"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/requirements/tender-001-requirement-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/requirements/tender-001-requirement-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/requirements/tender-001-requirement-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/requirements/tender-001-requirement-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/requirements/tender-001-requirement-005"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/requirements/tender-001-requirement-006"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/requirements/tender-001-requirement-007"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/requirements/tender-001-requirement-008"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/requirements/tender-001-requirement-009"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/requirements/tender-001-requirement-010"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/requirements/tender-001-requirement-011"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/requirements/tender-001-requirement-012"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/requirements/tender-001-requirement-013"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/requirements/tender-001-requirement-014"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/requirements/tender-001-requirement-015"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/requirements/tender-001-requirement-016"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/requirements/tender-001-requirement-017"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/requirements/tender-001-requirement-018"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/requirements/tender-001-requirement-019"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/requirements/tender-001-requirement-020"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/requirements/tender-001-requirement-021"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/requirements/tender-001-requirement-022"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/requirements/tender-001-requirement-023"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/requirements/tender-001-requirement-024"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/requirements/tender-001-requirement-025"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/requirements/tender-001-requirement-026"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/requirements/tender-001-requirement-027"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/requirements/tender-001-requirement-028"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/requirements/tender-001-requirement-029"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/requirements/tender-001-requirement-030"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/requirements/tender-001-requirement-031"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/requirements/tender-001-requirement-032"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/requirements/tender-001-requirement-033"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/requirements/tender-001-requirement-034"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/requirements/tender-001-requirement-035"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/requirements/tender-001-requirement-036"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/requirements/tender-001-requirement-037"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/requirements/tender-001-requirement-038"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/requirements/tender-001-requirement-039"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/requirements/tender-001-requirement-040"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/requirements/tender-001-requirement-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/requirements/tender-001-requirement-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/requirements/tender-001-requirement-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/requirements/tender-001-requirement-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/requirements/tender-001-requirement-005"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/requirements/tender-001-requirement-006"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/requirements/tender-001-requirement-007"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/requirements/tender-001-requirement-008"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/requirements/tender-001-requirement-009"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/requirements/tender-001-requirement-010"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/requirements/tender-001-requirement-011"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/requirements/tender-001-requirement-012"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/requirements/tender-001-requirement-013"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/requirements/tender-001-requirement-014"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/requirements/tender-001-requirement-015"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/requirements/tender-001-requirement-016"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/requirements/tender-001-requirement-017"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-005"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-006"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-007"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-008"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-009"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-010"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-011"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-012"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-013"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-014"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-015"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-016"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-017"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-018"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-019"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-020"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-021"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-022"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-023"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-024"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-025"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-026"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-027"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-028"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-029"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-030"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-031"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-032"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-033"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-034"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-035"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-036"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-037"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-038"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-039"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-040"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-041"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-042"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-043"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-044"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-045"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-046"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-047"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-048"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-001-requirement-049"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-002-requirement-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-002-requirement-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-002-requirement-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-002-requirement-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-002-requirement-005"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-002-requirement-006"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-002-requirement-007"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-002-requirement-008"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-002-requirement-009"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-002-requirement-010"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-002-requirement-011"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-002-requirement-012"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-002-requirement-013"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-002-requirement-014"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-002-requirement-015"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-002-requirement-016"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-002-requirement-017"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-002-requirement-018"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-002-requirement-019"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-002-requirement-020"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-002-requirement-021"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-002-requirement-022"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-002-requirement-023"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-002-requirement-024"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-002-requirement-025"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-002-requirement-026"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-002-requirement-027"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-002-requirement-028"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-002-requirement-029"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-002-requirement-030"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-002-requirement-031"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-002-requirement-032"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-002-requirement-033"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-002-requirement-034"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-002-requirement-035"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-002-requirement-036"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-002-requirement-037"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-002-requirement-038"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-002-requirement-039"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-requirement-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-requirement-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-requirement-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-requirement-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-requirement-005"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-requirement-006"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-requirement-007"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-requirement-008"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-requirement-009"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-requirement-010"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-requirement-011"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-requirement-012"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-requirement-013"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-requirement-014"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-requirement-015"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-requirement-016"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-requirement-017"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-requirement-018"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-requirement-019"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-requirement-020"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-requirement-021"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-requirement-022"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/tenders/tender-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/requirements/tender-003-requirement-023"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/requirements/tender-001-requirement-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/requirements/tender-001-requirement-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/requirements/tender-001-requirement-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/requirements/tender-001-requirement-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/requirements/tender-001-requirement-005"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/requirements/tender-001-requirement-006"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/requirements/tender-001-requirement-007"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/requirements/tender-001-requirement-008"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/requirements/tender-001-requirement-009"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/requirements/tender-001-requirement-010"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/requirements/tender-001-requirement-011"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/requirements/tender-001-requirement-012"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/requirements/tender-001-requirement-013"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/requirements/tender-001-requirement-014"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/requirements/tender-001-requirement-015"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/requirements/tender-001-requirement-016"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/requirements/tender-001-requirement-017"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/requirements/tender-001-requirement-018"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/requirements/tender-001-requirement-019"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/requirements/tender-001-requirement-020"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/requirements/tender-001-requirement-021"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/requirements/tender-001-requirement-022"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/requirements/tender-001-requirement-023"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/requirements/tender-001-requirement-024"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/requirements/tender-001-requirement-025"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/requirements/tender-001-requirement-026"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/requirements/tender-001-requirement-027"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/requirements/tender-001-requirement-028"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/requirements/tender-001-requirement-029"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/requirements/tender-001-requirement-030"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/requirements/tender-001-requirement-031"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/requirements/tender-001-requirement-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/requirements/tender-001-requirement-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/requirements/tender-001-requirement-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/requirements/tender-001-requirement-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/requirements/tender-001-requirement-005"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/requirements/tender-001-requirement-006"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/requirements/tender-001-requirement-007"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/requirements/tender-001-requirement-008"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/requirements/tender-001-requirement-009"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/requirements/tender-001-requirement-010"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/requirements/tender-001-requirement-011"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/requirements/tender-001-requirement-012"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/requirements/tender-001-requirement-013"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/requirements/tender-001-requirement-014"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/requirements/tender-001-requirement-015"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/requirements/tender-001-requirement-016"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/requirements/tender-001-requirement-017"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/requirements/tender-001-requirement-018"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/requirements/tender-001-requirement-019"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/requirements/tender-001-requirement-020"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/requirements/tender-001-requirement-021"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/requirements/tender-001-requirement-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/requirements/tender-001-requirement-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/requirements/tender-001-requirement-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/requirements/tender-001-requirement-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/requirements/tender-001-requirement-005"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/requirements/tender-001-requirement-006"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/requirements/tender-001-requirement-007"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/requirements/tender-001-requirement-008"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/requirements/tender-001-requirement-009"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/requirements/tender-001-requirement-010"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/requirements/tender-001-requirement-011"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/requirements/tender-001-requirement-012"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/requirements/tender-001-requirement-013"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/requirements/tender-001-requirement-014"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/requirements/tender-001-requirement-015"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/requirements/tender-001-requirement-016"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/requirements/tender-001-requirement-017"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/requirements/tender-001-requirement-018"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/requirements/tender-001-requirement-019"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/requirements/tender-001-requirement-020"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/requirements/tender-001-requirement-021"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/requirements/tender-001-requirement-022"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/requirements/tender-001-requirement-023"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/requirements/tender-001-requirement-024"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/requirements/tender-001-requirement-025"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/requirements/tender-001-requirement-026"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/requirements/tender-001-requirement-027"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/requirements/tender-001-requirement-028"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/requirements/tender-001-requirement-029"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/requirements/tender-001-requirement-030"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/requirements/tender-001-requirement-031"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/requirements/tender-001-requirement-032"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/requirements/tender-001-requirement-033"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-001-requirement-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-001-requirement-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-001-requirement-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-001-requirement-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-001-requirement-005"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-001-requirement-006"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-001-requirement-007"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-001-requirement-008"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-001-requirement-009"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-001-requirement-010"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-001-requirement-011"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-001-requirement-012"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-001-requirement-013"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-001-requirement-014"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-001-requirement-015"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-001-requirement-016"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-001-requirement-017"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-001-requirement-018"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-001-requirement-019"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-001-requirement-020"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-001-requirement-021"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-001-requirement-022"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-001-requirement-023"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-001-requirement-024"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-001-requirement-025"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-001-requirement-026"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-001-requirement-027"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-001-requirement-028"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-001-requirement-029"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-001-requirement-030"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-002-requirement-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-002-requirement-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-002-requirement-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-002-requirement-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-002-requirement-005"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-002-requirement-006"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-002-requirement-007"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-002-requirement-008"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-002-requirement-009"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-002-requirement-010"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-002-requirement-011"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-002-requirement-012"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-002-requirement-013"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-002-requirement-014"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-002-requirement-015"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-002-requirement-016"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-002-requirement-017"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/tenders/tender-002",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/requirements/tender-002-requirement-018"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/requirements/tender-001-requirement-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/requirements/tender-001-requirement-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/requirements/tender-001-requirement-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/requirements/tender-001-requirement-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/requirements/tender-001-requirement-005"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/requirements/tender-001-requirement-006"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/requirements/tender-001-requirement-007"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/requirements/tender-001-requirement-008"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/requirements/tender-001-requirement-009"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/requirements/tender-001-requirement-010"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/requirements/tender-001-requirement-011"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/requirements/tender-001-requirement-012"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/requirements/tender-001-requirement-013"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/requirements/tender-001-requirement-014"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/requirements/tender-001-requirement-015"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/requirements/tender-001-requirement-016"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/requirements/tender-001-requirement-018"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/requirements/tender-001-requirement-019"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/requirements/tender-001-requirement-020"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/requirements/tender-001-requirement-021"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/requirements/tender-001-requirement-022"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/requirements/tender-001-requirement-023"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/requirements/tender-001-requirement-024"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/requirements/tender-001-requirement-025"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/requirements/tender-001-requirement-026"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/requirements/tender-001-requirement-027"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/requirements/tender-001-requirement-028"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/requirements/tender-001-requirement-029"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/requirements/tender-001-requirement-030"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/requirements/tender-001-requirement-031"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/requirements/tender-001-requirement-032"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/requirements/tender-001-requirement-033"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/requirements/tender-001-requirement-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/requirements/tender-001-requirement-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/requirements/tender-001-requirement-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/requirements/tender-001-requirement-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/requirements/tender-001-requirement-005"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/requirements/tender-001-requirement-006"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/requirements/tender-001-requirement-007"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/requirements/tender-001-requirement-008"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/requirements/tender-001-requirement-009"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/requirements/tender-001-requirement-010"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/requirements/tender-001-requirement-011"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/requirements/tender-001-requirement-012"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/requirements/tender-001-requirement-013"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/requirements/tender-001-requirement-014"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/requirements/tender-001-requirement-015"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/requirements/tender-001-requirement-016"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/requirements/tender-001-requirement-017"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/requirements/tender-001-requirement-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/requirements/tender-001-requirement-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/requirements/tender-001-requirement-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/requirements/tender-001-requirement-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/requirements/tender-001-requirement-005"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/requirements/tender-001-requirement-006"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/requirements/tender-001-requirement-007"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/requirements/tender-001-requirement-008"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/requirements/tender-001-requirement-009"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/requirements/tender-001-requirement-010"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/requirements/tender-001-requirement-011"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/requirements/tender-001-requirement-012"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/requirements/tender-001-requirement-013"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/requirements/tender-001-requirement-014"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/requirements/tender-001-requirement-015"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/requirements/tender-001-requirement-016"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/requirements/tender-001-requirement-017"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/requirements/tender-001-requirement-018"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/requirements/tender-001-requirement-019"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/requirements/tender-001-requirement-020"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/requirements/tender-001-requirement-021"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/requirements/tender-001-requirement-022"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/requirements/tender-001-requirement-023"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/requirements/tender-001-requirement-024"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/requirements/tender-001-requirement-025"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/requirements/tender-001-requirement-026"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/requirements/tender-001-requirement-027"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/requirements/tender-001-requirement-028"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/requirements/tender-001-requirement-029"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/requirements/tender-001-requirement-030"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/requirements/tender-001-requirement-031"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/requirements/tender-001-requirement-032"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/requirements/tender-001-requirement-033"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/requirements/tender-001-requirement-034"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/requirements/tender-001-requirement-035"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/requirements/tender-001-requirement-036"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/requirements/tender-001-requirement-037"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/requirements/tender-001-requirement-038"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/requirements/tender-001-requirement-039"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/requirements/tender-001-requirement-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/requirements/tender-001-requirement-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/requirements/tender-001-requirement-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/requirements/tender-001-requirement-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/requirements/tender-001-requirement-005"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/requirements/tender-001-requirement-006"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/requirements/tender-001-requirement-007"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/requirements/tender-001-requirement-008"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/requirements/tender-001-requirement-009"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/requirements/tender-001-requirement-010"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/requirements/tender-001-requirement-011"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/requirements/tender-001-requirement-012"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/requirements/tender-001-requirement-013"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/requirements/tender-001-requirement-014"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/requirements/tender-001-requirement-015"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/requirements/tender-001-requirement-016"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/requirements/tender-001-requirement-017"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/requirements/tender-001-requirement-018"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/requirements/tender-001-requirement-019"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/requirements/tender-001-requirement-020"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/requirements/tender-001-requirement-021"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/requirements/tender-001-requirement-022"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/requirements/tender-001-requirement-023"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/requirements/tender-001-requirement-024"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/requirements/tender-001-requirement-025"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/requirements/tender-001-requirement-026"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/requirements/tender-001-requirement-027"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/requirements/tender-001-requirement-028"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/requirements/tender-001-requirement-029"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/requirements/tender-001-requirement-030"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/requirements/tender-001-requirement-031"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/requirements/tender-001-requirement-032"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/requirements/tender-001-requirement-033"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/requirements/tender-001-requirement-034"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/requirements/tender-001-requirement-035"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/requirements/tender-001-requirement-036"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/requirements/tender-001-requirement-037"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/requirements/tender-001-requirement-038"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/requirements/tender-001-requirement-039"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/requirements/tender-001-requirement-040"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/requirements/tender-001-requirement-041"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/requirements/tender-001-requirement-042"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/requirements/tender-001-requirement-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/requirements/tender-001-requirement-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/requirements/tender-001-requirement-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/requirements/tender-001-requirement-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/requirements/tender-001-requirement-005"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/requirements/tender-001-requirement-006"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/requirements/tender-001-requirement-007"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/requirements/tender-001-requirement-008"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/requirements/tender-001-requirement-009"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/requirements/tender-001-requirement-010"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/requirements/tender-001-requirement-011"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/requirements/tender-001-requirement-012"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/requirements/tender-001-requirement-013"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/requirements/tender-001-requirement-014"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/tenders/tender-001",
+"o": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/requirements/tender-001-requirement-015"
+}
+]

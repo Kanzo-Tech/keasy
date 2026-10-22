@@ -1,0 +1,78 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-002",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-002-lot-002-deliverable-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-002",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-002-lot-002-deliverable-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-002",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-002-lot-002-deliverable-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-002",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-002-lot-002-deliverable-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-002",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-002-lot-002-deliverable-005"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-002",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-002-lot-002-deliverable-006"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-002",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-002-lot-002-deliverable-007"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-002",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-002-lot-002-deliverable-008"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-002",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-002-lot-002-deliverable-009"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-002",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-002-lot-002-deliverable-010"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-002",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deliverables/tender-002-lot-002-deliverable-011"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-002-lot-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-002-lot-001-deliverable-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-002-lot-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-002-lot-001-deliverable-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-002-lot-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-002-lot-002-deliverable-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-002-lot-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-002-lot-002-deliverable-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-002-lot-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-002-lot-002-deliverable-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-002-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-002-lot-003-deliverable-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-003-lot-001-deliverable-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/deliverables/tender-003-lot-003-deliverable-001"
+}
+]

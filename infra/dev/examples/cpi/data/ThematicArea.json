@@ -1,0 +1,202 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/themes/accesibilidad",
+"label": "accesibilidad",
+"prefLabel": "accesibilidad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/themes/administracion-electronica",
+"label": "administración electrónica",
+"prefLabel": "administración electrónica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/themes/antimicrobial-resistance-amr",
+"label": "antimicrobial resistance (AMR)",
+"prefLabel": "antimicrobial resistance (AMR)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/themes/automocion",
+"label": "automoción",
+"prefLabel": "automoción"
+},
+{
+"iri": "https://example.org/cpi-demo/id/themes/biobancos",
+"label": "Biobancos",
+"prefLabel": "Biobancos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/themes/ciberataques",
+"label": "ciberataques",
+"prefLabel": "ciberataques"
+},
+{
+"iri": "https://example.org/cpi-demo/id/themes/ciberseguridad",
+"label": "Ciberseguridad",
+"prefLabel": "Ciberseguridad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/themes/cirugia-laparoscopica",
+"label": "cirugía laparoscópica",
+"prefLabel": "cirugía laparoscópica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/themes/cirugia-minimamente-invasiva",
+"label": "Cirugía mínimamente invasiva",
+"prefLabel": "Cirugía mínimamente invasiva"
+},
+{
+"iri": "https://example.org/cpi-demo/id/themes/comunicacion",
+"label": "comunicación",
+"prefLabel": "comunicación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/themes/construccion-industrializada",
+"label": "construcción industrializada",
+"prefLabel": "construcción industrializada"
+},
+{
+"iri": "https://example.org/cpi-demo/id/themes/construccion-sostenible",
+"label": "construcción sostenible",
+"prefLabel": "construcción sostenible"
+},
+{
+"iri": "https://example.org/cpi-demo/id/themes/depuracion-de-aguas-residuales",
+"label": "depuración de aguas residuales",
+"prefLabel": "depuración de aguas residuales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/themes/desalacion-de-agua",
+"label": "Desalación de agua",
+"prefLabel": "Desalación de agua"
+},
+{
+"iri": "https://example.org/cpi-demo/id/themes/diagnostico-medico-por-imagen",
+"label": "diagnóstico médico por imagen",
+"prefLabel": "diagnóstico médico por imagen"
+},
+{
+"iri": "https://example.org/cpi-demo/id/themes/discapacidad-auditiva",
+"label": "discapacidad auditiva",
+"prefLabel": "discapacidad auditiva"
+},
+{
+"iri": "https://example.org/cpi-demo/id/themes/economia-circular",
+"label": "Economía Circular",
+"prefLabel": "Economía Circular"
+},
+{
+"iri": "https://example.org/cpi-demo/id/themes/eficiencia-energetica",
+"label": "Eficiencia energética",
+"prefLabel": "Eficiencia energética"
+},
+{
+"iri": "https://example.org/cpi-demo/id/themes/emergencias",
+"label": "Emergencias",
+"prefLabel": "Emergencias"
+},
+{
+"iri": "https://example.org/cpi-demo/id/themes/emprendimiento",
+"label": "Emprendimiento",
+"prefLabel": "Emprendimiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/themes/formacion-en-cirugia-robotica",
+"label": "formación en cirugía robótica",
+"prefLabel": "formación en cirugía robótica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/themes/gestion-administrativa",
+"label": "gestión administrativa",
+"prefLabel": "gestión administrativa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/themes/gestion-de-residuos",
+"label": "gestión de residuos",
+"prefLabel": "gestión de residuos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/themes/imagen-cerebral",
+"label": "imagen cerebral",
+"prefLabel": "imagen cerebral"
+},
+{
+"iri": "https://example.org/cpi-demo/id/themes/industria-4-0",
+"label": "Industria 4.0",
+"prefLabel": "Industria 4.0"
+},
+{
+"iri": "https://example.org/cpi-demo/id/themes/infection-control",
+"label": "infection control",
+"prefLabel": "infection control"
+},
+{
+"iri": "https://example.org/cpi-demo/id/themes/inteligencia-artificial",
+"label": "Inteligencia Artificial",
+"prefLabel": "Inteligencia Artificial"
+},
+{
+"iri": "https://example.org/cpi-demo/id/themes/interoperabilidad-sanitaria",
+"label": "Interoperabilidad sanitaria",
+"prefLabel": "Interoperabilidad sanitaria"
+},
+{
+"iri": "https://example.org/cpi-demo/id/themes/medicina-de-precision",
+"label": "medicina de precisión",
+"prefLabel": "medicina de precisión"
+},
+{
+"iri": "https://example.org/cpi-demo/id/themes/microcirugia",
+"label": "microcirugía",
+"prefLabel": "microcirugía"
+},
+{
+"iri": "https://example.org/cpi-demo/id/themes/motorizacion",
+"label": "MOTORIZACIÓN",
+"prefLabel": "MOTORIZACIÓN"
+},
+{
+"iri": "https://example.org/cpi-demo/id/themes/parques-empresariales-inteligentes",
+"label": "parques empresariales inteligentes",
+"prefLabel": "parques empresariales inteligentes"
+},
+{
+"iri": "https://example.org/cpi-demo/id/themes/rapid-detection",
+"label": "rapid detection",
+"prefLabel": "rapid detection"
+},
+{
+"iri": "https://example.org/cpi-demo/id/themes/robotica-quirurgica",
+"label": "Robótica quirúrgica",
+"prefLabel": "Robótica quirúrgica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/themes/salud",
+"label": "Salud",
+"prefLabel": "Salud"
+},
+{
+"iri": "https://example.org/cpi-demo/id/themes/seguridad",
+"label": "Seguridad",
+"prefLabel": "Seguridad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/themes/tecnologias-del-agua",
+"label": "Tecnologías del agua",
+"prefLabel": "Tecnologías del agua"
+},
+{
+"iri": "https://example.org/cpi-demo/id/themes/transformacion-digital",
+"label": "Transformación digital",
+"prefLabel": "Transformación digital"
+},
+{
+"iri": "https://example.org/cpi-demo/id/themes/traslado-de-presos",
+"label": "traslado de presos",
+"prefLabel": "traslado de presos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/themes/vivienda-protegida",
+"label": "vivienda protegida",
+"prefLabel": "vivienda protegida"
+}
+]

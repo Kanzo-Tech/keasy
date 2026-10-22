@@ -1,0 +1,106 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/ip-ownership-allocations/tender-001-ip-001-ownership-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/contratista"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/ip-ownership-allocations/tender-001-ip-002-ownership-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/ayuntamiento-de-alicante"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/ip-ownership-allocations/tender-001-ip-002-ownership-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/ayuntamiento-de-alicante"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/ip-ownership-allocations/tender-001-ip-002-ownership-003",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/ayuntamiento-de-alicante"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-ownership-allocations/tender-001-ip-001-ownership-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/entidad-o-entidades-contratistas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-ownership-allocations/tender-002-ip-001-ownership-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/entidad-contratista"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-ownership-allocations/tender-002-ip-002-ownership-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/entidad-o-entidades-contratistas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/ip-ownership-allocations/tender-001-ip-001-ownership-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/la-empresa-o-empresas-adjudicatarias"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/ip-ownership-allocations/tender-001-ip-001-ownership-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/la-parte-que-los-introduzca-en-el-proyecto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/ip-ownership-allocations/tender-001-ip-001-ownership-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/adjudicatario"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/ip-ownership-allocations/tender-001-ip-001-ownership-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/su-titular"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-ownership-allocations/tender-001-ip-001-ownership-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/biogipuzkoa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-ownership-allocations/tender-001-ip-002-ownership-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/biogipuzkoa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-ownership-allocations/tender-002-ip-002-ownership-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/los-contratistas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-ownership-allocations/tender-003-ip-001-ownership-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/laboratori-de-referencia-de-catalunya"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-ownership-allocations/tender-003-ip-002-ownership-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/los-contratistas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/ip-ownership-allocations/tender-001-ip-001-ownership-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/contratista"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/ip-ownership-allocations/tender-001-ip-001-ownership-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/la-parte-que-los-introduzca-en-el-acuerdo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/ip-ownership-allocations/tender-001-ip-001-ownership-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/el-contratista-que-los-haya-generado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/ip-ownership-allocations/tender-001-ip-001-ownership-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/la-administracion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/ip-ownership-allocations/tender-001-ip-002-ownership-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/contratista"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/ip-ownership-allocations/tender-001-ip-001-ownership-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/ayuntamiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/ip-ownership-allocations/tender-001-ip-001-ownership-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/adjudicatario"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/ip-ownership-allocations/tender-001-ip-001-ownership-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/la-parte-que-sea-titular-de-los-mismos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/ip-ownership-allocations/tender-001-ip-001-ownership-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/cada-parte"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/ip-ownership-allocations/tender-001-ip-001-ownership-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-holder-role/cada-persona-contratista"
+}
+]

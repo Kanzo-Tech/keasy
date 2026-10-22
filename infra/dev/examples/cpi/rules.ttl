@@ -1,0 +1,59 @@
+# Reglas de calidad para el grafo CPI España (15 proyectos): un shapes graph SHACL Core que se
+# suelta en la insignia de reglas de Discover. Dicen lo que un expediente CPI completo debería
+# llevar, no lo que exigen las shapes del mapping, así que el grafo cumple y se queda corto.
+# Local, no va a git: describe datos del cliente.
+
+@prefix sh:   <http://www.w3.org/ns/shacl#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix cpi:  <https://example.org/ontology/cpi#> .
+@prefix :     <https://example.org/cpi-demo/rules#> .
+
+:Proyecto
+  a sh:NodeShape ;
+  sh:targetClass cpi:CPIProject ;
+  sh:name "Proyecto CPI" ;
+  sh:property [
+    sh:path cpi:isPromotedBy ;
+    sh:minCount 1 ;
+    sh:message "Un proyecto CPI tiene un órgano promotor." ;
+  ] ;
+  sh:property [
+    sh:path cpi:title ;
+    sh:minCount 1 ;
+    sh:message "Un proyecto CPI tiene título." ;
+  ] ;
+  sh:property [
+    sh:path cpi:hasTerritorialScope ;
+    sh:minCount 1 ;
+    sh:severity sh:Warning ;
+    sh:message "El proyecto no declara su ámbito territorial." ;
+  ] .
+
+:Criterio
+  a sh:NodeShape ;
+  sh:targetClass cpi:AwardCriterion ;
+  sh:name "Criterio de adjudicación" ;
+  sh:property [
+    sh:path cpi:weight ;
+    sh:datatype xsd:double ;
+    sh:minCount 1 ;
+    sh:minInclusive 0 ;
+    sh:message "Un criterio de adjudicación declara su ponderación." ;
+  ] ;
+  sh:property [
+    sh:path cpi:evaluationMethod ;
+    sh:minCount 1 ;
+    sh:severity sh:Warning ;
+    sh:message "El criterio no dice cómo se evalúa (fórmula o juicio de valor)." ;
+  ] .
+
+:Organizacion
+  a sh:NodeShape ;
+  sh:targetClass cpi:Organization ;
+  sh:name "Organización" ;
+  sh:property [
+    sh:path cpi:organizationType ;
+    sh:minCount 1 ;
+    sh:severity sh:Warning ;
+    sh:message "La organización no tiene tipo (empresa, universidad, centro tecnológico…)." ;
+  ] .

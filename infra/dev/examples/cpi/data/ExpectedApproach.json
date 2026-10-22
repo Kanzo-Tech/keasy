@@ -1,0 +1,1107 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/expected-approaches/approach-001",
+"label": "la solución tecnológicamente innovadora",
+"description": "la solución tecnológicamente innovadora"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/expected-approaches/approach-002",
+"label": "los aspectos técnicos y funcionales referidos a los tres requisitos descritos e…",
+"description": "los aspectos técnicos y funcionales referidos a los tres requisitos descritos en el artículo 2 de la Resolución"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/expected-approaches/approach-003",
+"label": "diseño e implementación de sistemas que mejoren la comunicación y la interacció…",
+"description": "diseño e implementación de sistemas que mejoren la comunicación y la interacción de personas que padecen una discapacidad auditiva severa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/expected-approaches/approach-004",
+"label": "comunicación del oyente y el discapacitado auditivo severo en tiempo real, de f…",
+"description": "comunicación del oyente y el discapacitado auditivo severo en tiempo real, de forma bidireccional y sin necesidad de estar apoyado por otra persona que deba realizar una actividad complementaria para lograr la comunicación e interacción"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/expected-approaches/approach-001",
+"label": "una solución tecnológica de Inteligencia Artificial para su utilización por par…",
+"description": "una solución tecnológica de Inteligencia Artificial para su utilización por parte de la ciudadanía a la hora de acceder a la página web municipal"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/expected-approaches/approach-002",
+"label": "una aplicación informática que, mediante uno o varios módulos, resuelva de form…",
+"description": "una aplicación informática que, mediante uno o varios módulos, resuelva de forma integrada las necesidades municipales de acceso por parte del ciudadano a la consulta, información, y gestión administrativa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/expected-approaches/approach-003",
+"label": "propuestas de tecnología puntera que hagan uso de las capacidades del sistema d…",
+"description": "propuestas de tecnología puntera que hagan uso de las capacidades del sistema de ciencia tecnología e innovación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/expected-approaches/approach-004",
+"label": "procedimientos automáticos de copia de seguridad y restauración, con un sistema…",
+"description": "procedimientos automáticos de copia de seguridad y restauración, con un sistema de permisos que contemple la determinación de diversos perfiles de usuario"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/expected-approaches/approach-005",
+"label": "funcionalidades de consulta y gestión descentralizada para los distintos depart…",
+"description": "funcionalidades de consulta y gestión descentralizada para los distintos departamentos municipales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/expected-approaches/approach-006",
+"label": "mecanismos y procedimientos de integración necesarios para interoperar con ellos",
+"description": "mecanismos y procedimientos de integración necesarios para interoperar con ellos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/expected-approaches/approach-007",
+"label": "integrar herramientas especializadas en realizar una tarea de manera excelente,…",
+"description": "integrar herramientas especializadas en realizar una tarea de manera excelente, construyendo un ecosistema de aplicaciones y servicios"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/expected-approaches/approach-008",
+"label": "posibles soluciones de Inteligencia Artificial aplicables a as aplicaciones inf…",
+"description": "posibles soluciones de Inteligencia Artificial aplicables a as aplicaciones informáticas de consulta, trámite Y gestión existentes en el ayuntamiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/expected-approaches/approach-009",
+"label": "Servicio de Integración/compatibilidad con las diferentes plataformas tanto int…",
+"description": "Servicio de Integración/compatibilidad con las diferentes plataformas tanto internas como externas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/expected-approaches/approach-010",
+"label": "Posibles soluciones innovadoras",
+"description": "Posibles soluciones innovadoras"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/expected-approaches/approach-001",
+"label": "soluciones innovadoras destinadas a dar respuesta a los retos que se plantean m…",
+"description": "soluciones innovadoras destinadas a dar respuesta a los retos que se plantean mediante tecnologías que superen las prestaciones de las existentes actualmente en el mercado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/expected-approaches/approach-002",
+"label": "una plataforma robótica para cirugía laparoscópica",
+"description": "una plataforma robótica para cirugía laparoscópica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/expected-approaches/approach-003",
+"label": "nuevos abordajes quirúrgicos, mejoras en la ergonomía de los cirujanos, avances…",
+"description": "nuevos abordajes quirúrgicos, mejoras en la ergonomía de los cirujanos, avances en los sistemas de visión para todo el equipo quirúrgico y la disponibilidad de nuevas herramientas de formación portables"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/expected-approaches/approach-004",
+"label": "una plataforma robótica teleoperada para microcirugía reconstructiva",
+"description": "una plataforma robótica teleoperada para microcirugía reconstructiva"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/expected-approaches/approach-005",
+"label": "microinstrumentos robóticos con una alta maniobrabilidad y precisión",
+"description": "microinstrumentos robóticos con una alta maniobrabilidad y precisión"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/expected-approaches/approach-006",
+"label": "técnicas de imagen 3D, virtual, aumentada y mixta",
+"description": "técnicas de imagen 3D, virtual, aumentada y mixta"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/expected-approaches/approach-007",
+"label": "un set de microinstrumentos robóticos multiarticulados",
+"description": "un set de microinstrumentos robóticos multiarticulados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/expected-approaches/approach-008",
+"label": "el sistema de control intuitivo de los microinstrumentos robóticos",
+"description": "el sistema de control intuitivo de los microinstrumentos robóticos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/expected-approaches/approach-009",
+"label": "El desarrollo una plataforma robótica para cirugía laparoscópica que resuelva l…",
+"description": "El desarrollo una plataforma robótica para cirugía laparoscópica que resuelva las limitaciones de los sistemas actuales para cirugía robótica laparoscópica disponibles en el mercado."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/expected-approaches/approach-010",
+"label": "El desarrollo de una plataforma robótica teleoperada para microcirugía reconstr…",
+"description": "El desarrollo de una plataforma robótica teleoperada para microcirugía reconstructiva, constituida por microinstrumentos robóticos con una alta maniobrabilidad y precisión"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/expected-approaches/approach-011",
+"label": "Sistema de visión que proporciona visión tridimensional del área de trabajo y e…",
+"description": "Sistema de visión que proporciona visión tridimensional del área de trabajo y el uso de nuevas tecnologías de asistencia quirúrgica, como realidad aumentada, realidad mixta y fluorescencia, a todo el equipo quirúrgico."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/expected-approaches/approach-012",
+"label": "Plataforma de formación portable para robótica quirúrgica laparoscópica.",
+"description": "Plataforma de formación portable para robótica quirúrgica laparoscópica."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/expected-approaches/approach-013",
+"label": "Microinstrumentos robóticos articulados que permitan la micromanipulación de te…",
+"description": "Microinstrumentos robóticos articulados que permitan la micromanipulación de tejidos blandos de pequeño tamaño."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/expected-approaches/approach-001",
+"label": "investigación y posterior desarrollo de una prueba de concepto para la detecció…",
+"description": "investigación y posterior desarrollo de una prueba de concepto para la detección de bots y servidores de comando y control (C&C)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/expected-approaches/approach-002",
+"label": "se seleccionará una estrategia de detección de bots, se implantará en una PoC y…",
+"description": "se seleccionará una estrategia de detección de bots, se implantará en una PoC y se verificará su viabilidad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/expected-approaches/approach-003",
+"label": "se seleccionará una estrategia de detección de paneles C&C, se implantará en un…",
+"description": "se seleccionará una estrategia de detección de paneles C&C, se implantará en una PoC y se verificará su viabilidad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/expected-approaches/approach-004",
+"label": "sistema de generación de dominios",
+"description": "sistema de generación de dominios"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/expected-approaches/approach-005",
+"label": "'forzar' la generación del dominio para que incluya palabras identificativas de…",
+"description": "'forzar' la generación del dominio para que incluya palabras identificativas del tipo de servicio oculto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/expected-approaches/approach-006",
+"label": "establecimiento de nodo intermedio en TOR y obtención de metadatos, entre ellos…",
+"description": "establecimiento de nodo intermedio en TOR y obtención de metadatos, entre ellos dominios .onion a los que se conectan los usuarios"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/expected-approaches/approach-007",
+"label": "una prueba de concepto para la detección, categorización y predicción automátic…",
+"description": "una prueba de concepto para la detección, categorización y predicción automática de ciberataques"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/expected-approaches/approach-008",
+"label": "El sistema recopila datos sobre la conexión: IP, Fecha/hora, ASN, Datos geoposi…",
+"description": "El sistema recopila datos sobre la conexión: IP, Fecha/hora, ASN, Datos geoposicionamiento…"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/expected-approaches/approach-009",
+"label": "El sistema etiqueta la conexión como ciberataque. Descarta las conexiones no ma…",
+"description": "El sistema etiqueta la conexión como ciberataque. Descarta las conexiones no maliciosas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/expected-approaches/approach-010",
+"label": "El sistema categoriza las conexiones etiquetadas como ciberataque.",
+"description": "El sistema categoriza las conexiones etiquetadas como ciberataque."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/expected-approaches/approach-011",
+"label": "El sistema alerta al operador proporcionándole información sobre el ciberataque.",
+"description": "El sistema alerta al operador proporcionándole información sobre el ciberataque."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/expected-approaches/approach-012",
+"label": "Sistema recopilando, analizando y correlando datos de conexiones sobre las máqu…",
+"description": "Sistema recopilando, analizando y correlando datos de conexiones sobre las máquinas expuestas."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/expected-approaches/approach-013",
+"label": "El sistema predice y alerta al operador sobre un posible ciberataque.",
+"description": "El sistema predice y alerta al operador sobre un posible ciberataque."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/expected-approaches/approach-014",
+"label": "Una base de conocimiento inicial (KB) con las fuentes, corpus, documentales, da…",
+"description": "Una base de conocimiento inicial (KB) con las fuentes, corpus, documentales, data-sets, etc. seleccionadas para la prueba de concepto."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/expected-approaches/approach-015",
+"label": "Algoritmos del sistema, tal que dado uno o más indicadores de compromiso (podrá…",
+"description": "Algoritmos del sistema, tal que dado uno o más indicadores de compromiso (podrán incluir o no el sector o nombre de la entidad atacada), el sistema genere un informe de potencial atribución/motivación basado en la información almacenada en la base de conocimiento del punto 1"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/expected-approaches/approach-016",
+"label": "Informe con metodologías y fuentes para mantener y mejorar los puntos 1 y 2 ant…",
+"description": "Informe con metodologías y fuentes para mantener y mejorar los puntos 1 y 2 anteriores"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/expected-approaches/approach-017",
+"label": "montar una infraestructura hardware / software completa para la ejecución de mu…",
+"description": "montar una infraestructura hardware / software completa para la ejecución de muestras de malware pertenecientes a botnets"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/expected-approaches/approach-018",
+"label": "la investigación y posterior desarrollo de una prueba de concepto para la detec…",
+"description": "la investigación y posterior desarrollo de una prueba de concepto para la detección de dominios .onion que no estén siendo indexados por fuentes públicas (tipo Ahmia)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/expected-approaches/approach-019",
+"label": "ampliacion del alcance inicial del reto de obtención de dominios en la red TOR…",
+"description": "ampliacion del alcance inicial del reto de obtención de dominios en la red TOR a otras redes anónimas (I2P, 0net y Freenet)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/expected-approaches/approach-020",
+"label": "ampliación del alcance inicial del reto incluyendo la comprobación de estado (a…",
+"description": "ampliación del alcance inicial del reto incluyendo la comprobación de estado (activo, inactivo) de los dominios obtenidos, a partir de soluciones innovadoras que minimicen el tiempo de comprobación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/expected-approaches/approach-021",
+"label": "ampliación de alcance incluyendo el rastreo de servicios en redes anónimas",
+"description": "ampliación de alcance incluyendo el rastreo de servicios en redes anónimas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/expected-approaches/approach-022",
+"label": "investigación y posterior desarrollo de una prueba de concepto para la detecció…",
+"description": "investigación y posterior desarrollo de una prueba de concepto para la detección, categorización y predicción automática de ciberataques"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/expected-approaches/approach-023",
+"label": "se trabajará en base a taxonomías o estándares de facto como MITRE ATT&ACK",
+"description": "se trabajará en base a taxonomías o estándares de facto como MITRE ATT&ACK"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/expected-approaches/approach-024",
+"label": "interactuar con el atacante o amenaza para poder ayudar en una mejor clasificac…",
+"description": "interactuar con el atacante o amenaza para poder ayudar en una mejor clasificación y predicción de sus movimientos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/expected-approaches/approach-025",
+"label": "la investigación y posterior desarrollo de una prueba de concepto, según el cas…",
+"description": "la investigación y posterior desarrollo de una prueba de concepto, según el caso de uso que se propone"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/expected-approaches/approach-026",
+"label": "tener entradas de información desde otros sistemas, entre los que pueden estar…",
+"description": "tener entradas de información desde otros sistemas, entre los que pueden estar los resultantes de otros retos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/expected-approaches/approach-027",
+"label": "El diseño debe soportar el ciclo completo de inteligencia, garantizandose el fe…",
+"description": "El diseño debe soportar el ciclo completo de inteligencia, garantizandose el feedback que permita la mejora continua"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/expected-approaches/approach-001",
+"label": "emplear herramientas de Compra Pública Innovadora (CPI), en concreto CPP (compr…",
+"description": "emplear herramientas de Compra Pública Innovadora (CPI), en concreto CPP (compra pública precomercial)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/expected-approaches/approach-002",
+"label": "Interfaz hombre-máquina con capacidades hápticas requeridas",
+"description": "Interfaz hombre-máquina con capacidades hápticas requeridas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/expected-approaches/approach-003",
+"label": "Uno o varios actuadores con capacidad de absorción de fuerzas externas y capaci…",
+"description": "Uno o varios actuadores con capacidad de absorción de fuerzas externas y capacidad de detección de las mismas para su aplicación en la operación de tejidos blandos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/expected-approaches/approach-004",
+"label": "Análisis del vídeo quirúrgico para la detección de estructuras anatómicas de in…",
+"description": "Análisis del vídeo quirúrgico para la detección de estructuras anatómicas de interés, basado en técnicas de inteligencia artificial, entre otras posibles técnicas adicionales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/expected-approaches/approach-005",
+"label": "Modelado del paciente (Digital Twin)",
+"description": "Modelado del paciente (Digital Twin)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/expected-approaches/approach-006",
+"label": "Planificación quirúrgica de las tareas y/o procedimientos asistidos por robot a…",
+"description": "Planificación quirúrgica de las tareas y/o procedimientos asistidos por robot a llevar a cabo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/expected-approaches/approach-007",
+"label": "Detección de zonas anatómicas de riesgo, clasificación y predicción de resultad…",
+"description": "Detección de zonas anatómicas de riesgo, clasificación y predicción de resultados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/expected-approaches/approach-008",
+"label": "Sistema robotizado capaz de realizar tareas y/o procedimientos específicos en l…",
+"description": "Sistema robotizado capaz de realizar tareas y/o procedimientos específicos en laparoscopia de manera autónoma, con la supervisión del cirujano"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/expected-approaches/approach-009",
+"label": "Desarrollo de entornos formativos basados en realidad aumentada y/o metaverso p…",
+"description": "Desarrollo de entornos formativos basados en realidad aumentada y/o metaverso para que los profesionales sanitarios aprendan a utilizar el sistema robótico a desarrollar"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/expected-approaches/approach-010",
+"label": "Uso de datos creados a partir de escenarios formativos previos en el metaverso…",
+"description": "Uso de datos creados a partir de escenarios formativos previos en el metaverso o modelado de pacientes virtuales (Digital Twin) para el desarrollo de robots autónomos en cirugía laparoscópica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/expected-approaches/approach-011",
+"label": "Métodos y herramientas de IA para la identificación y detección de estructuras…",
+"description": "Métodos y herramientas de IA para la identificación y detección de estructuras de interés, así como para la automatización de tareas y procedimientos en cirugía laparoscópica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/expected-approaches/approach-012",
+"label": "Robot quirúrgico con software de asistencia quirúrgica integrada aplicado a la…",
+"description": "Robot quirúrgico con software de asistencia quirúrgica integrada aplicado a la cirugía laparoscópica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/expected-approaches/approach-013",
+"label": "Entornos basados en el metaverso para la formación en robótica quirúrgica",
+"description": "Entornos basados en el metaverso para la formación en robótica quirúrgica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/expected-approaches/approach-014",
+"label": "Modelos digitales (digital twin) para el desarrollo de entornos formativos en c…",
+"description": "Modelos digitales (digital twin) para el desarrollo de entornos formativos en cirugía robótica y su uso para la automatización de tareas y/o procedimientos en cirugía laparoscópica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/expected-approaches/approach-015",
+"label": "Realidad Aumentada para la formación en cirugía robótica laparoscópica",
+"description": "Realidad Aumentada para la formación en cirugía robótica laparoscópica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/expected-approaches/approach-016",
+"label": "propuestas de soluciones innovadoras para el reto indicado en el Anexo correspo…",
+"description": "propuestas de soluciones innovadoras para el reto indicado en el Anexo correspondiente."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/expected-approaches/approach-017",
+"label": "con asiento confortable para los pacientes (evitando las camillas)",
+"description": "con asiento confortable para los pacientes (evitando las camillas)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/expected-approaches/approach-018",
+"label": "este escáner dedicado será portátil, de reducidas dimensiones y bajo coste y ma…",
+"description": "este escáner dedicado será portátil, de reducidas dimensiones y bajo coste y mantenimiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/expected-approaches/approach-019",
+"label": "integrar la imagen CT (Tomografía Computarizada) junto con la imagen PET",
+"description": "integrar la imagen CT (Tomografía Computarizada) junto con la imagen PET"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/expected-approaches/approach-020",
+"label": "1 vehículo de 9 plazas.",
+"description": "1 vehículo de 9 plazas."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/expected-approaches/approach-021",
+"label": "1 vehículo con un mínimo de 35 plazas.",
+"description": "1 vehículo con un mínimo de 35 plazas."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/expected-approaches/approach-022",
+"label": "vehículo de mayor número de plazas tendría la capacidad funcional de cooperar c…",
+"description": "vehículo de mayor número de plazas tendría la capacidad funcional de cooperar como nodriza para el trasvase de DPyP a los furgones y viceversa."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/expected-approaches/approach-023",
+"label": "motorización ' emisiones cero'",
+"description": "motorización ' emisiones cero'"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/expected-approaches/approach-024",
+"label": "materiales innovadores que presenten propiedades ventajosas frente a los tradic…",
+"description": "materiales innovadores que presenten propiedades ventajosas frente a los tradicionales aceros empleados en los modelos actuales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/expected-approaches/approach-025",
+"label": "Comunicaciones en tiempo real con un centro de control remoto",
+"description": "Comunicaciones en tiempo real con un centro de control remoto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/expected-approaches/approach-026",
+"label": "Sensorización inteligente con capacidad de intercomunicación y monitorización r…",
+"description": "Sensorización inteligente con capacidad de intercomunicación y monitorización remotas."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/expected-approaches/approach-027",
+"label": "Se integrará un CECO con comunicación permanente con la flota",
+"description": "Se integrará un CECO con comunicación permanente con la flota"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/expected-approaches/approach-028",
+"label": "Se integrarán sistemas automáticos de lavado, desinfección y desodorización de…",
+"description": "Se integrarán sistemas automáticos de lavado, desinfección y desodorización de las celdas y WC"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/expected-approaches/approach-029",
+"label": "La automatización de subtareas quirúrgicas repetitivas, como la sutura, el cort…",
+"description": "La automatización de subtareas quirúrgicas repetitivas, como la sutura, el corte y la disección, incluso el docking (acople) del robot al escenario quirúrgico"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/expected-approaches/approach-030",
+"label": "El metaverso quirúrgico puede ser empleado para describir un entorno de formaci…",
+"description": "El metaverso quirúrgico puede ser empleado para describir un entorno de formación virtual"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/expected-approaches/approach-031",
+"label": "el uso de los datos creados a partir de todos los escenarios formativos anterio…",
+"description": "el uso de los datos creados a partir de todos los escenarios formativos anteriores del metaverso para su uso, a través de la inteligencia artificial, para el desarrollo de los robots autónomos en cirugía laparoscópica."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/expected-approaches/approach-001",
+"label": "point-of-care diagnostics, rapid, affordable, continuous, and autonomous multi-…",
+"description": "point-of-care diagnostics, rapid, affordable, continuous, and autonomous multi-pathogen diagnostics"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/expected-approaches/approach-002",
+"label": "Antibiotic Susceptibility Testing (AST) diagnostic technologies to identify all…",
+"description": "Antibiotic Susceptibility Testing (AST) diagnostic technologies to identify all the resistance phenotypes and / or genotypes present within a clinical sample"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/expected-approaches/approach-003",
+"label": "information management and clinical decision support",
+"description": "information management and clinical decision support"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/expected-approaches/approach-004",
+"label": "rapid detection tools and / or systems and the means by which the results and i…",
+"description": "rapid detection tools and / or systems and the means by which the results and information they produce can be managed effectively and transferred to the right people in 'real time'"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/expected-approaches/approach-005",
+"label": "easy visual access to guidance on testing and treatment according to gold stand…",
+"description": "easy visual access to guidance on testing and treatment according to gold standard guidelines and protocols"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/expected-approaches/approach-006",
+"label": "dynamic and remain up to date with regard to the changing AMR environment and e…",
+"description": "dynamic and remain up to date with regard to the changing AMR environment and epidemiological data"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/expected-approaches/approach-007",
+"label": "customisable to the specific healthcare environment and the workflow and priori…",
+"description": "customisable to the specific healthcare environment and the workflow and priorities of the user, and able to interface with their existing IT systems"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/expected-approaches/approach-008",
+"label": "an integrated package of measures that can be tailored to the healthcare facili…",
+"description": "an integrated package of measures that can be tailored to the healthcare facility and be flexibly deployed for the effective and pro-active detection and control of multidrug-resistant organisms"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/expected-approaches/approach-009",
+"label": "rapid detection systems that may be standalone or may be implemented together w…",
+"description": "rapid detection systems that may be standalone or may be implemented together with smart AMR management mechanisms"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/expected-approaches/approach-010",
+"label": "Rapid and accurate detection of multi-drug resistant organisms (MDROs) identify…",
+"description": "Rapid and accurate detection of multi-drug resistant organisms (MDROs) identifying the specific MDRO and the determinant of resistance, and ideally antibiotic susceptibility patterns"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/expected-approaches/approach-011",
+"label": "Enable rapid differentiation between viral, bacterial, fungal and parasitic inf…",
+"description": "Enable rapid differentiation between viral, bacterial, fungal and parasitic infections"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/expected-approaches/approach-012",
+"label": "Transfer detection results automatically to the right people within the clinica…",
+"description": "Transfer detection results automatically to the right people within the clinical and AMR management workflow in 'real time'"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/expected-approaches/approach-013",
+"label": "Enable the secure storage and clinical access to pertinent information about a…",
+"description": "Enable the secure storage and clinical access to pertinent information about a patient's AMR status"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/expected-approaches/approach-014",
+"label": "Store and analyse data on detected infections and colonisation episodes of the…",
+"description": "Store and analyse data on detected infections and colonisation episodes of the target microorganisms"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/expected-approaches/approach-001",
+"label": "una interfaz backoffice gestionada por los perfiles de administradores",
+"description": "una interfaz backoffice gestionada por los perfiles de administradores"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/expected-approaches/approach-002",
+"label": "se partirá de un conjunto mínimo de datos",
+"description": "se partirá de un conjunto mínimo de datos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/expected-approaches/approach-003",
+"label": "adqui rir la interoperabilidad semántica va a requerir una transformación efici…",
+"description": "adqui rir la interoperabilidad semántica va a requerir una transformación eficiente"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/expected-approaches/approach-004",
+"label": "nuevo módulo de interoperabilidad",
+"description": "nuevo módulo de interoperabilidad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/expected-approaches/approach-005",
+"label": "Se trataría de un sistema de entrada y salida.",
+"description": "Se trataría de un sistema de entrada y salida."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/expected-approaches/approach-006",
+"label": "Se podría llegar a desarrollar colaboración públic o-privada",
+"description": "Se podría llegar a desarrollar colaboración públic o-privada"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/expected-approaches/approach-007",
+"label": "Capa de normalización semántica",
+"description": "Capa de normalización semántica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/expected-approaches/approach-008",
+"label": "Se harán uso de subsets y arquetipos para codificar, estructurar y representar",
+"description": "Se harán uso de subsets y arquetipos para codificar, estructurar y representar"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/expected-approaches/approach-009",
+"label": "validación contra la norma de los ficheros XML que se reciban desde otros siste…",
+"description": "validación contra la norma de los ficheros XML que se reciban desde otros sistemas así como de su parseo a objetos acordes con el modelo de referencia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/expected-approaches/approach-010",
+"label": "servicios proporcionados por el servidor de terminologías de la Conselleria de…",
+"description": "servicios proporcionados por el servidor de terminologías de la Conselleria de Sanitat Universal i Salut Pública (CSUiSP) para facilitar los mapeos entre terminologías y clasificaciones"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/expected-approaches/approach-011",
+"label": "Capa de almacenamiento de datos",
+"description": "Capa de almacenamiento de datos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/expected-approaches/approach-012",
+"label": "Servicios de petición y actualización de datos",
+"description": "Servicios de petición y actualización de datos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/expected-approaches/approach-013",
+"label": "Servicios comunes",
+"description": "Servicios comunes"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/expected-approaches/approach-014",
+"label": "Capa de interfaz de usuario",
+"description": "Capa de interfaz de usuario"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/expected-approaches/approach-015",
+"label": "Desarrollos orientados a integración a través de servicios web (webservices)",
+"description": "Desarrollos orientados a integración a través de servicios web (webservices)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/expected-approaches/approach-001",
+"label": "desarrollo de un PET con eje z de al menos 100 cm",
+"description": "desarrollo de un PET con eje z de al menos 100 cm"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/expected-approaches/approach-002",
+"label": "LYSO",
+"description": "LYSO"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/expected-approaches/approach-003",
+"label": "xenón líquido (LXe)",
+"description": "xenón líquido (LXe)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/expected-approaches/approach-004",
+"label": "reconstrucción de imagen (basadas en DNNs)",
+"description": "reconstrucción de imagen (basadas en DNNs)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/expected-approaches/approach-005",
+"label": "un desarrollo simultáneo orientado producir dos demostradores, uno basado LYSO…",
+"description": "un desarrollo simultáneo orientado producir dos demostradores, uno basado LYSO y otro en LXe"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/expected-approaches/approach-006",
+"label": "una segunda fase en la que se construiría un PET dinámico de cuerpo completo pa…",
+"description": "una segunda fase en la que se construiría un PET dinámico de cuerpo completo para adultos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/expected-approaches/approach-007",
+"label": "un desarrollo en paralelo de las con posibilidades de éxito mientras, en parale…",
+"description": "un desarrollo en paralelo de las con posibilidades de éxito mientras, en paralelo, se diseñan y desarrollan biomarcadores"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/expected-approaches/approach-008",
+"label": "plataforma de procesamiento de imagen",
+"description": "plataforma de procesamiento de imagen"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/expected-approaches/approach-001",
+"label": "soluciones innovadoras",
+"description": "soluciones innovadoras"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/expected-approaches/approach-001",
+"label": "circuitos de economía circular",
+"description": "circuitos de economía circular"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/expected-approaches/approach-002",
+"label": "la incorporación de otros residuos a los procesos de depuración y tratamiento d…",
+"description": "la incorporación de otros residuos a los procesos de depuración y tratamiento de lodos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/expected-approaches/approach-003",
+"label": "fertilizantes para la enmienda de suelos agrícolas",
+"description": "fertilizantes para la enmienda de suelos agrícolas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/expected-approaches/approach-004",
+"label": "túneles de fermentación con uso de lodo seco como estructurante",
+"description": "túneles de fermentación con uso de lodo seco como estructurante"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/expected-approaches/approach-005",
+"label": "el bombeo del lodo líquido por tubería y deshidratación en las instalaciones de…",
+"description": "el bombeo del lodo líquido por tubería y deshidratación en las instalaciones del complejo ambiental"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/expected-approaches/approach-006",
+"label": "la reutilización de las Naves de Secado Solar con robotización del llenado, rem…",
+"description": "la reutilización de las Naves de Secado Solar con robotización del llenado, remoción y vaciado del lodo seco"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/expected-approaches/approach-007",
+"label": "sistemas de captación de energía (campo de captadores)",
+"description": "sistemas de captación de energía (campo de captadores)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/expected-approaches/approach-008",
+"label": "biofiltros convencionales para las Naves de Secado Solar y abatimiento químico…",
+"description": "biofiltros convencionales para las Naves de Secado Solar y abatimiento químico (scrubber) con biofiltros avanzados para la nave de compostaje"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/expected-approaches/approach-009",
+"label": "una plataforma inteligente de gestión avanzada de la calidad del aire y olores",
+"description": "una plataforma inteligente de gestión avanzada de la calidad del aire y olores"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/expected-approaches/approach-010",
+"label": "aula didáctica para la divulgación de la cultura del agua",
+"description": "aula didáctica para la divulgación de la cultura del agua"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/expected-approaches/approach-011",
+"label": "una unidad que lleve a cabo estudios con un alto carácter innovador, de un emin…",
+"description": "una unidad que lleve a cabo estudios con un alto carácter innovador, de un eminente carácter demostrativo y aplicación directa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/expected-approaches/approach-012",
+"label": "un centro de investigación en el que se puedan obtener conclusiones y recomenda…",
+"description": "un centro de investigación en el que se puedan obtener conclusiones y recomendaciones sobre el uso de compost de lodos en la agricultura"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/expected-approaches/approach-013",
+"label": "soluciones innovadoras para la valorización agrícola de lodos obtenidos de la d…",
+"description": "soluciones innovadoras para la valorización agrícola de lodos obtenidos de la depuración de aguas residuales y otros residuos orgánicos, a través de un novedoso modelo integrado de gestión"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/expected-approaches/approach-014",
+"label": "mantenga la valorización agrícola mediante cocompostaje",
+"description": "mantenga la valorización agrícola mediante cocompostaje"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/expected-approaches/approach-015",
+"label": "enfoques que supongan un cambio radical de los procesos o incluso del modelo de…",
+"description": "enfoques que supongan un cambio radical de los procesos o incluso del modelo de valorización"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/expected-approaches/approach-016",
+"label": "la integración de residuos de fuentes heterogéneas (lodos de depuración de agua…",
+"description": "la integración de residuos de fuentes heterogéneas (lodos de depuración de aguas residuales con diversos orígenes, residuos forestales, residuos agrícolas) y su aprovechamiento en el sector agrícola"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/expected-approaches/approach-001",
+"label": "Módulo 0: Arquitectura de Servicios Inteligentes.",
+"description": "Módulo 0: Arquitectura de Servicios Inteligentes."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/expected-approaches/approach-002",
+"label": "Módulo 1: Gestión de Seguridad y Emergencias (Smart Security).",
+"description": "Módulo 1: Gestión de Seguridad y Emergencias (Smart Security)."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/expected-approaches/approach-003",
+"label": "Módulo 2: Gestión Energética e Hídrica (Smart Resource).",
+"description": "Módulo 2: Gestión Energética e Hídrica (Smart Resource)."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/expected-approaches/approach-004",
+"label": "Módulo 3: Laboratorio Industria 4.0 (Smart Industry).",
+"description": "Módulo 3: Laboratorio Industria 4.0 (Smart Industry)."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/expected-approaches/approach-005",
+"label": "una arquitectura específicamente diseñada para gestionar y tratar datos de form…",
+"description": "una arquitectura específicamente diseñada para gestionar y tratar datos de forma masiva bajo un concepto de Big Data"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/expected-approaches/approach-006",
+"label": "La generación de escenarios para simular entornos complejos y evaluar acciones…",
+"description": "La generación de escenarios para simular entornos complejos y evaluar acciones en diversos contextos de crisis."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/expected-approaches/approach-007",
+"label": "Despliegue de equipamientos que permitan asegurar la seguridad dentro de los pa…",
+"description": "Despliegue de equipamientos que permitan asegurar la seguridad dentro de los parques empresariales, en forma de sistemas de videovigilancia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/expected-approaches/approach-008",
+"label": "soluciones inteligentes en el campo de la eficiencia energética y la gestión de…",
+"description": "soluciones inteligentes en el campo de la eficiencia energética y la gestión del uso del agua"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/expected-approaches/approach-009",
+"label": "Desarrollo de herramientas virtuales de Innovación Abierta que faciliten la sim…",
+"description": "Desarrollo de herramientas virtuales de Innovación Abierta que faciliten la simbiosis e hibridación empresarial"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/expected-approaches/approach-010",
+"label": "tecnología blockchain para certificar la comunicación entre los diferentes elem…",
+"description": "tecnología blockchain para certificar la comunicación entre los diferentes elementos inteligentes (sensores IoT)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/expected-approaches/approach-011",
+"label": "el desarrollo de un indicador global de la eficiencia económica y ambiental del…",
+"description": "el desarrollo de un indicador global de la eficiencia económica y ambiental del uso del agua en la industria"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/expected-approaches/approach-012",
+"label": "una plataforma tecnológica paralela (pre-producción) que posibilite el desarrol…",
+"description": "una plataforma tecnológica paralela (pre-producción) que posibilite el desarrollo y pruebas de nuevos prototipos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/expected-approaches/approach-013",
+"label": "integrar plataformas preexistentes enfocadas a gestionar de forma eficiente, co…",
+"description": "integrar plataformas preexistentes enfocadas a gestionar de forma eficiente, colaborativa y coordinada, el despliegue operativo de los planes de emergencia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/expected-approaches/approach-014",
+"label": "una solución tecnológica para la modelización, simulación y gestión inteligente…",
+"description": "una solución tecnológica para la modelización, simulación y gestión inteligente de emergencias en los Parques Empresariales de Alcalá de Guadaíra"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/expected-approaches/approach-015",
+"label": "partir de herramientas existentes y adecuarlas desarrollando nuevos componentes…",
+"description": "partir de herramientas existentes y adecuarlas desarrollando nuevos componentes e integraciones"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/expected-approaches/approach-016",
+"label": "una iniciativa de espacio de innovación abierta o living lab",
+"description": "una iniciativa de espacio de innovación abierta o living lab"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/expected-approaches/approach-017",
+"label": "el desarrollo de nuevas soluciones innovadoras de auditorías inalámbricas de ci…",
+"description": "el desarrollo de nuevas soluciones innovadoras de auditorías inalámbricas de ciberseguridad en el ámbito de los parques empresariales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/expected-approaches/approach-001",
+"label": "una solución innovadora a través de servicios de I+D",
+"description": "una solución innovadora a través de servicios de I+D"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/expected-approaches/approach-002",
+"label": "soluciones (completas para todo el reto o parte del mismo)",
+"description": "soluciones (completas para todo el reto o parte del mismo)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/expected-approaches/approach-003",
+"label": "Incorporación de nuevos materiales con elevada resistencia específica",
+"description": "Incorporación de nuevos materiales con elevada resistencia específica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/expected-approaches/approach-004",
+"label": "Modularidad",
+"description": "Modularidad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/expected-approaches/approach-005",
+"label": "Sistema automático de limpieza, desinfección y desodorización.",
+"description": "Sistema automático de limpieza, desinfección y desodorización."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/expected-approaches/approach-006",
+"label": "Nueva concepción del sistema de retención",
+"description": "Nueva concepción del sistema de retención"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/expected-approaches/approach-007",
+"label": "Sistema climatización.",
+"description": "Sistema climatización."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/expected-approaches/approach-008",
+"label": "Se debe rediseñar el sistema de apertura de puertas de celdas",
+"description": "Se debe rediseñar el sistema de apertura de puertas de celdas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/expected-approaches/approach-009",
+"label": "motorizaciones que reduzcan las emisiones contaminantes",
+"description": "motorizaciones que reduzcan las emisiones contaminantes"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/expected-approaches/approach-010",
+"label": "fuentes de suministro de energía renovables para la alimentación de subsistemas…",
+"description": "fuentes de suministro de energía renovables para la alimentación de subsistemas no críticos del vehículo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/expected-approaches/approach-011",
+"label": "sistemas tipo RUNFLAT",
+"description": "sistemas tipo RUNFLAT"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/expected-approaches/approach-012",
+"label": "Monitorización de cada una de las celdas, zonas comunes, accesos, etc.",
+"description": "Monitorización de cada una de las celdas, zonas comunes, accesos, etc."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/expected-approaches/approach-013",
+"label": "Transmisión de imagen en tiempo real al centro habilitado a tal efecto.",
+"description": "Transmisión de imagen en tiempo real al centro habilitado a tal efecto."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/expected-approaches/approach-014",
+"label": "Control perimetral del vehículo y ampliación del ángulo de visión",
+"description": "Control perimetral del vehículo y ampliación del ángulo de visión"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/expected-approaches/approach-015",
+"label": "sistema de comunicación con Escolta-DPyP",
+"description": "sistema de comunicación con Escolta-DPyP"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/expected-approaches/approach-016",
+"label": "Desarrollar un sistema de ciberseguridad exclusivo para el traslado de DPyP",
+"description": "Desarrollar un sistema de ciberseguridad exclusivo para el traslado de DPyP"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/expected-approaches/approach-017",
+"label": "Protección contra ciberataques",
+"description": "Protección contra ciberataques"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/expected-approaches/approach-018",
+"label": "Seguridad en la información almacenada",
+"description": "Seguridad en la información almacenada"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/expected-approaches/approach-019",
+"label": "Detección, informe y respuesta",
+"description": "Detección, informe y respuesta"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/expected-approaches/approach-020",
+"label": "Capacidad de integración con Centro de Control.",
+"description": "Capacidad de integración con Centro de Control."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/expected-approaches/approach-021",
+"label": "Comunicaciones en tiempo real.",
+"description": "Comunicaciones en tiempo real."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/expected-approaches/approach-022",
+"label": "Sensorización inteligente.",
+"description": "Sensorización inteligente."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/expected-approaches/approach-023",
+"label": "Sistemas avanzados de asistencia a la conducción (ADAS).",
+"description": "Sistemas avanzados de asistencia a la conducción (ADAS)."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/expected-approaches/approach-024",
+"label": "Sistema inteligente de visión artificial.",
+"description": "Sistema inteligente de visión artificial."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/expected-approaches/approach-025",
+"label": "Minimización de interfaces físicas.",
+"description": "Minimización de interfaces físicas."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/expected-approaches/approach-026",
+"label": "Optimización de rutas.",
+"description": "Optimización de rutas."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/expected-approaches/approach-027",
+"label": "Rediseñar un plan de evacuación al nuevo diseño.",
+"description": "Rediseñar un plan de evacuación al nuevo diseño."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/expected-approaches/approach-028",
+"label": "Diagnosis ad-hoc a vehículos celulares de DPyP.",
+"description": "Diagnosis ad-hoc a vehículos celulares de DPyP."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/expected-approaches/approach-029",
+"label": "Concepción desde la fase de diseño de vehículos con arquitectura modular.",
+"description": "Concepción desde la fase de diseño de vehículos con arquitectura modular."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/expected-approaches/approach-001",
+"label": "propuestas innovadoras destinadas a dar respuesta al reto SENDA mediante el emp…",
+"description": "propuestas innovadoras destinadas a dar respuesta al reto SENDA mediante el empleo de tecnologías que superen las prestaciones de las existentes actualmente en el mercado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/expected-approaches/approach-002",
+"label": "una plataforma de registro abierto donde se ofrezca un contacto personal y solu…",
+"description": "una plataforma de registro abierto donde se ofrezca un contacto personal y soluciones personalizadas a través de un modelo de gestión basado en CRM"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/expected-approaches/approach-003",
+"label": "la obtención de información personalizada y la redirección de los distintos emp…",
+"description": "la obtención de información personalizada y la redirección de los distintos emprendedores e innovadores hacia soluciones individualizadas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/expected-approaches/approach-004",
+"label": "el uso de la gamificación",
+"description": "el uso de la gamificación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/expected-approaches/approach-005",
+"label": "utilice la información existente en las diferentes fuentes de datos, para dotar…",
+"description": "utilice la información existente en las diferentes fuentes de datos, para dotar de inteligencia e información contextual a la plataforma"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/expected-approaches/approach-006",
+"label": "realizar el cruce de oferta y demanda",
+"description": "realizar el cruce de oferta y demanda"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/expected-approaches/approach-007",
+"label": "la asignación de mentores de forma automática",
+"description": "la asignación de mentores de forma automática"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/expected-approaches/approach-008",
+"label": "combinar la virtualidad y la presencialidad",
+"description": "combinar la virtualidad y la presencialidad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/expected-approaches/approach-009",
+"label": "ofrecer formación personalizada con un enfoque tanto generalista (i.e. gestión…",
+"description": "ofrecer formación personalizada con un enfoque tanto generalista (i.e. gestión de proyectos) como sectorial"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/expected-approaches/approach-010",
+"label": "las tecnologías de inteligencia artificial y realidad virtual y aumentada",
+"description": "las tecnologías de inteligencia artificial y realidad virtual y aumentada"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/expected-approaches/approach-011",
+"label": "identificar sinergias",
+"description": "identificar sinergias"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/expected-approaches/approach-012",
+"label": "reducir la distancia física entre los agentes en CyL",
+"description": "reducir la distancia física entre los agentes en CyL"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/expected-approaches/approach-013",
+"label": "evaluaciones 360º",
+"description": "evaluaciones 360º"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/expected-approaches/approach-014",
+"label": "una comunidad de conocimiento con redes temáticas y sesiones «alumni»",
+"description": "una comunidad de conocimiento con redes temáticas y sesiones «alumni»"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/expected-approaches/approach-015",
+"label": "servicios de coaching para los emprendedores y empresas innovadoras",
+"description": "servicios de coaching para los emprendedores y empresas innovadoras"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/expected-approaches/approach-016",
+"label": "cuadros de mando donde se recojan indicadores operativos, financieros y de sost…",
+"description": "cuadros de mando donde se recojan indicadores operativos, financieros y de sostenibilidad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/expected-approaches/approach-017",
+"label": "la creación de la plataforma SENDA , una red virtual para captar, analizar, fav…",
+"description": "la creación de la plataforma SENDA , una red virtual para captar, analizar, favorecer la interacción y prestar un mejor servicio a emprendedores, empresas innovadoras, Administraciones Públicas, mentores, financiadores, y cualquier otro agente involucrado en el ecosistema emprendedor de la región"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/expected-approaches/approach-018",
+"label": "el cruce de oferta y demanda, permitiendo, por ejemplo, la asignación de mentor…",
+"description": "el cruce de oferta y demanda, permitiendo, por ejemplo, la asignación de mentores de forma automática o la participación en actividades de networking"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/expected-approaches/approach-019",
+"label": "las tecnologías de inteligencia artificial y realidad virtual y aumentada puede…",
+"description": "las tecnologías de inteligencia artificial y realidad virtual y aumentada pueden aportar unos entornos de colaboración rompiendo las estructuras deslocalizadas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/expected-approaches/approach-020",
+"label": "Los procesos ya existentes en el ICE y todos aquellos de otras entidades del ec…",
+"description": "Los procesos ya existentes en el ICE y todos aquellos de otras entidades del ecosistema deben ser mapeados e integrados en un sistema ordenado, estandarizado y abierto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/expected-approaches/approach-021",
+"label": "una plataforma contrastada con las principales funcionalidades, que trabajando…",
+"description": "una plataforma contrastada con las principales funcionalidades, que trabajando en la nube permita su crecimiento y la integración de nuevos y diferentes módulos tecnológicos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/expected-approaches/approach-022",
+"label": "un proyecto piloto que sentará las bases estructurales de la integridad del pro…",
+"description": "un proyecto piloto que sentará las bases estructurales de la integridad del proyecto, y ofrecerá como resultado concreto un producto mínimo viable con un alcance limitado, que aborde una de las áreas fundamentales: los procesos de Aceleración del Emprendimiento Innovador"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/expected-approaches/approach-001",
+"label": "una inédita y avanzada herramienta software, basada en la Inteligencia Artifici…",
+"description": "una inédita y avanzada herramienta software, basada en la Inteligencia Artificial, de apoyo al diseño, ejecución y mantenimiento de edificios modulares y de construcción industrializada de vivienda protegida de consumo energético casi nulo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/expected-approaches/approach-002",
+"label": "funcionalidades avanzadas de simulación y optimización (prototipado rápido)",
+"description": "funcionalidades avanzadas de simulación y optimización (prototipado rápido)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/expected-approaches/approach-003",
+"label": "una herramienta software - sistema experto - de modelización flexible y ágil de…",
+"description": "una herramienta software - sistema experto - de modelización flexible y ágil de sistemas constructivos modulares industrializados y un catálogo virtual de elementos constructivos industrializados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/expected-approaches/approach-004",
+"label": "modelar edificios en formato BIM y realizar simulaciones energéticas y económic…",
+"description": "modelar edificios en formato BIM y realizar simulaciones energéticas y económicas avanzadas de éstos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/expected-approaches/approach-005",
+"label": "un piloto virtual BIM de edificio nZEISHB",
+"description": "un piloto virtual BIM de edificio nZEISHB"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/expected-approaches/approach-006",
+"label": "soluciones de apoyo al diseñador , no de sustitución de éste",
+"description": "soluciones de apoyo al diseñador , no de sustitución de éste"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/expected-approaches/approach-007",
+"label": "Un catálogo inédito de elementos constructivos industrializados y un sistema pa…",
+"description": "Un catálogo inédito de elementos constructivos industrializados y un sistema para la gestión y actualización del mismo."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/expected-approaches/approach-008",
+"label": "Un sistema experto , basado en la Inteligencia artificial, para el diseño const…",
+"description": "Un sistema experto , basado en la Inteligencia artificial, para el diseño constructivo modular industrializado, utilizando una base de conocimientos y un motor de inferencia con funcionalidades de aprendizaje automático."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/expected-approaches/approach-009",
+"label": "Un prototipo y piloto virtual a nivel de laboratorio en BIM de edificio nZEISHB…",
+"description": "Un prototipo y piloto virtual a nivel de laboratorio en BIM de edificio nZEISHB a construir en una parcela de AVRA."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/expected-approaches/approach-010",
+"label": "un prototipo de sistema constructivo industrializado modular y flexible para pr…",
+"description": "un prototipo de sistema constructivo industrializado modular y flexible para proyectar y ejecutar en plazos reducidos y optimizados edificios plurifamiliares en régimen de vivienda protegida y con consumo casi nulo de energía"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/expected-approaches/approach-011",
+"label": "Ventilación sanitaria y nocturna.",
+"description": "Ventilación sanitaria y nocturna."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/expected-approaches/approach-012",
+"label": "Energías Renovables e integración con sistemas activos de ventilación.",
+"description": "Energías Renovables e integración con sistemas activos de ventilación."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/expected-approaches/approach-013",
+"label": "Automatización, monitorización, control y gestión.",
+"description": "Automatización, monitorización, control y gestión."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/expected-approaches/approach-014",
+"label": "Desarrollo integral de soluciones constructivas (envolvente, estructura, elemen…",
+"description": "Desarrollo integral de soluciones constructivas (envolvente, estructura, elementos constructivos, acabados interiores e instalaciones)."
+}
+]

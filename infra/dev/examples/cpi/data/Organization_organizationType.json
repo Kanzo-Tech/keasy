@@ -1,0 +1,834 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/organizations/a3d-additive-printer",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/acid-tango-sl",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/actividades-de-consultoria-tecnica-investigacion-y-servicios-avanzados-sl",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/aensis-ciberseguridad-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/afca-teccom",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/agencia-de-vivienda-y-rehabilitacion-de-andalucia-avra",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa-publica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/agrupacion-empresarial-innovacora-para-la-seguridad-de-las-redes-y-los-sistemas-de-informacion",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/aicia-grupo-de-termotecnia",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/organismo-investigacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/alifax-spain-sl",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/alpha-syltec-ingenieria-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/altair-health-sl",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/apogea-consultores-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/ariema",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/asociacion-de-investigacion-y-cooperacion-industrial-de-andalucia",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/organizacion-sin-animo-de-lucro"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/atem-nuevas-tecnologias-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/atommodular-sl",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/avintia-proyectos-y-construcciones-sl",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/ayuntamiento-de-alcala-de-guadaira",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/administracion-publica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/ayuntamiento-de-alicante",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/administracion-publica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/ayuntamiento-de-madrid",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/administracion-publica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/barrabes",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/bauen-constructora-s-a-u",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/bilba-construccion-e-infraestructuras-sl",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/biomasa-peninsular-ute",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/biovic",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/blueliv",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/bravent-13-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/building-blocks-games-sl",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/cabling-system-valladolid-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/cadagua",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/canaragua-concesiones-s-a-u",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/canon-medical-systems-sa",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/capgemini-espana-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/castano-y-asociados-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/cellnex",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/centro-de-estudios-de-materiales-y-control-de-obra-sau-cemosa",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/centro-de-investigacion-y-desarrollo-en-automocion-y-transporte-cidaut",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/centro-tecnologico"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/centro-de-las-nuevas-tecnologias-del-agua",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/organismo-investigacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/centro-de-supercomputacion-de-castilla-y-leon-scayle",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/organizacion-sin-animo-de-lucro"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/centro-internacional-de-metodos-numericos-en-ingenieria-cimne",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/centro-tecnologico"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/centro-para-el-desarrollo-tecnologico-y-la-innovacion-e-p-e",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/administracion-publica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/centro-regional-de-servicios-avanzados-csa",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/cepheid-iberia-s-l-u",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/citiservi-europe-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/citythinking-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/connectis-ict-services-sau-getronics",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/conselleria-de-sanitat-universal-i-salut-publica",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/administracion-publica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/construyendo-futuro-informatico-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/cyrity-sl",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/david-nieto",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/deep-insight-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/defcon8",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/deloitte-consulting-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/disruptive-consulting-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/divisa-it",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/drainware-systems-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/durviz-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/eddea-arquitectura-y-urbanismo-slp",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/edosoft-factory-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/eforglobal-technology-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/elmasa-tecnologia-del-agua-s-a-u",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/emetel-sistemas-sl",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/empresa-metropolitana-de-abastecimiento-y-saneamiento-de-aguas-de-sevilla-s-a",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/enginyeria-de-l-edificacio-i-project-management-slp",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/enoges-consultores-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/escribano-mechanical-engineering-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/everis-spain-slu",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/export-blue-market-sl-exportun",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/eyeseetea-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/fcc-aqualia-s-a",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/fcc-medio-ambiente-s-a-u",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/fctivc",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/centro-tecnologico"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/federacion-de-empresas-de-tecnologias-de-la-informacion-comunicaciones-y-electronica-de-castilla-y-leon-aetical",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/organizacion-sin-animo-de-lucro"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/ferrovial-construccion-sa",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/fius",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/organismo-investigacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/fluidmecanicasur-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/fomento-agricola-castellonense-s-a",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/foqum-analytics-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/fundacion-cartif",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/centro-tecnologico"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/fundacion-centro-de-cirugia-de-minima-invasion-jesus-uson",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/organizacion-sin-animo-de-lucro"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/fundacion-centro-de-investigacion-de-recursos-y-consumos-energeticos",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/centro-tecnologico"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/fundacion-centro-de-tecnologias-de-interaccion-visual-y-comunicaciones-vicomtech",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/centro-tecnologico"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/fundacion-centro-tecnoloxico-de-telecomunicacions-de-galicia",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/centro-tecnologico"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/fundacion-ctic-centro-tecnologico",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/centro-tecnologico"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/fundacion-instituto-internacional-de-investigacion",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/organizacion-sin-animo-de-lucro"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/fundacion-para-el-desarrollo-y-la-innovacion-tecnologica-funditec",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/centro-tecnologico"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/fundacion-para-la-investigacion-sanitaria-y-biomedica-de-la-comunitat-valenciana-fisabio",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/organizacion-sin-animo-de-lucro"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/fundacion-tecnalia-research-innovation",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/centro-tecnologico"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/future-space-s-a",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/gabinete-javier-terrados",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/general-electric-healthcare-espana-s-a-u",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/ghenova-digital-s-l-u",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/ghenova-ingenieria-sl",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/global-omnium-medioambiente-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/gmv-soluciones-globales-internet-s-a",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/groupement-d-interet-public-reseau-des-acheteurs-hospitaliers-gip-resah",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/administracion-publica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/grupo-mecanica-del-vuelo-sistemas-sau",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/guardia-civil-gc",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/administracion-publica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/gvam-guias-interactivas-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/hcp-architectures-and-engineering",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/heliopol-s-a-u",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/hi-self-sistemas-constructivos-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/hombre-de-piedra-arquitectos",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/hp-printing-and-computing-solutions-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/hp-solutions-creation-and-development-services-s-l-hp-scds",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/humedo-valley-sl",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/iaxxon",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/incibe",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/indizen-technologies-sl",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/indra-soluciones-tecnologias-de-la-informacion-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/inespro",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/informatica-medica-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/ingecid-sl",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/innova-next",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/innovaciones-tecnologicas-del-sur-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/institut-catala-d-oncologia-ico",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa-publica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/instituto-leones-de-desarrollo-economico-formacion-y-empleo-ildefe",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa-publica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/instituto-para-la-competitividad-empresarial-de-castilla-y-leon",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/administracion-publica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/instituto-tecnologico-de-canarias-s-a",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/centro-tecnologico"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/investigacion-y-tratamiento-en-salud-mental-y-discapacidad-intras",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/organizacion-sin-animo-de-lucro"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/itelligent-information-technologies-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/kapsch-trafficcom-transportation-s-a-u",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/lazarus",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/leasba-consulting-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/linx-view-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/logicalis-spain-s-l-u",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/lucentia-lab-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/maderas-impregnadas-para-exterior-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/magtel",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/marion-immersive-ltd",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/marketeer-co",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/mediaroom-solutions",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/medical-micro-instrument-spa",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/medtronic-iberica-sa",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/mnemo-evolution-integration-services-s-a",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/monlab-sl",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/moonshot-innovation-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/movilidad-ampliada-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/msig-smart-management",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/mv-international-bim-services-sl",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/nedgia",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/next-comunicaciones-s-a",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/nidus-lab-slu",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/ntt-data-spain-s-l-u",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/ove-arup-and-partners-sau",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/oxentia-europe-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/peninsula-corporate-innovation-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/perez-del-pulgar-gonzalez-parrilla-arquitectos-s-l-p",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/plain-concepts-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/pricewaterhousecoopers-asesores-de-negocios-sl",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/proconsi",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/prosegur-soluciones-integrales-de-seguridad-espana-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/qualud-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/quantia",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/r2m-solution-spain-sl",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/radar-consortium",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/administracion-publica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/recoletos-consultores",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/retineo-ingenieria-s-l-u",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/riam-intelearning-lab-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/rioglass",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/rodrigo-aguado-santa",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/ruiz-larrea-arquitectura-slp",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/s-a-de-obras-y-servicios-copasa",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/salvador-rueda",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/sando",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/scassi-spain",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/servei-de-salut-de-les-illes-balears",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/administracion-publica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/servicio-vasco-de-salud-osakidetza-osak",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/servocad-microtronics-sl",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/showleap-technologies-sl",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/sowlers-technologies-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/suez",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/t-systems-itc-iberia-s-a",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/talestech",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/te-consulting-house-4-plus-sl",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/tecnica-y-proyectos-sa",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/tecnicas-y-proyectos-s-a-typsa--e0954db2",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/telecomunicaciones-los-ocho-canos-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/telecyl-s-a",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/telefonica-moviles-espana-s-a-u",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/telefonica-s-a",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/traco",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/trc-informatica-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/trinomio",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/typsa-digital-solutions-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/tysec",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/ubikare-zainketak-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/universidad-de-alcala",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/universidad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/universidad-de-murcia",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/universidad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/universidad-de-salamanca",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/universidad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/universidad-de-sevilla-us",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/universidad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/universidad-de-sevilla-us--2a78ba00",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/universidad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/universidad-de-valladolid",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/universidad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/universidad-de-zaragoza",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/universidad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/universidad-politecnica-de-madrid",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/universidad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/universidad-valladolid-uva",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/universidad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/universita-degli-studi-di-napoli-federico-ii",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/universidad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/urjc",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/universidad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/valenthia-strategy-sl",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/valora",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/valoriza",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/vector",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/vector-software-factory-sl",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/veratech-for-health-sl",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/vodafone",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/wellness-telecom-s-l",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/wise-build-sl",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/organizations/xeridia",
+"o": "https://example.org/cpi-demo/id/vocab/organization-type/empresa"
+}
+]

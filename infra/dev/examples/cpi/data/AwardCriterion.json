@@ -1,0 +1,1490 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/award-criteria/tender-001-criterion-001",
+"label": "Descripción del sistema",
+"criterionFormula": null,
+"description": "Descripción del sistema",
+"minimumThreshold": null,
+"weight": 20.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/award-criteria/tender-001-criterion-002",
+"label": "Derechos de propiedad intelectual 0 industrial de las tecnologías o soluciones…",
+"criterionFormula": null,
+"description": "Derechos de propiedad intelectual 0 industrial de las tecnologías o soluciones aportadas",
+"minimumThreshold": null,
+"weight": 5.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/award-criteria/tender-001-criterion-003",
+"label": "Calidad y detalle del estudio de mercado potencial",
+"criterionFormula": null,
+"description": "Calidad y detalle del estudio de mercado potencial",
+"minimumThreshold": null,
+"weight": 2.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/award-criteria/tender-001-criterion-004",
+"label": "Calidad del Plan de comercialización de la solución",
+"criterionFormula": null,
+"description": "Calidad del Plan de comercialización de la solución",
+"minimumThreshold": null,
+"weight": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/award-criteria/tender-001-criterion-005",
+"label": "Tiempo de entrenamiento necesario para la obtención de la tasa de acíerto compr…",
+"criterionFormula": null,
+"description": "Tiempo de entrenamiento necesario para la obtención de la tasa de acíerto comprometida (máximo 15 minutos)",
+"minimumThreshold": null,
+"weight": 5.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/award-criteria/tender-001-criterion-006",
+"label": "Tasa de acierto comprometida",
+"criterionFormula": null,
+"description": "Tasa de acierto comprometida",
+"minimumThreshold": null,
+"weight": 15.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/award-criteria/tender-001-criterion-007",
+"label": "El tiempo de traducción desde el momento de finalización de la frase",
+"criterionFormula": null,
+"description": "El tiempo de traducción desde el momento de finalización de la frase",
+"minimumThreshold": null,
+"weight": 5.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/award-criteria/tender-001-criterion-008",
+"label": "El sistema desarrollado permitirá la conversión bidireccional entre el lenguaje…",
+"criterionFormula": "Si el sistema permite la conversación bidireccional entre el lenguaje de signos y voz en castellano se le asignarán 5 puntos.",
+"description": "El sistema desarrollado permitirá la conversión bidireccional entre el lenguaje de signos y voz en castellano",
+"minimumThreshold": null,
+"weight": 5.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/award-criteria/tender-001-criterion-009",
+"label": "funcionamiento offline",
+"criterionFormula": "Si el sistema permite un funcionamiento offline se le otorgarán 5 puntos.",
+"description": "funcionamiento offline",
+"minimumThreshold": null,
+"weight": 5.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/award-criteria/tender-001-criterion-010",
+"label": "sistema podrá funcionar sobre el Smartphone del usuario proporcionando toda la…",
+"criterionFormula": null,
+"description": "sistema podrá funcionar sobre el Smartphone del usuario proporcionando toda la funcionalidad en un para iOS en las últimas versiones de dicho sistema operativo",
+"minimumThreshold": null,
+"weight": 2.5
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/award-criteria/tender-001-criterion-011",
+"label": "sistema podrá funcionar sobre el Smartphone del usuario proporcionando toda la…",
+"criterionFormula": null,
+"description": "sistema podrá funcionar sobre el Smartphone del usuario proporcionando toda la funcionalidad en un App para Android en las últimas versiones de dicho sistema operativo",
+"minimumThreshold": null,
+"weight": 2.5
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/award-criteria/tender-001-criterion-012",
+"label": "Plazo de ejecución de la Fase 2",
+"criterionFormula": null,
+"description": "Plazo de ejecución de la Fase 2",
+"minimumThreshold": null,
+"weight": 2.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/award-criteria/tender-001-criterion-013",
+"label": "Oferta económica",
+"criterionFormula": null,
+"description": "Oferta económica",
+"minimumThreshold": null,
+"weight": 10.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/award-criteria/tender-001-criterion-014",
+"label": "Porcentaje del valor neto de los ingresos obtenidos por la explotación del resu…",
+"criterionFormula": "Y = Ymax*(X- 0.1%)/(5%-0.1%)",
+"description": "Porcentaje del valor neto de los ingresos obtenidos por la explotación del resultado del servicio de I+D objeto del presente contrato a percibir por el Ayuntamiento de Madrid",
+"minimumThreshold": null,
+"weight": 6.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/award-criteria/tender-001-criterion-001",
+"label": "Criterio 1: Descripción técnica de la solución propuesta (25 puntos)",
+"criterionFormula": null,
+"description": "Criterio 1: Descripción técnica de la solución propuesta (25 puntos)",
+"minimumThreshold": null,
+"weight": 25.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/award-criteria/tender-001-criterion-002",
+"label": "Criterio 2: Planificación, metodología y cronograma (6 puntos)",
+"criterionFormula": null,
+"description": "Criterio 2: Planificación, metodología y cronograma (6 puntos)",
+"minimumThreshold": null,
+"weight": 6.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/award-criteria/tender-001-criterion-003",
+"label": "Criterio 3: Plan de garantía de calidad (4 puntos)",
+"criterionFormula": null,
+"description": "Criterio 3: Plan de garantía de calidad (4 puntos)",
+"minimumThreshold": null,
+"weight": 4.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/award-criteria/tender-001-criterion-004",
+"label": "Criterio 4: Grado de innovación de la propuesta (15 puntos)",
+"criterionFormula": null,
+"description": "Criterio 4: Grado de innovación de la propuesta (15 puntos)",
+"minimumThreshold": null,
+"weight": 15.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/award-criteria/tender-001-criterion-005",
+"label": "Criterio 1: Plan de Implantación. (5 puntos)",
+"criterionFormula": "se le asignará la máxima puntuación a la oferta más favorable, y al resto de forma proporcional",
+"description": "Criterio 1: Plan de Implantación. (5 puntos)",
+"minimumThreshold": null,
+"weight": 5.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/award-criteria/tender-001-criterion-006",
+"label": "Criterio 2: Precio por la creación, desarrollo y puesta en marcha de la platafo…",
+"criterionFormula": "PO = PMC* (PL -OP) / (PL-OM)",
+"description": "Criterio 2: Precio por la creación, desarrollo y puesta en marcha de la plataforma (45 puntos)",
+"minimumThreshold": null,
+"weight": 45.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-001-criterion-001",
+"label": "Aspectos generales de la Plataforma",
+"criterionFormula": null,
+"description": "Aspectos generales de la Plataforma",
+"minimumThreshold": null,
+"weight": 8.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-001-criterion-002",
+"label": "Sistema de actuadores",
+"criterionFormula": null,
+"description": "Sistema de actuadores",
+"minimumThreshold": null,
+"weight": 16.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-001-criterion-003",
+"label": "Consola de control",
+"criterionFormula": null,
+"description": "Consola de control",
+"minimumThreshold": null,
+"weight": 16.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-001-criterion-004",
+"label": "Programa de trabajo",
+"criterionFormula": null,
+"description": "Programa de trabajo",
+"minimumThreshold": null,
+"weight": 10.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-001-criterion-005",
+"label": "Plan de evaluación de la calidad",
+"criterionFormula": null,
+"description": "Plan de evaluación de la calidad",
+"minimumThreshold": null,
+"weight": 5.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-001-criterion-006",
+"label": "GESTIÓN DE RIESGOS",
+"criterionFormula": null,
+"description": "GESTIÓN DE RIESGOS",
+"minimumThreshold": null,
+"weight": 12.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-001-criterion-007",
+"label": "PLAN DE VIABILIDAD",
+"criterionFormula": null,
+"description": "PLAN DE VIABILIDAD",
+"minimumThreshold": null,
+"weight": 8.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-001-criterion-008",
+"label": "EVALUACIÓN DE LA OFERTA ECONÓMICA: FÓRMULA B",
+"criterionFormula": "FÓRMULA B",
+"description": "EVALUACIÓN DE LA OFERTA ECONÓMICA: FÓRMULA B",
+"minimumThreshold": null,
+"weight": 10.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-001-criterion-009",
+"label": "EXTENSIÓN DEL PLAZO DE RESOLUCIÓN DE CONSULTAS TÉCNICAS, REPARACIÓN Y MANTENIMI…",
+"criterionFormula": "proporcionalmente al resto de plazos ofertados por el resto de licitadores",
+"description": "EXTENSIÓN DEL PLAZO DE RESOLUCIÓN DE CONSULTAS TÉCNICAS, REPARACIÓN Y MANTENIMIENTO",
+"minimumThreshold": null,
+"weight": 10.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-001-criterion-010",
+"label": "CRITERIO SOCIAL DE VALORACIÓN AUTOMÁTICA. MEDIDAS EN MATERIA DE PROMOCIÓN DE EM…",
+"criterionFormula": "P= Po / PoM x (puntuación máxima)",
+"description": "CRITERIO SOCIAL DE VALORACIÓN AUTOMÁTICA. MEDIDAS EN MATERIA DE PROMOCIÓN DE EMPLEO",
+"minimumThreshold": null,
+"weight": 5.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-003-criterion-001",
+"label": "EVALUACIÓN DE LA OFERTA ECONÓMICA: FÓRMULA B",
+"criterionFormula": null,
+"description": "EVALUACIÓN DE LA OFERTA ECONÓMICA: FÓRMULA B",
+"minimumThreshold": null,
+"weight": 10.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-003-criterion-002",
+"label": "EXTENSIÓN DEL PLAZO DE RESOLUCIÓN DE CONSULTAS TÉCNICAS, REPARACIÓN Y MANTENIMI…",
+"criterionFormula": null,
+"description": "EXTENSIÓN DEL PLAZO DE RESOLUCIÓN DE CONSULTAS TÉCNICAS, REPARACIÓN Y MANTENIMIENTO",
+"minimumThreshold": null,
+"weight": 10.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-003-criterion-003",
+"label": "CRITERIO SOCIAL DE VALORACIÓN AUTOMÁTICA. MEDIDAS EN MATERIA DE PROMOCIÓN DE EM…",
+"criterionFormula": "P= Po / PoM x (puntuación máxima)",
+"description": "CRITERIO SOCIAL DE VALORACIÓN AUTOMÁTICA. MEDIDAS EN MATERIA DE PROMOCIÓN DE EMPLEO",
+"minimumThreshold": null,
+"weight": 5.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-003-criterion-004",
+"label": "PROPUESTA DE SOLUCIÓN TÉCNICA",
+"criterionFormula": null,
+"description": "PROPUESTA DE SOLUCIÓN TÉCNICA",
+"minimumThreshold": null,
+"weight": 40.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-003-criterion-005",
+"label": "1.1.- Aspectos generales de la Plataforma",
+"criterionFormula": null,
+"description": "1.1.- Aspectos generales de la Plataforma",
+"minimumThreshold": null,
+"weight": 10.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-003-criterion-006",
+"label": "1.2.- Sistema de actuadores",
+"criterionFormula": null,
+"description": "1.2.- Sistema de actuadores",
+"minimumThreshold": null,
+"weight": 12.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-003-criterion-007",
+"label": "2.1.- Programa de trabajo",
+"criterionFormula": null,
+"description": "2.1.- Programa de trabajo",
+"minimumThreshold": null,
+"weight": 10.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-003-criterion-008",
+"label": "2.2.- Plan de evaluación de la calidad",
+"criterionFormula": null,
+"description": "2.2.- Plan de evaluación de la calidad",
+"minimumThreshold": null,
+"weight": 5.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-003-criterion-009",
+"label": "GESTIÓN DE RIESGOS",
+"criterionFormula": null,
+"description": "GESTIÓN DE RIESGOS",
+"minimumThreshold": null,
+"weight": 12.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-003-criterion-010",
+"label": "PLAN DE VIABILIDAD",
+"criterionFormula": null,
+"description": "PLAN DE VIABILIDAD",
+"minimumThreshold": null,
+"weight": 8.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-004-criterion-001",
+"label": "EVALUACIÓN DE LA OFERTA ECONÓMICA: FÓRMULA B",
+"criterionFormula": null,
+"description": "EVALUACIÓN DE LA OFERTA ECONÓMICA: FÓRMULA B",
+"minimumThreshold": null,
+"weight": 10.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-004-criterion-002",
+"label": "EXTENSIÓN DEL PLAZO DE RESOLUCIÓN DE CONSULTAS TÉCNICAS, REPARACIÓN Y MANTENIMI…",
+"criterionFormula": null,
+"description": "EXTENSIÓN DEL PLAZO DE RESOLUCIÓN DE CONSULTAS TÉCNICAS, REPARACIÓN Y MANTENIMIENTO",
+"minimumThreshold": null,
+"weight": 10.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-004-criterion-003",
+"label": "CRITERIO SOCIAL DE VALORACIÓN AUTOMÁTICA. MEDIDAS EN MATERIAS DE PROMOCIÓN DE E…",
+"criterionFormula": null,
+"description": "CRITERIO SOCIAL DE VALORACIÓN AUTOMÁTICA. MEDIDAS EN MATERIAS DE PROMOCIÓN DE EMPLEO",
+"minimumThreshold": null,
+"weight": 5.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-004-criterion-004",
+"label": "PROPUESTA DE SOLUCIÓN TÉCNICA",
+"criterionFormula": null,
+"description": "PROPUESTA DE SOLUCIÓN TÉCNICA",
+"minimumThreshold": null,
+"weight": 40.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-004-criterion-005",
+"label": "1.1.- Aspectos generales del sistema de entrenamiento",
+"criterionFormula": null,
+"description": "1.1.- Aspectos generales del sistema de entrenamiento",
+"minimumThreshold": null,
+"weight": 10.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-004-criterion-006",
+"label": "1.2.- Consola de control",
+"criterionFormula": null,
+"description": "1.2.- Consola de control",
+"minimumThreshold": null,
+"weight": 15.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-004-criterion-007",
+"label": "2.1.- Programa de trabajo",
+"criterionFormula": null,
+"description": "2.1.- Programa de trabajo",
+"minimumThreshold": null,
+"weight": 10.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-004-criterion-008",
+"label": "2.2.- Plan de validación como herramienta de entrenamiento en cirugía robótica…",
+"criterionFormula": null,
+"description": "2.2.- Plan de validación como herramienta de entrenamiento en cirugía robótica laparoscópica",
+"minimumThreshold": null,
+"weight": 5.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-004-criterion-009",
+"label": "GESTIÓN DE RIESGOS",
+"criterionFormula": null,
+"description": "GESTIÓN DE RIESGOS",
+"minimumThreshold": null,
+"weight": 12.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-004-criterion-010",
+"label": "PLAN DE VIABILIDAD",
+"criterionFormula": null,
+"description": "PLAN DE VIABILIDAD",
+"minimumThreshold": null,
+"weight": 8.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/award-criteria/tender-001-criterion-001",
+"label": "Viabilidad de aplicación del concepto inicial propuesto",
+"criterionFormula": null,
+"description": "Viabilidad de aplicación del concepto inicial propuesto",
+"minimumThreshold": null,
+"weight": 10.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/award-criteria/tender-001-criterion-002",
+"label": "Capacidad de evolución del concepto propuesto",
+"criterionFormula": null,
+"description": "Capacidad de evolución del concepto propuesto",
+"minimumThreshold": null,
+"weight": 10.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/award-criteria/tender-001-criterion-003",
+"label": "Carácter innovador del concepto inicial propuesto",
+"criterionFormula": null,
+"description": "Carácter innovador del concepto inicial propuesto",
+"minimumThreshold": null,
+"weight": 5.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/award-criteria/tender-001-criterion-004",
+"label": "Propuesta de ejecución de la fase de investigación",
+"criterionFormula": null,
+"description": "Propuesta de ejecución de la fase de investigación",
+"minimumThreshold": null,
+"weight": 5.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/award-criteria/tender-001-criterion-005",
+"label": "Propuesta de ejecución de la fase de desarrollo",
+"criterionFormula": null,
+"description": "Propuesta de ejecución de la fase de desarrollo",
+"minimumThreshold": null,
+"weight": 5.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/award-criteria/tender-001-criterion-006",
+"label": "Propuesta de aseguramiento de la calidad de la solución software",
+"criterionFormula": null,
+"description": "Propuesta de aseguramiento de la calidad de la solución software",
+"minimumThreshold": null,
+"weight": 5.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/award-criteria/tender-001-criterion-007",
+"label": "Propuesta de proyecto en general",
+"criterionFormula": null,
+"description": "Propuesta de proyecto en general",
+"minimumThreshold": null,
+"weight": 3.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/award-criteria/tender-001-criterion-008",
+"label": "Plan de negocio",
+"criterionFormula": null,
+"description": "Plan de negocio",
+"minimumThreshold": null,
+"weight": 3.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/award-criteria/tender-001-criterion-009",
+"label": "Plan de comunicación",
+"criterionFormula": null,
+"description": "Plan de comunicación",
+"minimumThreshold": null,
+"weight": 3.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/award-criteria/tender-001-criterion-010",
+"label": "Precio",
+"criterionFormula": null,
+"description": "Precio",
+"minimumThreshold": null,
+"weight": 20.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/award-criteria/tender-001-criterion-011",
+"label": "Nº de doctores y personal certificado en ciberseguridad",
+"criterionFormula": null,
+"description": "Nº de doctores y personal certificado en ciberseguridad",
+"minimumThreshold": null,
+"weight": 15.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/award-criteria/tender-001-criterion-012",
+"label": "Nº de patentes de investigación",
+"criterionFormula": null,
+"description": "Nº de patentes de investigación",
+"minimumThreshold": null,
+"weight": 10.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/award-criteria/tender-001-criterion-013",
+"label": "Nº de horas formación sobre la solución adoptada",
+"criterionFormula": null,
+"description": "Nº de horas formación sobre la solución adoptada",
+"minimumThreshold": null,
+"weight": 6.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/award-criteria/tender-001-criterion-001",
+"label": "SOLUCIÓN TÉCNICA",
+"criterionFormula": null,
+"description": "SOLUCIÓN TÉCNICA",
+"minimumThreshold": 25.0,
+"weight": 50.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/award-criteria/tender-001-criterion-002",
+"label": "Dimensionamiento del equipo humano para la ejecución del proyecto, así como la…",
+"criterionFormula": null,
+"description": "Dimensionamiento del equipo humano para la ejecución del proyecto, así como la adecuación de los perfiles del equipo de trabajo asignados a cada una de las tareas previstas y su integración en la metodología del proyecto.",
+"minimumThreshold": null,
+"weight": 5.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/award-criteria/tender-001-criterion-003",
+"label": "Adecuación al proyecto de la metodología de trabajo y dirección empleada, estru…",
+"criterionFormula": null,
+"description": "Adecuación al proyecto de la metodología de trabajo y dirección empleada, estructuración correcta de la planificación de ejecución, con descripción clara y pormenorizada del cronograma de tareas, hitos y entregables.",
+"minimumThreshold": null,
+"weight": 5.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/award-criteria/tender-001-criterion-004",
+"label": "Viabilidad futura, técnica y económica, de las soluciones aportadas en base a l…",
+"criterionFormula": null,
+"description": "Viabilidad futura, técnica y económica, de las soluciones aportadas en base a las prescripciones establecidas en el pliego.",
+"minimumThreshold": null,
+"weight": 5.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/award-criteria/tender-001-criterion-005",
+"label": "PRECIO TOTAL DE FASES",
+"criterionFormula": "La oferta más económica recibe la puntuación máxima (10 puntos).",
+"description": "PRECIO TOTAL DE FASES",
+"minimumThreshold": null,
+"weight": 10.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/award-criteria/tender-001-criterion-006",
+"label": "RETORNOS ECONÓMICOS FUTUROS (sobre ventas netas anuales)",
+"criterionFormula": "Si el valor ofrecido es 2% se le asignará 0 puntos.",
+"description": "RETORNOS ECONÓMICOS FUTUROS (sobre ventas netas anuales)",
+"minimumThreshold": null,
+"weight": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-001",
+"label": "Se valorará la propuesta de Acuerdo de nivel de servicio (SLA): menores tiempos…",
+"criterionFormula": null,
+"description": "Se valorará la propuesta de Acuerdo de nivel de servicio (SLA): menores tiempos de respuesta y su justificación, entre otros aspectos.",
+"minimumThreshold": null,
+"weight": 3.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-002",
+"label": "Se valorará la propuesta de actualizaciones incrementales durante el periodo de…",
+"criterionFormula": null,
+"description": "Se valorará la propuesta de actualizaciones incrementales durante el periodo de ejecución del contrato: aumento de funcionalidades.",
+"minimumThreshold": null,
+"weight": 2.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-003",
+"label": "Se valorará la propuesta de un Plan de formación para el personal involucrado e…",
+"criterionFormula": null,
+"description": "Se valorará la propuesta de un Plan de formación para el personal involucrado en el Proyecto y usuario final.",
+"minimumThreshold": null,
+"weight": 2.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-004",
+"label": "Se valorará el cumplimiento de los estándares internacionales mediante el Plan…",
+"criterionFormula": null,
+"description": "Se valorará el cumplimiento de los estándares internacionales mediante el Plan de Gestión de datos e IA presentado.",
+"minimumThreshold": null,
+"weight": 3.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-005",
+"label": "Se valorará la opción de incluir otras fuentes de datos (además de las mínimas…",
+"criterionFormula": null,
+"description": "Se valorará la opción de incluir otras fuentes de datos (además de las mínimas requeridas).",
+"minimumThreshold": null,
+"weight": 2.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-006",
+"label": "Se valorará que el adjudicatario proponga plantillas funcionales pre-definidas…",
+"criterionFormula": null,
+"description": "Se valorará que el adjudicatario proponga plantillas funcionales pre-definidas para la ingesta de datos que fomenten la productividad del sistema.",
+"minimumThreshold": null,
+"weight": 5.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-007",
+"label": "Se valorará la integración de algoritmos de IA para la detección y corrección d…",
+"criterionFormula": null,
+"description": "Se valorará la integración de algoritmos de IA para la detección y corrección de anomalías (valores atípicos, duplicados, valores faltantes) en la ingesta de datos.",
+"minimumThreshold": null,
+"weight": 4.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-008",
+"label": "Se valorará la aplicación de IA para la normalización y estandarización de dato…",
+"criterionFormula": null,
+"description": "Se valorará la aplicación de IA para la normalización y estandarización de datos con el fin de mejorar la calidad y consistencia de la información recibida.",
+"minimumThreshold": null,
+"weight": 3.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-009",
+"label": "Se valorará la capacidad de la solución para clasificar automáticamente la info…",
+"criterionFormula": null,
+"description": "Se valorará la capacidad de la solución para clasificar automáticamente la información (por ejemplo, etiquetado semántico) que facilite la interoperabilidad y la posterior explotación.",
+"minimumThreshold": null,
+"weight": 3.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-010",
+"label": "Se evaluará la capacidad de generar predicciones o recomendaciones para mejorar…",
+"criterionFormula": null,
+"description": "Se evaluará la capacidad de generar predicciones o recomendaciones para mejorar el manejo de la RAM.",
+"minimumThreshold": null,
+"weight": 5.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-011",
+"label": "Permitirá la visualización inteligente basada en IA para el análisis de tendenc…",
+"criterionFormula": null,
+"description": "Permitirá la visualización inteligente basada en IA para el análisis de tendencias y correlaciones automatizadas en los datos visualizados.",
+"minimumThreshold": null,
+"weight": 4.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-012",
+"label": "Integrará la IA para la generación de explicaciones automáticas de los datos y…",
+"criterionFormula": null,
+"description": "Integrará la IA para la generación de explicaciones automáticas de los datos y modelos visualizados (ej. identificación de factores clave en una predicción o KPI).",
+"minimumThreshold": null,
+"weight": 4.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-013",
+"label": "Plan de Proyecto: cada licitador deberá presentar el plan de implementación que…",
+"criterionFormula": null,
+"description": "Plan de Proyecto: cada licitador deberá presentar el plan de implementación que llevaría a cabo en caso de ser adjudicatario y donde se detallará la estrategia para el desarrollo de la solución (duración de 5 meses) y una fase de despliegue y uso (duración de 7 meses). Se describirán las fases del Proyecto, el cronograma, la estrategia a seguir, la operativa de trabajo y la relación entre tareas. Se valorará la adecuación del plan a las necesidades y especiales características de este contrato, para lo que las propuestas deben ser detalladas y claras.",
+"minimumThreshold": null,
+"weight": 6.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-014",
+"label": "Modelo de relación y Modelo Organizativo: Cada licitador deberá indicar el modo…",
+"criterionFormula": null,
+"description": "Modelo de relación y Modelo Organizativo: Cada licitador deberá indicar el modo en el que se comunicará con Biogipuzkoa durante la vigencia del contrato y también el modelo organizativo que empleará de manera interna, justificando así la viabilidad de la ejecución de su plan de implementación. Se valorará la adecuación del modelo de relación y modelo organizativo a las necesidades y especiales características de este contrato, para lo que las propuestas deben ser detalladas y claras.",
+"minimumThreshold": null,
+"weight": 2.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-015",
+"label": "Plan de evaluación y mitigación de riesgos: Cada licitador deberá desarrollar u…",
+"criterionFormula": null,
+"description": "Plan de evaluación y mitigación de riesgos: Cada licitador deberá desarrollar un Plan en el que se detallen los posibles riesgos durante el proceso de implementación de la solución, así como las alternativas de mitigación de los mismos.",
+"minimumThreshold": null,
+"weight": 2.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-016",
+"label": "Oferta económica",
+"criterionFormula": "Vi = Vmax - Vmax x (Oi - Omin) / Omin",
+"description": "Oferta económica",
+"minimumThreshold": null,
+"weight": 30.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-017",
+"label": "Implementación adicional de idiomas",
+"criterionFormula": "5 puntos cada idioma adicional",
+"description": "Implementación adicional de idiomas",
+"minimumThreshold": null,
+"weight": 20.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-018",
+"label": "Privacidad y seguridad: Proteger los datos sensibles con ISO 27701.",
+"criterionFormula": null,
+"description": "Privacidad y seguridad: Proteger los datos sensibles con ISO 27701.",
+"minimumThreshold": null,
+"weight": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-019",
+"label": "Gobernanza: Establecer un marco ético y responsable con ISO 38505 e ISO 37000.",
+"criterionFormula": null,
+"description": "Gobernanza: Establecer un marco ético y responsable con ISO 38505 e ISO 37000.",
+"minimumThreshold": null,
+"weight": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-020",
+"label": "Inteligencia artificial: Garantizar que los sistemas de IA sean transparentes,…",
+"criterionFormula": null,
+"description": "Inteligencia artificial: Garantizar que los sistemas de IA sean transparentes, robustos y libres de sesgos mediante estándares como ISO/IEC 23053, 23894, 24027, 24029 y 30108.",
+"minimumThreshold": null,
+"weight": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-021",
+"label": "Se valorará el cumplimiento de los estándares internacionales mediante el Plan…",
+"criterionFormula": null,
+"description": "Se valorará el cumplimiento de los estándares internacionales mediante el Plan de Gestión de datos e IA presentado.",
+"minimumThreshold": null,
+"weight": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-002-criterion-001",
+"label": "Valorable si también detectan  -lactamasas de espectro extendido.",
+"criterionFormula": null,
+"description": "Valorable si también detectan  -lactamasas de espectro extendido.",
+"minimumThreshold": null,
+"weight": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-002-criterion-002",
+"label": "Se valorará que permita la monitorización del rendimiento de la solución RaDAR",
+"criterionFormula": null,
+"description": "Se valorará que permita la monitorización del rendimiento de la solución RaDAR",
+"minimumThreshold": null,
+"weight": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-002-criterion-003",
+"label": "Tiempo de gestión del cambio",
+"criterionFormula": null,
+"description": "Tiempo de gestión del cambio",
+"minimumThreshold": null,
+"weight": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-002-criterion-004",
+"label": "Procesamiento Natural del Lenguaje (PNL) aplicando inteligencia artificial",
+"criterionFormula": null,
+"description": "Procesamiento Natural del Lenguaje (PNL) aplicando inteligencia artificial",
+"minimumThreshold": null,
+"weight": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-002-criterion-005",
+"label": "Capacidad de integración de los indicadores RENAVE",
+"criterionFormula": null,
+"description": "Capacidad de integración de los indicadores RENAVE",
+"minimumThreshold": null,
+"weight": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-003-lot-001-criterion-001",
+"label": "Tiempo de detección",
+"criterionFormula": null,
+"description": "Tiempo de detección",
+"minimumThreshold": null,
+"weight": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-003-lot-001-criterion-002",
+"label": "Visualización de la curva de crecimiento",
+"criterionFormula": null,
+"description": "Visualización de la curva de crecimiento",
+"minimumThreshold": null,
+"weight": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-003-lot-001-criterion-003",
+"label": "Capacidad de crecimiento",
+"criterionFormula": null,
+"description": "Capacidad de crecimiento",
+"minimumThreshold": null,
+"weight": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-003-lot-001-criterion-004",
+"label": "Calidad ambiental de la flota de vehículos utilizados",
+"criterionFormula": null,
+"description": "Calidad ambiental de la flota de vehículos utilizados",
+"minimumThreshold": null,
+"weight": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-003-lot-001-criterion-005",
+"label": "Envase procedente de material reciclado o bosque sostenible de los reactivos y…",
+"criterionFormula": null,
+"description": "Envase procedente de material reciclado o bosque sostenible de los reactivos y consumibles",
+"minimumThreshold": null,
+"weight": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-003-lot-002-criterion-001",
+"label": "Máximo número de detecciones de otros tipos de carbapenemasas",
+"criterionFormula": null,
+"description": "Máximo número de detecciones de otros tipos de carbapenemasas",
+"minimumThreshold": null,
+"weight": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-003-lot-002-criterion-002",
+"label": "Número de variantes de las carbapenemasas detectadas",
+"criterionFormula": null,
+"description": "Número de variantes de las carbapenemasas detectadas",
+"minimumThreshold": null,
+"weight": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-003-lot-002-criterion-003",
+"label": "Número de publicaciones internacionales donde se evalúe o se utilice la inmunoc…",
+"criterionFormula": null,
+"description": "Número de publicaciones internacionales donde se evalúe o se utilice la inmunocromatografía de carbapenemasas",
+"minimumThreshold": null,
+"weight": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-003-lot-002-criterion-004",
+"label": "Máximo número de detecciones de subtipos de CTX-M u otras betalactamasas",
+"criterionFormula": null,
+"description": "Máximo número de detecciones de subtipos de CTX-M u otras betalactamasas",
+"minimumThreshold": null,
+"weight": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-003-lot-002-criterion-005",
+"label": "Número de variantes de de CTX-M u otras betalactamasas",
+"criterionFormula": null,
+"description": "Número de variantes de de CTX-M u otras betalactamasas",
+"minimumThreshold": null,
+"weight": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-003-lot-002-criterion-006",
+"label": "Calidad ambiental de la flota de vehículos utilizados",
+"criterionFormula": null,
+"description": "Calidad ambiental de la flota de vehículos utilizados",
+"minimumThreshold": null,
+"weight": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-003-lot-002-criterion-007",
+"label": "Envase procedente de material reciclado o bosque sostenible de los reactivos y…",
+"criterionFormula": null,
+"description": "Envase procedente de material reciclado o bosque sostenible de los reactivos y consumibles",
+"minimumThreshold": null,
+"weight": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-003-lot-003-criterion-001",
+"label": "Propuesta del análisis comparativo de los polimorfimas del \"Core Genome\" entre…",
+"criterionFormula": null,
+"description": "Propuesta del análisis comparativo de los polimorfimas del \"Core Genome\" entre los aislamientos secuenciados",
+"minimumThreshold": null,
+"weight": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-003-lot-003-criterion-002",
+"label": "Propuesta de integración de los resultados obtenidos en las plataformas de visu…",
+"criterionFormula": null,
+"description": "Propuesta de integración de los resultados obtenidos en las plataformas de visualización epidemiológica CATHAI y HAIVIZ o equivalentes",
+"minimumThreshold": null,
+"weight": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-003-lot-003-criterion-003",
+"label": "Tiempo mínimo de dedicación del personal, de acuerdo con el cronograma técnico…",
+"criterionFormula": null,
+"description": "Tiempo mínimo de dedicación del personal, de acuerdo con el cronograma técnico de 72h máximo",
+"minimumThreshold": null,
+"weight": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-003-lot-003-criterion-004",
+"label": "Suministro complementario de un equipo Cobrador de librerías, sus reactivos y c…",
+"criterionFormula": null,
+"description": "Suministro complementario de un equipo Cobrador de librerías, sus reactivos y consumibles necesarios",
+"minimumThreshold": null,
+"weight": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-003-lot-003-criterion-005",
+"label": "Disponer de análisis bioinformático de las relaciones filogenéticas entres los…",
+"criterionFormula": null,
+"description": "Disponer de análisis bioinformático de las relaciones filogenéticas entres los aislamientos secuenciados",
+"minimumThreshold": null,
+"weight": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-003-lot-003-criterion-006",
+"label": "Calidad ambiental de la flota de vehículos utilizados",
+"criterionFormula": null,
+"description": "Calidad ambiental de la flota de vehículos utilizados",
+"minimumThreshold": null,
+"weight": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-003-lot-003-criterion-007",
+"label": "Envase procedente de material reciclado o bosque sostenible de los reactivos y…",
+"criterionFormula": null,
+"description": "Envase procedente de material reciclado o bosque sostenible de los reactivos y consumibles",
+"minimumThreshold": null,
+"weight": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/award-criteria/tender-001-criterion-001",
+"label": "Precio",
+"criterionFormula": "se otorgará l a máxima puntuación a la oferta más económica, valorando el resto de ofertas mediante proporcionalidad inversa con la anterior",
+"description": "Precio",
+"minimumThreshold": null,
+"weight": 60.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/award-criteria/tender-001-criterion-002",
+"label": "Propuesta Funcional",
+"criterionFormula": null,
+"description": "Propuesta Funcional",
+"minimumThreshold": null,
+"weight": 10.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/award-criteria/tender-001-criterion-003",
+"label": "Descripción técnica de la solución propuesta",
+"criterionFormula": null,
+"description": "Descripción técnica de la solución propuesta",
+"minimumThreshold": null,
+"weight": 10.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/award-criteria/tender-001-criterion-004",
+"label": "Plan de proyecto y plan de negocio",
+"criterionFormula": null,
+"description": "Plan de proyecto y plan de negocio",
+"minimumThreshold": null,
+"weight": 5.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/award-criteria/tender-001-criterion-005",
+"label": "Elementos innovadores",
+"criterionFormula": null,
+"description": "Elementos innovadores",
+"minimumThreshold": null,
+"weight": 15.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/award-criteria/tender-001-criterion-001",
+"label": "Precio",
+"criterionFormula": null,
+"description": "Precio",
+"minimumThreshold": null,
+"weight": 10.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/award-criteria/tender-001-criterion-002",
+"label": "La capacidad de la propuesta para dar respuesta al reto, incluyendo la valoraci…",
+"criterionFormula": null,
+"description": "La capacidad de la propuesta para dar respuesta al reto, incluyendo la valoración del impacto en el proceso diagnóstico no resuelta que se aborda, la mejora del proceso asistencial del paciente y la calidad de la evidencia que soporta la propuesta",
+"minimumThreshold": null,
+"weight": 20.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/award-criteria/tender-001-criterion-003",
+"label": "Las características de la solución propuesta: características funcionales, cali…",
+"criterionFormula": null,
+"description": "Las características de la solución propuesta: características funcionales, calidad técnica/tecnológica, usabilidad en un entorno asistencial, encaje en el proceso diagnóstico",
+"minimumThreshold": null,
+"weight": 20.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/award-criteria/tender-001-criterion-004",
+"label": "El grado de innovación de la solución propuesta",
+"criterionFormula": null,
+"description": "El grado de innovación de la solución propuesta",
+"minimumThreshold": null,
+"weight": 10.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/award-criteria/tender-001-criterion-005",
+"label": "Descripción de cómo se ligan los criterios contemplados en el diseño de la solu…",
+"criterionFormula": null,
+"description": "Descripción de cómo se ligan los criterios contemplados en el diseño de la solución propuesta a los Objetivos de Desarrollo Sostenible",
+"minimumThreshold": null,
+"weight": 7.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/award-criteria/tender-001-criterion-006",
+"label": "se contribuye a una economía circular, es decir, reutilizando y/o reusando elem…",
+"criterionFormula": null,
+"description": "se contribuye a una economía circular, es decir, reutilizando y/o reusando elementos ya existentes y minimizando la generación de residuos",
+"minimumThreshold": null,
+"weight": 3.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/award-criteria/tender-001-criterion-007",
+"label": "El dimensionamiento del equipo humano para la ejecución del proyecto, así como…",
+"criterionFormula": null,
+"description": "El dimensionamiento del equipo humano para la ejecución del proyecto, así como adecuación de los perfiles del equipo de trabajo asignados a cada una de las tareas previstas y su integración en la metodología del proyecto",
+"minimumThreshold": null,
+"weight": 2.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/award-criteria/tender-001-criterion-008",
+"label": "La adecuación de la propuesta de medios técnicos, materiales y de infraestructu…",
+"criterionFormula": null,
+"description": "La adecuación de la propuesta de medios técnicos, materiales y de infraestructura e instalaciones al proyecto planteado",
+"minimumThreshold": null,
+"weight": 2.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/award-criteria/tender-001-criterion-009",
+"label": "Otras aportaciones en forma de activos o tecnología",
+"criterionFormula": null,
+"description": "Otras aportaciones en forma de activos o tecnología",
+"minimumThreshold": null,
+"weight": 1.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/award-criteria/tender-001-criterion-010",
+"label": "La adecuación al proyecto de la metodología de trabajo y dirección empleada, es…",
+"criterionFormula": null,
+"description": "La adecuación al proyecto de la metodología de trabajo y dirección empleada, estructuración correcta de la planificación de ejecución, con descripción clara y pormenorizada del cronograma de tareas, hitos y entregables",
+"minimumThreshold": null,
+"weight": 2.5
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/award-criteria/tender-001-criterion-011",
+"label": "Calidad del Plan de Riesgos, descripción detallada de las acciones propuestas p…",
+"criterionFormula": null,
+"description": "Calidad del Plan de Riesgos, descripción detallada de las acciones propuestas para afrontar los cambios, puntos críticos, dificultades intrínsecas del reto",
+"minimumThreshold": null,
+"weight": 10.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/award-criteria/tender-001-criterion-012",
+"label": "La adecuación al proyecto del plan de gestión de riesgos y contingencias propue…",
+"criterionFormula": null,
+"description": "La adecuación al proyecto del plan de gestión de riesgos y contingencias propuesto",
+"minimumThreshold": null,
+"weight": 2.5
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/award-criteria/tender-001-criterion-013",
+"label": "La estructuración y coherencia de la secuencia de actividades identificadas has…",
+"criterionFormula": null,
+"description": "La estructuración y coherencia de la secuencia de actividades identificadas hasta la puesta en mercado del producto y de su planificación temporal",
+"minimumThreshold": null,
+"weight": 6.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/award-criteria/tender-001-criterion-014",
+"label": "Estimación del volumen de mercado potencial, escenario temporal para conseguir…",
+"criterionFormula": null,
+"description": "Estimación del volumen de mercado potencial, escenario temporal para conseguir la fase de comercialización incluyendo un estudio de retorno de inversión",
+"minimumThreshold": null,
+"weight": 4.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/award-criteria/tender-001-criterion-001",
+"label": "Propuesta económica",
+"criterionFormula": null,
+"description": "Propuesta económica",
+"minimumThreshold": null,
+"weight": 100.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-001",
+"label": "Grado de detalle y el rigor del planteamiento de la solución tecnológica",
+"criterionFormula": null,
+"description": "Grado de detalle y el rigor del planteamiento de la solución tecnológica",
+"minimumThreshold": null,
+"weight": 6.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-002",
+"label": "Grado de innovación de la solución propuesta para todos los componentes a desar…",
+"criterionFormula": null,
+"description": "Grado de innovación de la solución propuesta para todos los componentes a desarrollar en este contrato",
+"minimumThreshold": null,
+"weight": 6.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-003",
+"label": "Adecuación de la propuesta presentada para el Componente 1: Sistema de visión a…",
+"criterionFormula": null,
+"description": "Adecuación de la propuesta presentada para el Componente 1: Sistema de visión artificial e IA a las necesidades de cada caso de uso propuesto en el pliego de prescripciones técnicas",
+"minimumThreshold": null,
+"weight": 6.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-004",
+"label": "Adecuación del sistema de comunicaciones propuesto a las características de los…",
+"criterionFormula": null,
+"description": "Adecuación del sistema de comunicaciones propuesto a las características de los parques empresariales y las necesidades de la solución tecnológica a desarrollar",
+"minimumThreshold": null,
+"weight": 8.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-005",
+"label": "Adecuación de la solución propuesta para facilitar la integración con sistemas…",
+"criterionFormula": null,
+"description": "Adecuación de la solución propuesta para facilitar la integración con sistemas y plataformas externas y la escalabilidad de los diferentes componentes",
+"minimumThreshold": null,
+"weight": 4.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-006",
+"label": "Adecuación de la planificación, metodología y cronograma de desarrollo e implan…",
+"criterionFormula": null,
+"description": "Adecuación de la planificación, metodología y cronograma de desarrollo e implantación de la solución técnica (segmentada por componentes)",
+"minimumThreshold": null,
+"weight": 3.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-007",
+"label": "Descripción y coherencia de la descripción de las fases del proyecto y la secue…",
+"criterionFormula": null,
+"description": "Descripción y coherencia de la descripción de las fases del proyecto y la secuencia de actividades a desarrollar en cada fase",
+"minimumThreshold": null,
+"weight": 3.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-008",
+"label": "Grado de detalle del plan de sostenibilidad y mantenimiento de la solución tecn…",
+"criterionFormula": null,
+"description": "Grado de detalle del plan de sostenibilidad y mantenimiento de la solución tecnológica",
+"minimumThreshold": null,
+"weight": 2.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-009",
+"label": "Plan de capacitación para la administración y mantenimiento de todos los compon…",
+"criterionFormula": null,
+"description": "Plan de capacitación para la administración y mantenimiento de todos los componentes de la solución por los técnicos del Ayto. de Alcalá de Guadaíra",
+"minimumThreshold": null,
+"weight": 2.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-010",
+"label": "Plan de Seguridad",
+"criterionFormula": null,
+"description": "Plan de Seguridad",
+"minimumThreshold": null,
+"weight": 2.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-011",
+"label": "Plan de riesgos y Plan de calidad del proyecto",
+"criterionFormula": null,
+"description": "Plan de riesgos y Plan de calidad del proyecto",
+"minimumThreshold": null,
+"weight": 2.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-012",
+"label": "Recursos asignados al proyecto",
+"criterionFormula": null,
+"description": "Recursos asignados al proyecto",
+"minimumThreshold": null,
+"weight": 3.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-013",
+"label": "Plan de Explotación Comercial",
+"criterionFormula": null,
+"description": "Plan de Explotación Comercial",
+"minimumThreshold": null,
+"weight": 2.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-014",
+"label": "Oferta económica",
+"criterionFormula": "criterio de proporcionalidad respecto a la oferta con mayor porcentaje de baja",
+"description": "Oferta económica",
+"minimumThreshold": null,
+"weight": 30.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-015",
+"label": "Retornos económicos futuros ( royalties )",
+"criterionFormula": "una fórmula lineal",
+"description": "Retornos económicos futuros ( royalties )",
+"minimumThreshold": null,
+"weight": 10.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-016",
+"label": "Ampliación plazo de garantía de los componentes de la solución tecnológica",
+"criterionFormula": null,
+"description": "Ampliación plazo de garantía de los componentes de la solución tecnológica",
+"minimumThreshold": null,
+"weight": 4.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-017",
+"label": "Valor del coste de mantenimiento y/o servicios de la solución de comunicaciones…",
+"criterionFormula": "la siguiente fórmula lineal",
+"description": "Valor del coste de mantenimiento y/o servicios de la solución de comunicaciones para la Red Troncal de los parques empresariales con el nodo central de 'La Procesadora'",
+"minimumThreshold": null,
+"weight": 7.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-criteria/tender-001-criterion-001",
+"label": "SOLUCIÓN TÉCNICA",
+"criterionFormula": null,
+"description": "SOLUCIÓN TÉCNICA",
+"minimumThreshold": 25.0,
+"weight": 50.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-criteria/tender-001-criterion-002",
+"label": "La capacidad de la propuesta para dar respuesta al reto planteado de manera inn…",
+"criterionFormula": null,
+"description": "La capacidad de la propuesta para dar respuesta al reto planteado de manera innovadora.",
+"minimumThreshold": null,
+"weight": 15.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-criteria/tender-001-criterion-003",
+"label": "Estado del arte.",
+"criterionFormula": null,
+"description": "Estado del arte.",
+"minimumThreshold": null,
+"weight": 10.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-criteria/tender-001-criterion-004",
+"label": "El grado de innovación de la solución propuesta.",
+"criterionFormula": null,
+"description": "El grado de innovación de la solución propuesta.",
+"minimumThreshold": null,
+"weight": 15.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-criteria/tender-001-criterion-005",
+"label": "Otras características técnicas.",
+"criterionFormula": null,
+"description": "Otras características técnicas.",
+"minimumThreshold": null,
+"weight": 10.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-criteria/tender-001-criterion-006",
+"label": "Dimensionamiento del equipo humano para la ejecución del proyecto, así como la…",
+"criterionFormula": null,
+"description": "Dimensionamiento del equipo humano para la ejecución del proyecto, así como la adecuación de los perfiles del equipo de trabajo asignados a cada una de las tareas previstas y su integración en la metodología del proyecto.",
+"minimumThreshold": null,
+"weight": 5.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-criteria/tender-001-criterion-007",
+"label": "La adecuación de la propuesta de medios técnicos, materiales y de infraestructu…",
+"criterionFormula": null,
+"description": "La adecuación de la propuesta de medios técnicos, materiales y de infraestructura e instalaciones al proyecto planteado.",
+"minimumThreshold": null,
+"weight": 5.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-criteria/tender-001-criterion-008",
+"label": "La adecuación al proyecto de la metodología de trabajo y dirección empleada, es…",
+"criterionFormula": null,
+"description": "La adecuación al proyecto de la metodología de trabajo y dirección empleada, estructuración correcta de la planificación de ejecución, con descripción clara y pormenorizada del cronograma de tareas, hitos y entregables.",
+"minimumThreshold": null,
+"weight": 5.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-criteria/tender-001-criterion-009",
+"label": "La adecuación al proyecto del plan de gestión de riesgos y contingencias propue…",
+"criterionFormula": null,
+"description": "La adecuación al proyecto del plan de gestión de riesgos y contingencias propuesto.",
+"minimumThreshold": null,
+"weight": 5.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-criteria/tender-001-criterion-010",
+"label": "La viabilidad futura, técnica y económica, de las soluciones aportadas en base…",
+"criterionFormula": null,
+"description": "La viabilidad futura, técnica y económica, de las soluciones aportadas en base a las prescripciones establecidas en el pliego.",
+"minimumThreshold": null,
+"weight": 5.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-criteria/tender-001-criterion-011",
+"label": "Derechos de propiedad intelectual y/o industrial de las tecnologías o solucione…",
+"criterionFormula": null,
+"description": "Derechos de propiedad intelectual y/o industrial de las tecnologías o soluciones aportadas.",
+"minimumThreshold": null,
+"weight": 5.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-criteria/tender-001-criterion-012",
+"label": "PRECIO TOTAL DE FASES",
+"criterionFormula": "La oferta más económica recibe la puntuación máxima (10 puntos). El resto de ofertas realizadas obtienen una puntuación de manera proporcional comparándola con la oferta más económica",
+"description": "PRECIO TOTAL DE FASES",
+"minimumThreshold": null,
+"weight": 10.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-criteria/tender-001-criterion-013",
+"label": "RETORNOS ECONÓMICOS FUTUROS (ROYALTIES)",
+"criterionFormula": "Si el valor ofrecido es 10%, o superior, se le asignará la máxima puntuación, 10 puntos.",
+"description": "RETORNOS ECONÓMICOS FUTUROS (ROYALTIES)",
+"minimumThreshold": 1.0,
+"weight": 10.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/award-criteria/tender-001-criterion-001",
+"label": "Diseño, configuración y distribución de equipos y contenedores",
+"criterionFormula": null,
+"description": "Diseño, configuración y distribución de equipos y contenedores",
+"minimumThreshold": null,
+"weight": 20.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/award-criteria/tender-001-criterion-002",
+"label": "Consumo específico de energía (SEC) promedio año 0",
+"criterionFormula": null,
+"description": "Consumo específico de energía (SEC) promedio año 0",
+"minimumThreshold": null,
+"weight": 15.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/award-criteria/tender-001-criterion-003",
+"label": "Valor de pérdida de carga estimado en las conducciones de la planta desaladora",
+"criterionFormula": "Pmca= (Pmax*mcamin)/mcao",
+"description": "Valor de pérdida de carga estimado en las conducciones de la planta desaladora",
+"minimumThreshold": null,
+"weight": 5.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/award-criteria/tender-001-criterion-004",
+"label": "Oferta económica",
+"criterionFormula": null,
+"description": "Oferta económica",
+"minimumThreshold": null,
+"weight": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/award-criteria/tender-001-criterion-005",
+"label": "mejora en garantía, asistencia técnica y mantenimiento preventivo",
+"criterionFormula": null,
+"description": "mejora en garantía, asistencia técnica y mantenimiento preventivo",
+"minimumThreshold": null,
+"weight": 30.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/award-criteria/tender-001-criterion-001",
+"label": "Grado de innovación tecnológica de los módulos funcionales",
+"criterionFormula": "2x8",
+"description": "Grado de innovación tecnológica de los módulos funcionales",
+"minimumThreshold": null,
+"weight": 16.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/award-criteria/tender-001-criterion-002",
+"label": "Propuesta de solución técnica",
+"criterionFormula": null,
+"description": "Propuesta de solución técnica",
+"minimumThreshold": null,
+"weight": 15.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/award-criteria/tender-001-criterion-003",
+"label": "Auto dinamización y Plan de dinamización sensibilización, formación, y comunica…",
+"criterionFormula": null,
+"description": "Auto dinamización y Plan de dinamización sensibilización, formación, y comunicación",
+"minimumThreshold": null,
+"weight": 10.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/award-criteria/tender-001-criterion-004",
+"label": "Propuesta de valor basada en la incorporación de tecnologías innovadoras",
+"criterionFormula": null,
+"description": "Propuesta de valor basada en la incorporación de tecnologías innovadoras",
+"minimumThreshold": null,
+"weight": 8.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/award-criteria/tender-001-criterion-005",
+"label": "Ejecución, gestión y gobernanza",
+"criterionFormula": null,
+"description": "Ejecución, gestión y gobernanza",
+"minimumThreshold": null,
+"weight": 8.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/award-criteria/tender-001-criterion-006",
+"label": "Despliegue en entorno demostrativo: Puesta en funcionamiento, Plan de mantenimi…",
+"criterionFormula": null,
+"description": "Despliegue en entorno demostrativo: Puesta en funcionamiento, Plan de mantenimiento y de Servicio soporte",
+"minimumThreshold": null,
+"weight": 7.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/award-criteria/tender-001-criterion-007",
+"label": "Plan de validación de la solución a través de los Productos Mínimos Viables (PM…",
+"criterionFormula": null,
+"description": "Plan de validación de la solución a través de los Productos Mínimos Viables (PMV)",
+"minimumThreshold": null,
+"weight": 6.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/award-criteria/tender-001-criterion-008",
+"label": "Precio u oferta económica",
+"criterionFormula": null,
+"description": "Precio u oferta económica",
+"minimumThreshold": null,
+"weight": 15.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/award-criteria/tender-001-criterion-009",
+"label": "Años de mantenimiento evolutivo adicionales a 2",
+"criterionFormula": "(nº de años ofrecidos/nº de años máximo-ofrecidos) x 6",
+"description": "Años de mantenimiento evolutivo adicionales a 2",
+"minimumThreshold": null,
+"weight": 6.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/award-criteria/tender-001-criterion-010",
+"label": "Horas de dinamización posterior al desarrollo",
+"criterionFormula": "1punto*cada 100h",
+"description": "Horas de dinamización posterior al desarrollo",
+"minimumThreshold": null,
+"weight": 5.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/award-criteria/tender-001-criterion-011",
+"label": "Horas de formación posteriores al desarrollo",
+"criterionFormula": "1punto*cada 100h",
+"description": "Horas de formación posteriores al desarrollo",
+"minimumThreshold": null,
+"weight": 4.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/award-criteria/tender-001-criterion-001",
+"label": "Metodología de desarrollo propuesta",
+"criterionFormula": null,
+"description": "Metodología de desarrollo propuesta",
+"minimumThreshold": 10.0,
+"weight": 20.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/award-criteria/tender-001-criterion-002",
+"label": "Grado de innovación de la solución",
+"criterionFormula": null,
+"description": "Grado de innovación de la solución",
+"minimumThreshold": null,
+"weight": 10.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/award-criteria/tender-001-criterion-003",
+"label": "Capacidad del sistema para evaluar y presentar un análisis económico sólido",
+"criterionFormula": null,
+"description": "Capacidad del sistema para evaluar y presentar un análisis económico sólido",
+"minimumThreshold": null,
+"weight": 10.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/award-criteria/tender-001-criterion-004",
+"label": "Nivel de detalle arquitectónico y constructivo.",
+"criterionFormula": null,
+"description": "Nivel de detalle arquitectónico y constructivo.",
+"minimumThreshold": null,
+"weight": 10.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/award-criteria/tender-001-criterion-005",
+"label": "Plan de Viabilidad Técnica y Económica y de puesta en valor de resultados",
+"criterionFormula": null,
+"description": "Plan de Viabilidad Técnica y Económica y de puesta en valor de resultados",
+"minimumThreshold": null,
+"weight": 10.0
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/award-criteria/tender-001-criterion-006",
+"label": "Propuesta económica",
+"criterionFormula": "MP x (POMV) / (PO)",
+"description": "Propuesta económica",
+"minimumThreshold": null,
+"weight": 10.0
+}
+]

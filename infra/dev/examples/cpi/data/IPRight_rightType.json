@@ -1,0 +1,202 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/ip-rights/tender-001-ip-001-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/derechos-de-explotacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/ip-rights/tender-001-ip-001-right-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/derecho-de-recuperar-la-propiedad-intelectual-0-industrial-generada"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/ip-rights/tender-001-ip-001-right-003",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/derechos-de-comunicacion-de-los-resultados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/ip-rights/tender-001-ip-001-right-004",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/derechos-de-divulgacion-de-las-conclusiones"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/ip-rights/tender-001-ip-002-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/reutilizacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/ip-rights/tender-001-ip-002-right-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/fuentes-abiertas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-rights/tender-001-ip-001-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/explotacion-economica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-rights/tender-001-ip-001-right-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/desplegar-el-sistema-y-elementos-desarrollados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-rights/tender-001-ip-001-right-003",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/explotacion-economica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-rights/tender-002-ip-001-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/explotacion-economica-de-la-solucion-innovadora-resultante-de-la-ejecucion-del-proyecto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-rights/tender-002-ip-001-right-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/desplegar-el-sistema-y-elementos-desarrollados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-rights/tender-002-ip-002-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/fines-de-investigacion-cientifica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/ip-rights/tender-001-ip-001-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/comercializacion-y-explotacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/ip-rights/tender-001-ip-001-right-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/registrar-y-mantener-los-dpi"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/ip-rights/tender-001-ip-001-right-003",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/acceso-ilimitado-y-gratuito-a-los-resultados-de-la-investigacion-y-desarrollo-para-su-uso"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/ip-rights/tender-001-ip-001-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/comercializacion-y-explotacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/ip-rights/tender-001-ip-001-right-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/derecho-de-acceso"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/ip-rights/tender-001-ip-001-right-003",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/usar-desarrollar-adaptar-modificar-y-utilizar-los-resultados-solucion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/ip-rights/tender-001-ip-001-right-004",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/fabricar-y-contratar-la-fabricacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/ip-rights/tender-001-ip-001-right-005",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/conceder-licencias"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-rights/tender-001-ip-001-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/derechos-exclusivos-de-reproduccion-distribucion-comunicacion-publica-incluida-la-puesta-a-disposicion-y-transformacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-rights/tender-001-ip-001-right-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/facultad-de-solicitar-los-registros-e-inscripciones-oportunos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-rights/tender-001-ip-001-right-003",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/todas-las-modalidades-de-explotacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-rights/tender-001-ip-002-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/derechos-exclusivos-de-reproduccion-distribucion-comunicacion-publica-incluida-la-puesta-a-disposicion-y-transformacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-rights/tender-001-ip-002-right-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/cesion-en-exclusiva-de-la-totalidad-de-los-derechos-de-propiedad-intelectual-e-industrial"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-rights/tender-002-ip-001-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/cesion-de-los-derechos-mencionados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-rights/tender-002-ip-001-right-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/uso-del-producto-correspondiente"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-rights/tender-002-ip-002-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/explotar-el-mercado-potencial-de-sus-soluciones-innovadoras-mas-alla-de-esta-contratacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-rights/tender-003-ip-001-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/derechos-de-explotacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-rights/tender-003-ip-002-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/explotar-el-mercado-potencial-de-sus-soluciones-innovadoras-mas-alla-de-esta-contratacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/ip-rights/tender-001-ip-001-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/derechos-de-explotacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/ip-rights/tender-001-ip-001-right-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/desarrollo-del-siste-ma-para-su-mantenimiento-interno"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/ip-rights/tender-001-ip-002-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/cesion-de-uso"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/ip-rights/tender-001-ip-001-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/derechos-de-explotacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/ip-rights/tender-001-ip-001-right-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/uso-o-explotacion-de-los-dpi-generados-en-el-contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/ip-rights/tender-001-ip-001-right-003",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/uso-en-investigacion-y-docencia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/ip-rights/tender-001-ip-001-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/derecho-de-uso"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/ip-rights/tender-001-ip-002-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/derecho-de-uso"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/ip-rights/tender-001-ip-002-right-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/autorizar-el-uso"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/ip-rights/tender-001-ip-001-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/utilizacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/ip-rights/tender-001-ip-001-right-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/cesion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/ip-rights/tender-001-ip-001-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/comercializacion-y-explotacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/ip-rights/tender-001-ip-001-right-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/recuperar-los-derechos-sobre-la-propiedad-intelectual-o-industrial-generada"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/ip-rights/tender-001-ip-001-right-003",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/exigir-al-adjudicatario-que-conceda-licencias"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/ip-rights/tender-001-ip-001-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/publicados-divulgados-y-replicados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/ip-rights/tender-001-ip-001-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/derechos-de-acceso-y-utilizacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/ip-rights/tender-001-ip-002-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/derechos-de-uso-modificacion-y-desarrollo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/ip-rights/tender-001-ip-002-right-002",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/utilizar-el-desarrollo-y-o-los-derechos-aportados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/ip-rights/tender-001-ip-003-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/utilizacion"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/ip-rights/tender-001-ip-001-right-001",
+"o": "https://example.org/cpi-demo/id/vocab/ip-right-type/derechos-de-uso-y-modificacion-de-tecnologias-propietarias"
+}
+]

@@ -1,0 +1,132 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/ip-ownership-allocations/tender-001-ip-001-ownership-001",
+"label": "la titularidad de los derechos de propiedad industrial nacidos bajo el ámbito d…",
+"description": "la titularidad de los derechos de propiedad industrial nacidos bajo el ámbito del presente contrato se cederá al contratista"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/ip-ownership-allocations/tender-001-ip-002-ownership-001",
+"label": "Los derechos de propiedad industrial e intelectual sobre los nuevos bienes, tec…",
+"description": "Los derechos de propiedad industrial e intelectual sobre los nuevos bienes, tecnologías o soluciones desarrolladas en el ámbito del contrato se cederán al Ayuntamiento de Alicante."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/ip-ownership-allocations/tender-001-ip-002-ownership-002",
+"label": "Los códigos fuente y binarios elaborados en los desarrollos serán propiedad del…",
+"description": "Los códigos fuente y binarios elaborados en los desarrollos serán propiedad del Ayuntamiento de Alicante."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/ip-ownership-allocations/tender-001-ip-002-ownership-003",
+"label": "Todos los derechos de propiedad intelectual y de 'Copyright' que se puedan deri…",
+"description": "Todos los derechos de propiedad intelectual y de 'Copyright' que se puedan derivar de dichos trabajos serán propiedad exclusiva del Ayuntamiento de Alicante"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-ownership-allocations/tender-001-ip-001-ownership-001",
+"label": "la Propiedad Intelectual e Industrial de los resultados de la investigación des…",
+"description": "la Propiedad Intelectual e Industrial de los resultados de la investigación desarrollada durante la ejecución del contrato pertenecerá a la entidad o entidades contratistas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-ownership-allocations/tender-002-ip-001-ownership-001",
+"label": "Todos los derechos de Propiedad Industrial e Intelectual, así como los derechos…",
+"description": "Todos los derechos de Propiedad Industrial e Intelectual, así como los derechos económicos de explotación vinculados a los mismos que puedan originarse durante la ejecución del contrato, ya sea sobre la totalidad de la solución innovadora o sobre alguno de sus componentes o tecnologías"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/ip-ownership-allocations/tender-002-ip-002-ownership-001",
+"label": "Propiedad Intelectual e Industrial de los resultados de la investigación desarr…",
+"description": "Propiedad Intelectual e Industrial de los resultados de la investigación desarrollada durante la ejecución del contrato pertenecerán a la entidad o entidades contratistas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/ip-ownership-allocations/tender-001-ip-001-ownership-001",
+"label": "La titularidad de los DPI generados por la empresa o empresas adjudicatarias du…",
+"description": "La titularidad de los DPI generados por la empresa o empresas adjudicatarias durante y en el marco del proyecto les corresponderá a ellas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/ip-ownership-allocations/tender-001-ip-001-ownership-002",
+"label": "Todos los derechos de propiedad intelectual preexistentes (\"DPl preexistentes\")…",
+"description": "Todos los derechos de propiedad intelectual preexistentes (\"DPl preexistentes\") que se utilicen o suministren para los propósitos del presente contrato serán propiedad de la parte que los introduzca en el proyecto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/ip-ownership-allocations/tender-001-ip-001-ownership-001",
+"label": "Serán de titularidad del adjudicatario los DPI sobre los nuevos bienes, tecnolo…",
+"description": "Serán de titularidad del adjudicatario los DPI sobre los nuevos bienes, tecnologías o soluciones que desarrolle en el ámbito del presente contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/ip-ownership-allocations/tender-001-ip-001-ownership-002",
+"label": "Todos los DPI preexistentes que se utilicen o suministren para los propósitos d…",
+"description": "Todos los DPI preexistentes que se utilicen o suministren para los propósitos del contrato serán propiedad de su titular (o, en su caso, del tercero del que se haya derivado el derecho de su uso)."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-ownership-allocations/tender-001-ip-001-ownership-001",
+"label": "la titularidad de todos los derechos de propiedad intelectual e industrial sobr…",
+"description": "la titularidad de todos los derechos de propiedad intelectual e industrial sobre los Resultados corresponderá en exclusiva a Biogipuzkoa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-ownership-allocations/tender-001-ip-002-ownership-001",
+"label": "la titularidad de todos los derechos de propiedad intelectual e industrial sobr…",
+"description": "la titularidad de todos los derechos de propiedad intelectual e industrial sobre los Resultados corresponderá en exclusiva a Biogipuzkoa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-ownership-allocations/tender-002-ip-002-ownership-001",
+"label": "derechos de propiedad intelectual (DPI) que éstos generan durante RaDAR",
+"description": "derechos de propiedad intelectual (DPI) que éstos generan durante RaDAR"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-ownership-allocations/tender-003-ip-001-ownership-001",
+"label": "Las invenciones que sean realizadas por el contratista durante la ejecución de…",
+"description": "Las invenciones que sean realizadas por el contratista durante la ejecución de la prestación o que sean resultado de una actividad de investigación explícita o implícitamente constitutiva del objeto del contrato serán propiedad del Laboratori de Referència de Catalunya."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/ip-ownership-allocations/tender-003-ip-002-ownership-001",
+"label": "mantendrán la propiedad de los derechos de propiedad intelectual (DPI) que esto…",
+"description": "mantendrán la propiedad de los derechos de propiedad intelectual (DPI) que estos generan durante RaDAR"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/ip-ownership-allocations/tender-001-ip-001-ownership-001",
+"label": "la titularidad sobre los derechos de propiedad industrial e intelectual que pro…",
+"description": "la titularidad sobre los derechos de propiedad industrial e intelectual que protegen los componentes tecnológicos de la solución a desarrollar corresponde al contratista"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/ip-ownership-allocations/tender-001-ip-001-ownership-001",
+"label": "Todos los derechos de propiedad intelectual e industrial preexistentes (\"DPI pr…",
+"description": "Todos los derechos de propiedad intelectual e industrial preexistentes (\"DPI preexistentes\") que se utilicen o suministren para los propósitos del acuerdo serán propiedad de la parte que los introduzca en el acuerdo (o, en su caso, del tercero del que se haya derivado el derecho de su uso o explotación y con cuya autorización, si fuese precisa, se hayan introducido en el acuerdo)."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/ip-ownership-allocations/tender-001-ip-001-ownership-002",
+"label": "Los derechos de propiedad industrial e intelectual sobre los nuevos bienes, tec…",
+"description": "Los derechos de propiedad industrial e intelectual sobre los nuevos bienes, tecnologías o soluciones desarrolladas en el ámbito del contrato se cederán al contratista que los haya generado."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/ip-ownership-allocations/tender-001-ip-001-ownership-001",
+"label": "la Administración tiene que adquirir la propiedad intelectual o industrial del…",
+"description": "la Administración tiene que adquirir la propiedad intelectual o industrial del trabajo objeto del contrato desde el inicio"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/ip-ownership-allocations/tender-001-ip-002-ownership-001",
+"label": "tanto del componente software adquirido o desarrollado, como del conjunto de do…",
+"description": "tanto del componente software adquirido o desarrollado, como del conjunto de documentos, diagramas, esquemas y demás elementos previos que lo conforman"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/ip-ownership-allocations/tender-001-ip-001-ownership-001",
+"label": "Quedarán en propiedad del Ayuntamiento tanto el servicio recibido como los dere…",
+"description": "Quedarán en propiedad del Ayuntamiento tanto el servicio recibido como los derechos inherentes a los trabajos realizados, su propiedad industrial y comercial."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/ip-ownership-allocations/tender-001-ip-001-ownership-001",
+"label": "los DPI sobre los nuevos bienes, tecnologías o soluciones que desarrolle en el…",
+"description": "los DPI sobre los nuevos bienes, tecnologías o soluciones que desarrolle en el ámbito del presente contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/ip-ownership-allocations/tender-001-ip-001-ownership-001",
+"label": "Todos los derechos de autor y demás derechos de propiedad intelectual o industr…",
+"description": "Todos los derechos de autor y demás derechos de propiedad intelectual o industrial preexistentes con anterioridad a la fecha de entrada en vigor del contrato a suscribir entre el adjudicatario y el ITC, pertenecerán a la parte que sea titular de los mismos."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/ip-ownership-allocations/tender-001-ip-001-ownership-001",
+"label": "Cada Parte mantendrá la titularidad de los Derechos preexistentes.",
+"description": "Cada Parte mantendrá la titularidad de los Derechos preexistentes."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/ip-ownership-allocations/tender-001-ip-001-ownership-001",
+"label": "de acuerdo con los resultados alcanzados por cada una de ellas",
+"description": "de acuerdo con los resultados alcanzados por cada una de ellas"
+}
+]

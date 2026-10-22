@@ -1,0 +1,79 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-001",
+"label": "Plataforma robótica para cirugía laparoscópica",
+"description": null,
+"lotNumber": "Lote 1",
+"title": "Plataforma robótica para cirugía laparoscópica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-002",
+"label": "Sistema de entrenamiento portable para cirugía robótica laparoscópica",
+"description": null,
+"lotNumber": "Lote 2",
+"title": "Sistema de entrenamiento portable para cirugía robótica laparoscópica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-003",
+"label": "Plataforma robótica para cirugía laparoscópica",
+"description": "una plataforma robótica para llevar a cabo cirugía laparoscópica de forma remota",
+"lotNumber": "1",
+"title": "Plataforma robótica para cirugía laparoscópica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/lots/tender-002-lot-004",
+"label": "Sistema de entrenamiento portable para cirugía robótica laparoscópica",
+"description": "un sistema portable para formación y entrenamiento en robótica laparoscópica",
+"lotNumber": "2",
+"title": "Sistema de entrenamiento portable para cirugía robótica laparoscópica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-002-lot-001",
+"label": "Sistema de detección rápida de bacteriemia o sepsis",
+"description": "detectar la presencia de microorganismos e identificar si son microorganismos resistentes a partir de sangre directa, sin necesidad de esperar a la positividad del hemocultivo",
+"lotNumber": "Lote 1",
+"title": "Sistema de detección rápida de bacteriemia o sepsis"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-002-lot-002",
+"label": "Detección rápida en el cribado de colonización o infección por microorganismos…",
+"description": "la identificación de los microorganismos y/o el genotipo de resistencia y/o el fenotipo de resistencia de éstos",
+"lotNumber": "Lote 2",
+"title": "Detección rápida en el cribado de colonización o infección por microorganismos resistentes a los antimicrobianos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-002-lot-003",
+"label": "Solución informática para el manejo, gestión y detección rápida de la resistenc…",
+"description": "Visualización de información clave del paciente / resumen de los datos del paciente",
+"lotNumber": "Lote 3",
+"title": "Solución informática para el manejo, gestión y detección rápida de la resistencia antimicrobiana"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-001",
+"label": "Suministro del método de cribado rápido para la detección de bacilos gramnegati…",
+"description": "El lote 1 contempla las pruebas que se realizarán a pacientes sometidos a vigilancia de portadores de bacterias multirresistentes ingresadas en las unidades hospitalarias especiales, como por ahora, Nefrología, Oncohematología, UCI y REA.",
+"lotNumber": "1",
+"title": "Suministro del método de cribado rápido para la detección de bacilos gramnegativos multirresistentes en pacientes sometidos a vigilancia de colonización por estos microorganismos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-002",
+"label": "Suministros del método de detección rápida de resistencias antimicrobianas",
+"description": "El lote 2 contempla las pruebas que permitirán detectar ciertos mecanismos de resistencia en Bacils Gramnegativos.",
+"lotNumber": "2",
+"title": "Suministros del método de detección rápida de resistencias antimicrobianas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/lots/tender-003-lot-003",
+"label": "Suministro de la solución integral para el análisis genómico completo de microo…",
+"description": "El lote 3 contempla todos los suministros y prestaciones relacionadas con una solución integral para las pruebas de análisis genómico de aislamientos bacterianos, así como por las pruebas de comparación molecular entre ellos (epidemiología molecular).",
+"lotNumber": "3",
+"title": "Suministro de la solución integral para el análisis genómico completo de microorganismos multi-resistentes: interpretación genómica y epidemiológica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/lots/tender-001-lot-001",
+"label": "servicios para análisis y desarrollo de un único componente software",
+"description": "servicios para análisis y desarrollo de un único componente software",
+"lotNumber": "Lote único",
+"title": null
+}
+]

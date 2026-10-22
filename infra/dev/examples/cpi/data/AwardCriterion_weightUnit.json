@@ -1,0 +1,622 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/award-criteria/tender-001-criterion-001",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/award-criteria/tender-001-criterion-002",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/award-criteria/tender-001-criterion-003",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/award-criteria/tender-001-criterion-005",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/award-criteria/tender-001-criterion-006",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/award-criteria/tender-001-criterion-007",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/award-criteria/tender-001-criterion-008",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/award-criteria/tender-001-criterion-009",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/award-criteria/tender-001-criterion-010",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/award-criteria/tender-001-criterion-011",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/award-criteria/tender-001-criterion-012",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/award-criteria/tender-001-criterion-013",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/award-criteria/tender-001-criterion-014",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/award-criteria/tender-001-criterion-001",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/award-criteria/tender-001-criterion-002",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/award-criteria/tender-001-criterion-003",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/award-criteria/tender-001-criterion-004",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/award-criteria/tender-001-criterion-005",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/award-criteria/tender-001-criterion-006",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-001-criterion-001",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-001-criterion-002",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-001-criterion-003",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-001-criterion-004",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-001-criterion-005",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-001-criterion-006",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-001-criterion-007",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-001-criterion-008",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-001-criterion-009",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-001-criterion-010",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-003-criterion-001",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-003-criterion-002",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-003-criterion-003",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-003-criterion-004",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-003-criterion-005",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-003-criterion-006",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-003-criterion-007",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-003-criterion-008",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-003-criterion-009",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-003-criterion-010",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-004-criterion-001",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-004-criterion-002",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-004-criterion-003",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-004-criterion-004",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-004-criterion-005",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-004-criterion-006",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-004-criterion-007",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-004-criterion-008",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-004-criterion-009",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-criteria/tender-002-lot-004-criterion-010",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/award-criteria/tender-001-criterion-001",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/award-criteria/tender-001-criterion-002",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/award-criteria/tender-001-criterion-003",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/award-criteria/tender-001-criterion-004",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/award-criteria/tender-001-criterion-005",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/award-criteria/tender-001-criterion-006",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/award-criteria/tender-001-criterion-007",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/award-criteria/tender-001-criterion-008",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/award-criteria/tender-001-criterion-009",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/award-criteria/tender-001-criterion-010",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/award-criteria/tender-001-criterion-011",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/award-criteria/tender-001-criterion-012",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/award-criteria/tender-001-criterion-013",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/award-criteria/tender-001-criterion-001",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/award-criteria/tender-001-criterion-002",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/award-criteria/tender-001-criterion-003",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/award-criteria/tender-001-criterion-004",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/award-criteria/tender-001-criterion-005",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-001",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-002",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-003",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-004",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-005",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-006",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-007",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-008",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-009",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-010",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-011",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-012",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-013",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-014",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-015",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-016",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/award-criteria/tender-001-criterion-017",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/award-criteria/tender-001-criterion-001",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/award-criteria/tender-001-criterion-002",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/award-criteria/tender-001-criterion-003",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/award-criteria/tender-001-criterion-004",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/award-criteria/tender-001-criterion-005",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/award-criteria/tender-001-criterion-001",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/award-criteria/tender-001-criterion-002",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/award-criteria/tender-001-criterion-003",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/award-criteria/tender-001-criterion-004",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/award-criteria/tender-001-criterion-005",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/award-criteria/tender-001-criterion-006",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/award-criteria/tender-001-criterion-007",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/award-criteria/tender-001-criterion-008",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/award-criteria/tender-001-criterion-009",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/punto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/award-criteria/tender-001-criterion-010",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/award-criteria/tender-001-criterion-011",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/award-criteria/tender-001-criterion-012",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/award-criteria/tender-001-criterion-013",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/award-criteria/tender-001-criterion-014",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/award-criteria/tender-001-criterion-001",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-001",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-002",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-003",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-004",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-005",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-006",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-007",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-008",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-009",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-010",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-011",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-012",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-013",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-014",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-015",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-016",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/award-criteria/tender-001-criterion-017",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-criteria/tender-001-criterion-001",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-criteria/tender-001-criterion-002",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-criteria/tender-001-criterion-003",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-criteria/tender-001-criterion-004",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-criteria/tender-001-criterion-005",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-criteria/tender-001-criterion-006",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-criteria/tender-001-criterion-007",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-criteria/tender-001-criterion-008",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-criteria/tender-001-criterion-009",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-criteria/tender-001-criterion-010",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-criteria/tender-001-criterion-011",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-criteria/tender-001-criterion-012",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-criteria/tender-001-criterion-013",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/award-criteria/tender-001-criterion-001",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/award-criteria/tender-001-criterion-002",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/award-criteria/tender-001-criterion-003",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/award-criteria/tender-001-criterion-005",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/award-criteria/tender-001-criterion-001",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/award-criteria/tender-001-criterion-002",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/award-criteria/tender-001-criterion-003",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/award-criteria/tender-001-criterion-004",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/award-criteria/tender-001-criterion-005",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/award-criteria/tender-001-criterion-006",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/award-criteria/tender-001-criterion-007",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/award-criteria/tender-001-criterion-008",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/award-criteria/tender-001-criterion-009",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/award-criteria/tender-001-criterion-010",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/award-criteria/tender-001-criterion-011",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/award-criteria/tender-001-criterion-001",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/award-criteria/tender-001-criterion-002",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/award-criteria/tender-001-criterion-003",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/award-criteria/tender-001-criterion-004",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/award-criteria/tender-001-criterion-005",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/award-criteria/tender-001-criterion-006",
+"o": "https://example.org/cpi-demo/id/vocab/weight-unit/puntos"
+}
+]

@@ -1,0 +1,498 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/145-2017-00380/milestones/tender-001-stage-001-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/execution-stages/tender-001-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/145-2017-00380/milestones/tender-001-stage-002-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-001-stage-001-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-001-stage-001-milestone-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-001-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-001-stage-002-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-001-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-001-stage-002-milestone-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-001-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-001-stage-002-milestone-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-002-lot-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-002-lot-001-stage-001-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-002-lot-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-002-lot-001-stage-001-milestone-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-002-lot-001-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-002-lot-001-stage-002-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-002-lot-001-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-002-lot-001-stage-002-milestone-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-002-lot-001-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-002-lot-001-stage-002-milestone-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-002-lot-001-stage-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-002-lot-001-stage-003-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-002-lot-001-stage-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-002-lot-001-stage-003-milestone-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-002-lot-002-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-002-lot-002-stage-001-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-002-lot-002-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-002-lot-002-stage-001-milestone-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-002-lot-002-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-002-lot-002-stage-001-milestone-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-002-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-002-stage-001-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-002-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-002-stage-001-milestone-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-002-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-002-stage-001-milestone-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-002-stage-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-002-stage-003-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-002-stage-003",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-002-stage-003-milestone-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-002-stage-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-002-stage-004-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-002-stage-004",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-002-stage-004-milestone-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-002-stage-005",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-002-stage-005-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-002-stage-005",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-002-stage-005-milestone-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-002-stage-005",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-002-stage-005-milestone-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-002-stage-005",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-002-stage-005-milestone-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-002-stage-005",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/milestones/tender-002-stage-005-milestone-005"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/milestones/tender-001-stage-001-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/milestones/tender-001-stage-001-milestone-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/milestones/tender-001-stage-001-milestone-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/milestones/tender-001-stage-001-milestone-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/milestones/tender-001-stage-001-milestone-005"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/milestones/tender-001-stage-001-milestone-006"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/execution-stages/tender-001-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/milestones/tender-001-stage-002-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/execution-stages/tender-001-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/milestones/tender-001-stage-002-milestone-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/execution-stages/tender-001-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/milestones/tender-001-stage-002-milestone-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/execution-stages/tender-001-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/milestones/tender-001-stage-002-milestone-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/execution-stages/tender-001-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/milestones/tender-001-stage-002-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/milestones/tender-001-stage-001-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/milestones/tender-001-stage-001-milestone-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/milestones/tender-001-stage-001-milestone-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/execution-stages/tender-001-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/milestones/tender-001-stage-002-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/execution-stages/tender-001-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/milestones/tender-001-stage-002-milestone-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/execution-stages/tender-001-stage-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/milestones/tender-001-stage-003-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/execution-stages/tender-002-lot-003-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/milestones/tender-002-lot-003-stage-001-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/execution-stages/tender-002-lot-003-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/milestones/tender-002-lot-003-stage-002-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/execution-stages/tender-002-lot-003-stage-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/milestones/tender-002-lot-003-stage-003-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/execution-stages/tender-002-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/milestones/tender-002-stage-001-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/execution-stages/tender-002-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/milestones/tender-002-stage-002-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/execution-stages/tender-002-stage-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/milestones/tender-002-stage-003-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/execution-stages/tender-003-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/milestones/tender-003-stage-001-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/execution-stages/tender-003-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/milestones/tender-003-stage-002-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/execution-stages/tender-003-stage-003",
+"o": "https://example.org/cpi-demo/id/projects/ga-101036228/milestones/tender-003-stage-003-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/execution-stages/tender-001-stage-003",
+"o": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/milestones/tender-001-stage-003-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/execution-stages/tender-001-stage-010",
+"o": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/milestones/tender-001-stage-010-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/milestones/tender-001-stage-001-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/milestones/tender-001-stage-001-milestone-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/milestones/tender-001-stage-001-milestone-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/milestones/tender-001-stage-001-milestone-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/milestones/tender-001-stage-001-milestone-005"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/milestones/tender-001-stage-001-milestone-006"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/execution-stages/tender-001-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/milestones/tender-001-stage-002-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/execution-stages/tender-001-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/milestones/tender-001-stage-002-milestone-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/execution-stages/tender-001-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/milestones/tender-001-stage-002-milestone-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/execution-stages/tender-001-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/milestones/tender-001-stage-002-milestone-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/execution-stages/tender-001-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/milestones/tender-001-stage-002-milestone-005"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/execution-stages/tender-001-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/milestones/tender-001-stage-002-milestone-006"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/milestones/tender-001-stage-001-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/milestones/tender-001-stage-001-milestone-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/execution-stages/tender-001-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/milestones/tender-001-stage-002-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/execution-stages/tender-002-stage-003",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/milestones/tender-002-stage-003-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/execution-stages/tender-002-stage-004",
+"o": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/milestones/tender-002-stage-004-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/milestones/tender-001-stage-001-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/milestones/tender-001-stage-001-milestone-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/milestones/tender-001-stage-001-milestone-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/milestones/tender-001-stage-001-milestone-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/milestones/tender-001-stage-001-milestone-005"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/milestones/tender-001-stage-001-milestone-006"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/execution-stages/tender-001-stage-003",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/milestones/tender-001-stage-003-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/execution-stages/tender-001-stage-004",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/milestones/tender-001-stage-004-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/execution-stages/tender-001-stage-007",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/milestones/tender-001-stage-007-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/execution-stages/tender-001-stage-007",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/milestones/tender-001-stage-007-milestone-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/execution-stages/tender-001-stage-007",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/milestones/tender-001-stage-007-milestone-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/execution-stages/tender-001-stage-007",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/milestones/tender-001-stage-007-milestone-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/execution-stages/tender-001-stage-008",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/milestones/tender-001-stage-008-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/execution-stages/tender-001-stage-008",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/milestones/tender-001-stage-008-milestone-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/execution-stages/tender-001-stage-008",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/milestones/tender-001-stage-008-milestone-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/execution-stages/tender-001-stage-008",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/milestones/tender-001-stage-008-milestone-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/execution-stages/tender-001-stage-008",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/milestones/tender-001-stage-008-milestone-005"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/execution-stages/tender-001-stage-008",
+"o": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/milestones/tender-001-stage-008-milestone-006"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/milestones/tender-001-stage-001-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/milestones/tender-001-stage-001-milestone-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/execution-stages/tender-001-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/milestones/tender-001-stage-002-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/execution-stages/tender-001-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/milestones/tender-001-stage-002-milestone-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/execution-stages/tender-001-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/milestones/tender-001-stage-002-milestone-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/execution-stages/tender-001-stage-003",
+"o": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/milestones/tender-001-stage-003-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/execution-stages/tender-001-stage-003",
+"o": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/milestones/tender-001-stage-003-milestone-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/execution-stages/tender-001-stage-003",
+"o": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/milestones/tender-001-stage-003-milestone-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/execution-stages/tender-001-stage-003",
+"o": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/milestones/tender-001-stage-003-milestone-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/milestones/tender-001-stage-001-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/milestones/tender-001-stage-001-milestone-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/milestones/tender-001-stage-001-milestone-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/execution-stages/tender-001-stage-005",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/milestones/tender-001-stage-005-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/execution-stages/tender-001-stage-005",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/milestones/tender-001-stage-005-milestone-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/execution-stages/tender-001-stage-006",
+"o": "https://example.org/cpi-demo/id/projects/sd-2111/milestones/tender-001-stage-006-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/milestones/tender-001-stage-001-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/milestones/tender-001-stage-001-milestone-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/execution-stages/tender-001-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/milestones/tender-001-stage-002-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/execution-stages/tender-001-stage-002",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/milestones/tender-001-stage-002-milestone-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/execution-stages/tender-001-stage-003",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/milestones/tender-001-stage-003-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/execution-stages/tender-001-stage-003",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/milestones/tender-001-stage-003-milestone-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/execution-stages/tender-001-stage-003",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/milestones/tender-001-stage-003-milestone-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/execution-stages/tender-001-stage-003",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/milestones/tender-001-stage-003-milestone-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/execution-stages/tender-001-stage-004",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/milestones/tender-001-stage-004-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/execution-stages/tender-001-stage-004",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/milestones/tender-001-stage-004-milestone-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/execution-stages/tender-001-stage-005",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/milestones/tender-001-stage-005-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/execution-stages/tender-001-stage-005",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/milestones/tender-001-stage-005-milestone-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/execution-stages/tender-001-stage-005",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/milestones/tender-001-stage-005-milestone-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/execution-stages/tender-001-stage-005",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/milestones/tender-001-stage-005-milestone-004"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/execution-stages/tender-001-stage-006",
+"o": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/milestones/tender-001-stage-006-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/execution-stages/tender-001-stage-001",
+"o": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/milestones/tender-001-stage-001-milestone-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/execution-stages/tender-001-stage-003",
+"o": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/milestones/tender-001-stage-003-milestone-001"
+}
+]

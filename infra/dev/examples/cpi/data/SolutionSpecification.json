@@ -1,0 +1,446 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/solution-specifications/tender-001-solution-001",
+"label": "solución tecnológica poco intrusiva",
+"description": "permita la comunicación en lengua de signos del discapacitado auditivo con un interlocutor oyente que desconozca dicha lengua de signos",
+"title": "solución tecnológica poco intrusiva"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/solution-specifications/tender-001-solution-002",
+"label": "Sistema de traducción bidireccional",
+"description": "En tiempo real",
+"title": "Sistema de traducción bidireccional"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/solution-specifications/tender-001-solution-001",
+"label": "Navegación Web y Tramitación Electrónica por SEDE",
+"description": "Implementación de una capa de acceso unificado basada en inteligencia artificial sobre navegación web y tramitación electrónica por SEDE",
+"title": "Navegación Web y Tramitación Electrónica por SEDE"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/solution-specifications/tender-001-solution-002",
+"label": "capa de inteligencia artificial",
+"description": "desarrollo e implantación de una capa de inteligencia artificial sobre la arquitectura del catálogo de servicios web y de sede electrónica que ofrece la web del Ayuntamiento de Alicante",
+"title": "capa de inteligencia artificial"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/solution-specifications/tender-001-solution-003",
+"label": "interfaz conversacional inteligente (asistente virtual)",
+"description": "un sistema de interfaz conversacional inteligente (asistente virtual) capaz de interactuar con el ciudadano, permitiendo el registro de información y la ejecución de acciones, sin intervención directa de los empleados públicos",
+"title": "interfaz conversacional inteligente (asistente virtual)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/solution-specifications/tender-001-solution-004",
+"label": "mejoras de accesibilidad",
+"description": "mejorar la accesibilidad y la experiencia de usuario en el uso de los servicios web del Ayuntamiento de Alicante",
+"title": "mejoras de accesibilidad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/solution-specifications/tender-001-solution-005",
+"label": "información analítica para la mejora continua y la adecuación de ésta a las dem…",
+"description": "información analítica para la mejora continua y la adecuación de ésta a las demandas ciudadanas y objetivos políticos",
+"title": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/solution-specifications/tender-001-solution-006",
+"label": "Plataforma Ciudadana",
+"description": "plataforma donde el usuario pueda acceder a los servicios tanto del asistente como la capa de IA de la web, con visualización de datos, tramitación de formularios, procedimientos, etc.",
+"title": "Plataforma Ciudadana"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/solution-specifications/tender-001-solution-007",
+"label": "Plataforma de Gestión de Data",
+"description": "Actualización de la Plataforma de Gestión de Data e implementación de nuevas características de Ingestión y Activación de datos, incluyendo sistemas de visión y audio artificial",
+"title": "Plataforma de Gestión de Data"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-001-solution-001",
+"label": "plataforma robótica de microcirugía",
+"description": "La solución innovadora consistirá en una plataforma robótica para llevar a cabo microcirugía de forma remota.",
+"title": "plataforma robótica de microcirugía"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-001-solution-002",
+"label": "Sistema de actuadores",
+"description": "Este sistema se compone de los microinstrumentos quirúrgicos robotizados que van a permitir llevar a cabo las tareas y procedimientos microquirúrgicos.",
+"title": "Sistema de actuadores"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-001-solution-003",
+"label": "Consola de control",
+"description": "Una consola de control para el cirujano. Esta consola será la que permita al cirujano controlar el sistema de actuadores de forma remota, visualizar el campo quirúrgico mediante el sistema de visión y acceder al resto de funcionalidades de la plataforma quirúrgica.",
+"title": "Consola de control"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-002-lot-001-solution-001",
+"label": "Plataforma robótica para cirugía laparoscópica",
+"description": "disponer de una plataforma robotizada para cirugía laparoscópica que mejore los sistemas ya existentes en el mercado",
+"title": "Plataforma robótica para cirugía laparoscópica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-002-lot-002-solution-001",
+"label": "Sistema de entrenamiento portable para cirugía robótica laparoscópica",
+"description": "Investigación y desarrollo de herramientas de formación compatibles con tecnologías de visión 3D, móviles y servicios online",
+"title": "Sistema de entrenamiento portable para cirugía robótica laparoscópica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/solution-specifications/tender-002-lot-002-solution-002",
+"label": "Sistema de entrenamiento portable para cirugía robótica laparoscópica",
+"description": "sistema portable para formación y entrenamiento en robótica laparoscópica",
+"title": "Sistema de entrenamiento portable para cirugía robótica laparoscópica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/solution-specifications/tender-001-solution-001",
+"label": "Desarrollo de una solución tecnológica",
+"description": "identificar nuevos servicios ocultos en TOR que no hayan sido identificados previamente y que no se puedan encontrar en fuentes públicas",
+"title": "Desarrollo de una solución tecnológica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/solution-specifications/tender-001-solution-002",
+"label": "comprobación del estado (activo o inactivo)",
+"description": "La comprobación del estado (activo o inactivo) de los servicios ocultos descubiertos en el momento de la consulta.",
+"title": "comprobación del estado (activo o inactivo)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/solution-specifications/tender-001-solution-001",
+"label": "plataforma robótica",
+"description": "desarrollar una plataforma robótica con autonomía en la ejecución de tareas y/o procedimientos quirúrgicos en cirugía mínima invasiva laparoscópica",
+"title": "plataforma robótica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/solution-specifications/tender-001-solution-002",
+"label": "Sistema de análisis del vídeo quirúrgico",
+"description": "permita la detección de estructuras anatómicas de interés, basado en técnicas de inteligencia artificial (IA) y visión por computador",
+"title": "Sistema de análisis del vídeo quirúrgico"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/solution-specifications/tender-001-solution-003",
+"label": "Entorno formativo basado en metaverso y/o Realidad Extendida",
+"description": "Desarrollo de entornos formativos para el aprendizaje en el uso del sistema robótico autónomo para cirugía laparoscópica y sus funcionalidades",
+"title": "Entorno formativo basado en metaverso y/o Realidad Extendida"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-001-solution-001",
+"label": "RaDAR evaluation digital platform",
+"description": "herramienta digital (RaDAR evaluation digital platform) de recogida, análisis y visualización de indicadores para la evaluación de la implementación de las soluciones adquiridas por los socios compradores del consorcio RaDAR (Francia, Italia y Cataluña)",
+"title": "RaDAR evaluation digital platform"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-001-solution-002",
+"label": "Adquisición de los datos de varias fuentes",
+"description": "Permitirá la ingesta de datos tanto de modo automatizado (mediante la conexión por APIs o conexiones a bases de datos), como mediante importación de ficheros disponibles para los compradores y formularios accesibles desde la propia plataforma (introducción manual).",
+"title": "Adquisición de los datos de varias fuentes"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-001-solution-003",
+"label": "Explotación y análisis de datos",
+"description": "construir KPIs a partir de los datos adquiridos, brindando facilidades de análisis y evaluación que sirvan a su vez como base para un sistema de predicción y recomendación",
+"title": "Explotación y análisis de datos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-001-solution-004",
+"label": "Visualización, generación de informes y resultados",
+"description": "un front-end inspirado en soluciones Business Intelligence (BI) que incluya tanto cuadros de mando y paneles interactivos como informes customizados a demanda y en tiempo real",
+"title": "Visualización, generación de informes y resultados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-002-lot-001-solution-001",
+"label": "Sistema de detección rápida de bacteriemia o sepsis",
+"description": "detectar la presencia de microorganismos e identificar los mecanismos de resistencia a partir de sangre directa, sin necesidad de la positividad del hemocultivo",
+"title": "Sistema de detección rápida de bacteriemia o sepsis"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-002-lot-002-solution-001",
+"label": "Detección rápida en el cribado de colonización o infección por microorganismos…",
+"description": "identificación de los microorganismos y/o el genotipo de resistencia y/o el fenotipo de resistencia de éstos",
+"title": "Detección rápida en el cribado de colonización o infección por microorganismos resistentes a los antimicrobianos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-002-lot-003-solution-001",
+"label": "Solución informática para el manejo, gestión y detección rápida de la resistenc…",
+"description": "permitirá el seguimiento de los casos y pacientes y la asignación de tareas entre los profesionales",
+"title": "Solución informática para el manejo, gestión y detección rápida de la resistencia antimicrobiana"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-003-lot-001-solution-001",
+"label": "Suministro del método de cribado rápido para la detección de bacilos gramnegati…",
+"description": "Sistema con capacidad de detección de bacilos Gramnegativos multirresistentes mediante la evaluación del crecimiento bacteriano en medios de cultivo líquidos específicos.",
+"title": "Suministro del método de cribado rápido para la detección de bacilos gramnegativos multirresistentes en pacientes sometidos a vigilancia de colonización por estos microorganismos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-003-lot-002-solution-001",
+"label": "Suministros del método de detección rápida de resistencias antimicrobianas",
+"description": "El lote 2 contempla las pruebas que permitirán detectar ciertos mecanismos de resistencia en Bacils Gramnegativos.",
+"title": "Suministros del método de detección rápida de resistencias antimicrobianas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/solution-specifications/tender-003-lot-003-solution-001",
+"label": "Suministro de la solución integral para el análisis genómico completo de microo…",
+"description": "El lote 3 contempla todos los suministros y prestaciones relacionadas con una solución integral para las pruebas de análisis genómico de aislamientos bacterianos, así como por las pruebas de comparación molecular entre ellos (epidemiología molecular).",
+"title": "Suministro de la solución integral para el análisis genómico completo de microorganismos multi-resistentes: interpretación genómica y epidemiológica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/solution-specifications/tender-001-solution-001",
+"label": "DESARROLLO DEL GESTOR DE INTEROPERABILIDAD SEMÁNTICA DE LA RED VALENCIANA DE BI…",
+"description": "servicios para análisis y desarrollo de un único componente software",
+"title": "DESARROLLO DEL GESTOR DE INTEROPERABILIDAD SEMÁNTICA DE LA RED VALENCIANA DE BIOBANCOS"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/solution-specifications/tender-001-solution-002",
+"label": "módulo de interoperabilidad semántica",
+"description": "Desarrollo de un módulo de interoperabilidad semántica basado en la terminología clínica SNOMED CT que se incorpore en la estructura de módulos del SGI de la RVB.",
+"title": "módulo de interoperabilidad semántica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/solution-specifications/tender-001-solution-003",
+"label": "Integración del SGI de la RVB con el Sistema de Información en Cáncer (NEOS)",
+"description": "Integración del SGI de la RVB con el Sistema de Gestión Clínica de Paciente Hospitalario (ORION CLINIC) haciendo uso de los servicios desarrollados en el punto 1.",
+"title": "Integración del SGI de la RVB con el Sistema de Información en Cáncer (NEOS)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/solution-specifications/tender-001-solution-001",
+"label": "PET de cuerpo completo",
+"description": "desarrollo de un PET de cuerpo completo (superior a 70 cm de longitud axial) de uso clínico",
+"title": "PET de cuerpo completo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/solution-specifications/tender-001-solution-002",
+"label": "demostradores y/o posibles prototipos en tamaño reducido",
+"description": "construcción de los dos demostradores y/o posibles prototipos en tamaño reducido para poder someter a los umbrales predefinidos las dos tecnologías",
+"title": "demostradores y/o posibles prototipos en tamaño reducido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/solution-specifications/tender-001-solution-003",
+"label": "plataforma de procesado de imágenes",
+"description": "algoritmos de reconstrucción de imagen, identificación y desarrollo de los biomarcadores pertinentes",
+"title": "plataforma de procesado de imágenes"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/solution-specifications/tender-001-solution-001",
+"label": "sistema para tener control del inventario",
+"description": "deberá poder conectarse a la BBDD de Cisco para realizar comprobaciones de EoS, EoL, vulnerabilidades publicadas, etc…",
+"title": "sistema para tener control del inventario"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/solution-specifications/tender-001-solution-001",
+"label": "CONSTRUCCIÓN DEL COMPLEJO AMBIENTAL COPERO",
+"description": "obras que se detallan en el Proyecto",
+"title": "CONSTRUCCIÓN DEL COMPLEJO AMBIENTAL COPERO"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/solution-specifications/tender-001-solution-002",
+"label": "desarrollo de soluciones tecnológicas específicas en los ámbitos del procesado…",
+"description": "desarrollo de soluciones tecnológicas específicas en los ámbitos del procesado de lodos, tanto de forma directa como a través de compostaje, con métodos innovadores",
+"title": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/solution-specifications/tender-001-solution-003",
+"label": "establecimiento de sistema robusto, efectivo eficiente con aprovechamiento y re…",
+"description": "establecimiento de sistema robusto, efectivo eficiente con aprovechamiento y recirculación de caudales con el objetivo de optimizar las necesidades energéticas del sistema",
+"title": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/solution-specifications/tender-001-solution-004",
+"label": "Sistema de humidificación del biofiltro",
+"description": "Sistema de humidificación del biofiltro con agua potable o de calidad equivalente, con una presión mínima de 3 bar.",
+"title": "Sistema de humidificación del biofiltro"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/solution-specifications/tender-001-solution-005",
+"label": "Sistema OCR para matrículas",
+"description": "El sistema será capaz de captar la imagen de la parte frontal del camión e identificar la matrícula, enviándola por comunicaciones.",
+"title": "Sistema OCR para matrículas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/solution-specifications/tender-001-solution-006",
+"label": "Sistema de identificación mediante radiofrecuencia",
+"description": "Sistema de identificación mediante radiofrecuencia para trazabilidad de entrada y salida de producción incluso pantalla táctil 12,1' Magelis HMi y tarjeta de memoria SD 4GB.",
+"title": "Sistema de identificación mediante radiofrecuencia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/solution-specifications/tender-001-solution-007",
+"label": "Modelo de integración de instalaciones al SCADA Unificado de Emasesa",
+"description": "Desarrollo y puesta en servicio de pantallas de supervisión y mando necesarias, desarrollo de base de datos, configuración de alarmas, tendencias, documentación necesaria, etc según el Estándar de Proyectos de Emasesa y Prescripciones técnicas de Inteligencia Operacional.",
+"title": "Modelo de integración de instalaciones al SCADA Unificado de Emasesa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/solution-specifications/tender-002-solution-001",
+"label": "PLANTA DE HIDRÓLISIS TÉRMICA EN LA EDAR RANILLA",
+"description": "CONSTRUCCIÓN DE UNA PLANTA DE HIDRÓLISIS TÉRMICA EN LA EDAR RANILLA, ALCALÁ DE GUADAIRA (SEVILLA)",
+"title": "PLANTA DE HIDRÓLISIS TÉRMICA EN LA EDAR RANILLA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/solution-specifications/tender-002-solution-002",
+"label": "Planta de Hidrolisis térmica de fangos",
+"description": "Planta de Hidrolisis térmica de fangos de con una capacidad de tratamiento de diseño de 16.4 t MS/día (con 30 minutos de tiempo de retención en reactor) ampliable y modulable",
+"title": "Planta de Hidrolisis térmica de fangos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/solution-specifications/tender-002-solution-003",
+"label": "sistema de control",
+"description": "El sistema debe suministrar automáticamente y en tiempo real información sobre las variables de funcionamiento de la Hidrólisis Térmica y ser integrado en el SCADA de la EDAR Ranilla",
+"title": "sistema de control"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/solution-specifications/tender-001-solution-001",
+"label": "Sistema de visión artificial e IA",
+"description": "una nueva solución tecnológica que permita la monitorización y control de riesgos para bienes materiales y personales en las áreas industriales de Alcalá de Guadaíra",
+"title": "Sistema de visión artificial e IA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/solution-specifications/tender-001-solution-002",
+"label": "Blockchain",
+"description": "La solución plantea el desarrollo e implementación de un base de datos, con arquitectura big data y capacidades noSQL y con tecnología Blockchain.",
+"title": "Blockchain"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/solution-specifications/tender-001-solution-003",
+"label": "Sistema de Inteligencia",
+"description": "un sistema de inteligencia que permita adquirir y explotar todos los datos capturados por el sistema de visión artificial e inteligencia artificial desplegados (Componente 1) y almacenados en la base de datos con tecnología Blockchain (Componente 2).",
+"title": "Sistema de Inteligencia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/solution-specifications/tender-001-solution-004",
+"label": "INFRAESTRUCTURA IAAS",
+"description": "Puesta en marcha y configuración completa Componente 4 (IaaS)",
+"title": "INFRAESTRUCTURA IAAS"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/solution-specifications/tender-001-solution-005",
+"label": "Computación distribuida",
+"description": "un sistema piloto de gestión y explotación de las capacidades de cómputo, almacenamiento y memoria del sistema distribuido de los nodos de inteligencia artificial descritos en el Componente 1.",
+"title": "Computación distribuida"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/solution-specifications/tender-001-solution-006",
+"label": "Componente 4: Infraestructura IaaS",
+"description": "Los sistemas descritos en este Pliego se desplegarán en una infraestructura en la nube en modalidad IaaS (Infraestructure as a Service - Infraestructura como servicio).",
+"title": "Componente 4: Infraestructura IaaS"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/solution-specifications/tender-001-solution-001",
+"label": "LÍNEA 1. SISTEMAS AVANZADOS DE DETECCIÓN Y LOCALIZACIÓN",
+"description": "esta línea persigue el desarrollo de diferentes sistemas de detección y localización que permitan mejorar la seguridad en el medio rural para los escenarios de actuación definidos.",
+"title": "LÍNEA 1. SISTEMAS AVANZADOS DE DETECCIÓN Y LOCALIZACIÓN"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/solution-specifications/tender-001-solution-002",
+"label": "LÍNEA 2. SISTEMAS AVANZADOS DE ANÁLISIS, COMUNICACIÓN Y REACCIÓN",
+"description": "esta línea persigue el desarrollo de diferentes sistemas para el tratamiento, integración, procesamiento, análisis, visualización, comunicación y reacción ante los datos obtenidos con los diferentes sistemas desarrollados en el área de desarrollo 1.",
+"title": "LÍNEA 2. SISTEMAS AVANZADOS DE ANÁLISIS, COMUNICACIÓN Y REACCIÓN"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/solution-specifications/tender-001-solution-001",
+"label": "planta desaladora experimental de 2.500 m3/d",
+"description": "obras de construcción de una planta desaladora experimental de 2.500 m3/d por ósmosis inversa de agua de mar en las instalaciones del ITC en Pozo Izquierdo, incluidas su puesta en marcha y verificación de rendimientos y redacción de Proyecto",
+"title": "planta desaladora experimental de 2.500 m3/d"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/solution-specifications/tender-001-solution-002",
+"label": "Planta Desaladora",
+"description": "Se desea una desaladora experimental de 2.500 m³/d de alta eficiencia energética que en el diseño propuesto (año 0 y año 3) y en la puesta en marcha (pruebas de rendimiento) se alcance un consumo específico de energía en el proceso exclusivo de desalación por debajo de los 2,000 kWh/m³ (bomba de alta, recuperador y booster)",
+"title": "Planta Desaladora"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/solution-specifications/tender-001-solution-003",
+"label": "Obra civil en la parcela de la planta desaladora",
+"description": "En la parcela prevista, se construirá una losa de hormigón.",
+"title": "Obra civil en la parcela de la planta desaladora"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/solution-specifications/tender-001-solution-004",
+"label": "Sistema de postratamiento compacto",
+"description": "Sistema de postratamiento compacto que asegure un Índice Langelier (± 0,5).",
+"title": "Sistema de postratamiento compacto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/solution-specifications/tender-001-solution-005",
+"label": "Instalación de control, instrumentación y adquisición de datos",
+"description": "la planta contará con un sistema de control, visualización (interfaz hombre-máquina (HMI) - pantalla a color mínimo 19 pulgadas) y adquisición de datos con la sensorización analógica y digital que permita asegurar la operatividad de la planta totalmente automática",
+"title": "Instalación de control, instrumentación y adquisición de datos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/solution-specifications/tender-001-solution-001",
+"label": "Plataforma SENDA (Sistema Experto en la Nube de Diagnóstico y Acompañamiento)",
+"description": "diseño, desarrollo, validación y mantenimiento de un sistema experto en la nube de diagnóstico y acompañamiento (SENDA) en fase piloto, basado en los pilares personas, procesos y tecnología, que proporcionará un espacio inteligente de interrelación para el ecosistema de emprendimiento e innovación en Castilla y León",
+"title": "Plataforma SENDA (Sistema Experto en la Nube de Diagnóstico y Acompañamiento)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/solution-specifications/tender-001-solution-002",
+"label": "Plataforma Base",
+"description": "La plataforma core de SENDA debe ser innovadora en su conjunto, y estar orientada a conectar proyectos de emprendimiento e innovación en un entorno virtual, integrando los sistemas del ICE y de otras entidades.",
+"title": "Plataforma Base"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/solution-specifications/tender-001-solution-003",
+"label": "Módulo 1: Configuración de perfiles",
+"description": "Este módulo incluirá funcionalidades que permitan caracterizar los perfiles de los usuarios en función de los roles que puedan desempeñar.",
+"title": "Módulo 1: Configuración de perfiles"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/solution-specifications/tender-001-solution-004",
+"label": "Módulo 2: Interfaz de usuario y front-end",
+"description": "Este módulo habilitará las relaciones entre los usuarios y SENDA, facilitando la transmisión de información y la comunicación en ambos sentidos",
+"title": "Módulo 2: Interfaz de usuario y front-end"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/solution-specifications/tender-001-solution-005",
+"label": "Módulo 3: Vigilancia",
+"description": "facilitar la identificación y selección de los contenidos de manera inteligente para incorporarla en el Módulo de Gestor de Contenidos",
+"title": "Módulo 3: Vigilancia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/solution-specifications/tender-001-solution-006",
+"label": "Módulo 4: Gestor de Contenidos",
+"description": "Integración de los contenidos del módulo de vigilancia, la información generada por la inteligencia del sistema y los contenidos aportados por los usuarios.",
+"title": "Módulo 4: Gestor de Contenidos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/solution-specifications/tender-001-solution-007",
+"label": "Módulo 5: Entorno colaborativo: Herramientas y espacios",
+"description": "Este módulo proporcionará los recursos necesarios para facilitar las interacciones propuestas.",
+"title": "Módulo 5: Entorno colaborativo: Herramientas y espacios"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/solution-specifications/tender-001-solution-008",
+"label": "Módulo 6: Motor de procesos de innovación y emprendimiento",
+"description": "se configura como el motor de procesos de promoción o lanzamiento de iniciativas de emprendimiento e innovación proponiendo a los diferentes perfiles las interacciones adaptadas a sus necesidades y situación",
+"title": "Módulo 6: Motor de procesos de innovación y emprendimiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/solution-specifications/tender-001-solution-009",
+"label": "Módulo 7: Cuadro de mando inteligente",
+"description": "Este módulo facilitará información a los administradores y usuarios sobre las actividades y uso de SENDA a través de un cuadro de mando.",
+"title": "Módulo 7: Cuadro de mando inteligente"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/solution-specifications/tender-001-solution-010",
+"label": "Módulo 8: Dinamizador",
+"description": "Este módulo estará dirigido a fidelizar y atraer usuarios, fomentando el uso proactivo del sistema SENDA.",
+"title": "Módulo 8: Dinamizador"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/solution-specifications/tender-001-solution-011",
+"label": "PMV: Desarrollo y Validación",
+"description": "comprobar el funcionamiento de los diferentes módulos definidos en el apartado 6.2 a través de casos de uso que llamaremos Productos Mínimos Viables (PMV).",
+"title": "PMV: Desarrollo y Validación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/solution-specifications/tender-001-solution-001",
+"label": "sistema experto",
+"description": "Un sistema experto , basado en Inteligencia artificial y Deep learning, para el diseño y la modelización BIM de elementos constructivos modulares y edificios y procesos de construcción industrializada.",
+"title": "sistema experto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/solution-specifications/tender-001-solution-002",
+"label": "Catálogo / Librería virtual de elementos constructivos modulares",
+"description": "El sistema además debe facilitar la creación y explotación de un Catálogo / Librería virtual de elementos constructivos modulares , diseñados por este o procedentes de otras fuentes, aplicaciones o bases de datos",
+"title": "Catálogo / Librería virtual de elementos constructivos modulares"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/solution-specifications/tender-001-solution-003",
+"label": "Piloto / demostrador experimental virtual en BIM",
+"description": "Piloto / demostrador experimental virtual en BIM , de un edificio de viviendas plurifamiliares en una parcela de AVRA aplicando la tecnología del sistema y elementos singulares del catálogo de elementos constructivos.",
+"title": "Piloto / demostrador experimental virtual en BIM"
+}
+]

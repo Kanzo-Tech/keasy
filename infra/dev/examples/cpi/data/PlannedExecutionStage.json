@@ -1,0 +1,698 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/execution-stages/tender-001-stage-001",
+"label": "Demostración de la viabilidad de la solución propuesta",
+"description": "realizar una especificación de detalle del sistema que permita justificar la viabilidad de la consecución de los requisitos funcionales especificados en la cláusula 2",
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "Demostración de la viabilidad de la solución propuesta"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/execution-stages/tender-001-stage-002",
+"label": "Desarrollo de un prototipo real para pruebas de campo",
+"description": "desarrollar el prototipo y realizar las correspondientes pruebas piloto con muestras reales para demostrar en un entorno simulado el cumplimiento de los requisitos funcionales",
+"dueDate": null,
+"sequenceNumber": 2,
+"title": "Desarrollo de un prototipo real para pruebas de campo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/execution-stages/tender-001-stage-003",
+"label": "Entrega de prototipo y realización de pruebas de campo en entorno real",
+"description": "realizar pruebas del sistema en un entorno real",
+"dueDate": null,
+"sequenceNumber": 3,
+"title": "Entrega de prototipo y realización de pruebas de campo en entorno real"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/execution-stages/tender-001-stage-001",
+"label": "Fase previa de análisis de requisitos de infraestructuras e integración con sis…",
+"description": "Fase inicial del proyecto en la que se realizará un estudio de infraestructuras y desarrollos software existentes en el ayuntamiento.",
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "Fase previa de análisis de requisitos de infraestructuras e integración con sistemas existentes"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/execution-stages/tender-001-stage-002",
+"label": "Fase de diseño y conceptualización",
+"description": "Diseño de la arquitectura y consolidación de las funcionalidades a desarrollar.",
+"dueDate": null,
+"sequenceNumber": 2,
+"title": "Fase de diseño y conceptualización"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/execution-stages/tender-001-stage-003",
+"label": "Fase de instalaciones",
+"description": "en caso de que la solución propuesta requiera la instalación de servidores hardware y/o virtuales, el adjudicatario instalará y configurará dichos servidores.",
+"dueDate": null,
+"sequenceNumber": 3,
+"title": "Fase de instalaciones"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/execution-stages/tender-001-stage-004",
+"label": "Fase de desarrollo y despliegue",
+"description": "Desarrollo del software de la capa de IA y accesibilidad y despliegue e integración en las aplicaciones existentes en la web del Ayuntamiento de Alicante",
+"dueDate": null,
+"sequenceNumber": 4,
+"title": "Fase de desarrollo y despliegue"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/execution-stages/tender-001-stage-005",
+"label": "Fase de validación y pruebas",
+"description": "Fase de prototipado, entrenamiento del asistente virtual y los modelos de machine learning, etc.",
+"dueDate": null,
+"sequenceNumber": 5,
+"title": "Fase de validación y pruebas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/execution-stages/tender-001-stage-006",
+"label": "Fase de depuración de fallos y cierre",
+"description": "Fase de depuración de fallos y cierre del proyecto.",
+"dueDate": null,
+"sequenceNumber": 6,
+"title": "Fase de depuración de fallos y cierre"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/execution-stages/tender-001-stage-007",
+"label": "Fase de formación",
+"description": "Se realizarán acciones formativas para los técnicos del servicio TIC del Ayuntamiento, sobre la nueva capa de IA desarrollada y la integración con los sistemas existentes",
+"dueDate": null,
+"sequenceNumber": 7,
+"title": "Fase de formación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-001-stage-001",
+"label": "Fase I. Desarrollo de una simulación de la solución innovadora",
+"description": "La primera fase, previa al desarrollo y validación del prototipo, tendrá una duración máxima de dos meses (a contar desde la formalización del contrato)",
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "Fase I. Desarrollo de una simulación de la solución innovadora"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-001-stage-002",
+"label": "Fase II. Desarrollo y validación del prototipo",
+"description": "La Fase II tendrá una duración máxima de trece meses (a contar desde la finalización con éxito de la Fase I)",
+"dueDate": null,
+"sequenceNumber": 2,
+"title": "Fase II. Desarrollo y validación del prototipo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-001-stage-003",
+"label": "fase de despliegue",
+"description": "Una vez finalizada la ejecución de la Fase II del contrato, la entidad adjudicataria estará obligada a desarrollar la fase de despliegue durante 4 años",
+"dueDate": null,
+"sequenceNumber": null,
+"title": "fase de despliegue"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-002-lot-001-stage-001",
+"label": "Desarrollo y validación de prototipo funcional en entorno simulado",
+"description": "desarrollar y validar un primer prototipo funcional",
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "Desarrollo y validación de prototipo funcional en entorno simulado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-002-lot-001-stage-002",
+"label": "Instalación del prototipo funcional en la Fundación CCMIJU",
+"description": "instalación, puesta en marcha y realización de pruebas funcionamiento del prototipo funcional",
+"dueDate": null,
+"sequenceNumber": 2,
+"title": "Instalación del prototipo funcional en la Fundación CCMIJU"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-002-lot-001-stage-003",
+"label": "Validación del prototipo funcional final en un entorno clínico experimental",
+"description": "realizar la validación en un entorno clínico experimental del prototipo resultante",
+"dueDate": null,
+"sequenceNumber": 3,
+"title": "Validación del prototipo funcional final en un entorno clínico experimental"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-002-lot-002-stage-001",
+"label": "Sistema de entrenamiento portable para cirugía robótica laparoscópica",
+"description": "El plazo aproximado para su ejecución será de 15 meses",
+"dueDate": null,
+"sequenceNumber": null,
+"title": "Sistema de entrenamiento portable para cirugía robótica laparoscópica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-002-stage-001",
+"label": "Plataforma robótica para cirugía laparoscópica",
+"description": "El plazo aproximado de ejecución será de 15 meses",
+"dueDate": null,
+"sequenceNumber": null,
+"title": "Plataforma robótica para cirugía laparoscópica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-002-stage-002",
+"label": "fase de despliegue",
+"description": "implantación de unidades adicionales de la solución innovadora desarrollada",
+"dueDate": null,
+"sequenceNumber": null,
+"title": "fase de despliegue"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-002-stage-003",
+"label": "Desarrollo y validación de prototipo funcional en entorno simulado",
+"description": "desarrollar y validar un primer prototipo funcional",
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "Desarrollo y validación de prototipo funcional en entorno simulado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-002-stage-004",
+"label": "Instalación del prototipo funcional en la Fundación CCMIJU",
+"description": "instalación, puesta en marcha y realización de pruebas funcionamiento del prototipo funcional",
+"dueDate": null,
+"sequenceNumber": 2,
+"title": "Instalación del prototipo funcional en la Fundación CCMIJU"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/execution-stages/tender-002-stage-005",
+"label": "Validación del prototipo funcional final",
+"description": "realizar las validaciones necesarias del prototipo",
+"dueDate": null,
+"sequenceNumber": 3,
+"title": "Validación del prototipo funcional final"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/execution-stages/tender-001-stage-001",
+"label": "Fase 1",
+"description": "Investigación, definición funcional de la solución propuesta, desarrollo de un prototipo software inicial y demostración de su viabilidad.",
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "Fase 1"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/execution-stages/tender-001-stage-002",
+"label": "Fase 2",
+"description": "Desarrollo de un prototipo software final que solucione el reto.",
+"dueDate": null,
+"sequenceNumber": 2,
+"title": "Fase 2"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/execution-stages/tender-001-stage-001",
+"label": "FASE I. DISEÑO DE LA SOLUCIÓN",
+"description": "diseño preliminar de todos los sistemas y componentes que conforman el sistema de automatización de tareas y/o procedimientos en cirugía robótica laparoscópica",
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "FASE I. DISEÑO DE LA SOLUCIÓN"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/execution-stages/tender-001-stage-002",
+"label": "FASE II. DESARROLLO DE UN PROTOTIPO O PRUEBAS DE LA SOLUCIÓN PROPUESTA",
+"description": "se desarrollará y fabricará el prototipo o serie de pruebas y se harán las correspondientes pruebas piloto",
+"dueDate": null,
+"sequenceNumber": 2,
+"title": "FASE II. DESARROLLO DE UN PROTOTIPO O PRUEBAS DE LA SOLUCIÓN PROPUESTA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/execution-stages/tender-001-stage-003",
+"label": "FASE III. VERIFICACIÓN PRE-OPERACIONAL",
+"description": "se suministrará el equipo en su conjunto del sistema robótico (robot, software asociado y plataforma formativa) y completamente integrado en su funcionamiento",
+"dueDate": null,
+"sequenceNumber": 3,
+"title": "FASE III. VERIFICACIÓN PRE-OPERACIONAL"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/execution-stages/tender-001-stage-001",
+"label": "fase de diseño y desarrollo",
+"description": "fase de diseño y desarrollo (5 meses)",
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "fase de diseño y desarrollo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/execution-stages/tender-001-stage-002",
+"label": "fase de despliegue y uso",
+"description": "fase de despliegue y uso (7 meses)",
+"dueDate": null,
+"sequenceNumber": 2,
+"title": "fase de despliegue y uso"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/execution-stages/tender-001-stage-003",
+"label": "Finalización del Proyecto y Transferencia de Conocimiento",
+"description": "garantizar el proceso de transferencia de conocimiento, mediante la entrega de la documentación que se estime oportuna",
+"dueDate": null,
+"sequenceNumber": 3,
+"title": "Finalización del Proyecto y Transferencia de Conocimiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/execution-stages/tender-002-lot-003-stage-001",
+"label": "Gestión de cambios, ajustes in situ y pruebas de aceptación",
+"description": "para permitir la correcta integración de la solución RaDAR en cada emplazamiento",
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "Gestión de cambios, ajustes in situ y pruebas de aceptación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/execution-stages/tender-002-lot-003-stage-002",
+"label": "Fase de despliegue",
+"description": "la solución RaDAR debe estar en perfecto funcionamiento en la rutina diaria sanitaria",
+"dueDate": null,
+"sequenceNumber": 2,
+"title": "Fase de despliegue"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/execution-stages/tender-002-lot-003-stage-003",
+"label": "Final del proyecto",
+"description": null,
+"dueDate": null,
+"sequenceNumber": null,
+"title": "Final del proyecto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/execution-stages/tender-002-stage-001",
+"label": "Gestión de cambios, ajustes in situ y pruebas de aceptación",
+"description": "para permitir la correcta integración de la solución RaDAR en cada emplazamiento",
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "Gestión de cambios, ajustes in situ y pruebas de aceptación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/execution-stages/tender-002-stage-002",
+"label": "Fase de despliegue",
+"description": "la solución RaDAR debe estar en perfecto funcionamiento en la rutina diaria sanitaria",
+"dueDate": null,
+"sequenceNumber": 2,
+"title": "Fase de despliegue"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/execution-stages/tender-002-stage-003",
+"label": "Final del proyecto",
+"description": null,
+"dueDate": null,
+"sequenceNumber": null,
+"title": "Final del proyecto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/execution-stages/tender-003-stage-001",
+"label": "Fase de implementación",
+"description": "En el primer mes tendrá lugar la fase de Implementación, ajustes in situ y pruebas de aceptación para permitir la correcta integración de la solución RaDAR en cada emplazamiento.",
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "Fase de implementación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/execution-stages/tender-003-stage-002",
+"label": "Fase de desarrollo",
+"description": "Del mes dos al noveno, tendrá lugar la fase de despliegue completo, en la que la solución RaDAR debe estar en perfecto funcionamiento en la rutina diaria sanitaria.",
+"dueDate": null,
+"sequenceNumber": 2,
+"title": "Fase de desarrollo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/execution-stages/tender-003-stage-003",
+"label": "Fase de evaluación",
+"description": "durante el último mes, se evaluarán los resultados de los proveedores, de acuerdo con los entregables que habrán ido aportando",
+"dueDate": null,
+"sequenceNumber": 3,
+"title": "Fase de evaluación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/execution-stages/tender-001-stage-001",
+"label": "Plan operativo",
+"description": "Puesta en marcha",
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "Plan operativo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/execution-stages/tender-001-stage-002",
+"label": "Análisis Diseño",
+"description": "Prestación Regular",
+"dueDate": null,
+"sequenceNumber": 2,
+"title": "Análisis Diseño"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/execution-stages/tender-001-stage-003",
+"label": "Implementación Integraciones",
+"description": "Prestación Regular",
+"dueDate": null,
+"sequenceNumber": 3,
+"title": "Implementación Integraciones"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/execution-stages/tender-001-stage-004",
+"label": "Validación y verificación Implantación",
+"description": "Prestación Regular",
+"dueDate": null,
+"sequenceNumber": 4,
+"title": "Validación y verificación Implantación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/execution-stages/tender-001-stage-005",
+"label": "de Documentación",
+"description": "Cierre proyecto",
+"dueDate": null,
+"sequenceNumber": 5,
+"title": "de Documentación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/execution-stages/tender-001-stage-006",
+"label": "fase de demostración del proyecto",
+"description": "validación del mismo",
+"dueDate": null,
+"sequenceNumber": null,
+"title": "fase de demostración del proyecto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/execution-stages/tender-001-stage-007",
+"label": "Validación y verificación.",
+"description": "Se comprobará que el sist ema es consistente con la definición de requisitos y la especificación funcional.",
+"dueDate": null,
+"sequenceNumber": 6,
+"title": "Validación y verificación."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/execution-stages/tender-001-stage-008",
+"label": "Documentación.",
+"description": "Constará de dos partes, la realización del manual de usuario y de un manual técnico con el propósito de mantenimiento futuro y ampliaciones al sistema.",
+"dueDate": null,
+"sequenceNumber": null,
+"title": "Documentación."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/execution-stages/tender-001-stage-009",
+"label": "Corrección de errores.",
+"description": "Esta actividad se desarrollará durante la ejecución del contrato y durante el periodo de garantía y correrá a cuenta del adjudicatario.",
+"dueDate": null,
+"sequenceNumber": null,
+"title": "Corrección de errores."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/execution-stages/tender-001-stage-010",
+"label": "Fase de puesta en marcha",
+"description": "Toma del servicio a nivel de conocimiento de la Organización, situación y contexto.",
+"dueDate": null,
+"sequenceNumber": null,
+"title": "Fase de puesta en marcha"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/execution-stages/tender-001-stage-011",
+"label": "Fase de prestación regular",
+"description": "Asunción total del servicio hasta la finalización del contrato.",
+"dueDate": null,
+"sequenceNumber": null,
+"title": "Fase de prestación regular"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/execution-stages/tender-001-stage-012",
+"label": "Fase de cierre del proyecto",
+"description": "Proceso de traspaso del conocimiento mediante documentación escrita y en soporte digital de los trabajos realizados a lo largo del contrato.",
+"dueDate": null,
+"sequenceNumber": null,
+"title": "Fase de cierre del proyecto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/execution-stages/tender-001-stage-001",
+"label": "Fase 1. Definición funcional de la solución propuesta, desarrollo de los demost…",
+"description": "desarrollo de ambos demostradores y/o prototipos de 15 cm, así como su comparación para seleccionar el que tenga más posibilidades de culminar con éxito el proceso de escalado",
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "Fase 1. Definición funcional de la solución propuesta, desarrollo de los demostradores y de los prototipos de 15 cm, y análisis de la viabilidad de los prototipos."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/execution-stages/tender-001-stage-002",
+"label": "Fase 2. Desarrollo del prototipo de escáner final y de la Plataforma de procesa…",
+"description": "La tecnología que haya superado la primera fase continuará desarrollando el prototipo hasta completar el sistema de cobertura axial superior a 70 cm",
+"dueDate": null,
+"sequenceNumber": 2,
+"title": "Fase 2. Desarrollo del prototipo de escáner final y de la Plataforma de procesado de imágenes para estudios y ensayos clínicos."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/execution-stages/tender-001-stage-001",
+"label": "Fase de transición",
+"description": "el objetivo de esta fase es la puesta en marcha del servicio con las máximas garantías de disponibilidad y calidad del servicio. Durante esta fase se iniciará la medición del servicio mediante un ANS. Esta fase se inicia en la firma del contrato y tiene una duración de 3 meses.",
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "Fase de transición"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/execution-stages/tender-001-stage-002",
+"label": "Fase de servicio continuo",
+"description": "esta fase debe ser una fase operativa en la que se realice el servicio cumpliendo los ANS establecidos. Esta fase se inicia al formalizarse el contrato y finaliza cuando acaba la ejecución del contrato. Esta fase se simultaneará con las fases de transición y con la fase de devolución del servicio.",
+"dueDate": null,
+"sequenceNumber": 2,
+"title": "Fase de servicio continuo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/execution-stages/tender-001-stage-003",
+"label": "Fase de Devolución del servicio",
+"description": "el contratista se compromete a dar soporte al DTIC para facilitar la transferencia del servicio al propio DTIC o a un tercero, cualquiera que sea la causa de la finalización contractual.",
+"dueDate": null,
+"sequenceNumber": 3,
+"title": "Fase de Devolución del servicio"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/execution-stages/tender-002-stage-001",
+"label": "Redacción del proyecto constructivo",
+"description": "Redacción del proyecto constructivo",
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "Redacción del proyecto constructivo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/execution-stages/tender-002-stage-002",
+"label": "ejecución de las obras",
+"description": "Se establece un plazo de 52 semanas para la ejecución de las obras.",
+"dueDate": null,
+"sequenceNumber": 2,
+"title": "ejecución de las obras"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/execution-stages/tender-002-stage-003",
+"label": "periodo de pruebas necesarias y puesta en marcha",
+"description": "Se establece un plazo de 9 semanas (~2 meses) como periodo de pruebas necesarias y puesta en marcha de todo el equipamiento a temperatura y presión, incluyendo las fases con agua y vapor y con 1/3 de lodo diluido",
+"dueDate": null,
+"sequenceNumber": 3,
+"title": "periodo de pruebas necesarias y puesta en marcha"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/execution-stages/tender-002-stage-004",
+"label": "periodo de garantía de un año",
+"description": "Las pruebas y puesta a punto finales, a 2/3 y plena carga de lodo en la instalación, se realizarán durante el periodo de garantía de un año",
+"dueDate": null,
+"sequenceNumber": 4,
+"title": "periodo de garantía de un año"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/execution-stages/tender-001-stage-001",
+"label": "Plazos parciales de ejecución",
+"description": "Los principales hitos del proyecto y sus plazos de ejecución asociados",
+"dueDate": "2023-06-30",
+"sequenceNumber": null,
+"title": "Plazos parciales de ejecución"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/execution-stages/tender-001-stage-002",
+"label": "replanteo y estudio de las ubicaciones",
+"description": "proponer justificadamente los emplazamientos óptimos de la infraestructura hardware de la solución",
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "replanteo y estudio de las ubicaciones"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/execution-stages/tender-001-stage-003",
+"label": "Análisis y diseño de la solución",
+"description": "toma de requisitos, el análisis funcional y el diseño de la solución definitiva",
+"dueDate": null,
+"sequenceNumber": 2,
+"title": "Análisis y diseño de la solución"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/execution-stages/tender-001-stage-004",
+"label": "fase piloto",
+"description": "verificar el funcionamiento de la solución",
+"dueDate": null,
+"sequenceNumber": 3,
+"title": "fase piloto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/execution-stages/tender-001-stage-005",
+"label": "fase de despliegue",
+"description": "Implantación (suministro, instalación, configuración, pruebas y puesta en marcha) de los dispositivos, cuadros y la infraestructura asociada a la instalación de los mismos",
+"dueDate": null,
+"sequenceNumber": 4,
+"title": "fase de despliegue"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/execution-stages/tender-001-stage-006",
+"label": "Plan de experimentación",
+"description": "Diseño y ejecución de un plan de experimentación para la validación del sistema desplegado y la demostración del impacto de la solución desplegada.",
+"dueDate": null,
+"sequenceNumber": 5,
+"title": "Plan de experimentación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/execution-stages/tender-001-stage-007",
+"label": "Requisitos de despliegue",
+"description": "fases para la puesta en marcha de la solución",
+"dueDate": null,
+"sequenceNumber": null,
+"title": "Requisitos de despliegue"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/execution-stages/tender-001-stage-008",
+"label": "hitos de facturación",
+"description": "Se establecen diferentes hitos de facturación al cumplimiento de hitos en cada una de las fases",
+"dueDate": null,
+"sequenceNumber": null,
+"title": "hitos de facturación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/execution-stages/tender-001-stage-001",
+"label": "FASE I: Diseño de la solución",
+"description": "se realizará un trabajo de campo en el que se observará el funcionamiento y necesidades de la Administración Pública usuaria destinataria de la solución y se recopilarán todos los datos necesarios",
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "FASE I: Diseño de la solución"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/execution-stages/tender-001-stage-002",
+"label": "FASE II: Desarrollo de un prototipo o pruebas de la solución propuesta",
+"description": "se desarrollará y fabricará el prototipo o serie de pruebas y se harán las correspondientes pruebas piloto",
+"dueDate": null,
+"sequenceNumber": 2,
+"title": "FASE II: Desarrollo de un prototipo o pruebas de la solución propuesta"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/execution-stages/tender-001-stage-003",
+"label": "FASE III: Verificación pre-operacional",
+"description": "realizar una verificación pre-operacional del prototipo en el entorno real propuesto por la Administración Pública usuaria",
+"dueDate": "2023-03-31",
+"sequenceNumber": 3,
+"title": "FASE III: Verificación pre-operacional"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/execution-stages/tender-001-stage-001",
+"label": "proceso de obra en Pozo Izquierdo o en taller",
+"description": "durante el proceso de obra en Pozo Izquierdo o en taller, conforme a los hitos siguientes (no guardan un necesario orden cronológico)",
+"dueDate": null,
+"sequenceNumber": null,
+"title": "proceso de obra en Pozo Izquierdo o en taller"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/execution-stages/tender-001-stage-002",
+"label": "Obra civil en la parcela de la planta desaladora",
+"description": "En la parcela prevista, se construirá una losa de hormigón.",
+"dueDate": null,
+"sequenceNumber": null,
+"title": "Obra civil en la parcela de la planta desaladora"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/execution-stages/tender-001-stage-003",
+"label": "Planta Desaladora",
+"description": "la empresa adjudicataria será responsable del correcto diseño, suministro, transporte, montaje, instalación, puesta en marcha y pruebas de rendimiento.",
+"dueDate": null,
+"sequenceNumber": null,
+"title": "Planta Desaladora"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/execution-stages/tender-001-stage-004",
+"label": "Transporte, suministro e instalación de la planta desaladora en la parcela ITC",
+"description": "Una vez ubicados los contenedores, el adjudicatario realizará las conexiones interiores y exteriores necesarias a nivel hidráulico, eléctrico, incluyendo toma de tierra y de red de datos.",
+"dueDate": null,
+"sequenceNumber": null,
+"title": "Transporte, suministro e instalación de la planta desaladora en la parcela ITC"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/execution-stages/tender-001-stage-005",
+"label": "Pruebas de arranque, puesta en marcha y pruebas de rendimiento de la planta",
+"description": "Una vez concluida la puesta en marcha se realizarán las pruebas de rendimiento siguiendo las indicaciones del anexo I de este documento.",
+"dueDate": null,
+"sequenceNumber": null,
+"title": "Pruebas de arranque, puesta en marcha y pruebas de rendimiento de la planta"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/execution-stages/tender-001-stage-006",
+"label": "Capacitación en la O&M de la planta desaladora",
+"description": "Previamente a la firma del acta final se realizarán sesiones de capacitación a los técnicos designados por ITC, para realizar la correcta operación, control y mantenimiento de toda la instalación.",
+"dueDate": null,
+"sequenceNumber": null,
+"title": "Capacitación en la O&M de la planta desaladora"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/execution-stages/tender-001-stage-007",
+"label": "Entregables previstos a cierre de contrato",
+"description": null,
+"dueDate": null,
+"sequenceNumber": null,
+"title": "Entregables previstos a cierre de contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/execution-stages/tender-001-stage-001",
+"label": "H1 : Análisis y Planificación",
+"description": "Análisis de partida de la situación en cuanto a los sistemas de información existentes.",
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "H1 : Análisis y Planificación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/execution-stages/tender-001-stage-002",
+"label": "H2: Desarrollo de la Solución Tecnológica",
+"description": "adecuación, parametrización, desarrollo o configuración de la plataforma base",
+"dueDate": null,
+"sequenceNumber": 2,
+"title": "H2: Desarrollo de la Solución Tecnológica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/execution-stages/tender-001-stage-003",
+"label": "H3: PMVs",
+"description": "Prueba funcional y aprobación de los PMV definidos en el primer pack",
+"dueDate": null,
+"sequenceNumber": 3,
+"title": "H3: PMVs"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/execution-stages/tender-001-stage-004",
+"label": "H4: Despliegue en entorno demostrativo",
+"description": "Proceso de despliegue en entorno demostrativo del Sistema",
+"dueDate": null,
+"sequenceNumber": 4,
+"title": "H4: Despliegue en entorno demostrativo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/execution-stages/tender-001-stage-005",
+"label": "H5: Dinamización",
+"description": "sensibilización, formación y comunicación",
+"dueDate": null,
+"sequenceNumber": 5,
+"title": "H5: Dinamización"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/execution-stages/tender-001-stage-006",
+"label": "H6: Periodo de prueba",
+"description": "Al menos 1 mes de realización de pruebas y testeos con usuarios reales por parte de SENDA",
+"dueDate": null,
+"sequenceNumber": 6,
+"title": "H6: Periodo de prueba"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/execution-stages/tender-001-stage-001",
+"label": "Exploración de soluciones. Estudio de viabilidad y prueba de concepto del siste…",
+"description": "Durante la Fase I se realizará el diseño básico de la arquitectura del sistema y sus componentes, y se realizará un primer modelo simulado a modo de prueba de concepto.",
+"dueDate": null,
+"sequenceNumber": 1,
+"title": "Exploración de soluciones. Estudio de viabilidad y prueba de concepto del sistema"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/execution-stages/tender-001-stage-002",
+"label": "Desarrollo experimental del sistema experto y del catálogo (prototipo)",
+"description": "En esta fase se procederá al desarrollo de detalle y pruebas de la arquitectura y programación del sistema y de sus diferentes módulos y componentes, así como los desarrollos complementarios para su integración con los diversos sistemas y subsistemas de AVRA con los que tenga que interactuar.",
+"dueDate": null,
+"sequenceNumber": 2,
+"title": "Desarrollo experimental del sistema experto y del catálogo (prototipo)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/execution-stages/tender-001-stage-003",
+"label": "Desarrollo del piloto/demostrador virtual",
+"description": "En esta fase se llevará a cabo la integración del piloto del sistema en el entorno operativo de AVRA ensayando en un entorno confinado de ésta las prestaciones y funcionalidades del sistema y sus componentes a nivel operativo, a partir de información de base de una promoción de AVRA.",
+"dueDate": null,
+"sequenceNumber": 3,
+"title": "Desarrollo del piloto/demostrador virtual"
+}
+]

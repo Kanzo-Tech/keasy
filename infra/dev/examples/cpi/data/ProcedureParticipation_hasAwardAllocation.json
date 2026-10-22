@@ -1,0 +1,42 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/participations/award-001-participation-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-allocations/award-001-participation-001-allocation-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/participations/award-001-participation-001",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-allocations/award-001-participation-001-allocation-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/participations/award-001-participation-002",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-allocations/award-001-participation-002-allocation-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/participations/award-001-participation-002",
+"o": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/award-allocations/award-001-participation-002-allocation-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/participations/award-001-participation-001",
+"o": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-allocations/award-001-participation-001-allocation-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/participations/award-001-participation-001",
+"o": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-allocations/award-001-participation-001-allocation-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/participations/award-001-participation-001",
+"o": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-allocations/award-001-participation-001-allocation-003"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/participations/award-001-participation-002",
+"o": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-allocations/award-001-participation-002-allocation-001"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/participations/award-001-participation-002",
+"o": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-allocations/award-001-participation-002-allocation-002"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/participations/award-001-participation-002",
+"o": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/award-allocations/award-001-participation-002-allocation-003"
+}
+]

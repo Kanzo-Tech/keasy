@@ -1,0 +1,474 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/organization-groups/award-001-participation-001-actor",
+"o": "https://example.org/cpi-demo/id/organizations/eforglobal-technology-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/organization-groups/award-001-participation-001-actor",
+"o": "https://example.org/cpi-demo/id/organizations/linx-view-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/organization-groups/market-participation-001-001-actor",
+"o": "https://example.org/cpi-demo/id/organizations/foqum-analytics-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/organization-groups/market-participation-001-001-actor",
+"o": "https://example.org/cpi-demo/id/organizations/movilidad-ampliada-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/organization-groups/market-participation-002-001-actor",
+"o": "https://example.org/cpi-demo/id/organizations/foqum-analytics-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/organization-groups/market-participation-002-001-actor",
+"o": "https://example.org/cpi-demo/id/organizations/movilidad-ampliada-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/organization-groups/market-participation-003-003-actor",
+"o": "https://example.org/cpi-demo/id/organizations/lazarus"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/organization-groups/market-participation-003-003-actor",
+"o": "https://example.org/cpi-demo/id/organizations/recoletos-consultores"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/organization-groups/market-participation-003-005-actor",
+"o": "https://example.org/cpi-demo/id/organizations/lazarus"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/organization-groups/market-participation-003-005-actor",
+"o": "https://example.org/cpi-demo/id/organizations/recoletos-consultores"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/organization-groups/market-participation-003-016-actor",
+"o": "https://example.org/cpi-demo/id/organizations/emetel-sistemas-sl"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/organization-groups/market-participation-003-021-actor",
+"o": "https://example.org/cpi-demo/id/organizations/lazarus"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/organization-groups/market-participation-003-021-actor",
+"o": "https://example.org/cpi-demo/id/organizations/recoletos-consultores"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/organization-groups/market-participation-004-008-actor",
+"o": "https://example.org/cpi-demo/id/organizations/lazarus"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/organization-groups/market-participation-004-008-actor",
+"o": "https://example.org/cpi-demo/id/organizations/recoletos-consultores"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/organization-groups/award-001-participation-002-actor",
+"o": "https://example.org/cpi-demo/id/organizations/cyber-surgery"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/organization-groups/award-001-participation-002-actor",
+"o": "https://example.org/cpi-demo/id/organizations/fundacion-centro-de-tecnologias-de-interaccion-visual-y-comunicaciones-vicomtech"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/organization-groups/award-001-participation-002-actor",
+"o": "https://example.org/cpi-demo/id/organizations/fundacion-tekniker"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/organization-groups/award-001-participation-002-actor",
+"o": "https://example.org/cpi-demo/id/organizations/medical-simulator-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/organization-groups/market-participation-001-004-actor",
+"o": "https://example.org/cpi-demo/id/organizations/elem-biotech"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/organization-groups/market-participation-001-004-actor",
+"o": "https://example.org/cpi-demo/id/organizations/fundacio-de-recerca-clinic-barcelina-institut-d-invetsigacions-biomediques-august-pi-i-sunyer"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/organization-groups/market-participation-001-004-actor",
+"o": "https://example.org/cpi-demo/id/organizations/fundacion-tecnalia-research-innovation"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/organization-groups/market-participation-001-004-actor",
+"o": "https://example.org/cpi-demo/id/organizations/quantion-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/organization-groups/award-001-participation-001-actor",
+"o": "https://example.org/cpi-demo/id/organizations/indizen-technologies-sl"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/organization-groups/award-001-participation-001-actor",
+"o": "https://example.org/cpi-demo/id/organizations/veratech-for-health-sl"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/organization-groups/market-participation-001-002-actor",
+"o": "https://example.org/cpi-demo/id/organizations/indizen-technologies-sl"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/organization-groups/market-participation-001-002-actor",
+"o": "https://example.org/cpi-demo/id/organizations/veratech-for-health-sl"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/award-001-participation-001-actor",
+"o": "https://example.org/cpi-demo/id/organizations/fcc-aqualia-s-a"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/award-001-participation-001-actor",
+"o": "https://example.org/cpi-demo/id/organizations/fcc-medio-ambiente-s-a-u"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/award-001-participation-001-actor",
+"o": "https://example.org/cpi-demo/id/organizations/heliopol-s-a-u"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/award-002-participation-001-actor",
+"o": "https://example.org/cpi-demo/id/organizations/global-omnium-medioambiente-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/award-002-participation-001-actor",
+"o": "https://example.org/cpi-demo/id/organizations/s-a-de-obras-y-servicios-copasa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-001-001-actor",
+"o": "https://example.org/cpi-demo/id/organizations/biomasa-peninsular-ute"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-001-002-actor",
+"o": "https://example.org/cpi-demo/id/organizations/fundacion-centro-de-investigacion-de-recursos-y-consumos-energeticos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-001-002-actor",
+"o": "https://example.org/cpi-demo/id/organizations/fundacion-tecnalia-research-innovation"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-001-002-actor",
+"o": "https://example.org/cpi-demo/id/organizations/magtel"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-001-006-actor",
+"o": "https://example.org/cpi-demo/id/organizations/iaxxon"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-001-006-actor",
+"o": "https://example.org/cpi-demo/id/organizations/inespro"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-001-009-actor",
+"o": "https://example.org/cpi-demo/id/organizations/centro-de-las-nuevas-tecnologias-del-agua"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-001-009-actor",
+"o": "https://example.org/cpi-demo/id/organizations/rioglass"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-001-011-actor",
+"o": "https://example.org/cpi-demo/id/organizations/ariema"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-001-011-actor",
+"o": "https://example.org/cpi-demo/id/organizations/centro-de-las-nuevas-tecnologias-del-agua"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-001-011-actor",
+"o": "https://example.org/cpi-demo/id/organizations/centro-internacional-de-metodos-numericos-en-ingenieria-cimne"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-001-013-actor",
+"o": "https://example.org/cpi-demo/id/organizations/centro-de-las-nuevas-tecnologias-del-agua"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-001-013-actor",
+"o": "https://example.org/cpi-demo/id/organizations/universidad-de-sevilla-us"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-001-014-actor",
+"o": "https://example.org/cpi-demo/id/organizations/te-consulting-house-4-plus-sl"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-001-014-actor",
+"o": "https://example.org/cpi-demo/id/organizations/universidad-de-sevilla-us"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-001-014-actor",
+"o": "https://example.org/cpi-demo/id/organizations/universidad-de-valladolid"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-001-015-actor",
+"o": "https://example.org/cpi-demo/id/organizations/fomento-agricola-castellonense-s-a"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-001-015-actor",
+"o": "https://example.org/cpi-demo/id/organizations/valora"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-001-017-actor",
+"o": "https://example.org/cpi-demo/id/organizations/fctivc"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-001-017-actor",
+"o": "https://example.org/cpi-demo/id/organizations/fundacion-centro-de-tecnologias-de-interaccion-visual-y-comunicaciones-vicomtech"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-004-001-actor",
+"o": "https://example.org/cpi-demo/id/organizations/biomasa-peninsular-ute"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-004-004-actor",
+"o": "https://example.org/cpi-demo/id/organizations/fomento-agricola-castellonense-s-a"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-004-004-actor",
+"o": "https://example.org/cpi-demo/id/organizations/valora"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-004-005-actor",
+"o": "https://example.org/cpi-demo/id/organizations/fundacion-centro-de-investigacion-de-recursos-y-consumos-energeticos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-004-005-actor",
+"o": "https://example.org/cpi-demo/id/organizations/fundacion-tecnalia-research-innovation"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-004-005-actor",
+"o": "https://example.org/cpi-demo/id/organizations/magtel"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-004-007-actor",
+"o": "https://example.org/cpi-demo/id/organizations/te-consulting-house-4-plus-sl"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-004-007-actor",
+"o": "https://example.org/cpi-demo/id/organizations/universidad-de-sevilla-us--2a78ba00"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/organization-groups/market-participation-004-007-actor",
+"o": "https://example.org/cpi-demo/id/organizations/universidad-valladolid-uva"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/organization-groups/market-participation-001-003-actor",
+"o": "https://example.org/cpi-demo/id/organizations/barrabes"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/organization-groups/market-participation-001-003-actor",
+"o": "https://example.org/cpi-demo/id/organizations/innova-next"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/organization-groups/award-001-participation-001-actor",
+"o": "https://example.org/cpi-demo/id/organizations/trc-informatica-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/organization-groups/award-001-participation-001-actor",
+"o": "https://example.org/cpi-demo/id/organizations/vodafone"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/organization-groups/award-001-participation-003-actor",
+"o": "https://example.org/cpi-demo/id/organizations/deep-insight-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/organization-groups/award-001-participation-003-actor",
+"o": "https://example.org/cpi-demo/id/organizations/disruptive-consulting-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/organization-groups/award-001-participation-003-actor",
+"o": "https://example.org/cpi-demo/id/organizations/ntt-data-spain-s-l-u"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/organization-groups/award-001-participation-001-actor",
+"o": "https://example.org/cpi-demo/id/organizations/canaragua-concesiones-s-a-u"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/organization-groups/award-001-participation-001-actor",
+"o": "https://example.org/cpi-demo/id/organizations/elmasa-tecnologia-del-agua-s-a-u"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/organization-groups/award-001-participation-002-actor",
+"o": "https://example.org/cpi-demo/id/organizations/canaragua-concesiones-s-a-u"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/organization-groups/award-001-participation-002-actor",
+"o": "https://example.org/cpi-demo/id/organizations/elmasa-tecnologia-del-agua-s-a-u"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/organization-groups/market-participation-002-003-actor",
+"o": "https://example.org/cpi-demo/id/organizations/atem-nuevas-tecnologias-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/organization-groups/market-participation-002-003-actor",
+"o": "https://example.org/cpi-demo/id/organizations/gvam-guias-interactivas-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/award-001-participation-001-actor",
+"o": "https://example.org/cpi-demo/id/organizations/asociacion-de-investigacion-y-cooperacion-industrial-de-andalucia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/award-001-participation-001-actor",
+"o": "https://example.org/cpi-demo/id/organizations/eddea-arquitectura-y-urbanismo-slp"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/award-001-participation-001-actor",
+"o": "https://example.org/cpi-demo/id/organizations/fundacion-tecnalia-research-innovation"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/award-001-participation-001-actor",
+"o": "https://example.org/cpi-demo/id/organizations/ghenova-digital-s-l-u"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/award-001-participation-002-actor",
+"o": "https://example.org/cpi-demo/id/organizations/tecnicas-y-proyectos-s-a-typsa--e0954db2"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/award-001-participation-002-actor",
+"o": "https://example.org/cpi-demo/id/organizations/typsa-digital-solutions-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/award-001-participation-003-actor",
+"o": "https://example.org/cpi-demo/id/organizations/aicia-grupo-de-termotecnia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/award-001-participation-003-actor",
+"o": "https://example.org/cpi-demo/id/organizations/eddea-arquitectura-y-urbanismo-slp"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/award-001-participation-003-actor",
+"o": "https://example.org/cpi-demo/id/organizations/fundacion-tecnalia-research-innovation"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/award-001-participation-003-actor",
+"o": "https://example.org/cpi-demo/id/organizations/ghenova-digital-s-l-u"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/award-001-participation-003-actor",
+"o": "https://example.org/cpi-demo/id/organizations/ghenova-ingenieria-sl"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/award-001-participation-004-actor",
+"o": "https://example.org/cpi-demo/id/organizations/actividades-de-consultoria-tecnica-investigacion-y-servicios-avanzados-sl"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/award-001-participation-004-actor",
+"o": "https://example.org/cpi-demo/id/organizations/hcp-architectures-and-engineering"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/award-001-participation-004-actor",
+"o": "https://example.org/cpi-demo/id/organizations/quantia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/award-001-participation-004-actor",
+"o": "https://example.org/cpi-demo/id/organizations/tysec"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/award-001-participation-005-actor",
+"o": "https://example.org/cpi-demo/id/organizations/tecnica-y-proyectos-sa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/award-001-participation-005-actor",
+"o": "https://example.org/cpi-demo/id/organizations/typsa-digital-solutions-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/award-001-participation-007-actor",
+"o": "https://example.org/cpi-demo/id/organizations/bilba-construccion-e-infraestructuras-sl"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/award-001-participation-007-actor",
+"o": "https://example.org/cpi-demo/id/organizations/perez-del-pulgar-gonzalez-parrilla-arquitectos-s-l-p"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/award-001-participation-009-actor",
+"o": "https://example.org/cpi-demo/id/organizations/avintia-proyectos-y-construcciones-sl"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/award-001-participation-009-actor",
+"o": "https://example.org/cpi-demo/id/organizations/nidus-lab-slu"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/award-001-participation-009-actor",
+"o": "https://example.org/cpi-demo/id/organizations/valenthia-strategy-sl"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/award-001-participation-009-actor",
+"o": "https://example.org/cpi-demo/id/organizations/wise-build-sl"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/award-001-participation-010-actor",
+"o": "https://example.org/cpi-demo/id/organizations/ferrovial-construccion-sa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/award-001-participation-010-actor",
+"o": "https://example.org/cpi-demo/id/organizations/ingecid-sl"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/award-001-participation-011-actor",
+"o": "https://example.org/cpi-demo/id/organizations/atommodular-sl"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/award-001-participation-011-actor",
+"o": "https://example.org/cpi-demo/id/organizations/enginyeria-de-l-edificacio-i-project-management-slp"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/award-001-participation-011-actor",
+"o": "https://example.org/cpi-demo/id/organizations/r2m-solution-spain-sl"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/award-001-participation-011-actor",
+"o": "https://example.org/cpi-demo/id/organizations/ruiz-larrea-arquitectura-slp"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/market-participation-003-001-actor",
+"o": "https://example.org/cpi-demo/id/organizations/fius"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/market-participation-003-001-actor",
+"o": "https://example.org/cpi-demo/id/organizations/hombre-de-piedra-arquitectos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/market-participation-003-001-actor",
+"o": "https://example.org/cpi-demo/id/organizations/ove-arup-and-partners-sau"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/market-participation-003-001-actor",
+"o": "https://example.org/cpi-demo/id/organizations/urjc"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/market-participation-003-003-actor",
+"o": "https://example.org/cpi-demo/id/organizations/bauen-constructora-s-a-u"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/market-participation-003-003-actor",
+"o": "https://example.org/cpi-demo/id/organizations/retineo-ingenieria-s-l-u"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/market-participation-003-004-actor",
+"o": "https://example.org/cpi-demo/id/organizations/apogea-consultores-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/market-participation-003-004-actor",
+"o": "https://example.org/cpi-demo/id/organizations/castano-y-asociados-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/market-participation-003-004-actor",
+"o": "https://example.org/cpi-demo/id/organizations/citythinking-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/market-participation-003-004-actor",
+"o": "https://example.org/cpi-demo/id/organizations/hi-self-sistemas-constructivos-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/market-participation-003-004-actor",
+"o": "https://example.org/cpi-demo/id/organizations/plain-concepts-s-l"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/market-participation-003-004-actor",
+"o": "https://example.org/cpi-demo/id/organizations/salvador-rueda"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/market-participation-003-006-actor",
+"o": "https://example.org/cpi-demo/id/organizations/afca-teccom"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/market-participation-003-006-actor",
+"o": "https://example.org/cpi-demo/id/organizations/gabinete-javier-terrados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/organization-groups/market-participation-003-006-actor",
+"o": "https://example.org/cpi-demo/id/organizations/wise-build-sl"
+}
+]

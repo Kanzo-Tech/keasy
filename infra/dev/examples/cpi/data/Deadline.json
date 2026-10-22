@@ -1,0 +1,170 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/deadlines/deadline-001",
+"label": "El plazo de presentación de las propuestas comenzó",
+"deadlineDate": "2016-08-30",
+"description": "El plazo de presentación de las propuestas comenzó"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/deadlines/deadline-002",
+"label": "El plazo de presentación de las propuestas finalizó al mes de publicación en lo…",
+"deadlineDate": "2016-09-29",
+"description": "El plazo de presentación de las propuestas finalizó al mes de publicación en los mencionados boletines oficiales."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/deadlines/deadline-001",
+"label": "El pasado 9 de marzo de 2021 se abrió el plazo de recepción de solicitudes, cer…",
+"deadlineDate": "2021-03-15",
+"description": "El pasado 9 de marzo de 2021 se abrió el plazo de recepción de solicitudes, cerrándose el día 15 de marzo de 2021"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/deadlines/deadline-002",
+"label": "El plazo de duración de la consulta se extenderá desde su publicación el perfil…",
+"deadlineDate": "2021-03-15",
+"description": "El plazo de duración de la consulta se extenderá desde su publicación el perfil del contratante hasta las 24.00 horas del 15 de marzo de 2021."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deadlines/deadline-001",
+"label": "El plazo para la presentación de propuestos comenzará el día siguiente al de pu…",
+"deadlineDate": null,
+"description": "El plazo para la presentación de propuestos comenzará el día siguiente al de publicación de esta convocatoria en la Plataforma de Contratación del Sector Público"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deadlines/deadline-002",
+"label": "finalizará el miércoles 12 de mayo de 2021 a las 14.00 horas",
+"deadlineDate": "2021-05-12",
+"description": "finalizará el miércoles 12 de mayo de 2021 a las 14.00 horas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/deadlines/deadline-003",
+"label": "se cerró el plazo de recepción de solicitudes",
+"deadlineDate": "2021-05-27",
+"description": "se cerró el plazo de recepción de solicitudes"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/deadlines/deadline-001",
+"label": "se podrían presentar desde el día siguiente al de publicación de dicha Resoluci…",
+"deadlineDate": null,
+"description": "se podrían presentar desde el día siguiente al de publicación de dicha Resolución en el Boletín Oficial de Castilla y León, permaneciendo con carácter general abierta al menos tres meses desde su publicación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/deadlines/deadline-001",
+"label": "Finalización del plazo de recepción de propuestas",
+"deadlineDate": "2023-05-04",
+"description": "Finalización del plazo de recepción de propuestas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/deadlines/deadline-002",
+"label": "El plazo para la presentación de propuestas de soluciones innovadoras será de 3…",
+"deadlineDate": null,
+"description": "El plazo para la presentación de propuestas de soluciones innovadoras será de 30 días y comenzará el día siguiente al de la publicación de esta Resolución en la Plataforma de Contratación del Estado, realizándose una publicación separada para cada uno de los retos que incluye."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/deadlines/deadline-003",
+"label": "La fecha de finalización del plazo de presentación constará en el anuncio de pu…",
+"deadlineDate": null,
+"description": "La fecha de finalización del plazo de presentación constará en el anuncio de publicación."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/deadlines/deadline-004",
+"label": "El plazo de presentación de propuestas podrá ser ampliado hasta un plazo máximo…",
+"deadlineDate": null,
+"description": "El plazo de presentación de propuestas podrá ser ampliado hasta un plazo máximo igual al inicial."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/deadlines/deadline-005",
+"label": "Durante los primeros 15 días desde la publicación de la CPM será posible dirigi…",
+"deadlineDate": null,
+"description": "Durante los primeros 15 días desde la publicación de la CPM será posible dirigir consultas relativas a cada uno de los retos a través del buzón de correo electrónico ocpi@cdti.es"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/deadlines/deadline-001",
+"label": "para entregar propuestas",
+"deadlineDate": "2017-10-15",
+"description": "para entregar propuestas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/deadlines/deadline-002",
+"label": "a disponer de una opción con respecto a la posibilidad de realizar una colabora…",
+"deadlineDate": null,
+"description": "a disponer de una opción con respecto a la posibilidad de realizar una colaboración público-privada de la solución a desarrollar para ceder la propiedad intelectual"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/deadlines/deadline-003",
+"label": "antes de las 14.00 h del 15 del octubre de 2017",
+"deadlineDate": null,
+"description": "antes de las 14.00 h del 15 del octubre de 2017"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/deadlines/deadline-001",
+"label": "El plazo límite de presentación de propuestas es el 28 de junio a las 23:59 p.m.",
+"deadlineDate": "2019-06-28",
+"description": "El plazo límite de presentación de propuestas es el 28 de junio a las 23:59 p.m."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/deadlines/deadline-002",
+"label": "El plazo para la presentación de propuestas comenzará el día siguiente al de pu…",
+"deadlineDate": null,
+"description": "El plazo para la presentación de propuestas comenzará el día siguiente al de publicación de esta convocatoria"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/deadlines/deadline-003",
+"label": "finalizará el 28 de junio de 2019",
+"deadlineDate": "2019-06-28",
+"description": "finalizará el 28 de junio de 2019"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/deadlines/deadline-001",
+"label": "plazo para la presentación de las propuestas",
+"deadlineDate": "2020-07-17",
+"description": "plazo para la presentación de las propuestas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/deadlines/deadline-001",
+"label": "Cierre Proceso Consulta Preliminar del Mercado - PLAZO AMPLIADO HASTA 7 DE FEBR…",
+"deadlineDate": null,
+"description": "Cierre Proceso Consulta Preliminar del Mercado - PLAZO AMPLIADO HASTA 7 DE FEBRERO."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/deadlines/deadline-001",
+"label": "El plazo para la presentación de propuestas comenzará el día siguiente al de pu…",
+"deadlineDate": null,
+"description": "El plazo para la presentación de propuestas comenzará el día siguiente al de publicación de esta resolución en la plataforma de contratación del estado, permaneciendo abierta dos meses desde su publicación."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/deadlines/deadline-002",
+"label": "La actualización del reto, o la inclusión de alguna modificación, supone la ape…",
+"deadlineDate": null,
+"description": "La actualización del reto, o la inclusión de alguna modificación, supone la apertura de un nuevo plazo de presentación de propuestas, a determinar en cada caso."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/deadlines/deadline-003",
+"label": "habrían de rellanar las empresas hasta el 12 de Marzo",
+"deadlineDate": null,
+"description": "habrían de rellanar las empresas hasta el 12 de Marzo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/deadlines/deadline-001",
+"label": "Inicialmente se establecía un plazo de cuatro meses, a partir de la fecha de pu…",
+"deadlineDate": "2020-01-16",
+"description": "Inicialmente se establecía un plazo de cuatro meses, a partir de la fecha de publicación, hasta el 16 de Enero de 20201, para la recepción de propuestas."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/deadlines/deadline-002",
+"label": "éste fue prorrogado hasta el 16 de marzo de 2021 para propiciar la máxima parti…",
+"deadlineDate": "2021-03-16",
+"description": "éste fue prorrogado hasta el 16 de marzo de 2021 para propiciar la máxima participación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/deadlines/deadline-003",
+"label": "El plazo para la presentación de las propuestas comenzará el día siguiente al d…",
+"deadlineDate": null,
+"description": "El plazo para la presentación de las propuestas comenzará el día siguiente al de publicación de la Resolución de AVRA en el Boletín Oficial que corresponda y permanecerá abierto durante un plazo de 4 meses, prorrogables otros 2 meses, en caso de considerarse necesario."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/deadlines/deadline-004",
+"label": "Su entrega deberá realizarse en un plazo máximo de 5 días naturales tras el req…",
+"deadlineDate": null,
+"description": "Su entrega deberá realizarse en un plazo máximo de 5 días naturales tras el requerimiento."
+}
+]

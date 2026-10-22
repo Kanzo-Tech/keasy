@@ -1,0 +1,3208 @@
+[
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/contract-terms/tender-001-term-001",
+"label": "275.500 euros (IVA excluido)",
+"amount": 275500.0,
+"currency": "EUR",
+"description": "275.500 euros (IVA excluido)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/contract-terms/tender-001-term-002",
+"label": "333.355,00 euros",
+"amount": 333355.0,
+"currency": "EUR",
+"description": "333.355,00 euros"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/contract-terms/tender-001-term-003",
+"label": "33.335,50",
+"amount": 33335.5,
+"currency": null,
+"description": "33.335,50"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/contract-terms/tender-001-term-004",
+"label": "200.013,00",
+"amount": 200013.0,
+"currency": null,
+"description": "200.013,00"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/contract-terms/tender-001-term-005",
+"label": "100.006.50",
+"amount": 100006.5,
+"currency": null,
+"description": "100.006.50"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/contract-terms/tender-001-term-006",
+"label": "1 mes desde la fecha de adjudicación del contrato",
+"amount": null,
+"currency": null,
+"description": "1 mes desde la fecha de adjudicación del contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/contract-terms/tender-001-term-007",
+"label": "6 meses desde el inicio de la FASE",
+"amount": null,
+"currency": null,
+"description": "6 meses desde el inicio de la FASE"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/contract-terms/tender-001-term-008",
+"label": "2 meses desde el inicio de la FASE 3",
+"amount": null,
+"currency": null,
+"description": "2 meses desde el inicio de la FASE 3"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/contract-terms/tender-001-term-009",
+"label": "No procede la prórroga del contrato.",
+"amount": null,
+"currency": null,
+"description": "No procede la prórroga del contrato."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/contract-terms/tender-001-term-010",
+"label": "5 por 100 del importe de adjudicación del contrato; IVA excluido",
+"amount": null,
+"currency": null,
+"description": "5 por 100 del importe de adjudicación del contrato; IVA excluido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/contract-terms/tender-001-term-011",
+"label": "riesgo compartido entre el adjudicatario y la Administración",
+"amount": null,
+"currency": null,
+"description": "riesgo compartido entre el adjudicatario y la Administración"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/contract-terms/tender-001-term-012",
+"label": "Los adjudicatarios deberán presentar un informe mensual",
+"amount": null,
+"currency": null,
+"description": "Los adjudicatarios deberán presentar un informe mensual"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/contract-terms/tender-001-term-013",
+"label": "pago se realizará a la finalización de cada fase por el importe ofertado por ad…",
+"amount": null,
+"currency": null,
+"description": "pago se realizará a la finalización de cada fase por el importe ofertado por adjudicatario en su oferta económica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/contract-terms/tender-001-term-014",
+"label": "0,50 por ciento del importe de adjudicación de la fase en la que se produzca la…",
+"amount": null,
+"currency": null,
+"description": "0,50 por ciento del importe de adjudicación de la fase en la que se produzca la falta (IVA excluido) por cada incumplimiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/contract-terms/tender-001-term-015",
+"label": "desde el 1,5 por ciento del importe de adjudicación de la fase en la que se pro…",
+"amount": null,
+"currency": null,
+"description": "desde el 1,5 por ciento del importe de adjudicación de la fase en la que se produzca la falta (IVA excluido) por cada incumplimiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/contract-terms/tender-001-term-016",
+"label": "desde el 3 por ciento del importe de adjudicación de la fase en la que se produ…",
+"amount": null,
+"currency": null,
+"description": "desde el 3 por ciento del importe de adjudicación de la fase en la que se produzca la falta (IVA excluido) por cada incumplimiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/contract-terms/tender-001-term-017",
+"label": "hasta del 6 por ciento del importe subcontratado",
+"amount": null,
+"currency": null,
+"description": "hasta del 6 por ciento del importe subcontratado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/contract-terms/tender-001-term-018",
+"label": "6 por ciento del importe adeudado a aquellos (IVA excluido)",
+"amount": null,
+"currency": null,
+"description": "6 por ciento del importe adeudado a aquellos (IVA excluido)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/contract-terms/tender-001-term-019",
+"label": "10 por ciento del importe del contrato",
+"amount": null,
+"currency": null,
+"description": "10 por ciento del importe del contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/contract-terms/tender-001-term-020",
+"label": "No se está prevista la modificación del contrato.",
+"amount": null,
+"currency": null,
+"description": "No se está prevista la modificación del contrato."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/145-2017-00380/contract-terms/tender-001-term-021",
+"label": "El contratista sólo podrá concertar con terceros la fabricación de los prototip…",
+"amount": null,
+"currency": null,
+"description": "El contratista sólo podrá concertar con terceros la fabricación de los prototipos\n\nla parte subcontratada no exceda del 50%"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-001",
+"label": "702.479,34 € IVA no incluido",
+"amount": 702479.34,
+"currency": "EUR",
+"description": "702.479,34 € IVA no incluido\n\nI.V.A. no incluido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-002",
+"label": "702.479,34 €",
+"amount": 702479.34,
+"currency": "EUR",
+"description": "702.479,34 €\n\nI.V.A. no incluido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-003",
+"label": "21%",
+"amount": 147520.66,
+"currency": "EUR",
+"description": "21%"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-004",
+"label": "702.479,34€, más 147.520,66€ en concepto de IVA, al tipo del 21%",
+"amount": 850000.0,
+"currency": "EUR",
+"description": "702.479,34€, más 147.520,66€ en concepto de IVA, al tipo del 21%\n\n850.000,00€"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-005",
+"label": "1 Año",
+"amount": null,
+"currency": null,
+"description": "1 Año\n\na contar desde la fecha de inicio de la prestación del servicio que se plasme en el acta de inicio del contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-006",
+"label": "NO",
+"amount": null,
+"currency": null,
+"description": "NO"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-007",
+"label": "UN ( 1 ) Año",
+"amount": null,
+"currency": null,
+"description": "UN ( 1 ) Año\n\nen los términos previstos en la cláusula 14 del PPTP"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-008",
+"label": "No se exige.",
+"amount": null,
+"currency": null,
+"description": "No se exige."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-009",
+"label": "5 % del importe de la adjudicación, IVA excluido",
+"amount": null,
+"currency": null,
+"description": "5 % del importe de la adjudicación, IVA excluido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-010",
+"label": "No procede ni la revisión de precios ni la modificación del contrato durante la…",
+"amount": null,
+"currency": null,
+"description": "No procede ni la revisión de precios ni la modificación del contrato durante la vigencia del contrato."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-011",
+"label": "con los límites previstos en el artículo 192 de la LCSP, salvo que en dicho pli…",
+"amount": null,
+"currency": null,
+"description": "con los límites previstos en el artículo 192 de la LCSP, salvo que en dicho pliego se establezca otra penalidad\n\nun 5% del precio del contrato, IVA excluido, por cada incumplimiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-012",
+"label": "a través del Punto General de Entradas de Facturas Electrónicas del Estado (FAC…",
+"amount": null,
+"currency": null,
+"description": "a través del Punto General de Entradas de Facturas Electrónicas del Estado (FACe)\n\nen el caso de que el contratista esté en alguno de los supuestos previstos en el artículo 4 de la citada Ley"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-013",
+"label": "a contar desde la fecha de inicio de la prestación del servicio que se plasme e…",
+"amount": null,
+"currency": null,
+"description": "a contar desde la fecha de inicio de la prestación del servicio que se plasme en el acta de inicio del contrato\n\nun año"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-014",
+"label": "Dichos hitos coinciden con la finalización de las fases",
+"amount": null,
+"currency": null,
+"description": "Dichos hitos coinciden con la finalización de las fases\n\nen base a hitos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-015",
+"label": "10%",
+"amount": null,
+"currency": null,
+"description": "10%\n\n10% Fase previa de análisis de requisitos de infraestructuras e integración con sistemas existentes"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-016",
+"label": "10%",
+"amount": null,
+"currency": null,
+"description": "10%\n\n10% Fase de diseño y conceptualización"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-017",
+"label": "10%",
+"amount": null,
+"currency": null,
+"description": "10%\n\n10% Fase de instalaciones"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-018",
+"label": "30%",
+"amount": null,
+"currency": null,
+"description": "30%\n\n30% Fase de desarrollo y despliegue"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-019",
+"label": "10%",
+"amount": null,
+"currency": null,
+"description": "10%\n\n10% Fase de validación y pruebas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-020",
+"label": "20%",
+"amount": null,
+"currency": null,
+"description": "20%\n\n20% Fase de depuración de fallos y cierre"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-021",
+"label": "10%",
+"amount": null,
+"currency": null,
+"description": "10%\n\n10% Fase de formación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-022",
+"label": "En el caso de no realizarse alguna de las fases, su porcentaje se acumulará en…",
+"amount": null,
+"currency": null,
+"description": "En el caso de no realizarse alguna de las fases, su porcentaje se acumulará en la fase siguiente.\n\nsu porcentaje se acumulará en la fase siguiente"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-023",
+"label": "la resolución de todos aquellos errores o problemas que puedan surgir durante e…",
+"amount": null,
+"currency": null,
+"description": "la resolución de todos aquellos errores o problemas que puedan surgir durante el uso normal de la plataforma\n\nun año a contar desde la finalización del contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-024",
+"label": "un tiempo de soporte por parte del adjudicatario para resolución de incidencias…",
+"amount": null,
+"currency": null,
+"description": "un tiempo de soporte por parte del adjudicatario para resolución de incidencias, aparte del año de garantía"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-025",
+"label": "cualquier nuevo desarrollo que tenga que realizar una empresa externa para adap…",
+"amount": null,
+"currency": null,
+"description": "cualquier nuevo desarrollo que tenga que realizar una empresa externa para adaptar su producto\n\ndeberán ser asumidos por la empresa adjudicataria"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-026",
+"label": "correrá a cargo de la empresa adjudicataria",
+"amount": null,
+"currency": null,
+"description": "correrá a cargo de la empresa adjudicataria\n\ndurante todo el periodo de vigencia del contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-027",
+"label": "Cabe la subcontratación con terceros para la realización parcial de la prestaci…",
+"amount": null,
+"currency": null,
+"description": "Cabe la subcontratación con terceros para la realización parcial de la prestación del servicio objeto de este contrato."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-028",
+"label": "Reuniones de seguimiento y revisiones técnicas con periodicidad determinada ent…",
+"amount": null,
+"currency": null,
+"description": "Reuniones de seguimiento y revisiones técnicas con periodicidad determinada entre las dos partes\n\nSeguimiento continuo del desarrollo de las aplicaciones objeto de este contrato entre el responsable del equipo de trabajo de la empresa adjudicataria y los Técnicos Municipales responsables del contrato."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/capa-de-acceso-unificado-basada-en-inteligencia-artificial-sobre-navegac-fec3493b03/contract-terms/tender-001-term-029",
+"label": "Los incumplimientos del contratista se penalizarán en los términos previstos en…",
+"amount": null,
+"currency": null,
+"description": "Los incumplimientos del contratista se penalizarán en los términos previstos en la legislación vigente aplicable a la contratación administrativa."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-001",
+"label": "2.102.909,10 €",
+"amount": 2102909.1,
+"currency": "EUR",
+"description": "2.102.909,10 €"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-002",
+"label": "2.544.520,00 €",
+"amount": 2544520.0,
+"currency": "EUR",
+"description": "2.544.520,00 €"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-003",
+"label": "2.102.909,10 €",
+"amount": 2102909.1,
+"currency": "EUR",
+"description": "2.102.909,10 €"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-004",
+"label": "Precio cierto determinado a tanto alzado",
+"amount": null,
+"currency": null,
+"description": "Precio cierto determinado a tanto alzado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-005",
+"label": "52.572,73 €",
+"amount": 52572.73,
+"currency": "EUR",
+"description": "52.572,73 €\n\nPRESUPUESTO BASE DE LICITACIÓN (IVA excluido)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-006",
+"label": "1.997.763,64 €",
+"amount": 1997763.64,
+"currency": "EUR",
+"description": "1.997.763,64 €\n\nPRESUPUESTO BASE DE LICITACIÓN (IVA excluido)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-007",
+"label": "El plazo aproximado de ejecución será de 15 meses",
+"amount": null,
+"currency": null,
+"description": "El plazo aproximado de ejecución será de 15 meses\n\nextendiéndose hasta el día 15 de junio de 2023 como fecha máxima"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-008",
+"label": "no pudiendo darse ninguna prórroga",
+"amount": null,
+"currency": null,
+"description": "no pudiendo darse ninguna prórroga"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-009",
+"label": "duración máxima de trece meses",
+"amount": null,
+"currency": null,
+"description": "duración máxima de trece meses"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-010",
+"label": "Una vez finalizada la ejecución del contrato, las entidades adjudicatarias esta…",
+"amount": null,
+"currency": null,
+"description": "Una vez finalizada la ejecución del contrato, las entidades adjudicatarias estarán obligadas a desarrollar la fase de despliegue durante 4 años\n\ndurante 4 años"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-011",
+"label": "El pago a las entidades contratistas estará condicionado a la entrega y posteri…",
+"amount": null,
+"currency": null,
+"description": "El pago a las entidades contratistas estará condicionado a la entrega y posterior validación de los entregables por parte del Equipo de Supervisión y Control.\n\nPagos parciales."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-012",
+"label": "70% DE IMPORTE FASE I",
+"amount": null,
+"currency": null,
+"description": "70% DE IMPORTE FASE I"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-013",
+"label": "50% DE IMPORTE FASE II",
+"amount": null,
+"currency": null,
+"description": "50% DE IMPORTE FASE II"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-014",
+"label": "35% DE IMPORTE FASE II",
+"amount": null,
+"currency": null,
+"description": "35% DE IMPORTE FASE II"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-015",
+"label": "3% del importe de adjudicación, excluyendo el Impuesto sobre el Valor Añadido",
+"amount": null,
+"currency": null,
+"description": "3% del importe de adjudicación, excluyendo el Impuesto sobre el Valor Añadido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-016",
+"label": "un (1) año computado desde la fecha de recepción de los servicios",
+"amount": null,
+"currency": null,
+"description": "un (1) año computado desde la fecha de recepción de los servicios"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-017",
+"label": "hasta el 1 % del precio de adjudicación del contrato, IVA excluido",
+"amount": null,
+"currency": null,
+"description": "hasta el 1 % del precio de adjudicación del contrato, IVA excluido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-018",
+"label": "Con más del 1 % hasta el 5 % del precio de adjudicación del contrato, IVA exclu…",
+"amount": null,
+"currency": null,
+"description": "Con más del 1 % hasta el 5 % del precio de adjudicación del contrato, IVA excluido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-019",
+"label": "Con más del 1 % hasta el 5 % del precio de adjudicación del contrato, IVA exclu…",
+"amount": null,
+"currency": null,
+"description": "Con más del 1 % hasta el 5 % del precio de adjudicación del contrato, IVA excluido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-020",
+"label": "Se dará la rescisión del contrato en este caso",
+"amount": null,
+"currency": null,
+"description": "Se dará la rescisión del contrato en este caso"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-021",
+"label": "50 por ciento del precio de adjudicación del contrato, IVA excluido",
+"amount": null,
+"currency": null,
+"description": "50 por ciento del precio de adjudicación del contrato, IVA excluido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-022",
+"label": "Investigador Principal del proyecto TREMIRS",
+"amount": null,
+"currency": null,
+"description": "Investigador Principal del proyecto TREMIRS"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-023",
+"label": "se iniciará en la fecha de formalización, extendiéndose hasta el día 15 de juni…",
+"amount": null,
+"currency": null,
+"description": "se iniciará en la fecha de formalización, extendiéndose hasta el día 15 de junio de 2023 como fecha máxima"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-024",
+"label": "no pudiendo darse ninguna prórroga",
+"amount": null,
+"currency": null,
+"description": "no pudiendo darse ninguna prórroga"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-025",
+"label": "2",
+"amount": null,
+"currency": null,
+"description": "2\n\n| I | 2 |"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-026",
+"label": "1",
+"amount": null,
+"currency": null,
+"description": "1\n\n| II | 1 |"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-027",
+"label": "El pago a las entidades contratistas estará condicionado a la entrega y posteri…",
+"amount": null,
+"currency": null,
+"description": "El pago a las entidades contratistas estará condicionado a la entrega y posterior validación de los entregables por parte del Equipo de Supervisión y Control"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-028",
+"label": "no supera el umbral de puntuación de 50 puntos necesario para recibir el pago d…",
+"amount": null,
+"currency": null,
+"description": "no supera el umbral de puntuación de 50 puntos necesario para recibir el pago de los servicios y pasar a la siguiente fase, o ha obtenido 0 puntos en alguno de los criterios de evaluación clave (marcados con *)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-029",
+"label": "Finalización exitosa: obtiene una puntuación superior o igual a 51 puntos , por…",
+"amount": null,
+"currency": null,
+"description": "Finalización exitosa: obtiene una puntuación superior o igual a 51 puntos , por lo que recibe el pago correspondiente a la Fase I, obteniendo, además, la mejor puntuación y, por tanto, pasando a la Fase II.\n\nobtiene una puntuación superior o igual a 51 puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-030",
+"label": "Con periodicidad mensual, el delegado técnico de la entidad adjudicataria se re…",
+"amount": null,
+"currency": null,
+"description": "Con periodicidad mensual, el delegado técnico de la entidad adjudicataria se reunirá con el Jefe del Proyecto\n\nPara dichas reuniones la entidad adjudicataria elaborará todos los meses un Informe Técnico de Seguimiento."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-031",
+"label": "Las certificaciones serán consideradas la autorización para que la empresa adju…",
+"amount": null,
+"currency": null,
+"description": "Las certificaciones serán consideradas la autorización para que la empresa adjudicataria emita la correspondiente factura parcial"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-032",
+"label": "Este periodo de un año empezará a computarse desde la finalización del contrato…",
+"amount": null,
+"currency": null,
+"description": "Este periodo de un año empezará a computarse desde la finalización del contrato con la consecución del Hito 4 y certificación correspondiente por parte del Equipo de Supervisión y Control.\n\nun periodo de un (1) año para la resolución de consultas técnicas, reparación y mantenimiento del prototipo resultante, incluyendo el mantenimiento preventivo y correctivo del prototipo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-033",
+"label": "el coste de las piezas a sustituir será asumido por la Fundación CCMIJU",
+"amount": null,
+"currency": null,
+"description": "el coste de las piezas a sustituir será asumido por la Fundación CCMIJU"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-001-term-034",
+"label": "los costes de la sustitución de piezas o de reparación por cualquier tipo de av…",
+"amount": null,
+"currency": null,
+"description": "los costes de la sustitución de piezas o de reparación por cualquier tipo de avería o malfuncionamiento de la plataforma, siempre que no se derive del uso habitual de la misma, serán asumidos por el contratista\n\nserán asumidos por el contratista"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-003-term-001",
+"label": "2.523.490,91 €",
+"amount": 2523490.91,
+"currency": "EUR",
+"description": "2.523.490,91 €"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-003-term-002",
+"label": "3.053.424,00 €",
+"amount": 3053424.0,
+"currency": "EUR",
+"description": "3.053.424,00 €"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-003-term-003",
+"label": "15 meses",
+"amount": null,
+"currency": null,
+"description": "15 meses"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-003-term-004",
+"label": "un (1) año",
+"amount": null,
+"currency": null,
+"description": "un (1) año"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-003-term-005",
+"label": "529.933,09 €",
+"amount": 529933.09,
+"currency": "EUR",
+"description": "529.933,09 €"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-003-term-006",
+"label": "16 meses",
+"amount": null,
+"currency": null,
+"description": "16 meses\n\nEl plazo mínimo para su ejecución será de 16 meses"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-003-term-007",
+"label": "incluyendo el mantenimiento preventivo y correctivo del prototipo",
+"amount": null,
+"currency": null,
+"description": "incluyendo el mantenimiento preventivo y correctivo del prototipo\n\nun (1) año"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-003-term-008",
+"label": "10% del precio de adjudicación",
+"amount": null,
+"currency": null,
+"description": "10% del precio de adjudicación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-003-term-009",
+"label": "40% del precio de adjudicación",
+"amount": null,
+"currency": null,
+"description": "40% del precio de adjudicación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-003-term-010",
+"label": "10% del precio de adjudicación",
+"amount": null,
+"currency": null,
+"description": "10% del precio de adjudicación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-004-term-001",
+"label": "630.872,73 €",
+"amount": 630872.73,
+"currency": "EUR",
+"description": "630.872,73 €"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-004-term-002",
+"label": "763.356,00 €",
+"amount": 763356.0,
+"currency": "EUR",
+"description": "763.356,00 €"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-004-term-003",
+"label": "15 meses",
+"amount": null,
+"currency": null,
+"description": "15 meses"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-004-term-004",
+"label": "seis (6) meses",
+"amount": null,
+"currency": null,
+"description": "seis (6) meses"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-004-term-005",
+"label": "132.483,27 €",
+"amount": 132483.27,
+"currency": "EUR",
+"description": "132.483,27 €"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-004-term-006",
+"label": "15 meses",
+"amount": null,
+"currency": null,
+"description": "15 meses\n\nEl plazo mínimo para su ejecución será de 15 meses"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-004-term-007",
+"label": "incluyendo el mantenimiento preventivo y correctivo del prototipo",
+"amount": null,
+"currency": null,
+"description": "incluyendo el mantenimiento preventivo y correctivo del prototipo\n\nun (1) año"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-004-term-008",
+"label": "10% del precio de adjudicación",
+"amount": null,
+"currency": null,
+"description": "10% del precio de adjudicación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-004-term-009",
+"label": "40% del precio de adjudicación",
+"amount": null,
+"currency": null,
+"description": "40% del precio de adjudicación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-lot-004-term-010",
+"label": "10% del precio de adjudicación",
+"amount": null,
+"currency": null,
+"description": "10% del precio de adjudicación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-term-001",
+"label": "3.154.363,64 €",
+"amount": 3154363.64,
+"currency": "EUR",
+"description": "3.154.363,64 €"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-term-002",
+"label": "Precio cierto determinado a tanto alzado",
+"amount": null,
+"currency": null,
+"description": "Precio cierto determinado a tanto alzado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-term-003",
+"label": "hasta el día 15 de junio de 2023 como fecha máxima , no pudiendo darse ninguna…",
+"amount": null,
+"currency": null,
+"description": "hasta el día 15 de junio de 2023 como fecha máxima , no pudiendo darse ninguna prórroga"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-term-004",
+"label": "No procede",
+"amount": null,
+"currency": null,
+"description": "No procede"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-term-005",
+"label": "5% del importe de adjudicación, excluyendo el Impuesto sobre el Valor Añadido",
+"amount": null,
+"currency": null,
+"description": "5% del importe de adjudicación, excluyendo el Impuesto sobre el Valor Añadido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-term-006",
+"label": "10 % del importe de adjudicación, IVA excluido",
+"amount": null,
+"currency": null,
+"description": "10 % del importe de adjudicación, IVA excluido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-term-007",
+"label": "al final del hito 3 de cada lote",
+"amount": null,
+"currency": null,
+"description": "al final del hito 3 de cada lote\n\nuna vez firmada la correspondiente acta de recepción"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-term-008",
+"label": "no procede aplicar régimen de revisión de precios",
+"amount": null,
+"currency": null,
+"description": "no procede aplicar régimen de revisión de precios"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-term-009",
+"label": "hasta el 1 % del precio de adjudicación del contrato, IVA excluido",
+"amount": null,
+"currency": null,
+"description": "hasta el 1 % del precio de adjudicación del contrato, IVA excluido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-term-010",
+"label": "50 por ciento del precio de adjudicación del contrato, IVA excluido",
+"amount": null,
+"currency": null,
+"description": "50 por ciento del precio de adjudicación del contrato, IVA excluido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-term-011",
+"label": "periodicidad trimestral en el primer año de ejecución del contrato y semestral…",
+"amount": null,
+"currency": null,
+"description": "periodicidad trimestral en el primer año de ejecución del contrato y semestral en los siguientes hasta la finalización del mismo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-term-013",
+"label": "hasta el día 15 de junio de 2023 como fecha máxima , no pudiendo darse ninguna…",
+"amount": null,
+"currency": null,
+"description": "hasta el día 15 de junio de 2023 como fecha máxima , no pudiendo darse ninguna prórroga\n\nse iniciará en la fecha de formalización"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-term-014",
+"label": "Una vez finalizada la ejecución del contrato en cada lote, las entidades adjudi…",
+"amount": null,
+"currency": null,
+"description": "Una vez finalizada la ejecución del contrato en cada lote, las entidades adjudicatarias estarán obligadas a desarrollar la fase de despliegue durante 4 años\n\ndurante 4 años"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-term-015",
+"label": "Pagos parciales",
+"amount": null,
+"currency": null,
+"description": "Pagos parciales\n\nlos pagos se realizarán tras la consecución de cada Hito"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-term-016",
+"label": "Con periodicidad mensual",
+"amount": null,
+"currency": null,
+"description": "Con periodicidad mensual\n\nla entidad adjudicataria de cada Lote elaborará todos los meses un Informe Técnico de Seguimiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-2019-33-1-tre-14/contract-terms/tender-002-term-017",
+"label": "establecidas en el apartado Q del cuadro resumen de la Cláusula 1 del PCAP y re…",
+"amount": null,
+"currency": null,
+"description": "establecidas en el apartado Q del cuadro resumen de la Cláusula 1 del PCAP y reguladas en la cláusula 30 del mismo PCAP"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/contract-terms/tender-001-term-001",
+"label": "535.591,29 € (IVA incluido)",
+"amount": 535591.29,
+"currency": "EUR",
+"description": "535.591,29 € (IVA incluido)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/contract-terms/tender-001-term-002",
+"label": "442.637,43 euros",
+"amount": 442637.43,
+"currency": "EUR",
+"description": "442.637,43 euros"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/contract-terms/tender-001-term-003",
+"label": "13 meses desde el 1 de mayo de 2021, o desde la fecha de formalización del mism…",
+"amount": null,
+"currency": null,
+"description": "13 meses desde el 1 de mayo de 2021, o desde la fecha de formalización del mismo si esta fuera posterior"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/contract-terms/tender-001-term-004",
+"label": "6 meses para la ejecución de fase 1",
+"amount": null,
+"currency": null,
+"description": "6 meses para la ejecución de fase 1\n\n7 meses para la finalización de la Fase 1"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/contract-terms/tender-001-term-005",
+"label": "6 meses a contar desde el inicio de la Fase 2",
+"amount": null,
+"currency": null,
+"description": "6 meses a contar desde el inicio de la Fase 2"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/contract-terms/tender-001-term-006",
+"label": "No se prevén prórrogas en el presente contrato.",
+"amount": null,
+"currency": null,
+"description": "No se prevén prórrogas en el presente contrato."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/contract-terms/tender-001-term-007",
+"label": "5 por ciento del precio final ofertado, IVA excluido",
+"amount": null,
+"currency": null,
+"description": "5 por ciento del precio final ofertado, IVA excluido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/contract-terms/tender-001-term-008",
+"label": "No se considera necesario prestar una garantía complementaria.",
+"amount": null,
+"currency": null,
+"description": "No se considera necesario prestar una garantía complementaria."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/contract-terms/tender-001-term-009",
+"label": "a contar desde la emisión de certificado de conformidad por parte del ICE que a…",
+"amount": null,
+"currency": null,
+"description": "a contar desde la emisión de certificado de conformidad por parte del ICE que acredite la finalización del contrato\n\ndoce meses"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/contract-terms/tender-001-term-010",
+"label": "Entregable E1 entregado y validado.",
+"amount": 8.25,
+"currency": null,
+"description": "Entregable E1 entregado y validado.\n\nInicio de la Fase 1: Investigación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/contract-terms/tender-001-term-011",
+"label": "Cierre de la Fase 1: Investigación.",
+"amount": 32.98,
+"currency": null,
+"description": "Cierre de la Fase 1: Investigación.\n\nEntregables E2, E3, E4 y E5 entregados y validados."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/contract-terms/tender-001-term-012",
+"label": "Entregables de los Periodos 1, 2 y 3 de Desarrollo (E6 y E7) entregados y valid…",
+"amount": 29.39,
+"currency": null,
+"description": "Entregables de los Periodos 1, 2 y 3 de Desarrollo (E6 y E7) entregados y validados."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/contract-terms/tender-001-term-013",
+"label": "Entregables de los Periodos 4, 5 y 6 de Desarrollo (E6 y E7) entregados y valid…",
+"amount": 29.38,
+"currency": null,
+"description": "Entregables de los Periodos 4, 5 y 6 de Desarrollo (E6 y E7) entregados y validados."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/contract-terms/tender-001-term-014",
+"label": "La 'finalización satisfactoria' será un requisito para el pago asociado a cada…",
+"amount": null,
+"currency": null,
+"description": "La 'finalización satisfactoria' será un requisito para el pago asociado a cada hito de facturación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/contract-terms/tender-001-term-015",
+"label": "Se establecerán reuniones de seguimiento periódicas",
+"amount": null,
+"currency": null,
+"description": "Se establecerán reuniones de seguimiento periódicas\n\nse prevén reuniones de seguimiento con periodicidad mensual"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/contract-terms/tender-001-term-016",
+"label": "no podrán ser superiores al 10 por ciento del precio del contrato, IVA excluido…",
+"amount": null,
+"currency": null,
+"description": "no podrán ser superiores al 10 por ciento del precio del contrato, IVA excluido, ni el total de las mismas superar el 50 por cien del precio del contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/contract-terms/tender-001-term-017",
+"label": "1% del importe del total del pago asociado a cada certificado de conformidad po…",
+"amount": null,
+"currency": null,
+"description": "1% del importe del total del pago asociado a cada certificado de conformidad por cada incumplimiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/contract-terms/tender-001-term-018",
+"label": "5% del precio del contrato (IVA excluido)",
+"amount": null,
+"currency": null,
+"description": "5% del precio del contrato (IVA excluido)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/contract-terms/tender-001-term-019",
+"label": "25% del precio de la actividad subcontratada",
+"amount": null,
+"currency": null,
+"description": "25% del precio de la actividad subcontratada"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/contract-terms/tender-001-term-020",
+"label": "No procede aplicar régimen de revisión de precios",
+"amount": null,
+"currency": null,
+"description": "No procede aplicar régimen de revisión de precios"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/contract-terms/tender-001-term-021",
+"label": "No se permite la cesión del contrato.",
+"amount": null,
+"currency": null,
+"description": "No se permite la cesión del contrato.\n\nSe permite la subcontratación de las actividades del contrato máximo del 50%."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/contract-terms/tender-001-term-022",
+"label": "cofinanciado en un 50% por el Fondo Europeo de Desarrollo Regional",
+"amount": null,
+"currency": null,
+"description": "cofinanciado en un 50% por el Fondo Europeo de Desarrollo Regional"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/contract-terms/tender-001-term-023",
+"label": "realizarán el seguimiento de la ejecución del contrato",
+"amount": null,
+"currency": null,
+"description": "realizarán el seguimiento de la ejecución del contrato\n\nun mínimo de 4 personas (2 personas del ICE y 2 de INCIBE, contando el ICE con el voto de calidad en caso de empate)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/contract-terms/tender-001-term-024",
+"label": "certificaciones de conformidad de los requisitos de 'finalización satisfactoria'",
+"amount": null,
+"currency": null,
+"description": "certificaciones de conformidad de los requisitos de 'finalización satisfactoria'\n\nproceder a la formalización del pago correspondiente a los hitos de facturación previstos para la fase 1 y 2"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/contract-terms/tender-001-term-025",
+"label": "durante la primera semana siguiente a la formalización del contrato",
+"amount": null,
+"currency": null,
+"description": "durante la primera semana siguiente a la formalización del contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/contract-terms/tender-001-term-026",
+"label": "Con periodicidad mensual",
+"amount": null,
+"currency": null,
+"description": "Con periodicidad mensual\n\nel contratista se reunirá con el Director Técnico de INCIBE"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/cpi-project-01bbd0fbd7/contract-terms/tender-001-term-027",
+"label": "continuar con el proyecto en la Fase 2 o abandonarlo",
+"amount": null,
+"currency": null,
+"description": "continuar con el proyecto en la Fase 2 o abandonarlo\n\nen base al cumplimiento o no de los requisitos de 'finalización con éxito' de la Fase 1"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/contract-terms/tender-001-term-001",
+"label": "DIEZ MILLONES DE EUROS (10.000.000,00 €)",
+"amount": 10000000.0,
+"currency": "EUR",
+"description": "DIEZ MILLONES DE EUROS (10.000.000,00 €)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/contract-terms/tender-001-term-002",
+"label": "DOS MILLONES CIEN MIL EUROS (2.100.000,00 €)",
+"amount": 2100000.0,
+"currency": "EUR",
+"description": "DOS MILLONES CIEN MIL EUROS (2.100.000,00 €)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/contract-terms/tender-001-term-003",
+"label": "42 meses",
+"amount": null,
+"currency": null,
+"description": "42 meses"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/contract-terms/tender-001-term-004",
+"label": "Máximo 3 meses",
+"amount": null,
+"currency": null,
+"description": "Máximo 3 meses"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/contract-terms/tender-001-term-005",
+"label": "Máximo 33 meses",
+"amount": null,
+"currency": null,
+"description": "Máximo 33 meses"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/contract-terms/tender-001-term-006",
+"label": "4 Fase I, 2 Fase II, 2 Fase III",
+"amount": null,
+"currency": null,
+"description": "4 Fase I, 2 Fase II, 2 Fase III"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/contract-terms/tender-001-term-007",
+"label": "3 % del importe de adjudicación, IVA excluido",
+"amount": null,
+"currency": null,
+"description": "3 % del importe de adjudicación, IVA excluido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/contract-terms/tender-001-term-008",
+"label": "Aval bancario o prestado por sociedades de garantía recíproca autorizados para…",
+"amount": null,
+"currency": null,
+"description": "Aval bancario o prestado por sociedades de garantía recíproca autorizados para operar en España, intervenido ante notario o retención en el precio cuando se trate de pequeñas o medianas empresas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/contract-terms/tender-001-term-009",
+"label": "Los pagos serán parciales y se realizarán en función de la ejecución de los ser…",
+"amount": null,
+"currency": null,
+"description": "Los pagos serán parciales y se realizarán en función de la ejecución de los servicios contratados para cada FASE (finales e intermedia/s), en los plazos establecidos."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/contract-terms/tender-001-term-010",
+"label": "será la base de la facturación y pago",
+"amount": null,
+"currency": null,
+"description": "será la base de la facturación y pago"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/contract-terms/tender-001-term-011",
+"label": "20% del presupuesto del contrato",
+"amount": null,
+"currency": null,
+"description": "20% del presupuesto del contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/contract-terms/tender-001-term-012",
+"label": "un máximo de tres personas (2 representantes de CDTI y 1 por la Entidad Usuaria)",
+"amount": null,
+"currency": null,
+"description": "un máximo de tres personas (2 representantes de CDTI y 1 por la Entidad Usuaria)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/contract-terms/tender-001-term-013",
+"label": "validado en entorno operacional (real) (equivalente a TRL 7) por parte de la En…",
+"amount": null,
+"currency": null,
+"description": "validado en entorno operacional (real) (equivalente a TRL 7) por parte de la Entidad Usuaria"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/contract-terms/tender-001-term-014",
+"label": "hasta un máximo del 10% del importe de adjudicación del contrato, IVA excluido",
+"amount": null,
+"currency": null,
+"description": "hasta un máximo del 10% del importe de adjudicación del contrato, IVA excluido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/contract-terms/tender-001-term-015",
+"label": "hasta un máximo del 5% del importe de adjudicación del contrato, IVA excluido",
+"amount": null,
+"currency": null,
+"description": "hasta un máximo del 5% del importe de adjudicación del contrato, IVA excluido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/contract-terms/tender-001-term-016",
+"label": "hasta un máximo del 1%, del importe de adjudicación del contrato, IVA excluido",
+"amount": null,
+"currency": null,
+"description": "hasta un máximo del 1%, del importe de adjudicación del contrato, IVA excluido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/desarrollo-de-tecnologia-en-el-ambito-de-la-automatizacion-de-tareas-y-p-44642dd1d0/contract-terms/tender-001-term-017",
+"label": "50% del importe de adjudicación, IVA excluido",
+"amount": null,
+"currency": null,
+"description": "50% del importe de adjudicación, IVA excluido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-001",
+"label": "99.000,00 € (IVA excluido)",
+"amount": 99000.0,
+"currency": "EUR",
+"description": "99.000,00 € (IVA excluido)\n\nteniendo en cuenta la duración inicial del contrato y las posibles prórrogas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-002",
+"label": "119.790,00 € (21% de IVA incluido)",
+"amount": 119790.0,
+"currency": "EUR",
+"description": "119.790,00 € (21% de IVA incluido)\n\nTodas aquellas ofertas que presenten precio superior al precio de referencia marcado serán excluidas del procedimiento."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-003",
+"label": "el que resulte de la adjudicación del mismo",
+"amount": null,
+"currency": null,
+"description": "el que resulte de la adjudicación del mismo\n\nincluirá, como partida independiente, el Impuesto sobre el Valor Añadido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-004",
+"label": "El contrato entrará en vigor el día siguiente al de su formalización y finaliza…",
+"amount": null,
+"currency": null,
+"description": "El contrato entrará en vigor el día siguiente al de su formalización y finalizará con el fin de la fase despliegue y uso, que deberá finalizar en junio de 2026.\n\nLa duración de esta segunda fase puede variar si el procedimiento de adjudicación se demora"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-005",
+"label": "40% del precio de adjudicación a la formalización del contrato",
+"amount": 40.0,
+"currency": null,
+"description": "40% del precio de adjudicación a la formalización del contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-006",
+"label": "30% del precio de adjudicación con el fin de la fase de desarrollo (mes 5 aprox…",
+"amount": 30.0,
+"currency": null,
+"description": "30% del precio de adjudicación con el fin de la fase de desarrollo (mes 5 aprox.)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-007",
+"label": "30% restante del precio de adjudicación a la finalización de la fase de desplie…",
+"amount": 30.0,
+"currency": null,
+"description": "30% restante del precio de adjudicación a la finalización de la fase de despliegue y uso"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-008",
+"label": "no se contempla la revisión de precios",
+"amount": null,
+"currency": null,
+"description": "no se contempla la revisión de precios"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-009",
+"label": "5 años",
+"amount": null,
+"currency": null,
+"description": "5 años"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-010",
+"label": "5% del precio de adjudicación, excluido el IVA",
+"amount": 5.0,
+"currency": null,
+"description": "5% del precio de adjudicación, excluido el IVA\n\nestará vigente hasta el fin del periodo de garantía ofertado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-011",
+"label": "0,5% del precio de adjudicación",
+"amount": 0.5,
+"currency": null,
+"description": "0,5% del precio de adjudicación\n\nPor cada incidencia que supere el umbral establecido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-012",
+"label": "1% del precio de adjudicación por cada mes adicional",
+"amount": 1.0,
+"currency": null,
+"description": "1% del precio de adjudicación por cada mes adicional\n\nSi dicho incumplimiento se mantiene de forma continua durante un período superior a 30 días"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-013",
+"label": "0,2% del precio de adjudicación, con un tope acumulado del 5%",
+"amount": 0.2,
+"currency": null,
+"description": "0,2% del precio de adjudicación, con un tope acumulado del 5%\n\nPor cada semana de retraso en la entrega de hitos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-014",
+"label": "1% del precio de adjudicación por cada incumplimiento",
+"amount": 1.0,
+"currency": null,
+"description": "1% del precio de adjudicación por cada incumplimiento\n\nSi las deficiencias no son corregidas en el plazo establecido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-015",
+"label": "1% del precio de adjudicación por cada incidencia no resuelta",
+"amount": 1.0,
+"currency": null,
+"description": "1% del precio de adjudicación por cada incidencia no resuelta\n\nSi se registran reincidencias"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-016",
+"label": "1,5% del precio de adjudicación por cada mes completo de incumplimiento",
+"amount": 1.5,
+"currency": null,
+"description": "1,5% del precio de adjudicación por cada mes completo de incumplimiento\n\nSi el incumplimiento persiste"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-017",
+"label": "2% del precio de adjudicación",
+"amount": 2.0,
+"currency": null,
+"description": "2% del precio de adjudicación\n\nPor cada incidente que implique el incumplimiento en la protección de datos personales o la vulneración de la confidencialidad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-018",
+"label": "0,1% del precio de adjudicación",
+"amount": 0.1,
+"currency": null,
+"description": "0,1% del precio de adjudicación\n\nPor cada día de retraso en la ejecución de las actualizaciones y mantenimientos programados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-019",
+"label": "0,5% del precio de adjudicación",
+"amount": 0.5,
+"currency": null,
+"description": "0,5% del precio de adjudicación\n\nPor cada sesión no impartida en la fecha programada"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-020",
+"label": "1% del precio de adjudicación por cada sesión pendiente",
+"amount": 1.0,
+"currency": null,
+"description": "1% del precio de adjudicación por cada sesión pendiente\n\nSi, transcurridos 6 meses desde el inicio del contrato, la formación no se ha completado en su totalidad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-021",
+"label": "0,5% del precio de adjudicación por cada punto porcentual de desviación acumula…",
+"amount": 0.5,
+"currency": null,
+"description": "0,5% del precio de adjudicación por cada punto porcentual de desviación acumulada\n\nDe no cumplirse lo previsto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-022",
+"label": "no procede, salvo consentimiento previo por escrito del órgano de contratación",
+"amount": null,
+"currency": null,
+"description": "no procede, salvo consentimiento previo por escrito del órgano de contratación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-023",
+"label": "deberá indicarlo en su oferta",
+"amount": null,
+"currency": null,
+"description": "deberá indicarlo en su oferta\n\nno es posible la subcontratación total de la prestación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-024",
+"label": "99.000,00 €",
+"amount": 99000.0,
+"currency": "EUR",
+"description": "99.000,00 €"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-025",
+"label": "119.790,00 €",
+"amount": 119790.0,
+"currency": "EUR",
+"description": "119.790,00 €"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-026",
+"label": "Serán excluidas aquellas ofertas que superen el presupuesto base de licitación.",
+"amount": null,
+"currency": null,
+"description": "Serán excluidas aquellas ofertas que superen el presupuesto base de licitación."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-027",
+"label": "El cómputo del plazo para la ejecución del contrato se iniciará el día que se i…",
+"amount": null,
+"currency": null,
+"description": "El cómputo del plazo para la ejecución del contrato se iniciará el día que se indique o el siguiente al de la formalización de aquél."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-028",
+"label": null,
+"amount": null,
+"currency": null,
+"description": null
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-029",
+"label": "El contratista tendrá derecho al abono de la prestación realizada en los términ…",
+"amount": null,
+"currency": null,
+"description": "El contratista tendrá derecho al abono de la prestación realizada en los términos establecidos en el contrato, con arreglo al precio convenido."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-030",
+"label": "Garantía Definitiva exigida en el apartado 15 de la Carátula",
+"amount": null,
+"currency": null,
+"description": "Garantía Definitiva exigida en el apartado 15 de la Carátula"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-031",
+"label": "La entidad contratante podrá aplicar las penalizaciones indicadas en el punto 1…",
+"amount": null,
+"currency": null,
+"description": "La entidad contratante podrá aplicar las penalizaciones indicadas en el punto 10 de la Carátula del presente pliego"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-032",
+"label": "la titularidad de los Derechos de Propiedad Industrial y/o Intelectual relativo…",
+"amount": null,
+"currency": null,
+"description": "la titularidad de los Derechos de Propiedad Industrial y/o Intelectual relativos a los resultados que pudieran derivarse de los citados servicios, corresponderá en exclusiva a Biogipuzkoa"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-033",
+"label": "incluido el software",
+"amount": null,
+"currency": null,
+"description": "incluido el software"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-034",
+"label": "todas las modalidades de explotación, para cualquier medio o soporte, con facul…",
+"amount": null,
+"currency": null,
+"description": "todas las modalidades de explotación, para cualquier medio o soporte, con facultad de transmisión y licencia a terceros, para todo el mundo y durante todo el plazo de protección de dichos derechos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-035",
+"label": "no hará uso de obras, materiales o contenidos de terceros (salvo que medie la c…",
+"amount": null,
+"currency": null,
+"description": "no hará uso de obras, materiales o contenidos de terceros (salvo que medie la correspondiente autorización o licencia) para el desarrollo de los RESULTADOS"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-036",
+"label": "12 meses de ejecución del contrato (desde junio 2025 hasta junio 2026)",
+"amount": null,
+"currency": null,
+"description": "12 meses de ejecución del contrato (desde junio 2025 hasta junio 2026)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-037",
+"label": "una fase de diseño y desarrollo (5 meses) seguida de una fase de despliegue y u…",
+"amount": null,
+"currency": null,
+"description": "una fase de diseño y desarrollo (5 meses) seguida de una fase de despliegue y uso (7 meses)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-038",
+"label": "La duración de esta fase puede variar si el procedimiento de adjudicación se de…",
+"amount": null,
+"currency": null,
+"description": "La duración de esta fase puede variar si el procedimiento de adjudicación se demora\n\nel contrato finalizará de cualquier modo en junio 2026"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-039",
+"label": "como mínimo, hasta finalizar el Proyecto RaDAR (junio de 2026)",
+"amount": null,
+"currency": null,
+"description": "como mínimo, hasta finalizar el Proyecto RaDAR (junio de 2026)\n\nrealizar el mantenimiento y proporcionar la formación, así como el soporte necesario para el correcto funcionamiento de la solución adquirida"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-040",
+"label": "El modelo de control y seguimiento a aplicar durante la prestación del servicio…",
+"amount": null,
+"currency": null,
+"description": "El modelo de control y seguimiento a aplicar durante la prestación del servicio, incluyendo las reuniones de seguimiento a celebrar, su objetivo, su periodicidad, los asistentes necesarios, los controles que deben ser ejecutados, etc."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-041",
+"label": "Biogipuzkoa organizará una reunión de Kick-off con el proveedor para definir có…",
+"amount": null,
+"currency": null,
+"description": "Biogipuzkoa organizará una reunión de Kick-off con el proveedor para definir cómo se ejecutará el proceso de seguimiento durante la ejecución del contrato.\n\nkick-off + trimestrales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-042",
+"label": "La falsedad en los datos ofrecidos por la adjudicataria, tanto respecto a la mi…",
+"amount": null,
+"currency": null,
+"description": "La falsedad en los datos ofrecidos por la adjudicataria, tanto respecto a la misma como a los recursos de que disponga, conlleva penalizaciones, y en último término, en función de la gravedad de los hechos y sus consecuencias, provocará la resolución del contrato."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-043",
+"label": "El incumplimiento de estas normativas podrá dar lugar a la resolución del contr…",
+"amount": null,
+"currency": null,
+"description": "El incumplimiento de estas normativas podrá dar lugar a la resolución del contrato."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-044",
+"label": "la titularidad de los Derechos de Propiedad Industrial y/o Intelectual relativo…",
+"amount": null,
+"currency": null,
+"description": "la titularidad de los Derechos de Propiedad Industrial y/o Intelectual relativos a los resultados que pudieran derivarse de los citados servicios, corresponderá en exclusiva a Biogipuzkoa."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-045",
+"label": "todas las creaciones intelectuales, técnicas o artísticas susceptibles de prote…",
+"amount": null,
+"currency": null,
+"description": "todas las creaciones intelectuales, técnicas o artísticas susceptibles de protección como patente o modelo de utilidad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-046",
+"label": "cesión en exclusiva de la totalidad de los Derechos de Propiedad Intelectual e…",
+"amount": null,
+"currency": null,
+"description": "cesión en exclusiva de la totalidad de los Derechos de Propiedad Intelectual e Industrial sobre las mismas a favor de éste, incluyendo, interpretadas de la forma más amplia posible, todas las modalidades de explotación, para cualquier medio o soporte, con facultad de transmisión y licencia a terceros\n\npara todo el mundo y durante todo el plazo de protección de dichos derechos, esto es, sin ningún límite geográfico o temporal"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-001-term-047",
+"label": "no hará uso de obras, materiales o contenidos de terceros (salvo que medie la c…",
+"amount": null,
+"currency": null,
+"description": "no hará uso de obras, materiales o contenidos de terceros (salvo que medie la correspondiente autorización o licencia) para el desarrollo de los RESULTADOS"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-002-lot-002-term-001",
+"label": "unos 700 pacientes para cribado rectal o perianal",
+"amount": null,
+"currency": null,
+"description": "unos 700 pacientes para cribado rectal o perianal\n\ny para dar cobertura a un 100 pacientes para cribado nasal para la detección de resistencia a la meticilina"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-002-term-001",
+"label": "El contrato se podrá prorrogar si así se ha previsto en el apartado D del cuadr…",
+"amount": null,
+"currency": null,
+"description": "El contrato se podrá prorrogar si así se ha previsto en el apartado D del cuadro de características .\n\nla preavise con, al menos, dos meses de antelación a la finalización del plazo de duración del contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-002-term-002",
+"label": "El importe de la garantía definitiva es el que se señala en el apartado L del c…",
+"amount": null,
+"currency": null,
+"description": "El importe de la garantía definitiva es el que se señala en el apartado L del cuadro de características ."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-002-term-003",
+"label": "Si el contrato no se formaliza en el plazo indicado en el apartado anterior por…",
+"amount": 3.0,
+"currency": null,
+"description": "Si el contrato no se formaliza en el plazo indicado en el apartado anterior por causas imputables a la empresa adjudicataria\n\nel importe del 3 por ciento del presupuesto base de licitación, IVA excluido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-002-term-004",
+"label": "En caso de cumplimiento defectuoso de la prestación objeto del contrato o de in…",
+"amount": null,
+"currency": null,
+"description": "En caso de cumplimiento defectuoso de la prestación objeto del contrato o de incumplimiento de los compromisos asumidos\n\nlas cuantías de cada una de ellas no pueden ser superiores al 10 por 100 del precio del contrato, IVA excluido, ni el total de las mismas superar el 50 por 100 del precio del contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-002-term-005",
+"label": "Supervisar la ejecución del contrato y tomar las decisiones y dictar las instru…",
+"amount": null,
+"currency": null,
+"description": "Supervisar la ejecución del contrato y tomar las decisiones y dictar las instrucciones necesarias por asegurar la correcta realización de la prestación\n\nse designará una persona responsable del contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-002-term-006",
+"label": "El pago a la empresa contratista se efectuará contra presentación de factura ex…",
+"amount": null,
+"currency": null,
+"description": "El pago a la empresa contratista se efectuará contra presentación de factura expedida de acuerdo con la normativa vigente sobre factura electrónica, en los plazos y las condiciones establecidas en el artículo 198 de la LCSP."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-002-term-007",
+"label": "El plazo de garantía es el señalado en el apartado R del cuadro de característi…",
+"amount": null,
+"currency": null,
+"description": "El plazo de garantía es el señalado en el apartado R del cuadro de características y empezará a computar a partir de la recepción de los servicios."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-002-term-008",
+"label": "considerando como fecha de inicio del proyecto 1 de marzo de 2025 y fecha previ…",
+"amount": null,
+"currency": null,
+"description": "considerando como fecha de inicio del proyecto 1 de marzo de 2025 y fecha prevista de finalización del proyecto es 30 de junio de 2026\n\nun máximo de 16 meses"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-002-term-009",
+"label": "En caso de firma del correspondiente contrato con posterioridad al 1 de marzo d…",
+"amount": null,
+"currency": null,
+"description": "En caso de firma del correspondiente contrato con posterioridad al 1 de marzo de 2025\n\nsu vigencia finalizará en la misma fecha, 30 de junio de 2026"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-002-term-010",
+"label": "Un pago fijo mensual durante el período de ejecución del contrato, correspondie…",
+"amount": 98.0,
+"currency": null,
+"description": "Un pago fijo mensual durante el período de ejecución del contrato, correspondiente al precio ofrecido por el adjudicatario\n\ndurante el período de ejecución del contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-002-term-011",
+"label": "en base a un esquema de riesgo compartido en relación a los resultados o Indica…",
+"amount": 2.0,
+"currency": null,
+"description": "en base a un esquema de riesgo compartido en relación a los resultados o Indicadores Clave de Rendimiento (KPIs)\n\nen el último mes de ejecución del contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-002-term-012",
+"label": "En todos los lotes requeridos, el licitador asumirá los incrementos de la activ…",
+"amount": 15.0,
+"currency": null,
+"description": "En todos los lotes requeridos, el licitador asumirá los incrementos de la actividad de manejo de los pacientes estimada en un máximo del 15%"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-002-term-013",
+"label": "488 pacientes a lo largo de la duración del contrato",
+"amount": null,
+"currency": null,
+"description": "488 pacientes a lo largo de la duración del contrato\n\nEl número de pruebas necesarias para el manejo rápido de la bacteriemia"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-002-term-014",
+"label": "plazo máximo de gestión del cambio en 3 meses para los Lotes 1 y 2, y del plazo…",
+"amount": 1.0,
+"currency": null,
+"description": "plazo máximo de gestión del cambio en 3 meses para los Lotes 1 y 2, y del plazo máximo 6 meses por el lote 3\n\npor cada semana de atraso"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-002-term-015",
+"label": "En los sistemas de detección (Lotes 1 y 2)",
+"amount": 1.0,
+"currency": null,
+"description": "En los sistemas de detección (Lotes 1 y 2)\n\nmás del 10% del total de pruebas mensuales llevadas a cabo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-002-term-016",
+"label": "En los sistemas de detección (Lotes 1 y 2)",
+"amount": 1.0,
+"currency": null,
+"description": "En los sistemas de detección (Lotes 1 y 2)\n\nmás del 10% de las pruebas mensuales llevadas a cabo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-002-term-017",
+"label": "los resultados de los sistemas de detección no se integren correctamente en el…",
+"amount": 1.0,
+"currency": null,
+"description": "los resultados de los sistemas de detección no se integren correctamente en el sistema de información del laboratorio\n\nmás del 10% de los resultados mensuales sin integración"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-002-term-018",
+"label": "más de 2 incidencias mensuales sin respuesta en el tiempo previsto",
+"amount": 1.0,
+"currency": null,
+"description": "más de 2 incidencias mensuales sin respuesta en el tiempo previsto\n\nsegún los criterios de prioridad 'Sin servicio' y 'Urgente' (< de 12 horas y < de 16 horas, respectivamente)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-002-term-019",
+"label": "ICO creará un equipo de seguimiento, formado por proveedores y personal hospita…",
+"amount": null,
+"currency": null,
+"description": "ICO creará un equipo de seguimiento, formado por proveedores y personal hospitalario\n\nhacer el seguimiento de la evolución de los resultados del contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-002-term-020",
+"label": "Se celebrarán reuniones mensuales de seguimiento local",
+"amount": null,
+"currency": null,
+"description": "Se celebrarán reuniones mensuales de seguimiento local\n\nde M1 a M16"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-002-term-021",
+"label": "Los Contratistas mantendrán la propiedad de los derechos de propiedad intelectu…",
+"amount": null,
+"currency": null,
+"description": "Los Contratistas mantendrán la propiedad de los derechos de propiedad intelectual (DPI) que éstos generan durante RaDAR\n\npodrán utilizarlos para explotar el mercado potencial de sus soluciones innovadoras más allá de esta contratación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-002-term-022",
+"label": "La propiedad de los derechos preexistentes no ha cambiado con esa licitación",
+"amount": null,
+"currency": null,
+"description": "La propiedad de los derechos preexistentes no ha cambiado con esa licitación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-002-term-023",
+"label": "El contratista declarará expresamente que es titular de los DPI o de los derech…",
+"amount": null,
+"currency": null,
+"description": "El contratista declarará expresamente que es titular de los DPI o de los derechos legales de comercialización de estos productos\n\npresentará la documentación justificativa en caso de que el Comprador con el que concluye el contrato así lo solicite"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-001",
+"label": "importe que no incluye el Impuesto sobre el Valor Añadido (IVA)",
+"amount": null,
+"currency": null,
+"description": "importe que no incluye el Impuesto sobre el Valor Añadido (IVA)\n\nse expresa en el cuadro de características específicas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-002",
+"label": "el que consta en el cuadro de características específicas",
+"amount": null,
+"currency": null,
+"description": "el que consta en el cuadro de características específicas\n\npara la totalidad del suministro"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-003",
+"label": "Todos los plazos empiezan a contar desde el día que se estipule en el contrato.",
+"amount": null,
+"currency": null,
+"description": "Todos los plazos empiezan a contar desde el día que se estipule en el contrato.\n\nel que se establece en el cuadro de características específicas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-004",
+"label": "La prórroga será acordada por el órgano de contratación y es obligatoria por el…",
+"amount": null,
+"currency": null,
+"description": "La prórroga será acordada por el órgano de contratación y es obligatoria por el contratista\n\ncon una antelación de 2 meses a la finalización de la duración inicial del contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-005",
+"label": "La prórroga del contrato deberá ser expresa.",
+"amount": null,
+"currency": null,
+"description": "La prórroga del contrato deberá ser expresa."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-006",
+"label": "Con carácter general, NO será requisito necesario para participar en la licitac…",
+"amount": null,
+"currency": null,
+"description": "Con carácter general, NO será requisito necesario para participar en la licitación la constitución de una garantía provisional."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-007",
+"label": "En caso de que el órgano de contratación no haya dispensado de la constitución…",
+"amount": 3.0,
+"currency": null,
+"description": "En caso de que el órgano de contratación no haya dispensado de la constitución de la garantía provisional, constará así en el cuadro de características específicas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-008",
+"label": "El adjudicatario estará obligado a constituir una garantía definitiva",
+"amount": 5.0,
+"currency": null,
+"description": "El adjudicatario estará obligado a constituir una garantía definitiva\n\nexcluido el IVA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-009",
+"label": "llegando, por tanto al 10% del precio del contrato, IVA excluido",
+"amount": 5.0,
+"currency": null,
+"description": "llegando, por tanto al 10% del precio del contrato, IVA excluido\n\npodrá presentarse garantía complementaria"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-010",
+"label": "en concepto de penalidad",
+"amount": 3.0,
+"currency": null,
+"description": "en concepto de penalidad\n\nse entenderá que el licitador ha retirado su oferta"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-011",
+"label": "descuentos en el precio del contrato",
+"amount": 10.0,
+"currency": null,
+"description": "descuentos en el precio del contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-012",
+"label": "descuentos en el precio del contrato",
+"amount": 5.0,
+"currency": null,
+"description": "descuentos en el precio del contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-013",
+"label": "con cargo al adjudicatario",
+"amount": 1.0,
+"currency": null,
+"description": "con cargo al adjudicatario\n\npodrá ordenar la realización de pruebas y análisis de control de calidad de los materiales de suministro"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-014",
+"label": "los suministros efectivamente entregados y formalmente recibidos",
+"amount": null,
+"currency": null,
+"description": "los suministros efectivamente entregados y formalmente recibidos\n\nuna vez efectuada la entrega del suministro, previa presentación de la correspondiente factura y albarones de entrega, por triplicado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-015",
+"label": "la factura y los albaranos oportunos se presentarán, para su pago",
+"amount": null,
+"currency": null,
+"description": "la factura y los albaranos oportunos se presentarán, para su pago\n\nuna vez finalizado cada plazo parcial"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-016",
+"label": "10 meses",
+"amount": null,
+"currency": null,
+"description": "10 meses"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-017",
+"label": "30 de junio de 2026",
+"amount": null,
+"currency": null,
+"description": "30 de junio de 2026\n\nEn caso de firma del correspondiente contrato con posterioridad al 1 de mayo de 2025"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-018",
+"label": "Un pago variable mensual durante el periodo de ejecución del contrato, comprend…",
+"amount": 98.0,
+"currency": null,
+"description": "Un pago variable mensual durante el periodo de ejecución del contrato, comprendido en la fase de desarrollo (entre el M2 y M9)\n\nde acuerdo con los reactivos efectivamente entregados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-019",
+"label": "Un último pago en el último mes de ejecución del contrato",
+"amount": 2.0,
+"currency": null,
+"description": "Un último pago en el último mes de ejecución del contrato\n\nen base a un esquema de riesgo compartido en relación con los Indicadores Clave de Rendimiento (KPIs)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-020",
+"label": "LRC únicamente abonará a la empresa adjudicataria los servicios efectivamente p…",
+"amount": null,
+"currency": null,
+"description": "LRC únicamente abonará a la empresa adjudicataria los servicios efectivamente prestados\n\núnicamente mediante transferencia bancaria, con vencimiento 30 días / fecha factura, el próximo día 15 del mes siguiente"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-021",
+"label": "Cualquier modificación sobre el IVA será motivo de revisión, no pudiendo reperc…",
+"amount": null,
+"currency": null,
+"description": "Cualquier modificación sobre el IVA será motivo de revisión, no pudiendo repercutir ningún otro incremento.\n\nDurante la vigencia del contrato no tendrá lugar ningún incremento de precio."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-022",
+"label": "en ningún caso LRC quedará obligado a consumir la totalidad del importe adjudic…",
+"amount": null,
+"currency": null,
+"description": "en ningún caso LRC quedará obligado a consumir la totalidad del importe adjudicado\n\nsin que exista compromiso por parte de LRC de agotar el consumo previsto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-023",
+"label": "3 días laborables a partir de la fecha de recibimiento del pedido",
+"amount": null,
+"currency": null,
+"description": "3 días laborables a partir de la fecha de recibimiento del pedido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-024",
+"label": "como máximo de 24 horas",
+"amount": null,
+"currency": null,
+"description": "como máximo de 24 horas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-025",
+"label": "incumplimiento del plazo máximo de implementación en 1 mes de los Lotes 1, 2 y 3",
+"amount": 1.0,
+"currency": null,
+"description": "incumplimiento del plazo máximo de implementación en 1 mes de los Lotes 1, 2 y 3\n\npor cada semana de retraso"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-026",
+"label": "incumplimiento del tiempo máximo de duración de la técnica",
+"amount": 1.0,
+"currency": null,
+"description": "incumplimiento del tiempo máximo de duración de la técnica\n\nmás del 10% del total de pruebas mensuales llevadas a cabo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-027",
+"label": "incumplimiento de los periodos máximos para las intervenciones de mantenimiento…",
+"amount": 1.0,
+"currency": null,
+"description": "incumplimiento de los periodos máximos para las intervenciones de mantenimiento del servicio (Lotes 1 y 3)\n\nmás de 2 incidencias mensuales sin resolver en el tiempo previsto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-028",
+"label": "incumplimiento de estos si no se cumple con lo establecido y valorado positivam…",
+"amount": 1.0,
+"currency": null,
+"description": "incumplimiento de estos si no se cumple con lo establecido y valorado positivamente\n\npor cada punto incumplido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/ga-101036228/contract-terms/tender-003-term-029",
+"label": "entre el MT y el proveedor para hacer el seguimiento y monitorización del proye…",
+"amount": null,
+"currency": null,
+"description": "entre el MT y el proveedor para hacer el seguimiento y monitorización del proyecto RaDAR\n\nreuniones trimestrales (M1, M4, M7 y M10)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/contract-terms/tender-001-term-001",
+"label": "160.000,00 €",
+"amount": 160000.0,
+"currency": "EUR",
+"description": "160.000,00 €\n\npresupuesto total máximo base de licitación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/contract-terms/tender-001-term-002",
+"label": "160.000,00 €",
+"amount": 160000.0,
+"currency": "EUR",
+"description": "160.000,00 €\n\nVALOR ESTIMADO (sin IVA)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/contract-terms/tender-001-term-003",
+"label": "193.600,00 €",
+"amount": 193600.0,
+"currency": "EUR",
+"description": "193.600,00 €\n\nImporte total (IVA incluido)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/contract-terms/tender-001-term-004",
+"label": "la imprescindible par a entregar, instalar y poner en marcha el servicio",
+"amount": null,
+"currency": null,
+"description": "la imprescindible par a entregar, instalar y poner en marcha el servicio\n\ntendrá q ue estar ejecutado antes del 05 de diciembre de 2018"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/contract-terms/tender-001-term-005",
+"label": "1 de junio de 2018",
+"amount": null,
+"currency": null,
+"description": "1 de junio de 2018\n\nSe prevé inicio del contrato el 1 de junio de 2018."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/contract-terms/tender-001-term-006",
+"label": "dentro de los cinco días hábiles siguientes a contar desde la fecha de la forma…",
+"amount": null,
+"currency": null,
+"description": "dentro de los cinco días hábiles siguientes a contar desde la fecha de la formalización del contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/contract-terms/tender-001-term-007",
+"label": "El Órgano de Contratación no podrá prorrogar el contrato.",
+"amount": null,
+"currency": null,
+"description": "El Órgano de Contratación no podrá prorrogar el contrato."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/contract-terms/tender-001-term-008",
+"label": "No se prevé la modificación del contrato",
+"amount": null,
+"currency": null,
+"description": "No se prevé la modificación del contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/contract-terms/tender-001-term-009",
+"label": "No procede.",
+"amount": null,
+"currency": null,
+"description": "No procede."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/contract-terms/tender-001-term-010",
+"label": "5% del importe de adjudicación",
+"amount": null,
+"currency": null,
+"description": "5% del importe de adjudicación\n\nIVA excluido."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/contract-terms/tender-001-term-011",
+"label": "0%",
+"amount": null,
+"currency": null,
+"description": "0%\n\nPuesta en marcha"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/contract-terms/tender-001-term-012",
+"label": "20%",
+"amount": null,
+"currency": null,
+"description": "20%\n\nPrestación Regular"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/contract-terms/tender-001-term-013",
+"label": "40%",
+"amount": null,
+"currency": null,
+"description": "40%\n\nPrestación Regular"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/contract-terms/tender-001-term-014",
+"label": "30%",
+"amount": null,
+"currency": null,
+"description": "30%\n\nPrestación Regular"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/contract-terms/tender-001-term-015",
+"label": "10%",
+"amount": null,
+"currency": null,
+"description": "10%\n\nCierre proyecto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/contract-terms/tender-001-term-016",
+"label": "previa presentación de la correspondiente factura debidamente conformada por el…",
+"amount": null,
+"currency": null,
+"description": "previa presentación de la correspondiente factura debidamente conformada por el órgano competente\n\nuna vez realizados favorablemente los trabajos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/contract-terms/tender-001-term-017",
+"label": "dentro de los 30 días siguientes a la fecha de la expedición de los correspondi…",
+"amount": null,
+"currency": null,
+"description": "dentro de los 30 días siguientes a la fecha de la expedición de los correspondientes documentos que acrediten la realización de alguna de las fases de los trabajos\n\nprevia presentación de la factura correspondiente"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/contract-terms/tender-001-term-018",
+"label": "No procede revisión de precios.",
+"amount": null,
+"currency": null,
+"description": "No procede revisión de precios."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/contract-terms/tender-001-term-019",
+"label": "El Área de Plataformas y Servicios de FISABIO-Salud Pública",
+"amount": null,
+"currency": null,
+"description": "El Área de Plataformas y Servicios de FISABIO-Salud Pública\n\nsupervisará su ejecución y adoptará las decisiones y dictará las instrucciones necesarias"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/contract-terms/tender-001-term-020",
+"label": "Esta fase tendrá una duración de dos semanas, aunque la Dirección del Proyecto…",
+"amount": null,
+"currency": null,
+"description": "Esta fase tendrá una duración de dos semanas, aunque la Dirección del Proyecto podrá acordar una prolongación hasta un máximo de cuatro semanas.\n\ndos semanas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/contract-terms/tender-001-term-021",
+"label": "La duración de esta fase en ningún caso deberá ser superior a tres semanas.",
+"amount": null,
+"currency": null,
+"description": "La duración de esta fase en ningún caso deberá ser superior a tres semanas.\n\nen ningún caso deberá ser superior a tres semanas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/contract-terms/tender-001-term-022",
+"label": "Esta actividad se desarrollará durante la ejecución del contrato y durante el p…",
+"amount": null,
+"currency": null,
+"description": "Esta actividad se desarrollará durante la ejecución del contrato y durante el periodo de garantía y correrá a cuenta del adjudicatario.\n\ndurante la ejecución del contrato y durante el periodo de garantía"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/contract-terms/tender-001-term-023",
+"label": "Para poder facturar completamente una tarea o servicio se deberán haber validad…",
+"amount": null,
+"currency": null,
+"description": "Para poder facturar completamente una tarea o servicio se deberán haber validado de conformidad (aceptado) todos los entregables que le correspondan."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/gestor-de-interoperabilidad-semantica-de-la-red-valenciana-de-biobancos-935a564a32/contract-terms/tender-001-term-024",
+"label": "El Equipo de Seguimiento se encargará básicamente d e ejercer el control y segu…",
+"amount": null,
+"currency": null,
+"description": "El Equipo de Seguimiento se encargará básicamente d e ejercer el control y seguimiento de la ejecución del proyecto"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/contract-terms/tender-001-term-001",
+"label": "5.886.083,49 €",
+"amount": 5886083.49,
+"currency": "EUR",
+"description": "5.886.083,49 €\n\nPresupuesto Base de Licitación del Contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/contract-terms/tender-001-term-002",
+"label": "1.236.077,54 €",
+"amount": 1236077.54,
+"currency": "EUR",
+"description": "1.236.077,54 €\n\nen concepto de IVA (21%)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/contract-terms/tender-001-term-003",
+"label": "2.413.294,23 € más 506.791,79 € en concepto de IVA (21%)",
+"amount": 2920086.02,
+"currency": "EUR",
+"description": "2.413.294,23 € más 506.791,79 € en concepto de IVA (21%)\n\n2.920.086,02 € IVA incluido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/contract-terms/tender-001-term-004",
+"label": "3.472.789,26 € más 729.285,75 € en concepto de IVA (21%)",
+"amount": 4202075.01,
+"currency": "EUR",
+"description": "3.472.789,26 € más 729.285,75 € en concepto de IVA (21%)\n\n4.202.075,01 € IVA incluido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/contract-terms/tender-001-term-005",
+"label": "duración máxima de 28 meses condicionada a una fecha límite de finalización del…",
+"amount": null,
+"currency": null,
+"description": "duración máxima de 28 meses condicionada a una fecha límite de finalización del 30 de junio de 2023\n\niniciará su ejecución y vigencia en la fecha de su formalización"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/contract-terms/tender-001-term-006",
+"label": "13 meses y dos semanas para la ejecución de la fase 1 y 15 días para la evaluac…",
+"amount": null,
+"currency": null,
+"description": "13 meses y dos semanas para la ejecución de la fase 1 y 15 días para la evaluación técnica\n\n14 meses"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/contract-terms/tender-001-term-007",
+"label": "en ningún caso será superior a seis meses",
+"amount": null,
+"currency": null,
+"description": "en ningún caso será superior a seis meses\n\npodrá prorrogarse en el caso de que se acuerde la extensión del plazo de vigencia del Convenio"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/contract-terms/tender-001-term-008",
+"label": "La 'finalización satisfactoria' será un requisito para el pago asociado a cada…",
+"amount": null,
+"currency": null,
+"description": "La 'finalización satisfactoria' será un requisito para el pago asociado a cada hito de facturación\n\nLos pagos correspondientes a cada hito de facturación estarán sujetos a la finalización, ejecución o cumplimiento satisfactorio"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/contract-terms/tender-001-term-009",
+"label": "dentro de los treinta días siguientes a la fecha de aprobación de las facturas",
+"amount": null,
+"currency": null,
+"description": "dentro de los treinta días siguientes a la fecha de aprobación de las facturas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/contract-terms/tender-001-term-010",
+"label": "a contar desde la finalización del contrato",
+"amount": null,
+"currency": null,
+"description": "a contar desde la finalización del contrato\n\npor 12 meses"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/contract-terms/tender-001-term-011",
+"label": "Se permite la subcontratación de las actividades del contrato",
+"amount": null,
+"currency": null,
+"description": "Se permite la subcontratación de las actividades del contrato\n\nun máximo del 70%"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/contract-terms/tender-001-term-012",
+"label": "Se permite la subcontratación de las actividades del contrato",
+"amount": null,
+"currency": null,
+"description": "Se permite la subcontratación de las actividades del contrato\n\nun máximo del 50%"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/contract-terms/tender-001-term-013",
+"label": "No se permite la cesión del contrato.",
+"amount": null,
+"currency": null,
+"description": "No se permite la cesión del contrato."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/contract-terms/tender-001-term-014",
+"label": "Se establecerán reuniones de seguimiento periódicas",
+"amount": null,
+"currency": null,
+"description": "Se establecerán reuniones de seguimiento periódicas\n\nen base a un informe intermedio y a un informe final de fase"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/contract-terms/tender-001-term-015",
+"label": "no podrán ser superiores al 10 por ciento del precio del contrato, IVA excluido…",
+"amount": null,
+"currency": null,
+"description": "no podrán ser superiores al 10 por ciento del precio del contrato, IVA excluido, ni el total de las mismas superar el 50 por cien del precio del contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/contract-terms/tender-001-term-016",
+"label": "5% del precio del contrato (IVA excluido)",
+"amount": null,
+"currency": null,
+"description": "5% del precio del contrato (IVA excluido)\n\nen caso de incumplimiento del alcance de los términos fijados inicialmente"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/imagen-molecular-de-alta-sensibilidad-d32ece5a55/contract-terms/tender-001-term-017",
+"label": "1% del precio del contrato (IVA excluido) por cada incumplimiento",
+"amount": null,
+"currency": null,
+"description": "1% del precio del contrato (IVA excluido) por cada incumplimiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/contract-terms/tender-001-term-001",
+"label": "147.130,60 €",
+"amount": 147130.6,
+"currency": "EUR",
+"description": "147.130,60 €"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/contract-terms/tender-001-term-002",
+"label": "73.565,30 €",
+"amount": 73565.3,
+"currency": "EUR",
+"description": "73.565,30 €"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/contract-terms/tender-001-term-003",
+"label": "29.426,12 €",
+"amount": 29426.12,
+"currency": "EUR",
+"description": "29.426,12 €"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/contract-terms/tender-001-term-004",
+"label": "24 meses desde la fecha que se indique en el contrato",
+"amount": null,
+"currency": null,
+"description": "24 meses desde la fecha que se indique en el contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/contract-terms/tender-001-term-005",
+"label": "12 meses",
+"amount": null,
+"currency": null,
+"description": "12 meses\n\nLa duración máxima de la prórroga será de 12 meses."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/contract-terms/tender-001-term-006",
+"label": "5 % DEL IMPORTE FINAL OFRECIDO",
+"amount": null,
+"currency": null,
+"description": "5 % DEL IMPORTE FINAL OFRECIDO\n\nIVA excluido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/contract-terms/tender-001-term-007",
+"label": "pago trimestral",
+"amount": null,
+"currency": null,
+"description": "pago trimestral\n\nprevia presentación de la factura"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/contract-terms/tender-001-term-008",
+"label": "se aplicará sobre la facturación trimestral en función del grado del cumplimien…",
+"amount": null,
+"currency": null,
+"description": "se aplicará sobre la facturación trimestral en función del grado del cumplimiento del mismo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/contract-terms/tender-001-term-009",
+"label": "sobre la factura trimestral siguiente a la comprobación del incumplimiento",
+"amount": null,
+"currency": null,
+"description": "sobre la factura trimestral siguiente a la comprobación del incumplimiento\n\nun 5%"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/contract-terms/tender-001-term-010",
+"label": "1% de la factura trimestral",
+"amount": null,
+"currency": null,
+"description": "1% de la factura trimestral\n\nsobre la factura trimestral siguiente a la comprobación del incumplimiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/contract-terms/tender-001-term-011",
+"label": "2% sobre el importe de la factura trimestral",
+"amount": null,
+"currency": null,
+"description": "2% sobre el importe de la factura trimestral"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/contract-terms/tender-001-term-012",
+"label": "0,60 euros por cada 1.000 euros del precio del contrato",
+"amount": null,
+"currency": "EUR",
+"description": "0,60 euros por cada 1.000 euros del precio del contrato\n\npenalidad diaria"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/contract-terms/tender-001-term-013",
+"label": "0.1% de la factura trimestral",
+"amount": null,
+"currency": null,
+"description": "0.1% de la factura trimestral"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/contract-terms/tender-001-term-014",
+"label": "Reuniones periódicas de seguimiento y revisiones técnicas entre la dirección té…",
+"amount": null,
+"currency": null,
+"description": "Reuniones periódicas de seguimiento y revisiones técnicas entre la dirección técnica de servicio, por parte del contratista, y el IBSalut\n\nreuniones trimestrales previas a la emisión de la factura trimestral"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/contract-terms/tender-001-term-015",
+"label": "las cuantías de cada una de ellas no podrán ser superiores al 10 por ciento del…",
+"amount": null,
+"currency": null,
+"description": "las cuantías de cada una de ellas no podrán ser superiores al 10 por ciento del precio del contrato, IVA excluido, ni el total de las mismas superar el 50 por cien del precio del contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/contract-terms/tender-001-term-016",
+"label": "Corresponde al IB-Salut la supervisión de los trabajos",
+"amount": null,
+"currency": null,
+"description": "Corresponde al IB-Salut la supervisión de los trabajos\n\nCorresponde al IB-Salut la supervisión de los trabajos, así como la proposición de las modificaciones que convenga introducir en los mismos o, en su caso, la suspensión de los trabajos si existiese causa suficientemente motivada."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/contract-terms/tender-001-term-017",
+"label": "Durante esta fase se iniciará la medición del servicio mediante un ANS.",
+"amount": null,
+"currency": null,
+"description": "Durante esta fase se iniciará la medición del servicio mediante un ANS.\n\nEsta fase se inicia en la firma del contrato y tiene una duración de 3 meses."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/contract-terms/tender-001-term-018",
+"label": "Esta fase tiene una duración de 3 meses y se inicia a los 3 meses anteriores de…",
+"amount": null,
+"currency": null,
+"description": "Esta fase tiene una duración de 3 meses y se inicia a los 3 meses anteriores de la finalización del contrato.\n\nel contratista se compromete a dar soporte al DTIC para facilitar la transferencia del servicio al propio DTIC o a un tercero"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/contract-terms/tender-001-term-019",
+"label": "con un preaviso al contratista de 3 meses de antelación",
+"amount": null,
+"currency": null,
+"description": "con un preaviso al contratista de 3 meses de antelación\n\nel Servicio de Salud substituirá, en el parque objeto del contrato, estos activos por otros de similares características"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/contract-terms/tender-001-term-020",
+"label": "el Servicio de Salud podrá dar de baja algunos de los dispositivos, sin que est…",
+"amount": null,
+"currency": null,
+"description": "el Servicio de Salud podrá dar de baja algunos de los dispositivos, sin que estos sean sustituidos por otros, igualmente con un preaviso de 3 meses de antelación.\n\nel importe de la facturación conllevará la correspondiente reducción de acuerdo con las cláusulas previstas en el PCAP sobre el pago del precio"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/contract-terms/tender-001-term-021",
+"label": "contratar al fabricante todas las garantías de los equipos que lo permitan dura…",
+"amount": null,
+"currency": null,
+"description": "contratar al fabricante todas las garantías de los equipos que lo permitan durante la totalidad de la duración del contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/contract-terms/tender-001-term-022",
+"label": "El suministro de versiones, según la política de fabricante CISCO para sus prod…",
+"amount": null,
+"currency": null,
+"description": "El suministro de versiones, según la política de fabricante CISCO para sus productos software , puede ser gratuito o estar sujeto a la compra de nuevas licencias\n\nel pago corresponderá al IB-Salut, que previamente valorará si la versión a actualizar es o no adecuada"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/contract-terms/tender-001-term-023",
+"label": "El acuerdo de nivel de servicio exigido consiste en obtener una puntuación fina…",
+"amount": null,
+"currency": null,
+"description": "El acuerdo de nivel de servicio exigido consiste en obtener una puntuación final igual o superior a 90 puntos.\n\nobtener una puntuación final igual o superior a 90 puntos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/contract-terms/tender-001-term-024",
+"label": "| ≥ 90 | N/A | | < 90 y ≥ 80 | Menor | | < 80 y ≥ 60 | Importante | | < 60 | Se…",
+"amount": null,
+"currency": null,
+"description": "| ≥ 90 | N/A |\n| < 90 y ≥ 80 | Menor |\n| < 80 y ≥ 60 | Importante |\n| < 60 | Severo |"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/contract-terms/tender-001-term-025",
+"label": "el contratista deberá presentar un informe de seguimiento de manera trimestral…",
+"amount": null,
+"currency": null,
+"description": "el contratista deberá presentar un informe de seguimiento de manera trimestral ( IT0N ), este informe deberá presentarse una semana antes de la presentación de la factura trimestral ( FT-0N ).\n\nfactura trimestral"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/intel-ib-salud-gestion-inteligente-de-las-emergencias-del-061-y-registro-4b0c282cc2/contract-terms/tender-001-term-026",
+"label": "Entre Mes 25 - 27 (SEP25/OCT25/NOV25)",
+"amount": null,
+"currency": null,
+"description": "Entre Mes 25 - 27 (SEP25/OCT25/NOV25)\n\nPOSIBLE PRÓRROGA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/contract-terms/tender-001-term-001",
+"label": "en el caso y por el importe que se indique en el Anexo 1",
+"amount": null,
+"currency": null,
+"description": "en el caso y por el importe que se indique en el Anexo 1"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/contract-terms/tender-001-term-002",
+"label": "será devuelta cuando se haya producido el vencimiento del plazo de garantía y c…",
+"amount": null,
+"currency": null,
+"description": "será devuelta cuando se haya producido el vencimiento del plazo de garantía y cumplido satisfactoriamente el contrato, o en caso de resolución de éste sin culpa del contratista"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/contract-terms/tender-001-term-003",
+"label": "El contrato tendrá la duración establecida en el Pliego de Prescripciones Técni…",
+"amount": null,
+"currency": null,
+"description": "El contrato tendrá la duración establecida en el Pliego de Prescripciones Técnicas Particulares o, en todo caso, en el Anexo 1 del PCAP, o la que resulte de la oferta adjudicataria aceptada si es menor"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/contract-terms/tender-001-term-004",
+"label": "Si en el referido Anexo no se previese revisión de precios se entenderá que los…",
+"amount": null,
+"currency": null,
+"description": "Si en el referido Anexo no se previese revisión de precios se entenderá que los precios no son revisables durante la duración del contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/contract-terms/tender-001-term-005",
+"label": "Se extenderán certificaciones mensuales de obra con las correspondientes factur…",
+"amount": null,
+"currency": null,
+"description": "Se extenderán certificaciones mensuales de obra con las correspondientes facturas electrónicas\n\nhabrán de ser abonadas por EMASESA mediante transferencia bancaria a la cuenta que indique el adjudicatario"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/contract-terms/tender-001-term-006",
+"label": "del importe líquido de cada certificación a abonar al contratista se deducirá e…",
+"amount": 1.0,
+"currency": null,
+"description": "del importe líquido de cada certificación a abonar al contratista se deducirá el 1% del importe de ejecución material que se acredite en la misma"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/contract-terms/tender-001-term-007",
+"label": "De no cumplimentarse adecuadamente el requerimiento en el plazo señalado, se en…",
+"amount": 3.0,
+"currency": null,
+"description": "De no cumplimentarse adecuadamente el requerimiento en el plazo señalado, se entenderá que el licitador ha retirado su oferta\n\nel importe del 3 por ciento del presupuesto base de licitación, IVA excluido, en concepto de penalización"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/contract-terms/tender-001-term-008",
+"label": "daños y perjuicios que se ocasionen en cualesquiera elementos propiedad de EMAS…",
+"amount": null,
+"currency": null,
+"description": "daños y perjuicios que se ocasionen en cualesquiera elementos propiedad de EMASESA por su culpa, negligencia o incumplimiento\n\nla cuantía correspondiente al importe de dicha valoración y hasta el doble de la misma"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/contract-terms/tender-001-term-009",
+"label": "El adjudicatario y EMASESA nombrarán a una persona responsable por cada parte c…",
+"amount": null,
+"currency": null,
+"description": "El adjudicatario y EMASESA nombrarán a una persona responsable por cada parte como representantes\n\ncoordinar las obras, controlar la calidad de las mismas y han de servir de enlace entre las partes contratantes"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/contract-terms/tender-002-term-001",
+"label": "El precio del contrato será el resultante de la licitación ofertado por el adju…",
+"amount": null,
+"currency": null,
+"description": "El precio del contrato será el resultante de la licitación ofertado por el adjudicatario"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/contract-terms/tender-002-term-002",
+"label": "El contrato tendrá la duración establecida en el Pliego de Prescripciones Técni…",
+"amount": null,
+"currency": null,
+"description": "El contrato tendrá la duración establecida en el Pliego de Prescripciones Técnicas Particulares o, en todo caso, en el Anexo 1 del PCAP, o la que resulte de la oferta adjudicataria aceptada si es menor"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/contract-terms/tender-002-term-003",
+"label": "Se extenderán certificaciones mensuales de obra con las correspondientes factur…",
+"amount": null,
+"currency": null,
+"description": "Se extenderán certificaciones mensuales de obra con las correspondientes facturas electrónicas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/contract-terms/tender-002-term-004",
+"label": "del importe líquido de cada certificación a abonar al contratista se deducirá e…",
+"amount": 1.0,
+"currency": null,
+"description": "del importe líquido de cada certificación a abonar al contratista se deducirá el 1% del importe de ejecución material que se acredite en la misma"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/contract-terms/tender-002-term-005",
+"label": "La fianza definitiva responderá de las penalizaciones impuestas al contratista,…",
+"amount": null,
+"currency": null,
+"description": "La fianza definitiva responderá de las penalizaciones impuestas al contratista, de la correcta ejecución de las prestaciones contempladas en el contrato y de los daños y perjuicios ocasionados a EMASESA o a terceros"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/contract-terms/tender-002-term-006",
+"label": "se entenderá que el licitador ha retirado su oferta, procediéndose a exigirle e…",
+"amount": 3.0,
+"currency": null,
+"description": "se entenderá que el licitador ha retirado su oferta, procediéndose a exigirle el importe del 3 por ciento del presupuesto base de licitación, IVA excluido, en concepto de penalización"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/contract-terms/tender-002-term-007",
+"label": "El adjudicatario y EMASESA nombrarán a una persona responsable por cada parte c…",
+"amount": null,
+"currency": null,
+"description": "El adjudicatario y EMASESA nombrarán a una persona responsable por cada parte como representantes, que serán los encargados de coordinar las obras, controlar la calidad de las mismas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/contract-terms/tender-002-term-008",
+"label": "71 semanas (~17 meses)",
+"amount": null,
+"currency": null,
+"description": "71 semanas (~17 meses)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/contract-terms/tender-002-term-009",
+"label": "52 semanas",
+"amount": null,
+"currency": null,
+"description": "52 semanas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/contract-terms/tender-002-term-010",
+"label": "9 semanas (~2 meses)",
+"amount": null,
+"currency": null,
+"description": "9 semanas (~2 meses)\n\nLas pruebas y puesta a punto finales, a 2/3 y plena carga de lodo en la instalación, se realizarán durante el periodo de garantía de un año"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/contract-terms/tender-002-term-011",
+"label": "un año",
+"amount": null,
+"currency": null,
+"description": "un año"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/contract-terms/tender-002-term-012",
+"label": "serán por cuenta de la Empresa Adjudicataria los costes derivados de la obtenci…",
+"amount": null,
+"currency": null,
+"description": "serán por cuenta de la Empresa Adjudicataria los costes derivados de la obtención de cuantas licencias y/o autorizaciones sean necesarias para la ejecución de las obras"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/contract-terms/tender-002-term-013",
+"label": "1% del Presupuesto de Ejecución Material de las obras",
+"amount": null,
+"currency": null,
+"description": "1% del Presupuesto de Ejecución Material de las obras\n\nEste importe será detraído de cada certificación mensual."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/contract-terms/tender-002-term-014",
+"label": "serán de cuenta del Contratista",
+"amount": null,
+"currency": null,
+"description": "serán de cuenta del Contratista\n\nsiempre que no superen el 1% del presupuesto total de la obra"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/modelo-integrado-de-gestion-de-lodos-de-depuracion-y-de-otros-residuos-o-82dcba0049/contract-terms/tender-002-term-015",
+"label": "El 75 % del total de la unidad cuando esté totalmente instalada. El 15 % del to…",
+"amount": null,
+"currency": null,
+"description": "El 75 % del total de la unidad cuando esté totalmente instalada. El 15 % del total de la unidad cuando haya sido probada. El 10 % restante del total de la unidad cuando se realice la Recepción de las obras."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-001",
+"label": "1.545.567,58 €",
+"amount": 1545567.58,
+"currency": "EUR",
+"description": "1.545.567,58 €"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-002",
+"label": "1.545.567,58 €",
+"amount": 1545567.58,
+"currency": "EUR",
+"description": "1.545.567,58 €\n\nIVA : 21%"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-003",
+"label": "1.870.136,77 €",
+"amount": 1870136.77,
+"currency": "EUR",
+"description": "1.870.136,77 €"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-004",
+"label": "14 meses",
+"amount": null,
+"currency": null,
+"description": "14 meses\n\nel contrato finalizará el 30 de junio de 2023"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-005",
+"label": "la citada ampliación de plazo no se considerará prórroga en los términos previs…",
+"amount": null,
+"currency": null,
+"description": "la citada ampliación de plazo no se considerará prórroga en los términos previstos a tal efecto en la LCSP, y no supondrá incremento alguno del precio del contrato\n\npodrá ampliarse en el tiempo necesario y hasta el límite máximo de la prórroga del convenio"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-006",
+"label": "mediante la presentación de facturas en función del efectivo cumplimento de los…",
+"amount": null,
+"currency": null,
+"description": "mediante la presentación de facturas en función del efectivo cumplimento de los siguientes hitos\n\nuna vez que haya tenido lugar la aceptación o verificación de los bienes o servicios entregados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-007",
+"label": "No se requerirá",
+"amount": null,
+"currency": null,
+"description": "No se requerirá"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-008",
+"label": "5 % del importe de adjudicación, excluido IVA",
+"amount": null,
+"currency": null,
+"description": "5 % del importe de adjudicación, excluido IVA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-009",
+"label": "5 % del importe de adjudicación, excluido IVA",
+"amount": null,
+"currency": null,
+"description": "5 % del importe de adjudicación, excluido IVA\n\nen los supuestos de que la oferta del contratista hubiera estado incursa en presunción de anormalidad"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-010",
+"label": "2 años desde la fecha de recepción del contrato",
+"amount": null,
+"currency": null,
+"description": "2 años desde la fecha de recepción del contrato\n\nincluirá las labores y materiales necesarios para el correcto funcionamiento de la solución durante su periodo de garantía"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-011",
+"label": "10 € diarios por cada 1.000 € IVA excluido del precio de los citados trabajos d…",
+"amount": null,
+"currency": "EUR",
+"description": "10 € diarios por cada 1.000 € IVA excluido del precio de los citados trabajos de redacción\n\nEl importe de dicha penalidad sustituye al establecido en la cláusula 21ª"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-012",
+"label": "atendiendo a la gravedad del incumplimiento",
+"amount": null,
+"currency": null,
+"description": "atendiendo a la gravedad del incumplimiento\n\nhasta un 50 % del precio del contrato (IVA excluido)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-013",
+"label": "Unidad administrativa encargada del seguimiento y ejecución ordinaria de este c…",
+"amount": null,
+"currency": null,
+"description": "Unidad administrativa encargada del seguimiento y ejecución ordinaria de este contrato : Desarrollo Económico\n\nsupervisar su ejecución y adoptar las decisiones y dictar las instrucciones necesarias"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-014",
+"label": "Los trabajos que constituyan objeto de propiedad intelectual, se entenderán exp…",
+"amount": null,
+"currency": null,
+"description": "Los trabajos que constituyan objeto de propiedad intelectual, se entenderán expresamente cedidos en exclusiva al Ayuntamiento, salvo en el caso de derechos preexistentes , en los que la cesión puede no ser con carácter de exclusividad.\n\nQuedarán en propiedad del Ayuntamiento tanto el servicio recibido como los derechos inherentes a los trabajos realizados, su propiedad industrial y comercial."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-015",
+"label": "El Ayuntamiento se reserva su utilización, no pudiendo ser objeto de comerciali…",
+"amount": null,
+"currency": null,
+"description": "El Ayuntamiento se reserva su utilización, no pudiendo ser objeto de comercialización, reproducción u otro uso no autorizado expresamente por el mismo\n\npodrá recabar en cualquier momento la entrega de los documentos o materiales que la integren, con todos sus antecedentes, datos o procedimientos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-016",
+"label": "llevarán aparejada la cesión de éste a la Administración contratante",
+"amount": null,
+"currency": null,
+"description": "llevarán aparejada la cesión de éste a la Administración contratante"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-017",
+"label": "1.545.567,58 € (IVA no incluído)",
+"amount": 1545567.58,
+"currency": "EUR",
+"description": "1.545.567,58 € (IVA no incluído)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-018",
+"label": "un máximo de 14 meses, finalizando en todo caso el 30 de Junio de 2023",
+"amount": null,
+"currency": null,
+"description": "un máximo de 14 meses, finalizando en todo caso el 30 de Junio de 2023"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-019",
+"label": "durante cinco años",
+"amount": null,
+"currency": null,
+"description": "durante cinco años\n\nincluyendo todas las acciones de prevención y corrección de incidencias relativas a la fibra y el equipamiento, así como la actualización de software"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-020",
+"label": "15%",
+"amount": 231835.14,
+"currency": "EUR",
+"description": "15%\n\nInstalación y puesta en marcha cámaras y nodos de inteligencia artificial. Aceptación Componente 2 (Blockchain)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-021",
+"label": "5%",
+"amount": 77278.38,
+"currency": "EUR",
+"description": "5%\n\nPuesta en"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-022",
+"label": "20%",
+"amount": 309113.52,
+"currency": "EUR",
+"description": "20%\n\nPrototipo funcional (Componente 1)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-023",
+"label": "25%",
+"amount": 386391.89,
+"currency": "EUR",
+"description": "25%\n\nAceptación completa Componente 1 (Sistema de visión artificial e IA) Aceptación completa Componente 3 (Sistema de Inteligencia) Aceptación completa Componente 5 (Computación distribuida) Aceptación completa Casos de Uso"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-024",
+"label": "Una vez el Ayuntamiento de Alcalá de Guadaíra apruebe los partes de aceptación…",
+"amount": null,
+"currency": null,
+"description": "Una vez el Ayuntamiento de Alcalá de Guadaíra apruebe los partes de aceptación asociados a un determinado hito de ejecución\n\nel adjudicatario emitirá la correspondiente factura a través del servicio de factura electrónica del Ayuntamiento de Alcalá de Guadaíra"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/plataforma-para-parques-empresariales-inteligentes-af3f40e32b/contract-terms/tender-001-term-025",
+"label": "dará lugar a la aplicación de las penalidades descritas en el apartado 21) Pena…",
+"amount": null,
+"currency": null,
+"description": "dará lugar a la aplicación de las penalidades descritas en el apartado 21) Penalidades y responsabilidades de las Condiciones Específicas del Pliego de Cláusulas Administrativas Particulares"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/contract-terms/tender-001-term-001",
+"label": "Siete millones cuarenta mil EUROS (7.040.000 €)",
+"amount": 7040000.0,
+"currency": "EUR",
+"description": "Siete millones cuarenta mil EUROS (7.040.000 €)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/contract-terms/tender-001-term-002",
+"label": "Un millón cuatrocientos setenta y ocho mil cuatrocientos EUROS (1.478.400 €)",
+"amount": 1478400.0,
+"currency": "EUR",
+"description": "Un millón cuatrocientos setenta y ocho mil cuatrocientos EUROS (1.478.400 €)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/contract-terms/tender-001-term-003",
+"label": "3.470.000 €",
+"amount": 3470000.0,
+"currency": "EUR",
+"description": "3.470.000 €\n\nsin IVA"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/contract-terms/tender-001-term-004",
+"label": "3 % del importe de adjudicación, IVA excluido",
+"amount": null,
+"currency": null,
+"description": "3 % del importe de adjudicación, IVA excluido\n\naval bancario intervenido ante notario"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/contract-terms/tender-001-term-005",
+"label": "18 meses desde la formalización del mismo",
+"amount": null,
+"currency": null,
+"description": "18 meses desde la formalización del mismo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/contract-terms/tender-001-term-006",
+"label": "máximo de 4 meses desde la formalización del contrato",
+"amount": null,
+"currency": null,
+"description": "máximo de 4 meses desde la formalización del contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/contract-terms/tender-001-term-007",
+"label": "máximo de 10,5 meses una vez certificada la FASE I",
+"amount": null,
+"currency": null,
+"description": "máximo de 10,5 meses una vez certificada la FASE I"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/contract-terms/tender-001-term-008",
+"label": "máximo de 3,5 meses desde la certificación de la FASE II",
+"amount": null,
+"currency": null,
+"description": "máximo de 3,5 meses desde la certificación de la FASE II"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/contract-terms/tender-001-term-009",
+"label": "31 de marzo del 2023",
+"amount": null,
+"currency": null,
+"description": "31 de marzo del 2023"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/contract-terms/tender-001-term-010",
+"label": "SI",
+"amount": null,
+"currency": null,
+"description": "SI"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/contract-terms/tender-001-term-011",
+"label": "Los pagos serán parciales y se realizarán en función de la ejecución de los ser…",
+"amount": null,
+"currency": null,
+"description": "Los pagos serán parciales y se realizarán en función de la ejecución de los servicios contratados para cada FASE en los plazos establecidos.\n\nTras la pertinente comprobación del grado de ejecución, se emitirá un certificado de conformidad que será la base de la facturación y pago"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/contract-terms/tender-001-term-012",
+"label": "No se prevén modificaciones del contrato excepto en los supuestos del artículo…",
+"amount": null,
+"currency": null,
+"description": "No se prevén modificaciones del contrato excepto en los supuestos del artículo 205 LCSP"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/contract-terms/tender-001-term-013",
+"label": "El presente contrato no será susceptible de cesión.",
+"amount": null,
+"currency": null,
+"description": "El presente contrato no será susceptible de cesión."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/contract-terms/tender-001-term-014",
+"label": "No hay límite en el porcentaje máximo de subcontratación, excepto las siguiente…",
+"amount": null,
+"currency": null,
+"description": "No hay límite en el porcentaje máximo de subcontratación, excepto las siguientes tareas que no podrán ser subcontratadas\n\ndebiendo ser ejecutadas directamente por el adjudicatario"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/contract-terms/tender-001-term-015",
+"label": "su cuantía será del 1% del importe de adjudicación del contrato, salvo que se e…",
+"amount": null,
+"currency": null,
+"description": "su cuantía será del 1% del importe de adjudicación del contrato, salvo que se estime que el incumplimiento es grave o muy grave, en cuyo caso podrá alcanzar hasta un 5% o hasta un máximo del 10%, respectivamente"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/contract-terms/tender-001-term-016",
+"label": "3 por ciento del importe máximo de la oferta por adjudicatario (sin IVA)",
+"amount": null,
+"currency": null,
+"description": "3 por ciento del importe máximo de la oferta por adjudicatario (sin IVA)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/reto-traslado-de-presos-b5ce78b1f0/contract-terms/tender-001-term-017",
+"label": "supervisar su ejecución y adoptar las decisiones y dictar las instrucciones nec…",
+"amount": null,
+"currency": null,
+"description": "supervisar su ejecución y adoptar las decisiones y dictar las instrucciones necesarias con el fin de asegurar la correcta ejecución de la prestación pactada\n\nun equipo constituido por un máximo de tres personas (2 CDTI / 1 Administración usuaria)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/contract-terms/tender-001-term-001",
+"label": "1.765.906,44€",
+"amount": 1765906.44,
+"currency": "EUR",
+"description": "1.765.906,44€\n\ndado que es de aplicación el tipo de IGIC del 0% a las obras objeto del contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/contract-terms/tender-001-term-002",
+"label": "2.119.087,73€",
+"amount": 2119087.73,
+"currency": "EUR",
+"description": "2.119.087,73€\n\nincluidas eventuales prórrogas, si la financiación lo permite, y las posibles modificaciones previstas en la cláusula 27 (de hasta un 20% del importe adjudicado)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/contract-terms/tender-001-term-003",
+"label": "a contar desde la fecha de formalización del Contrato de Obras, sin sobrepasar…",
+"amount": null,
+"currency": null,
+"description": "a contar desde la fecha de formalización del Contrato de Obras, sin sobrepasar en ningún caso la fecha límite del 31 de mayo de 2023\n\ndiez (10) meses"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/contract-terms/tender-001-term-004",
+"label": "Salvo notificación expresa (por escrito) por parte del ITC de su ampliación o p…",
+"amount": null,
+"currency": null,
+"description": "Salvo notificación expresa (por escrito) por parte del ITC de su ampliación o prórroga"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/contract-terms/tender-001-term-005",
+"label": "al menos dos (2) años",
+"amount": null,
+"currency": null,
+"description": "al menos dos (2) años\n\nsin perjuicio de que se establezca un plazo mayor en caso de que la oferta incluya mejora en el período de garantía"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/contract-terms/tender-001-term-006",
+"label": "No se exigirá garantía provisional para la presente licitación.",
+"amount": null,
+"currency": null,
+"description": "No se exigirá garantía provisional para la presente licitación."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/contract-terms/tender-001-term-007",
+"label": "cinco por ciento (5%) del importe de adjudicación del contrato, impuestos indir…",
+"amount": null,
+"currency": null,
+"description": "cinco por ciento (5%) del importe de adjudicación del contrato, impuestos indirectos excluidos\n\nen un plazo máximo de diez (10) días hábiles"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/contract-terms/tender-001-term-008",
+"label": "El ITC, de forma motivada, podrá solicitar al adjudicatario la constitución de…",
+"amount": null,
+"currency": null,
+"description": "El ITC, de forma motivada, podrá solicitar al adjudicatario la constitución de garantías adicionales\n\nhasta un 5 % del importe de adjudicación del contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/contract-terms/tender-001-term-009",
+"label": "25% del precio adjudicado",
+"amount": null,
+"currency": null,
+"description": "25% del precio adjudicado\n\na la entrega de la memoria técnica final de diseño validada por el Responsable Técnico del ITC"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/contract-terms/tender-001-term-010",
+"label": "10% del precio adjudicado",
+"amount": null,
+"currency": null,
+"description": "10% del precio adjudicado\n\nprevia entrega del Proyecto replanteado y visado"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/contract-terms/tender-001-term-011",
+"label": "25% del importe total proyectado",
+"amount": null,
+"currency": null,
+"description": "25% del importe total proyectado\n\nObra civil en Pozo Izquierdo terminada - 5%."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/contract-terms/tender-001-term-012",
+"label": "10% del importe proyectado",
+"amount": null,
+"currency": null,
+"description": "10% del importe proyectado\n\ntras acta de recepción parcial"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/contract-terms/tender-001-term-013",
+"label": "0,60 euros por cada 1.000 euros del precio del contrato",
+"amount": null,
+"currency": null,
+"description": "0,60 euros por cada 1.000 euros del precio del contrato\n\nSi llegado el final del plazo establecido, el contratista hubiere incurrido en demora, por causa imputable al mismo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/contract-terms/tender-001-term-014",
+"label": "hasta un máximo del 10% del importe total adjudicado",
+"amount": null,
+"currency": null,
+"description": "hasta un máximo del 10% del importe total adjudicado\n\nsi no se excede en más de un 5% el valor promedio total de consumo específico de energía del año 0"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/contract-terms/tender-001-term-015",
+"label": "comprobando que su realización se ajusta a lo establecido en el contrato",
+"amount": null,
+"currency": null,
+"description": "comprobando que su realización se ajusta a lo establecido en el contrato\n\nsupervisará la ejecución del mismo"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/contract-terms/tender-001-term-016",
+"label": "Ninguna parte adquirirá por medio del citado Contrato derechos de autor, patent…",
+"amount": null,
+"currency": null,
+"description": "Ninguna parte adquirirá por medio del citado Contrato derechos de autor, patentes, secretos comerciales, marcas comerciales o cualesquiera otros derechos de propiedad intelectual que pertenezcan a la otra parte.\n\npertenecerán a la parte que sea titular de los mismos"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/contract-terms/tender-001-term-017",
+"label": "gratuita, indefinida y exclusiva",
+"amount": null,
+"currency": null,
+"description": "gratuita, indefinida y exclusiva\n\nsobre todos los derechos de explotación relativos al diseño realizado, sus posibles modificaciones para ser adaptado a otros emplazamientos, así como los datos de operación de la planta al ITC para poder ser publicados, divulgados y replicados en futuras licitaciones de plantas desaladoras que promueva el ITC ya sea de forma directa o indirecta en el ámbito de la Comunidad Autónoma de Canarias, sin que eso conlleve a ningún tipo de canon para el adjudicatario"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/contract-terms/tender-001-term-018",
+"label": "la empresa adjudicataria será responsable del correcto diseño, suministro, tran…",
+"amount": null,
+"currency": null,
+"description": "la empresa adjudicataria será responsable del correcto diseño, suministro, transporte, montaje, instalación, puesta en marcha y pruebas de rendimiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/contract-terms/tender-001-term-019",
+"label": "la planta deberá estar en producción un mínimo de 24 horas y un máximo de 72 ho…",
+"amount": null,
+"currency": null,
+"description": "la planta deberá estar en producción un mínimo de 24 horas y un máximo de 72 horas de forma continuada"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/contract-terms/tender-001-term-020",
+"label": "La prueba de rendimientos durará 1 hora y durante ese tiempo no se pueden regis…",
+"amount": null,
+"currency": null,
+"description": "La prueba de rendimientos durará 1 hora y durante ese tiempo no se pueden registrar paradas ni cambios en la consigna anterior de producción."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/contract-terms/tender-001-term-021",
+"label": "La formación tendrá una duración mínima de 3 jornadas de trabajo (mínimo 24 hor…",
+"amount": null,
+"currency": null,
+"description": "La formación tendrá una duración mínima de 3 jornadas de trabajo (mínimo 24 horas)."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sd-2111/contract-terms/tender-001-term-022",
+"label": "éstas han de incluirse como parte del suministro y su vigencia ha de ser vitali…",
+"amount": null,
+"currency": null,
+"description": "éstas han de incluirse como parte del suministro y su vigencia ha de ser vitalicia o con una caducidad superior a 5 años"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/contract-terms/tender-001-term-001",
+"label": "1.570.599,38 €",
+"amount": 1570599.38,
+"currency": "EUR",
+"description": "1.570.599,38 €"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/contract-terms/tender-001-term-002",
+"label": "1.570.599,38 €",
+"amount": 1570599.38,
+"currency": "EUR",
+"description": "1.570.599,38 €"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/contract-terms/tender-001-term-003",
+"label": "24 meses",
+"amount": null,
+"currency": null,
+"description": "24 meses\n\nLa fecha prevista de inicio del contrato será el 1 de abril de 2024 o desde la formalización de este si ésta fuera posterior."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/contract-terms/tender-001-term-004",
+"label": "No se prevén prórrogas en el presente contrato.",
+"amount": null,
+"currency": null,
+"description": "No se prevén prórrogas en el presente contrato."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/contract-terms/tender-001-term-005",
+"label": "24 meses",
+"amount": null,
+"currency": null,
+"description": "24 meses"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/contract-terms/tender-001-term-006",
+"label": "5 por 100 (5%) del precio final ofertado, excluido el Impuesto sobre el Valor A…",
+"amount": null,
+"currency": null,
+"description": "5 por 100 (5%) del precio final ofertado, excluido el Impuesto sobre el Valor Añadido"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/contract-terms/tender-001-term-007",
+"label": "Pagos parciales",
+"amount": null,
+"currency": null,
+"description": "Pagos parciales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/contract-terms/tender-001-term-008",
+"label": "20 % del importe de adjudicación",
+"amount": null,
+"currency": null,
+"description": "20 % del importe de adjudicación\n\nE3: Informe de Actividad 3. Contenidos: • H3.1: PMV Pack 1 • H3.2: PMV Pack 2 • H3.3: PMV Pack 3 • H3.4: Test y Pruebas"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/contract-terms/tender-001-term-009",
+"label": "40 % del importe de adjudicación",
+"amount": null,
+"currency": null,
+"description": "40 % del importe de adjudicación\n\nH2: Desarrollo de la Solución Tecnológica"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/contract-terms/tender-001-term-010",
+"label": "5% del precio del contrato (IVA excluido)",
+"amount": null,
+"currency": null,
+"description": "5% del precio del contrato (IVA excluido)"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/contract-terms/tender-001-term-011",
+"label": "1% del importe del total del pago asociado a cada certificado de conformidad po…",
+"amount": null,
+"currency": null,
+"description": "1% del importe del total del pago asociado a cada certificado de conformidad por cada incumplimiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/contract-terms/tender-001-term-012",
+"label": "Se permite la subcontratación de las actividades del contrato, con un máximo de…",
+"amount": null,
+"currency": null,
+"description": "Se permite la subcontratación de las actividades del contrato, con un máximo del 50%, salvo en lo referente a la redacción del plan de trabajo y de los informes anuales"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/contract-terms/tender-001-term-013",
+"label": "El Equipo de Seguimiento (ES) es el órgano responsable del seguimiento de la ej…",
+"amount": null,
+"currency": null,
+"description": "El Equipo de Seguimiento (ES) es el órgano responsable del seguimiento de la ejecución del contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/contract-terms/tender-001-term-014",
+"label": "1.900.425,25 €",
+"amount": 1900425.25,
+"currency": "EUR",
+"description": "1.900.425,25 €"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/contract-terms/tender-001-term-015",
+"label": "380.085,04 €",
+"amount": 380085.04,
+"currency": "EUR",
+"description": "380.085,04 €"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/contract-terms/tender-001-term-016",
+"label": "1.140.255,15 €",
+"amount": 1140255.15,
+"currency": "EUR",
+"description": "1.140.255,15 €"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/contract-terms/tender-001-term-017",
+"label": "1 de abril de 2024 o desde la formalización de éste si ésta fuera posterior",
+"amount": null,
+"currency": null,
+"description": "1 de abril de 2024 o desde la formalización de éste si ésta fuera posterior"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/contract-terms/tender-001-term-018",
+"label": "No",
+"amount": null,
+"currency": null,
+"description": "No"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/contract-terms/tender-001-term-019",
+"label": "El contrato contará con plazos intermedios vinculados a los entregables definid…",
+"amount": null,
+"currency": null,
+"description": "El contrato contará con plazos intermedios vinculados a los entregables definidos en el Pliego de Especificaciones Funcionales de la presente contratación\n\nSí"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/contract-terms/tender-001-term-020",
+"label": "No",
+"amount": null,
+"currency": null,
+"description": "No"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/contract-terms/tender-001-term-021",
+"label": "licencia ilimitada para su utilización por parte de ICE",
+"amount": null,
+"currency": null,
+"description": "licencia ilimitada para su utilización por parte de ICE"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/senda-sistema-experto-en-la-nube-de-diagnostico-y-acompanamiento-c13f8498d8/contract-terms/tender-001-term-022",
+"label": "pudiendo la DT proponer el aumento y disminución de esta frecuencia en función…",
+"amount": null,
+"currency": null,
+"description": "pudiendo la DT proponer el aumento y disminución de esta frecuencia en función de la evolución del proyecto\n\nuna reunión mensual"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/contract-terms/tender-001-term-001",
+"label": "2.303.172,64 €",
+"amount": 2303172.64,
+"currency": "EUR",
+"description": "2.303.172,64 €\n\nDicho importe constituye la inversión máxima que el órgano de contratación está dispuesto a asumir en el contrato."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/contract-terms/tender-001-term-002",
+"label": "244.515,58€ (IVA no incluido) cada una",
+"amount": 244515.58,
+"currency": "EUR",
+"description": "244.515,58€ (IVA no incluido) cada una\n\nejecutadas respectivamente por los dos licitadores que hayan obtenido mejores calificaciones en la Fase de adjudicación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/contract-terms/tender-001-term-003",
+"label": "24 meses, con posibilidad de ampliación a otros 6 meses debidamente justificada…",
+"amount": null,
+"currency": null,
+"description": "24 meses, con posibilidad de ampliación a otros 6 meses debidamente justificada y autorizada."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/contract-terms/tender-001-term-004",
+"label": "No se prevé prórroga para el plazo total del contrato.",
+"amount": null,
+"currency": null,
+"description": "No se prevé prórroga para el plazo total del contrato."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/contract-terms/tender-001-term-005",
+"label": "4 meses",
+"amount": null,
+"currency": null,
+"description": "4 meses\n\ntentativamente"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/contract-terms/tender-001-term-006",
+"label": "12 meses",
+"amount": null,
+"currency": null,
+"description": "12 meses\n\ntentativamente"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/contract-terms/tender-001-term-007",
+"label": "8 meses",
+"amount": null,
+"currency": null,
+"description": "8 meses\n\ntentativamente"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/contract-terms/tender-001-term-008",
+"label": "Los pagos correspondientes a cada fase se efectuarán por AVRA tras la terminaci…",
+"amount": null,
+"currency": null,
+"description": "Los pagos correspondientes a cada fase se efectuarán por AVRA tras la terminación a plena satisfacción de cada una de las fases de ejecución descritas en el presente Documento Descriptivo."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/contract-terms/tender-001-term-009",
+"label": "5% del precio final de adjudicación del contrato",
+"amount": 5.0,
+"currency": null,
+"description": "5% del precio final de adjudicación del contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/contract-terms/tender-001-term-010",
+"label": "Adicional a la definitiva",
+"amount": 10.0,
+"currency": null,
+"description": "Adicional a la definitiva\n\nhasta el 10% del precio final de adjudicación del contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/contract-terms/tender-001-term-011",
+"label": "en ningún caso se podrá subcontratar un porcentaje superior al 50% del importe…",
+"amount": 50.0,
+"currency": null,
+"description": "en ningún caso se podrá subcontratar un porcentaje superior al 50% del importe de adjudicación"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/contract-terms/tender-001-term-012",
+"label": "Al final de cada fase los contratistas deberán presentar un Informe Justificati…",
+"amount": null,
+"currency": null,
+"description": "Al final de cada fase los contratistas deberán presentar un Informe Justificativo acompañando a los entregables previstos en cada una de ellas."
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/contract-terms/tender-001-term-013",
+"label": "el 2 por ciento (2%) importe de adjudicación (IVA excluido)",
+"amount": 2.0,
+"currency": null,
+"description": "el 2 por ciento (2%) importe de adjudicación (IVA excluido)\n\npor causas distintas a las de fuerza mayor"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/contract-terms/tender-001-term-014",
+"label": "una cantidad equivalente al valor de mercado de dichas gestiones más un diez po…",
+"amount": 10.0,
+"currency": null,
+"description": "una cantidad equivalente al valor de mercado de dichas gestiones más un diez por ciento (10%) del valor del contrato"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/contract-terms/tender-001-term-015",
+"label": "una cantidad equivalente al cincuenta por ciento (50%) del presupuesto del proy…",
+"amount": 50.0,
+"currency": null,
+"description": "una cantidad equivalente al cincuenta por ciento (50%) del presupuesto del proyecto asociado a esos resultados"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/contract-terms/tender-001-term-016",
+"label": "hasta el 1 por ciento del importe de adjudicación (IVA excluido) por cada incum…",
+"amount": 1.0,
+"currency": null,
+"description": "hasta el 1 por ciento del importe de adjudicación (IVA excluido) por cada incumplimiento"
+},
+{
+"iri": "https://example.org/cpi-demo/id/projects/sistema-de-vivienda-protegida-industrializada-de-consumo-energetico-casi-74ddd2ee39/contract-terms/tender-001-term-017",
+"label": "hasta el 50 por ciento del importe de adjudicación (IVA excluido) por cada incu…",
+"amount": 50.0,
+"currency": null,
+"description": "hasta el 50 por ciento del importe de adjudicación (IVA excluido) por cada incumplimiento"
+}
+]

@@ -43,9 +43,9 @@ Se pierde una sola tripleta: un `hasContractTerm` que apunta a un nodo que no ex
 | 12 | Arrastra en el tiempo: las adjudicadas desde 2022 | brush en *awardDate* | 8–9 |
 | 13 | Línea de tiempo: cada fase en su fecha de publicación | Graph, zoom out, timeline `publicationDate`, dock cerrado | — |
 | 14 | Reprodúcelas: de 2017 a 2024 | brush y Play hasta el final | > 0 |
-| 15 | Pregunta en lenguaje natural, sobre lo que tienes delante | Ask: «¿Qué tecnologías piden más las soluciones?» | — |
+| 15 | Pregunta en lenguaje natural, sobre lo que tienes delante | Ask: «Which technologies do the solutions require most?» | — |
 | 16 | La respuesta es un gráfico, calculado sobre tus datos | respuesta: tecnologías por solución | INTELIGENCIA ARTIFICIAL, 7 |
-| 17 | ¿Quién se lleva más importe adjudicado? | Ask, la pregunta entra de golpe y la respuesta se baja a la vista: suma de `awardedAmount` por organización | UTE FCC AQUALIA…, 16,99 M€ |
+| 17 | ¿Quién se lleva más importe adjudicado? | Ask («Who won the largest awarded amounts?»), la pregunta entra de golpe y la respuesta se baja a la vista: suma de `awardedAmount` por organización | UTE FCC AQUALIA…, 16,99 M€ |
 | 18 | Filtra por la respuesta y míralo en el grafo | Filter to + Graph + Frame | > 0 |
 | 19 | ¿Son fiables estos datos? Revísalos con tus reglas | Check | `All 5,449 nodes checked · 5,330 conform` |
 | 20 | 31 criterios sin ponderación: difíciles de justificar | Show + Frame | 31 · **póster** |

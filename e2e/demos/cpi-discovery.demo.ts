@@ -33,8 +33,8 @@ const DASHBOARDS = {
   },
 };
 
-const TECH = "¿Qué tecnologías piden más las soluciones?";
-const MONEY = "¿Quién se lleva más importe adjudicado?";
+const TECH = "Which technologies do the solutions require most?";
+const MONEY = "Who won the largest awarded amounts?";
 const TURNS: ModelTurn[] = [
   {
     when: `Question: ${MONEY}`,
@@ -108,6 +108,15 @@ demo("cpi-discovery", "CPI España, 15 proyectos: grafo, búsqueda, ficha, relac
 
   steps: ({ discover, graph, settings, timeline, picker, bar, rules }, { page }) => {
     const tile = async (title: string) => (await discover.dashboard()).tile(title);
+    /** La última respuesta de Ask, con su gráfico entero arriba del panel. */
+    const reveal = async () => {
+      await page
+        .getByRole("complementary", { name: "Ask panel" })
+        .getByRole("article")
+        .last()
+        .evaluate((card) => card.scrollIntoView({ block: "start", behavior: "smooth" }));
+      await page.waitForTimeout(1_500);
+    };
     return [
       // ── 1. Qué hay ─────────────────────────────────────────────────────────
       {
@@ -232,7 +241,10 @@ demo("cpi-discovery", "CPI España, 15 proyectos: grafo, búsqueda, ficha, relac
       },
       {
         subtitle: "La respuesta es un gráfico, calculado sobre tus datos",
-        action: async () => (await (await discover.ask()).composer()).answer(),
+        async action() {
+          await (await (await discover.ask()).composer()).answer();
+          await reveal();
+        },
         async check() {
           const rows = await (await (await discover.ask()).composer()).rows();
           expect(rows.some((row) => Object.values(row).includes("INTELIGENCIA ARTIFICIAL"))).toBe(true);
@@ -251,11 +263,7 @@ demo("cpi-discovery", "CPI España, 15 proyectos: grafo, búsqueda, ficha, relac
           await page.keyboard.press("Enter");
           await expect.poll(() => panel.getByRole("article").count(), { timeout: 120_000 }).toBeGreaterThan(before);
           await answers.answer();
-          await panel
-            .getByRole("article")
-            .last()
-            .evaluate((card) => card.scrollIntoView({ block: "center", behavior: "smooth" }));
-          await page.waitForTimeout(1_500);
+          await reveal();
         },
         async check() {
           const rows = await (await (await discover.ask()).composer()).rows();

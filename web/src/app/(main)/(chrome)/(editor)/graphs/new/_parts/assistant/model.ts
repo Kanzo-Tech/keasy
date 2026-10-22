@@ -112,9 +112,9 @@ export interface AssistantData {
   failures: readonly TaskFailure[];
 }
 
-/** A step that threw: fossil declaring the model, or the program not compiling. */
+/** A step that threw: fossil inferring the model, or writing a program that does not compile. */
 export interface TaskFailure {
-  task: "mapping";
+  task: "model" | "mapping";
   problem: unknown;
   retry: () => void;
 }

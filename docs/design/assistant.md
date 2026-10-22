@@ -270,42 +270,43 @@ it before any model is asked: one thing per file, its count when the profile rea
 whose profile takes too long for the reading step; then the step reads `depth: "types"` first and
 the rest in the background, the way fossil's profile already splits.
 
-### `model` — structure and names from the profile
+### `model` — fossil's, from the profile
 
-- **Structure**: a thing per file with a key, that key the candidate an inclusion lands on or the
-  first; an edge per inclusion that lands on a key; a file with no key whose two inclusions land on
-  things a bridge, an edge across it (`structureOf`).
-- **Names** (`namesOf`): a thing by its file, singular (`affiliations` → `Affiliation`); an edge by the
-  column it leaves from without its `_id` (`laureate_id` → `laureate`); a field by its column
-  (`birth_date` → `birthDate`), a word of Fossil's suffixed (`fromValue`). A name taken in its scope
-  gets a number. The Data tab is where the person reads them.
-- **Decisions**, from the profile and the draft: a type whose file has more than one candidate key,
-  and that no edge lands on, asks which identifies the thing, and assumes the first (`key/<source>`);
-  an edge through a source no type stands on — *affiliations* between laureates and institutions —
-  asks whether each row is a link, or a thing counted on its own (`count/<source>`), and blocks.
+- **Inferred** by fossil (`infer` of `@fossil-lang/wasm`), from the profile and the person's choices:
+  a type per file with a key, that key the candidate an inclusion lands on; an edge per inclusion that
+  lands on a key; a file with no key whose two inclusions land on types a link file, an edge across
+  it. Names are the files' own: a type is its file's words in PascalCase (`laureates` → `Laureates`),
+  an edge its column without the `id` (`laureate_id` → `laureate`), a field its column. The rules,
+  and why they are Direct Mapping's with D2RQ's bridge, are fossil's
+  ([the model is inferred by fossil](https://kanzo-tech.github.io/fossil-lang/docs/design/profile)).
+- **Decisions** are fossil's ambiguities, each standing at its first option until answered, said as a
+  question by keasy (`decisionsOf`): which of a type's candidate keys identifies it (`key/<source>`),
+  whether a link file's row is only a link or a thing counted on its own (`count/<source>`), and
+  which of two columns keeps the one name they make (`name/<Type>/<name>`). A key and a name are
+  assumed at the first option (`assumedOf`); the count is asked, and the build waits on it. An answer
+  goes back to `infer` by the ambiguity's id.
 - **What it fills**: `understanding.relations` — one line per type with a real example from the
-  sample rows — and `decisions`. IRIs are keasy's, computed by fossil from the workspace's origin and
-  the names (`vocabularyOf`, `subjectOf` of `@fossil-lang/wasm`).
+  sample rows — and `decisions`.
 
-### `mapping` — written from the accepted model, checked by fossil
+### `mapping` — written by fossil, checked by fossil
 
-- **Written** (`mappingsOf`): fossil declares the accepted types and binds the sources (the prelude,
-  from `grammarFor`); then one mapping per type — its `@subject`, each field from its column, each
-  edge read on its own file — and one more per edge read across a link file, joined on the type's
-  identity, writing again the fields the type requires.
+- **Written** by fossil (`write` of `@fossil-lang/wasm`) from the model, every IRI under the
+  workspace's origin: the types declared, the sources bound, one mapping per type and one more per
+  edge read across a link file. keasy writes no Fossil.
 - **Checked**: fossil opens the program, types the sources with `describe` at `depth: "types"`, and an
-  error of `diagnostics()` is a fault of the writer's, thrown and said where the conversation stopped.
-- **What it fills**: the program — prelude and mappings — which **Open in the editor** opens, and the
-  preview and the build run. The chat never shows Fossil.
+  error of `diagnostics()` is fossil's `write` and its checker disagreeing, thrown and said where the
+  conversation stopped.
+- **What it fills**: the program, which **Open in the editor** opens, and the preview and the build
+  run. The chat never shows Fossil.
 
 ### `requirements` — questions the data can answer
 
 - **Written** (`offersOf`) as Ask's specs: for each edge one thing reaches, a count of the things by
   the one they reach (*Award count by laureate*), and for each type a count by its first date or
   category-like field (*Award count by category*); four at most, as chips. A name is said as given.
-- **Oracle**: Ask's own (`verify` of the `ask` Task) over the join graph the accepted model will be
+- **Oracle**: Ask's own (`verify` of the `ask` Task) over the join graph the model will be
   (`joinGraphOf`), described as a built one is (`withMapping`) by the mapping fossil makes of the
-  declared types before any run — it holds every chip's spec, or the chip is not offered.
+  program it writes before any run — it holds every chip's spec, or the chip is not offered.
 - **Asked as its spec**: a chip taken is kept with its spec and sent to the preview's Ask as it
   (`askEdit`), which needs no model, so it is answered before the model has loaded.
 - **A question the person types** is asked once, by the preview's Ask — Ask's own Task, `ask` from
@@ -331,14 +332,12 @@ graph; [cleanup](cleanup.md)). Three of the Tasks' pieces re-derived what a libr
   *Decisions with no safe answer: 2*), so no noun is counted into its plural. English morphology is
   what no library offers and a heuristic for it is wrong at the first irregular noun, so there is none:
   `plural`, `withArticle`, `inWords` and `words.ts` are deleted. What remains makes identifiers or
-  lists, beside its only caller: `pascal`, `camel` and `singular` (a link file's name as the type it
-  becomes, `affiliations` → `Affiliation`) in `tasks/model.ts`, `holdsLine` in `turns.tsx`, `thingName`
-  in `tasks/profile.ts`. A mapping's binding in the plan the `mapping` Task is given is `<Type>Rows`,
-  not the type's plural. *What would reverse it:* a library offering inflection by language (then a
+  lists, beside its only caller: `holdsLine` in `turns.tsx`, `thingName` in `tasks/profile.ts`. A
+  type's name is fossil's, its file's words in PascalCase, never singularised. *What would reverse it:* a library offering inflection by language (then a
   sentence may count and article again, and says it in the page's language), or a reader who finds
   *Kinds of thing: 6* colder than *six kinds of things* enough to be worth a heuristic.
 - **`requirements`** (`tasks/requirements.ts`) — its oracle is `JoinResolver`, Ask's own, over
-  `joinGraphOf`: the accepted model's tables, described by fossil's mapping of the declared types
+  `joinGraphOf`: the model's tables, described by fossil's mapping of the program it writes
   (`withMapping`). The tables' shape stays written here — a table per type keyed by an identity, one
   per edge named as fossil's run names it, each field's DuckDB type — because a mapping states what
   rows mean, not how they are joined: an edge's ends are only in its SQL, and kanzo-ui's one
@@ -396,17 +395,13 @@ changes them in the editor (**Open in the editor**). The assistant does not writ
 What each stage replaces:
 
 - **3, one `Schema`.** `Structure`, `Draft` and `Accepted` are one model in three passes, and
-  `relationsOf` walks the sample rows a fourth time to show an example. One `Schema` — computed from
-  the profile and the person's choices (`schemaOf(profile, choices)`) — is what the decisions read,
-  the program is written from, and the Data tab says. Names are the files' own, said as given:
-  `singular` goes with `plural` (the rule [above](#the-three-steps-and-the-one-task) already forbids
-  inflection), so a type is its file's words in PascalCase (`laureates` → `Laureates`), for the
-  person to rename in the editor.
-- **5, fossil emits the program.** `mappingsOf` writes Fossil by string templates, and keeps
-  knowledge of fossil's grammar in keasy. fossil's own design has a host hand it a mapping spec and
-  emit the program from it ([Profile, and the mapping a model proposes](https://kanzo-tech.github.io/fossil-lang/docs/design/profile));
-  keasy builds the spec (data) and fossil writes the text. Until fossil exports that, `mappingsOf`
-  stays, as the one place that writes Fossil, and goes when it does.
+  `relationsOf` walks the sample rows a fourth time to show an example. **Built 2026-10-22:** one
+  `Model`, fossil's `infer(profile, choices)`, is what the decisions read, the program is written
+  from, and the Data tab says. Names are the files' own, said as given: a type is its file's words in
+  PascalCase (`laureates` → `Laureates`), for the person to rename in the editor.
+- **5, fossil emits the program** (built 2026-10-22). `mappingsOf` wrote Fossil by string
+  templates, and kept knowledge of fossil's grammar in keasy. Now keasy hands fossil the `Model`
+  (data) and fossil's `write` emits the text.
 - **6–7, the preview's graph is the graph.** `joinGraphOf` predicts the graph from the schema, with
   a table of DuckDB types and fossil's edge-table naming (`${from}_${name}_${to}`) copied into keasy
   so the prediction matches. The preview runs anyway, and `readJoinGraph` reads the real one: the

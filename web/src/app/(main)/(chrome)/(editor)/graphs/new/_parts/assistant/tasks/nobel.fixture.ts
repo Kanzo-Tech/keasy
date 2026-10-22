@@ -4,8 +4,7 @@
  * steps' tests only.
  */
 
-import type { Engine, Input, Primitive, Profile } from "@fossil-lang/types";
-import { type Draft, draftOf, type Names, structureOf } from "./model";
+import type { Engine, Primitive, Profile } from "@fossil-lang/types";
 import { profiledOf } from "./profile";
 
 const BASE = "https://data.example/nobel/";
@@ -15,6 +14,7 @@ type Col = [name: string, primitive: Primitive, nulls?: number];
 function source(file: string, columns: Col[], keys: string[], sample: (string | null)[][]): Profile["sources"][number] {
   return {
     binding: file.replace(/\.csv$/, ""),
+    format: "csv",
     descriptor: { key: `${BASE}${file}`, etag: "", columns: columns.map(([name, primitive]) => ({ name, primitive })) },
     columns: columns.map(([name, , nulls = 0]) => ({ name, null_count: nulls, distinct_count: sample.length })),
     candidate_keys: keys,
@@ -76,25 +76,7 @@ export const PROFILE: Profile = {
   failed: [],
 };
 
-/** The picked files, as `inputs()` answers their binding lines. */
-export const INPUTS: Input[] = ["laureates", "awards", "institutions", "affiliations", "countries"].map((binding) => ({
-  binding,
-  key: `${BASE}${binding}.csv`,
-  location: `${BASE}${binding}.csv`,
-  format: "csv",
-  role: "data",
-}));
-
-export const NOBEL = profiledOf(PROFILE, INPUTS);
-
-/** Names over it: every thing and edge of the structure the profile states. */
-export const NAMES: Names = {
-  types: { laureates: "Laureate", awards: "Award", institutions: "Institution", countries: "Country" },
-  edges: { "awards.laureate_id → laureates.id": "laureate", "affiliations.institution_id → institutions.id": "affiliation" },
-};
-
-/** The structure with those names. */
-export const DRAFT: Draft = draftOf(structureOf(NOBEL), NAMES);
+export const NOBEL = profiledOf(PROFILE);
 
 /** The DuckDB type a fixture column is described as; a file holds no language-tagged string. */
 const DUCKDB: Record<Exclude<Primitive, "lang_string">, string> = {

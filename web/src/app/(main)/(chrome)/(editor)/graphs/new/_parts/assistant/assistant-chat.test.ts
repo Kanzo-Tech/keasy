@@ -99,6 +99,7 @@ const file = (name: string, size: number): SourceFile => ({
   kind: "file",
   reader: "csv",
   line: `${name.replace(".csv", "")} := io.csv("@nobel/${name}")`,
+  reference: `@nobel/${name}`,
   size,
   vocabulary: false,
 });

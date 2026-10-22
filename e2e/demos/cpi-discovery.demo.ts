@@ -127,7 +127,7 @@ demo("cpi-discovery", "CPI España, 15 proyectos: grafo, búsqueda, ficha, relac
         poster: true,
       },
       {
-        subtitle: "¿Dónde piden inteligencia artificial los 15 expedientes?",
+        subtitle: "¿Cuánta IA hay en estos expedientes? Busca «inteligencia»",
         async action() {
           await bar.remove("Node");
           const search = await discover.search();
@@ -140,7 +140,7 @@ demo("cpi-discovery", "CPI España, 15 proyectos: grafo, búsqueda, ficha, relac
         check: () => expect.poll(() => discover.kept()).toBe("37"),
       },
       {
-        subtitle: "En 37 sitios: requisitos, criterios, objetivos, soluciones…",
+        subtitle: "Sale en 37 piezas: requisitos, criterios, soluciones…",
         action: () => graph.frame(),
         check: () => expect.poll(() => discover.kept()).toBe("37"),
       },
@@ -242,8 +242,20 @@ demo("cpi-discovery", "CPI España, 15 proyectos: grafo, búsqueda, ficha, relac
         subtitle: "¿Quién se lleva más importe adjudicado?",
         async action() {
           const answers = await (await discover.ask()).composer();
-          await answers.ask(MONEY);
+          // La segunda pregunta entra de golpe, sin teclear letra a letra, y la respuesta se baja a la vista.
+          const panel = page.getByRole("complementary", { name: "Ask panel" });
+          const before = await panel.getByRole("article").count();
+          await panel.getByRole("textbox", { name: "Ask about your data…" }).click();
+          await page.keyboard.insertText(MONEY);
+          await page.waitForTimeout(800);
+          await page.keyboard.press("Enter");
+          await expect.poll(() => panel.getByRole("article").count(), { timeout: 120_000 }).toBeGreaterThan(before);
           await answers.answer();
+          await panel
+            .getByRole("article")
+            .last()
+            .evaluate((card) => card.scrollIntoView({ block: "center", behavior: "smooth" }));
+          await page.waitForTimeout(1_500);
         },
         async check() {
           const rows = await (await (await discover.ask()).composer()).rows();
@@ -262,7 +274,7 @@ demo("cpi-discovery", "CPI España, 15 proyectos: grafo, búsqueda, ficha, relac
       },
       // ── 6. Comprobar ───────────────────────────────────────────────────────
       {
-        subtitle: "Reglas de calidad SHACL sobre todo el grafo",
+        subtitle: "¿Son fiables estos datos? Revísalos con tus reglas",
         async action() {
           await clearAll(page);
           await graph.frame();
@@ -272,7 +284,7 @@ demo("cpi-discovery", "CPI España, 15 proyectos: grafo, búsqueda, ficha, relac
         check: async () => expect(await (await rules.rule("AwardCriterion")).state()).toBe("31 violations · 26 warnings"),
       },
       {
-        subtitle: "Regla: todo criterio de adjudicación declara su ponderación",
+        subtitle: "31 criterios sin ponderación: difíciles de justificar",
         async action() {
           await (await rules.rule("AwardCriterion")).show(/ponderación/);
           await graph.frame();
@@ -281,12 +293,12 @@ demo("cpi-discovery", "CPI España, 15 proyectos: grafo, búsqueda, ficha, relac
         poster: true,
       },
       {
-        subtitle: "Aviso: 26 criterios no dicen si son fórmula o juicio de valor",
+        subtitle: "26 no dicen si puntúan por fórmula o por juicio de valor",
         action: async () => (await rules.rule("AwardCriterion")).show(/cómo se evalúa/),
         check: () => expect.poll(() => discover.kept()).toBe("26"),
       },
       {
-        subtitle: "Aviso: 59 organizaciones sin tipo (empresa, universidad…)",
+        subtitle: "59 organizaciones sin tipo: ¿empresa, universidad, centro?",
         async action() {
           await (await rules.rule("Organization")).show(/no tiene tipo/);
           await graph.frame();
@@ -294,7 +306,7 @@ demo("cpi-discovery", "CPI España, 15 proyectos: grafo, búsqueda, ficha, relac
         check: () => expect.poll(() => discover.kept()).toBe("59"),
       },
       {
-        subtitle: "Quédate solo con lo que cumple todas las reglas",
+        subtitle: "Trabaja solo con lo fiable: 349 piezas que cumplen",
         action: () => rules.conforms(),
         // Los sujetos que rudof da por conformes: 15 proyectos, 186 criterios y 267 organizaciones
         // revisados, menos los 119 señalados.

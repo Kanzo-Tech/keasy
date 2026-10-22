@@ -32,8 +32,8 @@ Se pierde una sola tripleta: un `hasContractTerm` que apunta a un nodo que no ex
 | 1 | 15 proyectos de Compra Pública de Innovación, en un grafo | el grafo agrupado, ya asentado | `5.4K nodes · 9K edges` |
 | 2 | Retos, requisitos, criterios, ofertas: 5.449 piezas enlazadas | hover en la leyenda | 5.449 |
 | 3 | Abre un proyecto: SENDA, diagnóstico médico en la nube | paleta `type:CPIProject` + «senda» | ficha en Info · **póster** |
-| 4 | ¿Dónde piden inteligencia artificial los 15 expedientes? | `label:inteligencia` → Add to subset | 37 |
-| 5 | En 37 sitios: requisitos, criterios, objetivos, soluciones… | Frame | 37 |
+| 4 | ¿Cuánta IA hay en estos expedientes? Busca «inteligencia» | `label:inteligencia` → Add to subset | 37 |
+| 5 | Sale en 37 piezas: requisitos, criterios, soluciones… | Frame | 37 |
 | 6 | Cuadro de mando: una fila por proyecto | Dashboard, relación `CPIProject` | 15 |
 | 7 | Relaciona tablas: cada proyecto con su área temática | añade el salto `>hasTheme>ThematicArea` | tile por área |
 | 8 | La IA es el área más repetida: pulsa la barra | pick | 5 |
@@ -45,17 +45,20 @@ Se pierde una sola tripleta: un `hasContractTerm` que apunta a un nodo que no ex
 | 14 | Reprodúcelas: de 2017 a 2024 | brush y Play hasta el final | > 0 |
 | 15 | Pregunta en lenguaje natural, sobre lo que tienes delante | Ask: «¿Qué tecnologías piden más las soluciones?» | — |
 | 16 | La respuesta es un gráfico, calculado sobre tus datos | respuesta: tecnologías por solución | INTELIGENCIA ARTIFICIAL, 7 |
-| 17 | ¿Quién se lleva más importe adjudicado? | Ask: suma de `awardedAmount` por organización | UTE FCC AQUALIA…, 16,99 M€ |
+| 17 | ¿Quién se lleva más importe adjudicado? | Ask, la pregunta entra de golpe y la respuesta se baja a la vista: suma de `awardedAmount` por organización | UTE FCC AQUALIA…, 16,99 M€ |
 | 18 | Filtra por la respuesta y míralo en el grafo | Filter to + Graph + Frame | > 0 |
-| 19 | Reglas de calidad SHACL sobre todo el grafo | Check | `All 5,449 nodes checked · 5,330 conform` |
-| 20 | Regla: todo criterio de adjudicación declara su ponderación | Show + Frame | 31 · **póster** |
-| 21 | Aviso: 26 criterios no dicen si son fórmula o juicio de valor | Show | 26 |
-| 22 | Aviso: 59 organizaciones sin tipo (empresa, universidad…) | Show + Frame | 59 |
-| 23 | Quédate solo con lo que cumple todas las reglas | Keep what conforms | 349 |
+| 19 | ¿Son fiables estos datos? Revísalos con tus reglas | Check | `All 5,449 nodes checked · 5,330 conform` |
+| 20 | 31 criterios sin ponderación: difíciles de justificar | Show + Frame | 31 · **póster** |
+| 21 | 26 no dicen si puntúan por fórmula o por juicio de valor | Show | 26 |
+| 22 | 59 organizaciones sin tipo: ¿empresa, universidad, centro? | Show + Frame | 59 |
+| 23 | Trabaja solo con lo fiable: 349 piezas que cumplen | Keep what conforms | 349 |
 
 ## Las reglas, y qué buscan
 
-`rules.ttl` tiene tres, y cada subtítulo de la parte final dice el criterio en voz alta:
+En la toma no se habla de SHACL sino de lo que le importa al cliente: si puede fiarse de los datos.
+Cada subtítulo dice qué falla y por qué importa (un criterio sin ponderación es una adjudicación
+difícil de justificar). Por debajo son reglas SHACL, en `rules.ttl`, y el cliente puede escribir las
+suyas. Son tres:
 
 - **Proyecto** (`CPIProject`): necesita promotor (`isPromotedBy`) y título; si no declara ámbito
   territorial, aviso. Da 1 violación y 4 avisos.

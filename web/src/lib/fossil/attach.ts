@@ -15,8 +15,8 @@ import { ClientError } from "@/lib/errors";
 export const GRAPH_ENTRY = "fossil.graph.yml";
 export const MAPPING_FILE = "mapping.ttl";
 
-/** A user-defined type has no storage in GraphAr; fossil's `langString` is two strings, and DuckDB's spelling is this. */
-const USER_TYPES = { langString: "STRUCT(value VARCHAR, lang VARCHAR)" } as const;
+/** A user-defined type has no storage in GraphAr; fossil's `langstring` is two strings, and DuckDB's spelling is this. */
+const USER_TYPES = { langstring: "STRUCT(value VARCHAR, lang VARCHAR)" } as const;
 
 /** A graph attached to the page's engine under `name`: SQL names it `"<name>"."<Type>"`. */
 export interface Attachment {

@@ -106,12 +106,11 @@ and drives Discovery through them, so `make e2e` fetches them first, as CI does.
 
 Each example is one folder under `infra/dev/examples/<name>/`: `fetch.sh` (what `make seed` runs
 for it), `shapes.shex`, `mapping.fossil` and the gitignored `data/` it fetches. In the bucket it is
-`examples/<name>/data/` and `examples/<name>/shapes/`. At boot the instance declares, over them, a
-data source and a vocabulary connection per example — **LDBC SNB** and **LDBC SNB shapes**,
-**OpenFlights** and **OpenFlights shapes**, **Nobel laureates**
-and **Nobel laureates shapes** — and the sink, **Workspace output** (`output/`). Access is proved
+`examples/<name>/data/` and `examples/<name>/shapes/`. At boot the instance declares one connection
+per example over its folder — **LDBC SNB**, **OpenFlights** and **Nobel laureates**, each holding its
+data and its vocabulary — and the sink, **Workspace output** (`output/`). Access is proved
 before each connection row is written, and an existing sink is never overwritten. Each example's
-program reads its own two connections; paste one into the studio to map its graph into `output/`:
+program reads its own connection; paste one into the studio to map its graph into `output/`:
 
 | Program | Graph |
 |---------|-------|

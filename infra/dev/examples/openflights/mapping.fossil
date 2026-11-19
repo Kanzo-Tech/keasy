@@ -6,10 +6,10 @@
 // decimal degrees, numeric, for Discover's Map placement (x = long, y = lat).
 // `country` is a column to cluster or colour by.
 
-type { Airport } := io.shex("@OpenFlights shapes/shapes.shex")
+type { Airport } := io.shex("@OpenFlights/shapes/shapes.shex")
 
-AirportRow := io.csv("@OpenFlights/airports.csv")
-RouteRow   := io.csv("@OpenFlights/routes.csv")
+AirportRow := io.csv("@OpenFlights/data/airports.csv")
+RouteRow   := io.csv("@OpenFlights/data/routes.csv")
 
 Airports : Airport from AirportRow
     @subject = "https://openflights.example/airport/{AirportRow.id}"

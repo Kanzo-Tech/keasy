@@ -91,7 +91,7 @@ const share: DecisionItem = {
   chosen: null,
 };
 
-const nobel = { name: "nobel", url: "s3://lake/nobel/", kind: "data", direction: "source", secret: "aws" } as const;
+const nobel = { name: "nobel", url: "s3://lake/nobel/", direction: "source", secret: "aws" } as const;
 const file = (name: string, size: number): SourceFile => ({
   id: `nobel:${name}`,
   name,
@@ -99,12 +99,14 @@ const file = (name: string, size: number): SourceFile => ({
   reader: "csv",
   line: `${name.replace(".csv", "")} := io.csv("@nobel/${name}")`,
   size,
+  vocabulary: false,
 });
 
 const base: AssistantChatProps = {
   connections: [nobel],
   list: async () => [file("laureates.csv", 120_000), file("awards.csv", 4_000)],
   selected: new Set(),
+  vocabularies: new Set(),
   reading: null,
   problems: [],
   understanding: {

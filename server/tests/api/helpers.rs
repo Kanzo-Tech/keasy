@@ -310,7 +310,6 @@ impl TestApp {
     pub async fn connection(&self, name: &str, credential: &str, direction: Direction, by: &str) {
         let target = StorageTarget {
             url: format!("s3://b/{name}/"),
-            kind: Default::default(),
             direction,
         };
         let view = ConnectionView {

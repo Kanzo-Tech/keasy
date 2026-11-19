@@ -92,6 +92,8 @@ export interface AssistantData {
   list: (node: SourceBranch) => Promise<SourceNode[]>;
   /** The ids of the picked files. */
   selected: ReadonlySet<string>;
+  /** The ids of the picked files that are vocabularies: drawn apart from the data, and not profiled. */
+  vocabularies: ReadonlySet<string>;
   /** `null` when nothing is being read. */
   reading: ReadingProgress | null;
   /** What could not be read, each with its problem: shown, never dropped. */

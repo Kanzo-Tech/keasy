@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeft, Check, Database, FileText, Plus, X } from "lucide-react";
+import { ArrowLeft, BookMarked, Check, Database, FileText, Plus, X } from "lucide-react";
 import { PromptInputHeader } from "@kanzo-tech/ai";
 import {
   Command,
@@ -23,7 +23,7 @@ import type { StorageConnection } from "@/lib/connections";
 import { connectionNode, type SourceBranch, type SourceFile } from "../sources";
 import type { AssistantData } from "./model";
 
-export interface SourceBarProps extends Pick<AssistantData, "connections" | "list" | "selected"> {
+export interface SourceBarProps extends Pick<AssistantData, "connections" | "list" | "selected" | "vocabularies"> {
   /** Pick `files`, or drop them. */
   onPick: (files: readonly SourceFile[], on: boolean) => void;
   /** Drop files by id: a card's cross. */
@@ -43,19 +43,30 @@ const split = (id: string) => {
  * Above the composer's field: one **+**, as Claude's composer has (docs/design/assistant.md, *One +,
  * as Claude's*), and what is picked as **file cards** — *awards.csv*, then *+4 more files · Nobel
  * laureates* — each with a cross. The **+** lists the connections; one opens to its files, every
- * folder's included, with a search over them.
+ * folder's included, with a search over them. A connection's vocabulary comes with its data, as a
+ * card of its own (*Vocabulary · comes with Nobel laureates*), which the person may remove.
  */
-export function SourceBar({ connections, list, selected, onPick, onDrop }: SourceBarProps) {
-  const byConnection = new Map<string, string[]>();
+export function SourceBar({ connections, list, selected, vocabularies, onPick, onDrop }: SourceBarProps) {
+  const byConnection = new Map<string, { data: string[]; vocabulary: string[] }>();
   for (const id of selected) {
     const { connection } = split(id);
-    byConnection.set(connection, [...(byConnection.get(connection) ?? []), id]);
+    const entry = byConnection.get(connection) ?? { data: [], vocabulary: [] };
+    (vocabularies.has(id) ? entry.vocabulary : entry.data).push(id);
+    byConnection.set(connection, entry);
   }
   return (
     <PromptInputHeader aria-label="Sources">
       <AddFiles connections={connections} list={list} onPick={onPick} selected={selected} />
-      {[...byConnection].map(([connection, ids]) => (
+      {[...byConnection].map(([connection, { data: ids, vocabulary }]) => (
         <span className="contents" data-connection={connection} key={connection}>
+          {vocabulary.length > 0 && (
+            <FileCard
+              label={`${vocabulary.length === 1 ? "Vocabulary" : `${vocabulary.length} vocabularies`} · comes with ${connection}`}
+              onDrop={() => onDrop(vocabulary)}
+              title={vocabulary.map((id) => split(id).path).join("\n")}
+              vocabulary
+            />
+          )}
           {ids.slice(0, SHOWN).map((id) => (
             <FileCard key={id} label={split(id).path.split("/").pop()!} onDrop={() => onDrop([id])} title={split(id).path} />
           ))}
@@ -73,10 +84,16 @@ export function SourceBar({ connections, list, selected, onPick, onDrop }: Sourc
 }
 
 /** A picked file, or the rest of a connection's, as a card with a cross. */
-function FileCard({ label, title, onDrop }: { label: string; title: string; onDrop: () => void }) {
+function FileCard({ label, title, vocabulary = false, onDrop }: { label: string; title: string; vocabulary?: boolean; onDrop: () => void }) {
+  const Icon = vocabulary ? BookMarked : FileText;
   return (
-    <span className="inline-flex max-w-56 items-center gap-1.5 rounded-lg border bg-muted/40 py-0.5 ps-2 pe-0.5 text-sm" data-file-card="" title={title}>
-      <FileText aria-hidden className="size-3.5 shrink-0 text-muted-foreground" />
+    <span
+      className="inline-flex max-w-64 items-center gap-1.5 rounded-lg border bg-muted/40 py-0.5 ps-2 pe-0.5 text-sm"
+      data-file-card=""
+      data-vocabulary={vocabulary || undefined}
+      title={title}
+    >
+      <Icon aria-hidden className="size-3.5 shrink-0 text-muted-foreground" />
       <span className="truncate">{label}</span>
       <InputGroupButton aria-label={`Remove ${label}`} onClick={onDrop} size="icon-sm" variant="ghost">
         <X />
@@ -201,7 +218,11 @@ function Files({
         if (itemValue === BACK) return onBack();
         if (itemValue === ALL) return onPick(files, !every);
         const file = files.find((f) => f.id === itemValue);
-        if (file) onPick([file], !selected.has(file.id));
+        if (!file) return;
+        const on = !selected.has(file.id);
+        // Data picked brings the connection's vocabulary with it: the two are one dataset.
+        const brought = on && !file.vocabulary ? files.filter((f) => f.vocabulary && !selected.has(f.id)) : [];
+        onPick([file, ...brought], on);
       }}
     >
       <CommandInput aria-label={`Search ${connection.name}`} placeholder={`Search ${connection.name}…`} />

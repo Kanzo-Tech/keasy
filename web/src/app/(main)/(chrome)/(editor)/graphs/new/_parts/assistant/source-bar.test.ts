@@ -8,7 +8,7 @@ import { SourceBar } from "./source-bar";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const connection = { name: "nobel", url: "s3://lake/nobel/", kind: "data", direction: "source", secret: "aws" } as const;
+const connection = { name: "nobel", url: "s3://lake/nobel/", direction: "source", secret: "aws" } as const;
 const file = (path: string, size: number): SourceFile => ({
   id: `nobel:${path}`,
   name: path.split("/").pop()!,
@@ -16,14 +16,16 @@ const file = (path: string, size: number): SourceFile => ({
   reader: "csv",
   line: `${path} := io.csv("@nobel/${path}")`,
   size,
+  vocabulary: false,
 });
 const prizes: SourceBranch = { id: "nobel/prizes/", name: "prizes/", kind: "folder", connection, under: "prizes/" };
 const laureates = file("laureates.csv", 120_000);
 const awards = file("awards.csv", 4_000);
 const nested = file("prizes/peace.csv", 900);
+const shapes: SourceFile = { ...file("shapes.shex", 300), reader: "shex", vocabulary: true };
 
 /** The listing of each branch: the connection's files and one folder, without opening it. */
-const list = vi.fn(async (node: SourceBranch): Promise<SourceNode[]> => (node.under === "" ? [prizes, laureates, awards] : [nested]));
+const list = vi.fn(async (node: SourceBranch): Promise<SourceNode[]> => (node.under === "" ? [prizes, laureates, awards, shapes] : [nested]));
 
 const mounted: ReturnType<typeof createRoot>[] = [];
 afterEach(() => {
@@ -31,10 +33,14 @@ afterEach(() => {
   document.body.innerHTML = "";
 });
 
-function mount(selected: string[], onPick = vi.fn(), onDrop = vi.fn()) {
+function mount(selected: string[], onPick = vi.fn(), onDrop = vi.fn(), vocabularies: string[] = []) {
   const host = document.body.appendChild(document.createElement("div"));
   const root = createRoot(host);
-  act(() => root.render(createElement(SourceBar, { connections: [connection], list, selected: new Set(selected), onPick, onDrop })));
+  act(() =>
+    root.render(
+      createElement(SourceBar, { connections: [connection], list, selected: new Set(selected), vocabularies: new Set(vocabularies), onPick, onDrop }),
+    ),
+  );
   mounted.push(root);
   return { host, onPick, onDrop };
 }
@@ -67,18 +73,31 @@ describe("the + above the composer, and the file cards", () => {
   it("lists the connections, then a connection's files, every folder's included, each picked or dropped", async () => {
     const { onPick } = mount(["nobel:awards.csv"]);
     await openNobel();
-    const files = [...document.querySelectorAll('[data-slot="command-item"]')].filter((i) => i.textContent?.includes(".csv"));
+    const files = [...document.querySelectorAll('[data-slot="command-item"]')].filter((i) => /\.(csv|shex)/.test(i.textContent ?? ""));
     expect(files.map((i) => i.textContent)).toEqual([
       expect.stringContaining("prizes/peace.csv"),
       expect.stringContaining("laureates.csv"),
       expect.stringContaining("awards.csv"),
+      expect.stringContaining("shapes.shex"),
     ]);
-    expect(files.map((i) => i.hasAttribute("data-picked"))).toEqual([false, false, true]);
+    expect(files.map((i) => i.hasAttribute("data-picked"))).toEqual([false, false, true, false]);
+    // Data picked brings the connection's vocabulary with it.
     await act(async () => item("laureates.csv").click());
-    expect(onPick).toHaveBeenCalledWith([laureates], true);
+    expect(onPick).toHaveBeenCalledWith([laureates, shapes], true);
     await act(async () => item("awards.csv").click());
     expect(onPick).toHaveBeenLastCalledWith([awards], false);
     await act(async () => item("Select all").click());
-    expect(onPick).toHaveBeenLastCalledWith([nested, laureates, awards], true);
+    expect(onPick).toHaveBeenLastCalledWith([nested, laureates, awards, shapes], true);
+  });
+
+  it("draws a connection's vocabulary as a card of its own, which drops it alone", () => {
+    const { host, onDrop } = mount(["nobel:laureates.csv", "nobel:shapes.shex"], vi.fn(), vi.fn(), ["nobel:shapes.shex"]);
+    const cards = [...host.querySelectorAll("[data-file-card]")];
+    expect(cards.map((c) => [c.textContent, c.hasAttribute("data-vocabulary")])).toEqual([
+      ["Vocabulary · comes with nobel", true],
+      ["laureates.csv", false],
+    ]);
+    act(() => host.querySelector<HTMLElement>('[aria-label="Remove Vocabulary · comes with nobel"]')!.click());
+    expect(onDrop).toHaveBeenCalledWith(["nobel:shapes.shex"]);
   });
 });

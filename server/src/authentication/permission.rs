@@ -37,7 +37,7 @@ pub enum Action {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Kind {
     Secret,
-    /// A source connection: data or a vocabulary.
+    /// A source connection: the files a program reads.
     Source,
     /// The workspace's one sink: an admin's, reached through its graphs.
     Sink,

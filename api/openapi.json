@@ -2146,13 +2146,6 @@
           }
         }
       },
-      "ConnectionKind": {
-        "type": "string",
-        "enum": [
-          "data",
-          "vocab"
-        ]
-      },
       "ConnectionView": {
         "allOf": [
           {
@@ -3114,9 +3107,6 @@
         "properties": {
           "direction": {
             "$ref": "#/components/schemas/Direction"
-          },
-          "kind": {
-            "$ref": "#/components/schemas/ConnectionKind"
           },
           "url": {
             "type": "string",

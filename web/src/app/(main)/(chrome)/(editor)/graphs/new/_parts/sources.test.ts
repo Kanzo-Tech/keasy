@@ -14,7 +14,6 @@ const formats: Format[] = [
 const snb: StorageConnection = {
   name: "snb",
   url: "s3://lake/ldbc/",
-  kind: "data",
   direction: "source",
   secret: "aws",
 };
@@ -26,6 +25,7 @@ describe("childrenOf", () => {
     "ldbc/dynamic/person_0_0.csv",
     "ldbc/dynamic/deeper/post_0_0.csv",
     "ldbc/dynamic/notes.txt",
+    "ldbc/shapes.shex",
     "ldbc/empty/notes.txt",
   ].map((path, i) => ({ path, size: 100 * i }));
 
@@ -35,7 +35,7 @@ describe("childrenOf", () => {
 
   it("lists the folders holding something readable, then the readable files", async () => {
     const top = await childrenOf(connectionNode(snb), keys, formats);
-    expect(top.map((n) => n.name)).toEqual(["dynamic/", "static/"]);
+    expect(top.map((n) => n.name)).toEqual(["dynamic/", "static/", "shapes.shex"]);
     expect(top[0]).toMatchObject({ kind: "folder", under: "dynamic/" });
     expect(top[0]).not.toHaveProperty("children");
   });
@@ -50,5 +50,14 @@ describe("childrenOf", () => {
       line: 'person_0_0 := io.csv("@snb/dynamic/person_0_0.csv")',
       size: 200,
     });
+  });
+
+  it("says a file is a vocabulary by its format, beside the data in the same connection", async () => {
+    const top = await childrenOf(connectionNode(snb), keys, formats);
+    expect(top.filter((n) => n.kind === "file").map((n) => [n.name, n.kind === "file" && n.vocabulary])).toEqual([["shapes.shex", true]]);
+    const [dynamic] = top;
+    if (dynamic?.kind !== "folder") throw new Error("dynamic/ is a folder");
+    const inside = await childrenOf(dynamic, keys, formats);
+    expect(inside[1]).toMatchObject({ name: "person_0_0.csv", vocabulary: false });
   });
 });

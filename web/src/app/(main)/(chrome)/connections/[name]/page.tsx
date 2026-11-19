@@ -84,10 +84,6 @@ function ConnectionView({ name }: { name: string }) {
             </DataListItemValue>
           </DataListItem>
           <DataListItem>
-            <DataListItemLabel>Kind</DataListItemLabel>
-            <DataListItemValue>{storage.kind}</DataListItemValue>
-          </DataListItem>
-          <DataListItem>
             <DataListItemLabel>Status</DataListItemLabel>
             <DataListItemValue className="flex items-center gap-2">
               <ValidationBadge report={connection.validation} />
@@ -127,7 +123,7 @@ function ConnectionView({ name }: { name: string }) {
                     </Loading>
                   }
                 >
-                  <Files kind={storage.kind === "data" ? "data" : "schema"} name={name} url={storage.url} />
+                  <Files name={name} url={storage.url} />
                 </Boundary>
               ) : (
                 <p className="text-muted-foreground text-xs">Only an editor can list a connection&apos;s files.</p>
@@ -143,12 +139,13 @@ function ConnectionView({ name }: { name: string }) {
 type ConnectionFile = Schemas["FileEntry"];
 
 /** What a storage connection's prefix holds that a format reads. Fails on its own, beside the connection. */
-function Files({ name, url, kind }: { name: string; url: string; kind: "data" | "schema" }) {
+function Files({ name, url }: { name: string; url: string }) {
   const { files: listed, truncated } = settled(
     $api.useSuspenseQuery("get", "/v1/connections/{name}/files", { params: { path: { name } } }),
   );
   const formats = settled(useSuspenseQuery(formatsQuery));
-  const readable = listed.filter((f) => formatFor(f.path, kind, formats));
+  // A file is listed when fossil reads it, as data or as a vocabulary: the connection holds both.
+  const readable = listed.filter((f) => formatFor(f.path, "data", formats) ?? formatFor(f.path, "schema", formats));
   const cut = truncated && (
     <p className="text-muted-foreground text-xs">Only the first <FormatNumber value={listed.length} /> files are listed.</p>
   );

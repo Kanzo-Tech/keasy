@@ -54,7 +54,7 @@ const locationOf = (id: string): FileReference => {
 };
 
 /** The connections the assistant reads: the sink is written to, not read from. */
-const readable = (c: StorageConnection) => c.kind === "data" && c.direction !== "sink";
+const readable = (c: StorageConnection) => c.direction !== "sink";
 
 /**
  * A kept file as the tree writes it (`childrenOf`, down the folders it is in), without listing them:
@@ -215,7 +215,10 @@ export function useAssistant({
   const keptFiles = keptRead.data ?? NONE_KEPT;
   const [keptProgram] = useState(() => seed?.program ?? null);
 
-  const picked = [...chosenFiles].flatMap(([id, file]) => file ?? keptFiles.get(id) ?? []);
+  const every = [...chosenFiles].flatMap(([id, file]) => file ?? keptFiles.get(id) ?? []);
+  // A vocabulary is not data: it is not profiled, and the things are the data's.
+  const picked = every.filter((f) => !f.vocabulary);
+  const vocabularies = new Set(every.filter((f) => f.vocabulary).map((f) => f.id));
   // A kept file no connection reads any more is said, never dropped.
   const unreachable = [...chosenFiles].filter(([id, file]) => file === null && keptFiles.get(id) === null).map(([id]) => id);
   const lines = picked.map((f) => f.line).sort();
@@ -344,6 +347,7 @@ export function useAssistant({
     connections: readableConnections,
     list,
     selected,
+    vocabularies,
     reading: picked.length > 0 && read.isPending ? { done: 0, total: picked.length } : null,
     problems,
     understanding: { things: profiled ? thingsOf(profiled, picked) : [], relations },
@@ -355,7 +359,7 @@ export function useAssistant({
     drop,
     choose: (decision, option) => setChosen((prev) => ({ ...prev, [decision]: option })),
     // The mapping's program once it holds; until then the picked files' bindings.
-    program: mapped.data ?? picked.map((f) => f.line).join("\n"),
+    program: mapped.data ?? every.map((f) => f.line).join("\n"),
     files: [...chosenFiles.keys()].map(locationOf),
     mapped: accepted === null ? null : (mapped.data ?? keptProgram),
     writing: mapped.isFetching,

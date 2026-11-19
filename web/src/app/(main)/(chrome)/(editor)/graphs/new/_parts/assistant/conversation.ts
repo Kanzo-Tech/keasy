@@ -135,21 +135,6 @@ export function placeholderOf(waiting: Waiting, previewed: boolean): string {
   }
 }
 
-/** The verbs a change to the graph starts with: *call Laureate Person*, *remove share*. */
-const CHANGES = new Set(["call", "rename", "name", "remove", "drop", "delete", "merge", "add", "make", "change", "link", "split", "use"]);
-
-/**
- * Typed text that asks the graph to change rather than asking the data a question: it is not read as
- * an instruction, and the reply says where that is changed (docs/design/assistant.md, *the
- * composer's field is always on*). A line ending in a question mark is a question, whatever it starts with.
- */
-export function isChange(text: string): boolean {
-  const t = text.trim();
-  if (t.endsWith("?")) return false;
-  const first = t.split(/\s+/, 1)[0]!.toLowerCase().replace(/[^a-z]/g, "");
-  return CHANGES.has(first);
-}
-
 /** The label of the option a decision stands at. */
 export function takenLabel(item: DecisionItem): string | undefined {
   return item.decision.options.find((o) => o.id === optionOf(item))?.label;
@@ -194,8 +179,8 @@ function partsOf(turn: Turn, { files, program }: { files: readonly FileReference
     case "assumed":
       return [decisionPart(turn.item, optionOf(turn.item))];
     case "asked": {
-      const { id, text, answerable } = turn.question;
-      return [data("question", { id, text, answerable })];
+      const { id, text, spec } = turn.question;
+      return [data("question", { id, text, ...(spec ? { spec } : {}) })];
     }
     case "ask":
       return program === null ? [] : [data("program", { program })];
@@ -261,7 +246,8 @@ export function restore(messages: readonly AssistantMessage[]): Restored {
           break;
         }
         case "data-question":
-          questions.set(part.data.id, { ...part.data });
+          // Whether it is answered is the preview's to say again.
+          questions.set(part.data.id, { ...part.data, answerable: null });
           break;
         case "data-program":
           program = part.data.program;

@@ -5,6 +5,7 @@ import { useCallback, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { UIMessage } from "ai";
 import { useKeptChat } from "@kanzo-tech/ai";
+import type { AskSpec } from "@kanzo-tech/ai/data";
 import type { Decision } from "@kanzo-tech/ai/task";
 import { $api, http, type Schemas } from "@/lib/api/client";
 import { queryClient } from "@/lib/api/query-client";
@@ -39,11 +40,14 @@ export interface DecisionPart {
   assumed: boolean;
 }
 
-/** A question the person kept, and whether the files can answer it. */
+/**
+ * A question the person kept, and the spec it is asked as — a chip's, or the one Ask wrote when it
+ * answered — so it is asked again with no model. Ask keeps the same of its own chat (`askKeep`).
+ */
 export interface QuestionPart {
   id: string;
   text: string;
-  answerable: boolean | null;
+  spec?: AskSpec;
 }
 
 /**
@@ -101,8 +105,9 @@ const KEPT: { [K in keyof StoredParts]: (data: Json) => StoredParts[K] | null } 
       assumed: assumed === true,
     };
   },
-  question: ({ id, text, answerable }) =>
-    str(id) && str(text) ? { id, text, answerable: typeof answerable === "boolean" ? answerable : null } : null,
+  // A spec is paths and the conditions the person asked under, as Ask's own `askKeep` keeps it.
+  question: ({ id, text, spec }) =>
+    str(id) && str(text) ? { id, text, ...(isObject(spec) && str(spec.of) && isObject(spec.show) ? { spec: spec as unknown as AskSpec } : {}) } : null,
   program: ({ program }) => (str(program) ? { program } : null),
 };
 

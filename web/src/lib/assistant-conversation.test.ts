@@ -51,7 +51,7 @@ describe("what a stored conversation keeps", () => {
         parts: [
           { type: "data-decision", id: "d", data: { decision: share, option: "two", assumed: false, example: ["Marie Curie"] } },
           { type: "data-files", data: { files: [{ connection: "lake", path: "nobel/laureates.csv", size: 1234, head: "id,name\n1,Marie" }] } },
-          { type: "data-question", data: { id: "q1", text: "Prizes by category?", answerable: true, rows: [[1]] } },
+          { type: "data-question", data: { id: "q1", text: "Prizes by category?", spec: { of: "Award", show: { kind: "chart", type: "bar", x: "category", y: { op: "count" } } }, answerable: true, rows: [[1]] } },
           { type: "data-program", data: { program: "use @lake/nobel/laureates.csv" } },
         ],
       },
@@ -59,7 +59,7 @@ describe("what a stored conversation keeps", () => {
     expect(message.parts).toEqual([
       { type: "data-decision", id: "d", data: { decision: { ...share, options: share.options.map(({ id, label }) => ({ id, label })) }, option: "two", assumed: false } },
       { type: "data-files", data: { files: [{ connection: "lake", path: "nobel/laureates.csv" }] } },
-      { type: "data-question", data: { id: "q1", text: "Prizes by category?", answerable: true } },
+      { type: "data-question", data: { id: "q1", text: "Prizes by category?", spec: { of: "Award", show: { kind: "chart", type: "bar", x: "category", y: { op: "count" } } } } },
       { type: "data-program", data: { program: "use @lake/nobel/laureates.csv" } },
     ]);
   });

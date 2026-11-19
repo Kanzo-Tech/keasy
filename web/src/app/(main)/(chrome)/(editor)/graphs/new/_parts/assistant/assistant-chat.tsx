@@ -26,7 +26,7 @@ import {
 } from "@kanzo-tech/ui";
 import { HeaderEnd } from "@/app/(main)/_parts/header-end";
 import type { AssistantMessage, FileReference } from "@/lib/assistant-conversation";
-import { converse, graphName, isChange, messagesOf, NO_REPLIES, placeholderOf, type Replies, type Turn, type Waiting } from "./conversation";
+import { converse, graphName, messagesOf, NO_REPLIES, placeholderOf, type Replies, type Turn, type Waiting } from "./conversation";
 import { type AssistantData, blocks, type BuildProgress, type Question } from "./model";
 import { AssistantPanel, type PanelTab } from "./panel";
 import type { Preview } from "./preview-tab";
@@ -37,7 +37,6 @@ import {
   AskTurn,
   AssumedTurn,
   BuildTurn,
-  ChangeTurn,
   CheckpointTurn,
   DecideTurn,
   Reply,
@@ -145,14 +144,18 @@ export function AssistantChat(props: AssistantChatProps) {
     onSave?.(JSON.parse(transcript) as AssistantMessage[]);
   }, [replied, settling, transcript, onSave]);
 
-  // The last typed line that asked the graph to change: answered once, where it was typed, and not kept.
-  const [change, setChange] = useState<string | null>(null);
-  const ask = (id: string, text: string) => {
+  // A question kept: typed, or a chip taken with its spec. The preview's Ask answers it.
+  const ask = ({ id, text, spec }: Pick<Question, "id" | "text" | "spec">) => {
     const t = text.trim();
-    setChange(null);
     if (!t || questions.some((q) => q.text === t)) return;
-    onQuestionsChange([...questions, { id, text: t, answerable: null }]);
+    onQuestionsChange([...questions, { id, text: t, answerable: null, ...(spec ? { spec } : {}) }]);
     setTab("preview");
+  };
+  // What the preview's Ask answered: whether it could, and the spec it asked, kept so it is asked again with no model.
+  const answered = (id: string, { spec, answerable }: Pick<Question, "spec" | "answerable">) => {
+    const q = questions.find((x) => x.id === id);
+    if (!q || (q.answerable === answerable && (q.spec === spec || spec === undefined))) return;
+    onQuestionsChange(questions.map((x) => (x.id === id ? { ...x, answerable, ...(spec ? { spec } : {}) } : x)));
   };
 
   // *Build the graph*: the person's message is part of the transcript, which is saved before the
@@ -243,7 +246,7 @@ export function AssistantChat(props: AssistantChatProps) {
     <ClosedBar name={name} />
   ) : (
     <Composer
-      onAsk={(text) => (isChange(text) ? setChange(text.trim()) : ask(`written-${++written}`, text))}
+      onAsk={(text) => ask({ id: `written-${++written}`, text })}
       onPick={props.onPick}
       onDrop={props.onDrop}
       onSend={(text) => reply({ about: text })}
@@ -272,18 +275,6 @@ export function AssistantChat(props: AssistantChatProps) {
         <ConversationContent className="py-8">
           <MessageList className="gap-5" ref={thread}>
             {turns.map((turn, index) => draw(turn, index))}
-            {change !== null && !closed && (
-              <>
-                <Reply>{change}</Reply>
-                <ChangeTurn
-                  onData={() => {
-                    setTab("data");
-                    if (narrow) setSheet(true);
-                  }}
-                  text={change}
-                />
-              </>
-            )}
             {props.failures.map((f) => (
               <TaskFailed failure={f} key={f.task} />
             ))}
@@ -300,6 +291,7 @@ export function AssistantChat(props: AssistantChatProps) {
   const panel = (
     <AssistantPanel
       done={props.build !== null || props.built === true}
+      onAnswered={answered}
       onBuild={buildNow}
       onEditor={onAdvanced}
       onOpen={toOpen}

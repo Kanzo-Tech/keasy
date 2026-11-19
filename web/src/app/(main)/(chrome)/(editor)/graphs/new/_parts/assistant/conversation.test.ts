@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { toStored } from "@/lib/assistant-conversation";
-import { converse, graphName, isChange, messagesOf, NO_REPLIES, placeholderOf, type Replies, restore } from "./conversation";
+import { converse, graphName, messagesOf, NO_REPLIES, placeholderOf, type Replies, restore } from "./conversation";
 import { blocks, type DecisionItem } from "./model";
 
 /** No safe default: whether a shared Nobel is one award or two has two right answers. */
@@ -107,7 +107,9 @@ describe("what is kept of the conversation", () => {
     { connection: "nobel", path: "laureates.csv" },
     { connection: "nobel", path: "awards.csv" },
   ];
-  const questions = [{ id: "q1", text: "Who won twice?", answerable: true }];
+  // Answered: the spec Ask read it as is kept, so it is asked again with no model; whether it answers is not.
+  const spec = { of: "Laureate", show: { kind: "table", columns: ["name"] } } as never;
+  const questions = [{ id: "q1", text: "Who won twice?", answerable: true, spec }];
   const done: Replies = { about: "Nobel prizes", built: false };
   const turnsOf = (decisions: DecisionItem[], replies: Replies = done) =>
     converse({ selected: picked, reading: null, decisions, questions, previewed: true }, replies).turns;
@@ -134,7 +136,7 @@ describe("what is kept of the conversation", () => {
     expect(parts("decide:award-key")).toEqual([{ type: "data-decision", data: { decision: open.decision, option: null, assumed: false } }]);
     expect(parts("decided:award-key")).toEqual([{ type: "data-decision", data: { decision: open.decision, option: "one", assumed: false } }]);
     expect(parts("assumed:share")).toEqual([{ type: "data-decision", data: { decision: assumed.decision, option: "fraction", assumed: true } }]);
-    expect(parts("asked:q1")).toEqual([{ type: "data-question", data: questions[0] }]);
+    expect(parts("asked:q1")).toEqual([{ type: "data-question", data: { id: "q1", text: "Who won twice?", spec } }]);
     // The program written is kept on the turn that asks what the person would like to know.
     expect(parts("checkpoint")).toEqual([]);
     expect(parts("ask")).toEqual([{ type: "data-program", data: { program: "program" } }]);
@@ -148,7 +150,7 @@ describe("what is kept of the conversation", () => {
   it("is opened again where it stood: the files, what it is about, the person's choices, the questions, the program", () => {
     const messages = toStored(messagesOf(turnsOf([{ ...open, chosen: "one" }, assumed]), { files, program: "program" }));
     const restored = restore(messages);
-    expect(restored).toEqual({ replies: done, files, chosen: { "award-key": "one" }, questions, program: "program" });
+    expect(restored).toEqual({ replies: done, files, chosen: { "award-key": "one" }, questions: [{ ...questions[0], answerable: null }], program: "program" });
     // Started from it, once the preview answers again, the conversation says the same turns again.
     const again = converse(
       { selected: picked, reading: null, decisions: [{ ...open, chosen: "one" }, assumed], questions: restored.questions, previewed: true },
@@ -172,15 +174,5 @@ describe("what is kept of the conversation", () => {
     expect(restore([])).toEqual({ replies: NO_REPLIES, files: [], chosen: {}, questions: [], program: null });
     const unsent = messagesOf(converse({ selected: new Set(), reading: null, decisions: null, questions: [] }, NO_REPLIES).turns, { files: [], program: null });
     expect(restore(unsent).replies).toEqual(NO_REPLIES);
-  });
-});
-
-describe("typed text that changes the graph", () => {
-  it("is told from a question by its first word, and a question mark always makes it a question", () => {
-    expect(isChange("call Laureate Person")).toBe(true);
-    expect(isChange("Rename awards to prizes.")).toBe(true);
-    expect(isChange("Who has won more than one Nobel?")).toBe(false);
-    expect(isChange("How many laureates are women")).toBe(false);
-    expect(isChange("remove share?")).toBe(false);
   });
 });

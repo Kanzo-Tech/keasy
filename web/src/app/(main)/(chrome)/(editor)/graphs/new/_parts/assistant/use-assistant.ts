@@ -10,9 +10,8 @@
  * steps of docs/design/assistant.md, in order, none of them a model's: the model, named from the
  * files' own words — the relations and the decisions; then, over the model accepted with each open
  * decision at its first option meanwhile, the question chips, and the program fossil checks —
- * which **Open in the editor** opens, and the preview and the build run. The page's model
- * (`useModel`) is asked one thing only: whether a question the person typed can be answered, as Ask
- * will be. A step that fails is in `failures`, with its retry.
+ * which **Open in the editor** opens, and the preview and the build run. No model is asked here: a
+ * question is the preview's Ask's to answer. A step that fails is in `failures`, with its retry.
  *
  * A conversation kept is started again from its `seed`: the files picked, the person's choices and
  * the program last written — everything else is read and asked again, from the files.
@@ -20,7 +19,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 // eslint-disable-next-line no-restricted-imports -- one listing per opened folder, the profile of the picked files and each Task's answer; each failure is shown in its place, beside the rest
-import { keepPreviousData, useQueries, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import type { Format, Profiled as Described } from "@fossil-lang/types";
 import { inputs, profile } from "@fossil-lang/wasm";
 import { engine } from "@kanzo-tech/mosaic/engine";
@@ -30,12 +29,11 @@ import { ClientError } from "@/lib/errors";
 import { host } from "@/lib/fossil/host";
 import { childrenOf, connectionNode, type SourceBranch, type SourceFile, type SourceNode } from "../sources";
 import { listChildren } from "../use-sources";
-import { useModel } from "@/lib/ai";
-import { type AssistantData, type DecisionItem, optionOf, type Question, type QuestionOffer, type TaskFailure, type Thing } from "./model";
+import { type AssistantData, type DecisionItem, optionOf, type QuestionOffer, type TaskFailure, type Thing } from "./model";
 import { declare, fossilCheck, mappingOf, writeProgram } from "./tasks/mapping";
 import { accept, decisionsOf, defaultsOf, type Draft, draftOf, namesOf, relationsOf, structureOf } from "./tasks/model";
 import { type Profiled, profiledOf, thingName } from "./tasks/profile";
-import { isAnswerable, joinGraphOf, offersOf } from "./tasks/requirements";
+import { joinGraphOf, offersOf } from "./tasks/requirements";
 
 /** The rows the profile keeps of each file: enough for one row of each relation to be found across files. */
 const SHOWN = 50;
@@ -117,8 +115,6 @@ export interface Seed {
 }
 
 export interface Assistant extends AssistantData {
-  /** The person's questions, each with whether these files can answer it. */
-  questions: Question[];
   /** Pick `files`, or drop them: what a pill's menu does. */
   pick: (files: readonly SourceFile[], on: boolean) => void;
   /** Drops picked files by id: a card's cross. */
@@ -144,15 +140,12 @@ export function useAssistant({
   connections,
   formats,
   about,
-  questions,
   seed,
 }: {
   connections: readonly StorageConnection[];
   formats: readonly Format[];
   /** *What is it about?*: `undefined` until answered, `""` when skipped. */
   about: string | undefined;
-  /** The questions the person kept, whose `answerable` this answers. */
-  questions: readonly Question[];
   /** A kept conversation to start from. */
   seed?: Seed;
 }): Assistant {
@@ -232,8 +225,6 @@ export function useAssistant({
       : (read.data?.undescribed ?? []).map(({ source, problem }) => ({ id: fileOf(picked, source.key), problem }))),
   ];
 
-  const model = useModel();
-
   // ── model: the types and their names, from the files alone, once they are read ──
   const draft = useMemo(() => {
     if (profiled === null || profiled.sources.length === 0) return null;
@@ -272,24 +263,6 @@ export function useAssistant({
     staleTime: Infinity,
   });
   const offers = accepted ? (offered.data ?? null) : null;
-  // A chip is answerable by construction: Ask's oracles held its spec before it was offered.
-  const offeredSpecs = new Map((offers ?? []).map((o) => [o.text, o.spec]));
-  const offeredTexts = new Set(offeredSpecs.keys());
-  const typed = questions.filter((q) => !offeredTexts.has(q.text));
-  const marked = useQueries({
-    queries: typed.map((q) => ({
-      queryKey: ["assistant", "answerable", acceptedKey, q.text],
-      queryFn: ({ signal }: { signal: AbortSignal }) => isAnswerable(q.text, graph!, { model, signal }),
-      enabled: graph !== null,
-      retry: false,
-      staleTime: Infinity,
-    })),
-  });
-  const answerable = (q: Question): boolean | null => {
-    if (!accepted) return null;
-    if (offeredTexts.has(q.text)) return true;
-    return marked[typed.indexOf(q)]?.data ?? null;
-  };
 
   // ── mapping: the program, as soon as the model is accepted ──
   const mapped = useQuery({
@@ -325,8 +298,6 @@ export function useAssistant({
     offers,
     decisions,
     failures,
-    // A question taken from a chip is asked as the chip's spec — a kept one too, its spec written again.
-    questions: questions.map((q) => ({ ...q, answerable: answerable(q), spec: offeredSpecs.get(q.text) })),
     pick,
     drop,
     choose: (decision, option) => setChosen((prev) => ({ ...prev, [decision]: option })),

@@ -1,16 +1,14 @@
 /**
  * **The requirements** — docs/design/assistant.md, *The three steps, and the one Task*. The questions a person could
- * ask of the graph the accepted model will be, offered as chips, and whether a question the person
- * typed can be answered. The chips are Ask's specs written from the model, not by a model — a count by
- * a field, a count by the thing an edge reaches — each kept only if Ask's oracles hold it over the
- * join graph the accepted model will be, and asked as that spec. A typed question is put through
- * Ask's Task, `ask`, as Discover will put it: that is the one place a model reads it.
+ * ask of the graph the accepted model will be, offered as chips: Ask's specs written from the model,
+ * not by a model — a count by a field, a count by the thing an edge reaches — each kept only if Ask's
+ * oracles hold it over the join graph the accepted model will be, and asked as that spec. A question
+ * the person types is the preview's Ask's: that is the one place a model reads it.
  */
 
-import type { LanguageModel } from "ai";
 import { type JoinGraph, type MappingModel, splitWords, withMapping } from "@kanzo-tech/relations";
 import { ask, type AskSpec } from "@kanzo-tech/ai/data";
-import { runTask, verify } from "@kanzo-tech/ai/task";
+import { verify } from "@kanzo-tech/ai/task";
 import type { Primitive } from "@fossil-lang/types";
 import type { Accepted } from "./model";
 
@@ -102,20 +100,4 @@ export async function offersOf(accepted: Accepted, graph: JoinGraph): Promise<Re
   }
   const held = await Promise.all(offers.map(async (o) => (await verify(ask, o.spec, { question: o.text, graph })).ok));
   return offers.filter((_, i) => held[i]).slice(0, OFFERED);
-}
-
-// ── A question the person typed ─────────────────────────────────────────────
-
-/**
- * Whether these files can answer `question`: Ask's Task, run over `graph` (`joinGraphOf`) as Discover
- * will run it — answerable when its spec holds, or holds but for a decision Ask asks the person
- * back. A spec the oracles still refuse after Ask's own repairs is not.
- */
-export async function isAnswerable(
-  question: string,
-  graph: JoinGraph,
-  { model, signal }: { model: LanguageModel; signal?: AbortSignal },
-): Promise<boolean> {
-  const proposal = await runTask(ask, { question, graph }, { model, signal });
-  return proposal.verdict.ok || "decision" in proposal.verdict;
 }

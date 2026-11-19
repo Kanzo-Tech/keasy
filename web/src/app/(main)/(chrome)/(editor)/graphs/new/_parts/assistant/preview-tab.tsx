@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import type { UIMessage } from "ai";
 import { MessageCircleQuestion, Sparkles } from "lucide-react";
-import { askEdit } from "@kanzo-tech/ai/data";
+import { askEdit, type AskTurn } from "@kanzo-tech/ai/data";
 import { Spinner } from "@kanzo-tech/ui";
 import { askParts } from "@/components/ask-parts";
 import { Boundary } from "@/components/boundary";
@@ -25,7 +25,7 @@ export type Preview = PreviewState & { rerun: () => void };
  * over the defaults. A decision changed runs it again: the answers it replaces stay on screen, dimmed
  * under *Updating…*, until the new ones land — and stay dimmed if the run fails.
  */
-export function PreviewTab({ preview, questions }: { preview: Preview; questions: readonly Question[] }) {
+export function PreviewTab({ preview, questions, onAnswered }: { preview: Preview; questions: readonly Question[]; onAnswered: Answered }) {
   const graph = preview.state === "idle" ? null : preview.graph;
   const stale = graph !== null && preview.state !== "ready";
   return (
@@ -52,7 +52,7 @@ export function PreviewTab({ preview, questions }: { preview: Preview; questions
           data-stale={stale || undefined}
           inert={stale || undefined}
         >
-          <Answers graph={graph} questions={questions} />
+          <Answers graph={graph} onAnswered={onAnswered} questions={questions} />
         </div>
       )}
       {graph && questions.length > 0 && (
@@ -74,14 +74,14 @@ function Working({ children }: { children: React.ReactNode }) {
 }
 
 /** The questions answered over `graph`, each one Ask's turn: a new graph is a new chat, asked again. */
-function Answers({ graph, questions }: { graph: AttachedGraph; questions: readonly Question[] }) {
+function Answers({ graph, questions, onAnswered }: { graph: AttachedGraph; questions: readonly Question[]; onAnswered: Answered }) {
   if (questions.length === 0) {
     return <p className="text-muted-foreground">Ask a question in the conversation, and it is answered here.</p>;
   }
   return (
     <Boundary fallback={<Working>Reading the preview…</Working>}>
       <GraphScope graph={graph} key={graph.name}>
-        <Asked questions={questions} />
+        <Asked onAnswered={onAnswered} questions={questions} />
       </GraphScope>
     </Boundary>
   );
@@ -94,7 +94,7 @@ function Answers({ graph, questions }: { graph: AttachedGraph; questions: readon
  * (`askParts`): an answer as an `AnswerCard` with its `AskChips`, which ask an edited spec again with
  * no model, and a decision as a question.
  */
-function Asked({ questions }: { questions: readonly Question[] }) {
+function Asked({ questions, onAnswered }: { questions: readonly Question[]; onAnswered: Answered }) {
   const { chat, graph } = useGraphAsk();
   const ready = useModelLoad().state === "ready";
   const { messages, status, sendMessage } = chat;
@@ -110,6 +110,16 @@ function Asked({ questions }: { questions: readonly Question[] }) {
   }, [next, sendMessage]);
 
   const streaming = status === "streaming" || status === "submitted";
+  // Each reply done is its question's answer: whether it answers, and the spec Ask read it as.
+  useEffect(() => {
+    if (streaming) return;
+    const asked = messages.filter((m) => m.role === "user");
+    asked.forEach((m, i) => {
+      const reply = messages[messages.indexOf(m) + 1];
+      const question = questions[i];
+      if (reply?.role === "assistant" && question) onAnswered(question.id, outcomeOf(reply));
+    });
+  }, [messages, streaming, questions, onAnswered]);
   const parts = askParts({ graph, send: (message) => void sendMessage(message) });
   // A question and its answer are one cell: each answer under the question that asked it.
   return (
@@ -138,6 +148,19 @@ function Asked({ questions }: { questions: readonly Question[] }) {
       {chat.error !== undefined && <ProblemView error={chat.error} uncoded="llm/failed" />}
     </div>
   );
+}
+
+/** What answering a question needs of its host: its id, and what the answer came to. */
+export type Answered = (id: string, outcome: Pick<Question, "answerable" | "spec">) => void;
+
+/**
+ * What a reply of Ask's came to: answerable when it holds an answer, or asks the person a decision
+ * (the question is answerable once it is taken); the spec is the one Ask read it as.
+ */
+function outcomeOf(reply: UIMessage): Pick<Question, "answerable" | "spec"> {
+  const asks = reply.parts.flatMap((p) => (p.type === "data-ask" ? [(p as { data: AskTurn }).data] : []));
+  const answered = reply.parts.some((p) => p.type === "data-answer") || asks.some((a) => a.decision !== undefined);
+  return { answerable: answered, spec: answered ? asks.at(-1)?.spec : undefined };
 }
 
 /** What was answered to a question: its prose, and each data part drawn as `Chat` draws it (`askParts`). */

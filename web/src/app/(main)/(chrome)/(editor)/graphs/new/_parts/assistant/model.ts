@@ -1,9 +1,9 @@
 /**
  * What the assistant's conversation reads — and nothing it computes. Each turn is drawn from these
  * shapes alone (`conversation.ts` orders them); `use-assistant.ts` is the one place that fills them,
- * from the connection listings, fossil's profile of the picked files, and the `model`, `mapping` and
- * `requirements` Tasks (`tasks/`, docs/design/assistant.md). A field a Task fills is `null` until it
- * has: `null` is "not known yet", never "none", so a turn leaves that part out rather than say there
+ * from the connection listings, fossil's profile of the picked files, and the model, mapping and
+ * requirements written from it (`tasks/`, docs/design/assistant.md). A field a step fills is `null`
+ * until it has: `null` is "not known yet", never "none", so a turn leaves that part out rather than say there
  * is nothing.
  *
  * None of these carry a shape, an IRI, a predicate or a cardinality: the person reads things, counts,
@@ -107,9 +107,9 @@ export interface AssistantData {
   failures: readonly TaskFailure[];
 }
 
-/** A Task that threw, or whose oracles still refused after its attempts. */
+/** A step that threw: fossil declaring the model, or the program not compiling. */
 export interface TaskFailure {
-  task: "model" | "mapping" | "requirements";
+  task: "mapping";
   problem: unknown;
   retry: () => void;
 }

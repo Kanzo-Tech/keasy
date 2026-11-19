@@ -179,7 +179,7 @@ describe("the assistant, as a conversation", () => {
   it("opens on what the person may do, and sends nothing until a source is picked", () => {
     const { host } = mount({});
     expect(host.querySelector("[data-empty]")?.textContent).toContain("What would you like to explore?");
-    expect(host.querySelector("[data-empty]")?.textContent).toContain("Add a connection’s files from the badges below");
+    expect(host.querySelector("[data-empty]")?.textContent).toContain("Add files with the +");
     expect(send(host).disabled).toBe(true);
     // One +, and no card until something is picked.
     expect(host.querySelector('[aria-label="Add files"]')).not.toBeNull();
@@ -219,7 +219,7 @@ describe("the assistant, as a conversation", () => {
     expect(panel.textContent).toContain("Each one holds name, gender and birth date.");
     expect(panel.textContent).toContain("Each award has a laureate, a category and a year.");
     // The thread says it in a line; the counts are the panel's.
-    expect(host.textContent).toContain("Kinds of thing: 1. What each one holds is under Data, beside this.");
+    expect(host.textContent).toContain("I read your files and found Laureates. What each one holds is under Data, beside this.");
     // The program is written next, and the line says so.
     expect(host.querySelector("[data-working]")?.textContent).toBe("Writing the program");
   });
@@ -292,7 +292,7 @@ describe("the assistant, as a conversation", () => {
     expect(onChoose).toHaveBeenCalledWith("share", "amount");
   });
 
-  it("a question on offer becomes the person's, with whether it can be answered, and the panel turns to Preview", async () => {
+  it("a question on offer becomes the person's, with whether it can be answered; Preview stays off until it has answers", async () => {
     const { host } = mount({ selected: new Set(["nobel:laureates.csv"]), decisions: [] });
     await through(host);
     expect(host.textContent).toContain("Take one of these, or ask your own below. I’ll answer each one under Preview");
@@ -300,7 +300,8 @@ describe("the assistant, as a conversation", () => {
     const asked = [...host.querySelectorAll("[data-reply]")].at(-1)!;
     expect(asked.querySelector("[data-question]")?.textContent).toBe("Who has won more than one Nobel?");
     expect(asked.textContent).toContain("Not checked yet");
-    expect(host.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe("Preview");
+    expect(host.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe("Data");
+    expect(host.querySelector('[role="tab"][data-value="preview"]')?.hasAttribute("data-disabled")).toBe(true);
   });
 
   it("takes a question written in the composer at any time", async () => {
@@ -383,9 +384,10 @@ describe("the assistant, as a conversation", () => {
       preview: { state: "running", graph: null, rerun },
     });
     await through(host);
-    await act(async () => host.querySelector<HTMLElement>('[role="tab"][data-value="preview"]')!.click());
-    expect(host.querySelector('[aria-label="Preview"]')?.textContent).toContain("Writing the program and running it over the first rows…");
+    // Nothing to preview yet: its tab is off.
+    expect(host.querySelector('[role="tab"][data-value="preview"]')?.hasAttribute("data-disabled")).toBe(true);
     render({ program: "program", preview: { state: "failed", problem: new Error("The run stopped"), graph: null, rerun } });
+    await act(async () => host.querySelector<HTMLElement>('[role="tab"][data-value="preview"]')!.click());
     await act(async () => button(host, "Try again")!.click());
     expect(rerun).toHaveBeenCalled();
   });
@@ -417,7 +419,8 @@ describe("the assistant, as a conversation", () => {
     const onAdvanced = vi.fn();
     const { host, render } = mount({ selected: new Set(["nobel:laureates.csv"]), decisions: [], onAdvanced });
     await through(host);
-    expect(button(host, "Open in the editor")?.disabled).toBe(true);
+    // No program yet: no actions on it.
+    expect(button(host, "Open in the editor")).toBeUndefined();
     render({ program: "program" });
     await act(async () => button(host, "Open in the editor")!.click());
     expect(onAdvanced).toHaveBeenCalledTimes(1);
@@ -428,7 +431,7 @@ describe("the assistant, as a conversation", () => {
     const { host, render } = mount({ selected: new Set(["nobel:laureates.csv"]), decisions: [], onBuild });
     await through(host);
     // No program yet: nothing to build.
-    expect(button(host, "Build the graph")?.disabled).toBe(true);
+    expect(button(host, "Build the graph")).toBeUndefined();
     render({ program: "program" });
     await act(async () => button(host, "Build the graph")!.click());
     expect(onBuild).toHaveBeenCalledTimes(1);
@@ -505,17 +508,17 @@ describe("the assistant, as a conversation", () => {
     expect(ids.slice(0, 2)).toEqual(["sent", "understood"]);
   });
 
-  it("a Task that failed is said where the conversation stopped, with a retry", async () => {
+  it("a step that failed is said where the conversation stopped, with a retry", async () => {
     const retry = vi.fn();
     const { host } = mount({
       selected: new Set(["nobel:laureates.csv"]),
       decisions: [],
       offers: null,
-      failures: [{ task: "requirements", problem: new Error("The GPU device was lost"), retry }],
+      failures: [{ task: "mapping", problem: new Error("The program does not compile"), retry }],
     });
     await through(host);
-    expect(host.querySelector('[data-task="requirements"]')?.textContent).toBe("I could not suggest questions for these files.");
-    expect(host.querySelector('[data-problem][data-code="llm/failed"]')).not.toBeNull();
+    expect(host.querySelector('[data-task="mapping"]')?.textContent).toBe("I could not write how these files become your graph.");
+    expect(host.querySelector("[data-problem]")).not.toBeNull();
     await act(async () => button(host, "Try again")!.click());
     expect(retry).toHaveBeenCalled();
   });

@@ -89,21 +89,10 @@ export const INPUTS: Input[] = ["laureates", "awards", "institutions", "affiliat
 
 export const NOBEL = profiledOf(PROFILE, INPUTS);
 
-/** What a good model names over it: every slot of the structure the profile states. */
+/** Names over it: every thing and edge of the structure the profile states. */
 export const NAMES: Names = {
   types: { laureates: "Laureate", awards: "Award", institutions: "Institution", countries: "Country" },
   edges: { "awards.laureate_id → laureates.id": "laureate", "affiliations.institution_id → institutions.id": "affiliation" },
-  fields: {
-    "laureates.name": "name",
-    "laureates.gender": "gender",
-    "laureates.born": "born",
-    "awards.year": "year",
-    "awards.category": "category",
-    "awards.share": "share",
-    "institutions.name": "name",
-    "institutions.city": "city",
-    "countries.name": "name",
-  },
 };
 
 /** The structure with those names. */

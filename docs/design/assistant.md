@@ -1,12 +1,15 @@
 # The assistant, and time to smile
 
 Status: a direction. Built: the model in the page, served from keasy's own origin and preloaded with
-intent; the guided chat and its three Tasks, `model`, `mapping` and `requirements`, over fossil's
-profile (below); the conversation kept, the preview run in memory, and the build. **Decided
-2026-10-20, not built:** [a conversation beside its graph](#a-conversation-beside-its-graph) — one **+**
-and file cards, a dataset's vocabulary as a file beside it, a panel with *Your graph*, *Data* and
-*Preview*, questions marked on the graph and answered in the conversation, a shell of its own, the schema and the program drawn on one diagram with React Flow and ELK — and [`model`'s structure taken from the profile](#model--structure-from-the-profile-names-from-the-model).
-They replace the single thread of 2026-10-14 and its checkpoints, each where it is described. The pattern this rests on — a *Task*: a small model in the browser fills a small artefact under a JSON Schema, a deterministic oracle checks it, a bounded loop repairs
+intent; the guided chat and its three steps, `model`, `mapping` and `requirements`, computed from
+fossil's profile with no model ([below](#the-three-steps-and-the-one-task)); the conversation kept, the
+preview run in memory, and the build; and, of [a conversation beside its graph](#a-conversation-beside-its-graph)
+(decided 2026-10-20), the panel beside the conversation with *Data* and *Preview*, no question that
+blocks but the build, one working line, a shell of its own and the phone's sheet, one **+** with file
+cards, and a dataset's vocabulary as a file beside it. **Decided, not built:** the panel's *Your graph*
+tab and the questions marked on it, *Upload files* and *From an existing graph* in the **+**, and the
+schema and the program drawn on one diagram with React Flow and ELK; each says so where it is
+described. They replace the single thread of 2026-10-14 and its checkpoints. The pattern this rests on — a *Task*: a small model in the browser fills a small artefact under a JSON Schema, a deterministic oracle checks it, a bounded loop repairs
 it or asks the person — and its API, its model and its decisions are kanzo-ui's, on
 [Tasks](https://kanzo-tech.github.io/ui/docs/design/tasks). fossil's half — `fossil-profile` in place
 of introspect, and a mapping spec from which Fossil is emitted — is on
@@ -81,7 +84,7 @@ reply again.
 
 ## A conversation beside its graph
 
-**Decided 2026-10-20, not built.** The assistant is two things side by side, as Claude is: **the
+**Decided 2026-10-20, built in part** (the status above says what). The assistant is two things side by side, as Claude is: **the
 conversation on the left**, and **the graph it is making on the right**, in a panel the size of an
 artifact's. It replaces the single thread decided on 2026-10-14, which put every result — what is in
 the data, the preview — in the thread under the step that made it, after ChatGPT's data analysis and
@@ -101,18 +104,25 @@ the whole assistant, the vocabularies included.
 
 ### One +, as Claude's
 
-The composer has one **+**, as Claude's does: *Upload files*, *From a connection* — the connections as
-one list, each opening to its files with a search over them — and *From an existing graph*. What is
-picked is drawn as **file cards** above the field: *awards.csv · 1,018 rows*, *+4 more files · Nobel
-laureates*. There is no row of pills per connection and no split between data and vocabularies. The
-first message sends the cards and the sentence the person typed, together, as before.
+The composer is Claude's: the **+** above the field on the left, and what is picked beside it as
+**file cards** — *awards.csv*, then *+4 more files · Nobel laureates* — each with a
+cross. The **+** is kanzo-ui's `Menu`: *From a connection*, each readable connection (`readable`: data,
+not the sink) a submenu that lists its files when it opens, every folder's included, as checkable items
+with their size, **Select all** first. A connection's vocabulary comes with its data as a card of its
+own. Picking files asks nothing: they are read when the first message is sent, which carries the files
+and *what is it about?* together. Until then the page is the question and the composer, in the
+middle, as Claude opens.
 
-What goes: the pills above the field (one per readable connection, each with a menu of checkable
-files), and the *Data* / *Vocabularies* rows a first sketch of this page drew. Two kinds of pill asked
-the person to know which of their files were data and which were a vocabulary — a question about the
-technology, not about their data. *What would reverse it:* people who cannot find their files behind a
-**+**, in a user test, where a pill per connection showed them — then the connections come back as
-pills, still one row, and the cards stay.
+*What would reverse it:* a connection whose readable files do not fit a submenu — hundreds — then the
+submenu gains a search, as Claude's does.
+
+**Decided, not built:** *Upload files* and *From an existing graph* beside *From a connection*, and a
+search over a connection's files. What goes: the pills above the field (one per readable connection,
+each with a menu of checkable files), and the *Data* / *Vocabularies* rows a first sketch of this page
+drew. Two kinds of pill asked the person to know which of their files were data and which were a
+vocabulary — a question about the technology, not about their data. *What would reverse it:* people
+who cannot find their files behind a **+**, in a user test, where a pill per connection showed them —
+then the connections come back as pills, still one row, and the cards stay.
 
 ### A dataset's vocabulary is a file beside it
 
@@ -155,7 +165,7 @@ test who read *vocabulary* as a list of words and do not expect it to shape thei
 search over terms and a vocabulary proposed for files that bring none. It is the catalogue (b) would
 have grown connections into, which is why (b) is not a step towards it: a vocabulary that comes with
 its data stays a file beside it, and one from the hub is a source the **+** lists, *From Alejandría*.
-The candidate terms `model` ranks ([below](#model--structure-from-the-profile-names-from-the-model))
+The candidate terms `model` ranks ([below](#model--structure-and-names-from-the-profile))
 are then a search of the hub.
 
 *What would reverse it:* vocabularies that serve many datasets before Alejandría exists — then they
@@ -220,7 +230,7 @@ What the person sees, and when, for the Nobel files (design targets, as above):
 | When | In the panel | From |
 |---|---|---|
 | ~2 s | *Data*: each file, its rows, columns, keys and links | fossil's profile — no model |
-| ~3 s | *Your graph*: the kinds of thing by file, the links, the counts | fossil's profile ([`model`](#model--structure-from-the-profile-names-from-the-model)) |
+| ~3 s | *Your graph*: the kinds of thing by file, the links, the counts | fossil's profile ([`model`](#model--structure-and-names-from-the-profile)) |
 | as the model writes | names in the person's words; the open questions | the model |
 | seconds after | *Preview*: two or three answers over 200 rows | the page's engine |
 
@@ -373,13 +383,20 @@ the fact, in a wizard than in the guided chat — then the turns become screens 
 Tasks. And people changing most assumptions after the fact puts those decisions back in front of the
 preview.
 
-## The three Tasks
+## The three steps, and the one Task
 
-What the chat shows is computed where it is a fact, and asked of the model only where it is an
-interpretation. Every Task is pure — no React, no engine of its own — and lives under
-`graphs/new/_parts/assistant/tasks/`, each tested with a scripted model over a small Nobel profile;
-`use-assistant.ts` is the one place that runs them, with `runTask`, `propose` and `useTask` from
-`@kanzo-tech/ai/task` and the page's model (`useModel`, `lib/ai.ts`).
+Everything the chat shows is computed from the files, and the page's model is asked one thing: whether
+a question the person typed can be answered, through Ask's own Task. The three steps — `model`,
+`mapping`, `requirements` — live under `graphs/new/_parts/assistant/tasks/`, are pure, and are
+tested over a small Nobel profile; `use-assistant.ts` is the one place that runs them.
+
+**Why no model writes them** (2026-10-20). Each step was a Task for the 4B model in the page, and on
+Nobel, six files, the first local run stopped on `llm/truncated`: the names of every slot, the program
+and the chips did not fit its 4096-token context. Each was already held to a closed list — the
+profile's names, fossil's grammar, the resolver's paths — so the model added little the files' own
+words did not, and cost tokens, attempts and wrong answers. *What would reverse it:* a model in the
+page whose context holds a large dataset's profile, and an evaluation where its names or questions
+are preferred over the files' own — then the step that gains is a Task again, under the same oracle.
 
 **The profile is the context, and it is a `compute`.** The picked files are read once with
 `profile()` from `@fossil-lang/wasm` — columns and types, counts, candidate keys, inclusions and a
@@ -389,79 +406,48 @@ it before any model is asked: one thing per file, its count when the profile rea
 whose profile takes too long for the reading line; then the reading takes `depth: "types"` first and
 the rest in the background, the way fossil's profile already splits.
 
-### `model` — structure from the profile, names from the model
+### `model` — structure and names from the profile
 
-**Decided 2026-10-20, not built.** The rule this replaces named its reversal: *a small model that names
-and links types worse with the profile's closed lists than a person does by hand — then the types are
-drawn from the sources one to one, and only the names are asked*. The owner's run over the Nobel files
-(2026-10-20, Qwen3-4B in the page) is that evidence: every attempt keyed *Affiliation* on `award`, which
-repeats, and linked an award to an institution through `affiliations` the wrong way round, and the
-Task gave up with the oracles' words in a problem titled *The model call failed*.
+- **Structure**: a thing per file with a key, that key the candidate an inclusion lands on or the
+  first; an edge per inclusion that lands on a key; a file with no key whose two inclusions land on
+  things a bridge, an edge across it (`structureOf`).
+- **Names** (`namesOf`): a thing by its file, singular (`affiliations` → `Affiliation`); an edge by the
+  column it leaves from without its `_id` (`laureate_id` → `laureate`); a field by its column
+  (`birth_date` → `birthDate`), a word of Fossil's suffixed (`fromValue`). A name taken in its scope
+  gets a number. The Data tab is where the person reads them.
+- **Decisions**, from the profile and the draft: a type whose file has more than one candidate key,
+  and that no edge lands on, asks which identifies the thing, and assumes the first (`key/<source>`);
+  an edge through a source no type stands on — *affiliations* between laureates and institutions —
+  asks whether each row is a link, or a thing counted on its own (`count/<source>`), and blocks.
+- **What it fills**: `understanding.relations` — one line per type with a real example from the
+  sample rows — and `decisions`. IRIs are keasy's, computed by fossil from the workspace's origin and
+  the names (`vocabularyOf`, `subjectOf` of `@fossil-lang/wasm`).
 
-- **The structure is fossil's, computed, never proposed.** One kind of thing per source; its key the
-  profile's candidate key (the first, when there are several — a safe default); an edge per inclusion
-  that lands on a key; a source with no key of its own whose two inclusions land on things is a **bridge** — an edge between
-  the two kinds it links, not a kind of its own. Valid by construction, so `model/not-a-key` and
-  `model/unbacked-edge` cannot fire.
-- **The model names, and picks words.** Contract: `{ types, edges, fields }`, each an object with one
-  required property per slot of the structure — a thing by its source, an edge by its inclusion, a
-  field by `source.column` — and no other, so a slot is never missed nor invented. With a vocabulary, `term` is an enum of the candidates keasy found for that
-  source or column — by label, synonym and the column's sample values — and the model ranks them or
-  says none; without one, there is no `term`. Oracles: unique names, no word of Fossil's.
-- **Decisions, from the structure and the profile, never the model:** a source with several candidate
-  keys that no edge lands on (`key/<source>`, safe default); a source that is a bridge *or* a thing
-  counted on its own (`count/<edge>`, no safe default — each counts differently, so it holds the
-  build, never the preview); a column with no term in the
-  vocabulary (*"motivation" isn't in your vocabulary. What is it?* — keep it as is, say what it is, or
-  leave it out; safe default: keep it). Each is asked in plain words, in the conversation, and marked
-  on the graph ([above](#questions-in-the-conversation-marked-on-the-graph)).
-- **A failure says what it is.** The Task's attempts spent is a problem of its own, not `llm/failed`:
-  what was tried, and why it did not hold, under a title that does not blame the model call.
-- IRIs are unchanged: keasy's, computed by fossil (`vocabularyOf`, `subjectOf`), never the model's; a
-  term from a vocabulary is the vocabulary's IRI.
-- *What would reverse it:* data whose links are not exact inclusions — dirty keys, a partial relation —
-  where the profile finds no edge a person sees at once; then the profile reports approximate
-  inclusions with their share, and those become decisions.
+### `mapping` — written from the accepted model, checked by fossil
 
-### `mapping` — Fossil under a grammar, checked by fossil
-
-- **Context**: a fossil `Vocabulary` — the accepted types as `declared` types, each with its IRIs and
-  its fields' types from the profile's primitives (`Option<…>` where the column has nulls; an edge a
-  `Ref<…>`, a `Seq<Ref<…>>` through a link source), and the sources with their columns — and
-  `grammarFor`'s answer: the prelude and the EBNF of what follows it.
-- **Contract**: the grammar, through `providerOptions.kanzo.grammar` (`localModel` holds every token
-  to it). The prompt names each mapping's `@subject` and columns, so the model writes what is left.
-- **Oracles**: fossil itself — the prelude and the mappings opened with `openProgram`, the sources
-  typed with `describe` at `depth: "types"`, and every error of `diagnostics()` sent back with its
-  line (`mapping/<fossil code>`); every accepted type has a mapping (`mapping/unmapped`); each
-  mapping's `@subject` is the one keasy computed (`mapping/subject`). Three attempts, then the
-  diagnostics are the answer.
-- **What it fills**: the program — prelude and mappings — which **Open in the editor**, on the panel,
-  opens. The chat never shows Fossil. It runs once the person has asked all they wanted: the page has one model, and the
-  question chips are what the person is waiting on until then. *What would reverse it:* a preview
-  that must start sooner for the first answer to land under a minute — then it runs as soon as the
-  decisions are taken, behind the chips.
-- *What would reverse it:* fossil's own: a small model under the grammar failing the competency
-  questions where an emitter from the accepted `model` passes them — then the mapping is emitted.
+- **Written** (`mappingsOf`): fossil declares the accepted types and binds the sources (the prelude,
+  from `grammarFor`); then one mapping per type — its `@subject`, each field from its column, each
+  edge read on its own file — and one more per edge read across a link file, joined on the type's
+  identity, writing again the fields the type requires.
+- **Checked**: fossil opens the program, types the sources with `describe` at `depth: "types"`, and an
+  error of `diagnostics()` is a fault of the writer's, thrown and said where the conversation stopped.
+- **What it fills**: the program — prelude and mappings — which **Open in the editor** opens, and the
+  preview and the build run. The chat never shows Fossil.
 
 ### `requirements` — questions the data can answer
 
-- **Context**: the accepted model's types, and from each the paths Ask's model writes, two links out
-  at most (`category`, `laureate.affiliation.name`, `^laureate.category`), keys left out.
-- **Contract**: `{ text, of, fields }`, `of` a type and `fields` a list of paths from it, both enums.
+- **Written** (`offersOf`): for each edge one thing reaches, which of them has the most (*Which
+  laureate has the most awards?*), and for each type a count by its first date or category-like
+  field (*How many awards are there by category?*); four at most, as chips.
 - **Oracle**: Ask's resolver — `JoinResolver` from `@kanzo-tech/relations` over the join graph the
-  accepted model will be (`joinGraphOf`) — reaches each path from `of` (`requirements/unreachable`,
-  naming the paths it does not). Nothing has run yet, so the graph is described as a built one is
-  (`withMapping`), by the mapping fossil makes of the declared types before any run
-  (`program.mapping()` over the prelude, parsed by rudof): each type's class, each column's predicate,
-  datatype and term type, each edge's predicate, the same the built graph's `mapping.ttl` states.
-- **Offered** with `propose` through `useTask`, five at a time, as chips; a chip is answerable by
-  construction. **A question the person types** is marked by Ask's own Task, `ask` from
-  `@kanzo-tech/ai/data`, run over the same join graph, which says what each field is: answerable when
-  its spec holds or only asks the person a decision. Until a model is accepted, `answerable`
-  stays `null`.
-- *What would reverse it:* questions marked answerable here that Ask, over the built graph, cannot
-  answer — then marking waits for the preview and runs Ask on it.
+  accepted model will be (`joinGraphOf`), described as a built one is (`withMapping`) by the mapping
+  fossil makes of the declared types before any run — reaches every path a chip reads, or the chip is
+  not offered.
+- **A question the person types** is marked by Ask's own Task, `ask` from `@kanzo-tech/ai/data`, over
+  the same join graph: answerable when its spec holds or only asks the person a decision. This is the
+  one call to the model, and Ask makes the same one in Discover.
+- *What would reverse it:* chips marked answerable here that Ask, over the built graph, cannot answer
+  — then the chips wait for the preview and are checked on it.
 
 **What left for the libraries, and what did not** (2026-10-15, with kanzo-ui 0.47 and fossil's GraphAr
 graph; [cleanup](cleanup.md)). Three of the Tasks' pieces re-derived what a library knows:

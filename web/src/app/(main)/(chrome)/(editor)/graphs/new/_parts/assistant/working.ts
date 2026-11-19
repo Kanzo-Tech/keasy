@@ -31,7 +31,7 @@ const failed = (f: WorkingFacts, task: TaskFailure["task"]) => f.failures.some((
 export function workingOf(f: WorkingFacts): string | null {
   if (f.reading !== null) return f.files === 1 ? "Reading the file" : `Reading ${f.files} files`;
   if (f.build?.state === "building") return "Building the graph from every row";
-  if (f.things.length === 0 || failed(f, "model")) return null;
+  if (f.things.length === 0) return null;
   if (f.decisions === null) return "Naming the kinds of thing";
   if (failed(f, "mapping")) return null;
   if (f.program === null || f.writing) return "Writing the program";

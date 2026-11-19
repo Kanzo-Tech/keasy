@@ -28,6 +28,7 @@ import {
   type Thing,
 } from "./model";
 import { ROWS } from "./preview-tab";
+import { listed } from "./tasks/model";
 
 /** The assistant's turn: its words first, then what it carries. */
 export function Said({ children, label, decision }: { children: React.ReactNode; label?: string; decision?: string }) {
@@ -111,7 +112,7 @@ export function UnderstoodTurn({ things, problems = [] }: { things: readonly Thi
         <p>I could not find anything to read in these files.</p>
       ) : (
         <p>
-          I read your files. Kinds of thing: <span className="font-medium">{things.length}</span>. What each one holds is under{" "}
+          I read your files and found {listed(things.map((t) => t.name))}. What each one holds is under{" "}
           <span className="font-medium">Data</span>, beside this.
         </p>
       )}
@@ -363,17 +364,15 @@ export function ChangeTurn({ text, onData }: { text: string; onData: () => void 
 }
 
 const FAILED: Record<TaskFailure["task"], string> = {
-  model: "I could not make sense of these files.",
-  requirements: "I could not suggest questions for these files.",
   mapping: "I could not write how these files become your graph.",
 };
 
-/** A Task that failed, said where the conversation stopped, with the way to ask again. */
+/** A step that failed, said where the conversation stopped, with the way to try again. */
 export function TaskFailed({ failure }: { failure: TaskFailure }) {
   return (
     <Said>
       <p data-task={failure.task}>{FAILED[failure.task]}</p>
-      <ProblemView error={failure.problem} onRetry={failure.retry} uncoded="llm/failed" />
+      <ProblemView error={failure.problem} onRetry={failure.retry} />
     </Said>
   );
 }

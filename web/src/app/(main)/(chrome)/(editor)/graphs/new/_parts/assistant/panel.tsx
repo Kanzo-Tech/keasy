@@ -48,25 +48,32 @@ export interface AssistantPanelProps {
  */
 export function AssistantPanel(props: AssistantPanelProps) {
   const { tab, onTab, open, program, done } = props;
+  // Asked for before there is anything to preview, the panel stays on Data.
+  const shown = tab === "preview" && !previewable(props.preview) ? "data" : tab;
   return (
-    <Tabs className="flex min-h-0 flex-1 flex-col" onValueChange={(d) => onTab(d.value as PanelTab)} value={tab}>
+    <Tabs className="flex min-h-0 flex-1 flex-col" onValueChange={(d) => onTab(d.value as PanelTab)} value={shown}>
       <div className="flex shrink-0 flex-wrap items-center gap-2 border-b px-3 py-2">
         <TabsList>
           <TabsTrigger value="data">Data</TabsTrigger>
-          <TabsTrigger value="preview">Preview</TabsTrigger>
+          <TabsTrigger disabled={!previewable(props.preview)} value="preview">
+            Preview
+          </TabsTrigger>
         </TabsList>
-        <div className="ms-auto flex flex-wrap items-center gap-2">
-          <Button disabled={program === null} onClick={props.onEditor} size="sm" title="Write the shapes and the program yourself" variant="ghost">
-            Open in the editor
-            <ExternalLink aria-hidden className="size-3.5" />
-          </Button>
-          {!done && (
-            <Button disabled={program === null || open > 0} onClick={props.onBuild} size="sm">
-              Build the graph
+        {/* The actions on the graph come once there is a program to act on. */}
+        {program !== null && (
+          <div className="ms-auto flex flex-wrap items-center gap-2">
+            <Button onClick={props.onEditor} size="sm" title="Write the shapes and the program yourself" variant="ghost">
+              Open in the editor
+              <ExternalLink aria-hidden className="size-3.5" />
             </Button>
-          )}
-        </div>
-        {!done && open > 0 && (
+            {!done && (
+              <Button disabled={open > 0} onClick={props.onBuild} size="sm">
+                Build the graph
+              </Button>
+            )}
+          </div>
+        )}
+        {program !== null && !done && open > 0 && (
           <p className="basis-full text-end text-muted-foreground text-xs" data-waits="">
             The build waits on{" "}
             <Button className="h-auto p-0 text-xs" onClick={props.onOpen} variant="link">
@@ -84,6 +91,9 @@ export function AssistantPanel(props: AssistantPanelProps) {
     </Tabs>
   );
 }
+
+/** The preview has something to show — answers, or why it failed: until then its tab is off. */
+const previewable = (preview: Preview) => preview.state === "failed" || (preview.state !== "idle" && preview.graph !== null);
 
 /**
  * What each one of a thing holds, from its columns: "name, gender, birth date and 4 more". Column
@@ -133,9 +143,7 @@ function RelationLine({ relation }: { relation: Relation }) {
 function DataTab({ things, relations }: { things: readonly Thing[]; relations: readonly Relation[] | null }) {
   return (
     <section aria-label="Data" className="flex flex-col gap-4">
-      <p>
-        Kinds of thing: <span className="font-medium">{things.length}</span>
-      </p>
+      <h3 className="font-medium text-muted-foreground text-xs uppercase tracking-wide">In your files</h3>
       {/* Rows that fill: the last row's cards widened to close it — never a card alone beside a hole. */}
       <ul className="flex flex-wrap gap-2" data-things="">
         {things.map((thing) => (

@@ -23,10 +23,10 @@ pub enum Action {
     /// See the object and its status.
     Read,
     /// Build on it: a connection as a graph's source, its files listed or read;
-    /// a secret in a connection; a completed graph's output read.
+    /// a completed graph's output read.
     Use,
-    /// Change its status, not its configuration: test a connection or a
-    /// secret, run a graph again.
+    /// Change its status, not its configuration: test a connection, run a
+    /// graph again.
     Operate,
     /// Change its configuration: edit, rename, delete; a graph's rules and
     /// dashboard.
@@ -36,7 +36,6 @@ pub enum Action {
 /// What kind of object a permission is asked of: the matrix has a row for each.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Kind {
-    Secret,
     /// A source connection: data or a vocabulary.
     Source,
     /// The workspace's one sink: an admin's, reached through its graphs.
@@ -49,7 +48,6 @@ pub enum Kind {
 impl Kind {
     fn noun(self) -> &'static str {
         match self {
-            Kind::Secret => "secret",
             Kind::Source => "connection",
             Kind::Sink => "sink",
             Kind::Graph => "graph",
@@ -68,8 +66,7 @@ pub trait Securable {
 /// response: the interface draws what this says and does not re-derive it.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, ToSchema)]
 pub struct Can {
-    /// Build on it: a secret in a connection. Every editor uses a connection
-    /// and reads a graph's output, so the interface reads this for secrets.
+    /// Build on it: read a source, or a graph's output.
     #[serde(rename = "use")]
     pub use_: bool,
     /// Test it, or run it (again).
@@ -83,7 +80,6 @@ impl Caller {
     ///
     /// | | read | use | operate | manage |
     /// |---|---|---|---|---|
-    /// | secret | editor | owner, admin; every editor on the workspace's | editor | owner, admin |
     /// | source | reader | editor | editor | owner, admin |
     /// | sink | reader | — (its graphs) | admin | admin |
     /// | graph | reader | reader | editor | owner, admin |
@@ -99,8 +95,6 @@ impl Caller {
             (Kind::Sink, Action::Use) => false,
             (Kind::Sink, Action::Operate | Action::Manage) => admin,
             (_, Action::Manage) => admin || (editor && owns),
-            (Kind::Secret, Action::Use) => admin || (editor && (owns || owner.is_workspace())),
-            (Kind::Secret, Action::Read | Action::Operate) => editor,
             (Kind::Source | Kind::Graph | Kind::Conversation, Action::Read) => reader,
             (Kind::Conversation, Action::Use | Action::Operate) => false,
             (Kind::Source, Action::Use) => editor,
@@ -136,9 +130,6 @@ fn refusal(action: Action, kind: Kind) -> String {
         (Kind::Sink, Action::Use) => "The sink is reached through its graphs".into(),
         (Kind::Sink, _) => "Only an admin may test or change the sink".into(),
         (_, Action::Manage) => format!("Only its owner or an admin may change this {noun}"),
-        (Kind::Secret, Action::Use) => {
-            "Only its owner or an admin may use this secret: ask its owner".into()
-        }
         (_, Action::Operate) => format!("Only an editor may test or run this {noun}"),
         (_, Action::Use) => format!("Only an editor may use this {noun}"),
         (_, Action::Read) => format!("Only an editor may see this {noun}"),
@@ -148,7 +139,7 @@ fn refusal(action: Action, kind: Kind) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::authentication::role::Roles;
+    use crate::authentication::role::{AccessToken, Roles};
 
     struct Object(Kind, Actor);
 
@@ -166,6 +157,7 @@ mod tests {
             user_id: sub.into(),
             name: sub.into(),
             roles: Roles::from_claim(held.iter().copied()),
+            token: AccessToken::from("t"),
         }
     }
 
@@ -194,10 +186,6 @@ mod tests {
         let other = caller("u-e", EDITOR);
         let admin = caller("u-a", ADMIN);
         let table = [
-            (Kind::Secret, &reader, [false, false, false, false]),
-            (Kind::Secret, &owner, [true, true, true, true]),
-            (Kind::Secret, &other, [true, false, true, false]),
-            (Kind::Secret, &admin, [true, true, true, true]),
             (Kind::Source, &reader, [true, false, false, false]),
             (Kind::Source, &owner, [true, true, true, true]),
             (Kind::Source, &other, [true, true, true, false]),
@@ -222,8 +210,7 @@ mod tests {
     }
 
     /// What the workspace owns, no person does: a caller whose `sub` happened
-    /// to spell `workspace` would manage nothing by it — and every editor uses
-    /// the workspace's secrets.
+    /// to spell `workspace` would manage nothing by it.
     #[test]
     fn what_the_workspace_owns_only_an_admin_manages() {
         let seeded = Object(Kind::Source, Actor::workspace());
@@ -231,10 +218,6 @@ mod tests {
         assert!(editor.may(Action::Operate, &seeded), "any editor tests it");
         assert!(!editor.may(Action::Manage, &seeded));
         assert!(caller("u-a", ADMIN).may(Action::Manage, &seeded));
-
-        let secret = Object(Kind::Secret, Actor::workspace());
-        assert!(caller("u-y", EDITOR).may(Action::Use, &secret));
-        assert!(!caller("u-r", READER).may(Action::Use, &secret));
     }
 
     #[test]

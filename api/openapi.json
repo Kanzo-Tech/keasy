@@ -131,7 +131,7 @@
             }
           },
           "400": {
-            "description": "No such secret, or a URL it does not reach",
+            "description": "Not a storage URL, or one outside the deployment's storage (`store/undeclared`)",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -141,7 +141,7 @@
             }
           },
           "403": {
-            "description": "A sink by anyone but an admin, or on a secret the caller may not use",
+            "description": "A sink by anyone but an admin",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -333,8 +333,18 @@
               }
             }
           },
+          "400": {
+            "description": "Not a storage URL, or one outside the deployment's storage (`store/undeclared`)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
           "403": {
-            "description": "Neither its owner nor an admin; the sink, anyone but an admin; or a secret the caller may not use",
+            "description": "Neither its owner nor an admin; the sink, anyone but an admin",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -486,7 +496,7 @@
         "tags": [
           "Connections"
         ],
-        "summary": "LIST a source, WRITE and DELETE under the sink. Any editor tests a source,\nan admin the sink: testing operates a connection, it does not change it, so\nwho asked is kept on the report and never as who updated the connection.",
+        "summary": "LIST a source, WRITE under the sink, with what the storage service vends to\nthe caller. Any editor tests a source,\nan admin the sink: testing operates a connection, it does not change it, so\nwho asked is kept on the report and never as who updated the connection.",
         "operationId": "validate_connection",
         "parameters": [
           {
@@ -1564,371 +1574,12 @@
         ]
       }
     },
-    "/v1/secrets": {
-      "get": {
-        "tags": [
-          "Secrets"
-        ],
-        "operationId": "list_secrets",
-        "responses": {
-          "200": {
-            "description": "The secrets, with the connections using each; never a secret's value",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/SecretView"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": [
-              "editor"
-            ]
-          }
-        ]
-      },
-      "post": {
-        "tags": [
-          "Secrets"
-        ],
-        "summary": "An editor creates one, and owns it; any editor may use it in a connection\nand test it, and its owner or an admin changes it.",
-        "operationId": "create_secret",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateSecretRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "Validated and stored",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SecretView"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "An invalid name",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "A secret of that name exists",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "The secret did not validate",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "504": {
-            "description": "The store did not answer the probe in time",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": [
-              "editor"
-            ]
-          }
-        ]
-      }
-    },
-    "/v1/secrets/{name}": {
-      "get": {
-        "tags": [
-          "Secrets"
-        ],
-        "operationId": "get_secret",
-        "parameters": [
-          {
-            "name": "name",
-            "in": "path",
-            "description": "Secret name",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "The secret; never its value",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SecretView"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "No such secret",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": [
-              "editor"
-            ]
-          }
-        ]
-      },
-      "delete": {
-        "tags": [
-          "Secrets"
-        ],
-        "operationId": "delete_secret",
-        "parameters": [
-          {
-            "name": "name",
-            "in": "path",
-            "description": "Secret name",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Deleted"
-          },
-          "403": {
-            "description": "Neither its owner nor an admin",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "No such secret",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Connections still use it; `dependents` names them",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": [
-              "editor"
-            ]
-          }
-        ]
-      },
-      "patch": {
-        "tags": [
-          "Secrets"
-        ],
-        "summary": "Rotation replaces the whole spec, and is committed only if every connection\nusing the secret still validates with the new one.",
-        "operationId": "update_secret",
-        "parameters": [
-          {
-            "name": "name",
-            "in": "path",
-            "description": "Secret name",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateSecretRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Renamed and/or rotated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SecretView"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Neither its owner nor an admin",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "No such secret",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "A connection using it would not validate with the new spec; `dependents` names them",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "504": {
-            "description": "The store did not answer the probe in time",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": [
-              "editor"
-            ]
-          }
-        ]
-      }
-    },
-    "/v1/secrets/{name}/validate": {
-      "post": {
-        "tags": [
-          "Secrets"
-        ],
-        "summary": "Probe the secret through every connection that uses it. Any editor may:\ntesting operates the secret, it does not change it, so who asked is kept on\nthe report and never as who updated the secret.",
-        "operationId": "validate_secret",
-        "parameters": [
-          {
-            "name": "name",
-            "in": "path",
-            "description": "Secret name",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "The probe's report, stored with the secret and naming who asked for it",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ValidationReport"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "No such secret",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "504": {
-            "description": "The store did not answer the probe in time",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": [
-              "editor"
-            ]
-          }
-        ]
-      }
-    },
     "/v1/storage-credentials": {
       "post": {
         "tags": [
           "Storage"
         ],
-        "summary": "Vend a credential over `scope` for `access`. Anyone in the workspace reads a\ncompleted graph's dataset. An editor reads a source connection — Unity\nCatalog's temporary path credentials over an external location — to build\na graph, and writes a graph's dataset while it runs, if they are its runner.",
+        "summary": "Vend a credential over `scope` for `access`. Anyone in the workspace reads a\ncompleted graph's dataset. An editor reads a source connection — Unity\nCatalog's temporary path credentials over an external location — to build\na graph, and writes a graph's dataset while it runs, if they are its runner.\nThe credential is vended to the caller: their token goes with the ask.",
         "operationId": "vend",
         "requestBody": {
           "content": {
@@ -1952,7 +1603,7 @@
             }
           },
           "400": {
-            "description": "Not a storage source, or an access the scope does not give",
+            "description": "Not a storage source, an access the scope does not give, or a location outside the deployment's storage (`store/undeclared`)",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -1992,7 +1643,7 @@
             }
           },
           "502": {
-            "description": "The store refused to vend",
+            "description": "The storage service, or the cloud behind it, refused to vend",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2002,7 +1653,7 @@
             }
           },
           "504": {
-            "description": "The store, or the identity service before it, did not answer in time",
+            "description": "The storage service did not answer in time",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2121,7 +1772,7 @@
           },
           "use": {
             "type": "boolean",
-            "description": "Build on it: a secret in a connection. Every editor uses a connection\nand reads a graph's output, so the interface reads this for secrets."
+            "description": "Build on it: read a source, or a graph's output."
           }
         }
       },
@@ -2162,7 +1813,6 @@
             "type": "object",
             "required": [
               "name",
-              "secret",
               "target",
               "owner",
               "can"
@@ -2178,9 +1828,6 @@
               "owner": {
                 "$ref": "#/components/schemas/Actor",
                 "description": "Who owns it: its creator, or the workspace for what the instance\ndeclares. Its owner or an admin manages it; the sink is an admin's."
-              },
-              "secret": {
-                "type": "string"
               },
               "target": {
                 "$ref": "#/components/schemas/StorageTarget"
@@ -2239,17 +1886,12 @@
         "type": "object",
         "required": [
           "name",
-          "secret",
           "target"
         ],
         "properties": {
           "name": {
             "$ref": "#/components/schemas/ResourceName",
             "description": "What programs write after `@`, and the connection's key."
-          },
-          "secret": {
-            "type": "string",
-            "description": "The secret it signs with."
           },
           "target": {
             "$ref": "#/components/schemas/StorageTarget"
@@ -2297,29 +1939,6 @@
           "sink_connection": {
             "type": "string",
             "description": "Where the output lands: the sink connection's name."
-          }
-        }
-      },
-      "CreateSecretRequest": {
-        "type": "object",
-        "required": [
-          "name",
-          "spec"
-        ],
-        "properties": {
-          "name": {
-            "$ref": "#/components/schemas/ResourceName"
-          },
-          "probe_url": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "format": "uri",
-            "description": "A storage URL to LIST before the secret is stored. A secret has\nno location of its own, so without one it is only checked to build a\nclient."
-          },
-          "spec": {
-            "$ref": "#/components/schemas/SecretSpec"
           }
         }
       },
@@ -2588,8 +2207,7 @@
         "description": "What a probe tried.",
         "enum": [
           "list",
-          "write",
-          "delete"
+          "write"
         ]
       },
       "Outcome": {
@@ -2667,7 +2285,7 @@
             "items": {
               "type": "string"
             },
-            "description": "What the refusal is about: what still uses a secret or connection,\nor the connections a rotation would break."
+            "description": "What the refusal is about: what still uses a connection, or the\nconnections a location overlaps."
           },
           "field": {
             "type": [
@@ -2850,204 +2468,6 @@
         ],
         "description": "What a credential is asked for: fossil's `Scope`, verbatim."
       },
-      "SecretSpec": {
-        "oneOf": [
-          {
-            "type": "object",
-            "title": "Amazon S3",
-            "required": [
-              "access_key_id",
-              "secret_access_key",
-              "kind"
-            ],
-            "properties": {
-              "access_key_id": {
-                "type": "string"
-              },
-              "external_id": {
-                "type": [
-                  "string",
-                  "null"
-                ],
-                "description": "AWS's guard against the confused deputy, when the role's trust\npolicy asks for one."
-              },
-              "kind": {
-                "type": "string",
-                "enum": [
-                  "s3"
-                ]
-              },
-              "region": {
-                "type": "string",
-                "default": "us-east-1"
-              },
-              "role_arn": {
-                "type": [
-                  "string",
-                  "null"
-                ],
-                "description": "The role keasy assumes to vend a credential scoped to one prefix.\nAWS needs it."
-              },
-              "secret_access_key": {
-                "type": "string",
-                "format": "password",
-                "writeOnly": true
-              }
-            }
-          },
-          {
-            "type": "object",
-            "title": "Azure Blob — service principal",
-            "required": [
-              "account",
-              "tenant_id",
-              "client_id",
-              "client_secret",
-              "kind"
-            ],
-            "properties": {
-              "account": {
-                "type": "string"
-              },
-              "client_id": {
-                "type": "string"
-              },
-              "client_secret": {
-                "type": "string",
-                "format": "password",
-                "writeOnly": true
-              },
-              "kind": {
-                "type": "string",
-                "enum": [
-                  "azure_service_principal"
-                ]
-              },
-              "tenant_id": {
-                "type": "string"
-              }
-            }
-          }
-        ],
-        "description": "A secret's spec as a request states it, its values included."
-      },
-      "SecretSpecView": {
-        "oneOf": [
-          {
-            "type": "object",
-            "title": "Amazon S3",
-            "required": [
-              "access_key_id",
-              "region",
-              "kind"
-            ],
-            "properties": {
-              "access_key_id": {
-                "type": "string"
-              },
-              "external_id": {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              },
-              "kind": {
-                "type": "string",
-                "enum": [
-                  "s3"
-                ]
-              },
-              "region": {
-                "type": "string"
-              },
-              "role_arn": {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              }
-            }
-          },
-          {
-            "type": "object",
-            "title": "Azure Blob — service principal",
-            "required": [
-              "account",
-              "tenant_id",
-              "client_id",
-              "kind"
-            ],
-            "properties": {
-              "account": {
-                "type": "string"
-              },
-              "client_id": {
-                "type": "string"
-              },
-              "kind": {
-                "type": "string",
-                "enum": [
-                  "azure_service_principal"
-                ]
-              },
-              "tenant_id": {
-                "type": "string"
-              }
-            }
-          }
-        ],
-        "description": "A secret's spec as a response shows it: what names it, never what signs with it."
-      },
-      "SecretView": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/Provenance"
-          },
-          {
-            "type": "object",
-            "required": [
-              "name",
-              "spec",
-              "used_by",
-              "owner",
-              "can"
-            ],
-            "properties": {
-              "can": {
-                "$ref": "#/components/schemas/Can",
-                "description": "What the caller may do to it: use it in a connection (its owner or an\nadmin; every editor the workspace's), test it (any editor) and manage\nit (its owner or an admin). Its value is never returned to anyone."
-              },
-              "name": {
-                "type": "string"
-              },
-              "owner": {
-                "$ref": "#/components/schemas/Actor",
-                "description": "Who owns it: its creator, or the workspace for what the instance\ndeclares. Its owner or an admin manages it."
-              },
-              "spec": {
-                "$ref": "#/components/schemas/SecretSpecView"
-              },
-              "used_by": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                },
-                "description": "The connections that use this secret."
-              },
-              "validation": {
-                "oneOf": [
-                  {
-                    "type": "null"
-                  },
-                  {
-                    "$ref": "#/components/schemas/ValidationReport"
-                  }
-                ]
-              }
-            }
-          }
-        ]
-      },
       "ServerCode": {
         "type": "string",
         "description": "Every code the server answers with. Closed: a code `problems.bnf` does not\ndeclare cannot be sent. Each variant is its wire name spelled in Rust,\n`area/kind-x` as `AreaKindX`.",
@@ -3080,12 +2500,12 @@
           "graph/folder-taken",
           "conversation/not-found",
           "conversation/built",
-          "secret/not-found",
           "connection/not-found",
           "resource/already-exists",
           "resource/in-use",
           "connection/overlaps",
           "probe/failed",
+          "store/undeclared",
           "store/refused",
           "store/silent",
           "rules/refused"
@@ -3121,7 +2541,7 @@
           "url": {
             "type": "string",
             "format": "uri",
-            "description": "The prefix the connection is: `s3://bucket/prefix/` or `az://container/prefix/`."
+            "description": "The prefix the connection is: `s3://bucket/prefix/`,\n`abfss://container@account.dfs.core.windows.net/prefix/` or `gs://bucket/prefix/`."
           }
         }
       },
@@ -3176,12 +2596,6 @@
               }
             ]
           },
-          "secret": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
           "target": {
             "oneOf": [
               {
@@ -3189,32 +2603,6 @@
               },
               {
                 "$ref": "#/components/schemas/StorageTarget"
-              }
-            ]
-          }
-        }
-      },
-      "UpdateSecretRequest": {
-        "type": "object",
-        "description": "A rename, a rotation or both. `spec` replaces the whole spec, secrets\nincluded, and is stored only if every connection using the secret\nstill validates with it.",
-        "properties": {
-          "name": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/ResourceName"
-              }
-            ]
-          },
-          "spec": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/SecretSpec"
               }
             ]
           }
@@ -3252,7 +2640,7 @@
       },
       "VendedCredential": {
         "type": "object",
-        "description": "A credential scoped to one prefix, for a lifetime — Iceberg REST's\n`StorageCredential`, keys and all (`s3.access-key-id`, `s3.session-token`,\n`s3.session-token-expires-at-ms`, `adls.sas-token.<host>`, …), so any\nreader of vended credentials reads it. Handing it out is the point, so\nthis is the one response type that carries a secret: its values stay\n[`SecretString`] until the moment they are written into the response.",
+        "description": "A credential scoped to one prefix, for a lifetime — Iceberg REST's\n`StorageCredential`, keys and all (`s3.access-key-id`, `s3.session-token`,\n`s3.session-token-expires-at-ms`, `adls.sas-token.<host>`, …), so any\nreader of vended credentials reads it. Handing it out is the point, so\nthis is the one response type that carries a secret: its values stay\n[`SecretString`] until the moment they are written into the response.\nRead from the storage service's answer as it wrote it.",
         "required": [
           "prefix",
           "config"

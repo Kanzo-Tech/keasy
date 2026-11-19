@@ -1,6 +1,6 @@
 "use client";
 
-import { GalleryVerticalEnd, KeyRound, Paintbrush, ShieldCheck, Users } from "lucide-react";
+import { GalleryVerticalEnd, Paintbrush, ShieldCheck, Users } from "lucide-react";
 import { usePathname } from "next/navigation";
 import {
   isActivePath,
@@ -20,9 +20,6 @@ const GENERAL = [
   { href: "/settings/security", label: "Security", icon: ShieldCheck },
 ];
 
-// Cloud accounts and AI keys: an editor's.
-const DATA = [{ href: "/settings/credentials", label: "Credentials", icon: KeyRound }];
-
 // Where graph outputs land, and who belongs: an admin's.
 const WORKSPACE = [
   { href: "/settings/storage", label: "Workspace storage", icon: GalleryVerticalEnd },
@@ -34,7 +31,6 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
   const { can } = useSession();
   const groups = [
     { heading: "General", items: GENERAL },
-    ...(can("editor") ? [{ heading: "Data", items: DATA }] : []),
     ...(can("admin") ? [{ heading: "Workspace", items: WORKSPACE }] : []),
   ];
 

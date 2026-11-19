@@ -1,49 +1,31 @@
 {
-  "secrets": [
-    {
-      "name": "Dev S3",
-      "spec": {
-        "kind": "s3",
-        "access_key_id": "keasy-admin",
-        "secret_access_key": "keasy-admin-secret",
-        "region": "us-east-1"
-      }
-    }
-  ],
   "connections": [
     {
       "name": "LDBC SNB",
-      "secret": "Dev S3",
       "target": { "url": "s3://keasy-dev/examples/snb/data/", "kind": "data", "direction": "source" }
     },
     {
       "name": "LDBC SNB shapes",
-      "secret": "Dev S3",
       "target": { "url": "s3://keasy-dev/examples/snb/shapes/", "kind": "vocab", "direction": "source" }
     },
     {
       "name": "OpenFlights",
-      "secret": "Dev S3",
       "target": { "url": "s3://keasy-dev/examples/openflights/data/", "kind": "data", "direction": "source" }
     },
     {
       "name": "OpenFlights shapes",
-      "secret": "Dev S3",
       "target": { "url": "s3://keasy-dev/examples/openflights/shapes/", "kind": "vocab", "direction": "source" }
     },
     {
       "name": "Nobel laureates",
-      "secret": "Dev S3",
       "target": { "url": "s3://keasy-dev/examples/nobel/data/", "kind": "data", "direction": "source" }
     },
     {
       "name": "Nobel laureates shapes",
-      "secret": "Dev S3",
       "target": { "url": "s3://keasy-dev/examples/nobel/shapes/", "kind": "vocab", "direction": "source" }
     },
     {
       "name": "Workspace output",
-      "secret": "Dev S3",
       "target": { "url": "s3://keasy-dev/output/", "kind": "data", "direction": "sink" }
     }
   ]

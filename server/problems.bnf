@@ -11,7 +11,7 @@
    A comment directly above a row is the variant's doc comment.
 
    The grammar's `data` has no list: `dependents` (the names a refusal is about,
-   on resource/in-use, connection/overlaps and probe/failed) is a string list
+   on resource/in-use and connection/overlaps) is a string list
    the kernel's grammar cannot declare, and is left off those rows.
    ========================================================================== *)
 
@@ -65,22 +65,23 @@ row graph/folder-taken          = 409 ; "Another graph writes to that folder"   
 row conversation/not-found      = 404 ; "Conversation not found"                      ; - .
 (* A graph was built from the conversation: it is that graph's record, and is not saved over. *)
 row conversation/built          = 409 ; "A graph was built from this conversation"    ; - .
-row secret/not-found            = 404 ; "Secret not found"                            ; - .
 row connection/not-found        = 404 ; "Connection not found"                        ; - .
-(* A secret or connection of that name exists already, or a second sink. *)
+(* A connection of that name exists already, or a second sink. *)
 row resource/already-exists     = 409 ; "It exists already"                           ; - .
 (* Still used: `dependents` names what uses it. *)
 row resource/in-use             = 409 ; "Still in use"                                ; - .
 (* A storage connection's location lies within another's, or holds one: `dependents` names them.
    Locations never overlap, so a prefix has one owner. *)
 row connection/overlaps         = 409 ; "The location overlaps another"               ; - .
-(* A secret or connection was probed and did not pass; `dependents` names the connections that
-   failed. *)
+(* A connection was probed and did not pass. *)
 row probe/failed                = 422 ; "Validation failed"                           ; - .
+(* A location none of the deployment's storage locations holds: the storage service opens only
+   what the organization granted, and its admin declares where that is. *)
+row store/undeclared            = 400 ; "Not in this deployment's storage"            ; field?: string .
 (* The store answered and refused: to vend, or to list. *)
 row store/refused               = 502 ; "The store refused"                           ; - .
-(* The store, or the identity service in front of it (Entra, STS), did not answer within its
-   deadline; `after` says how long it was given, in milliseconds. *)
+(* The store, or the storage service in front of it, did not answer within its deadline; `after`
+   says how long it was given, in milliseconds. *)
 row store/silent                = 504 ; "The store did not answer in time"            ; after: number .
 (* rudof refused a rules document: it is not Turtle, or not a SHACL shapes graph. `line` and `column`
    place it when the Turtle parser does. *)

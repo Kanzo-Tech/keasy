@@ -9,6 +9,5 @@ mod helpers;
 mod openapi;
 mod permissions;
 mod provenance;
-mod secrets;
 mod telemetry;
 mod vending;

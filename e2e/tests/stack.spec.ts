@@ -4,19 +4,19 @@ import { api, createGraph, SOURCE } from "../support/stack/api";
 import { stop, up, without } from "../support/stack/compose";
 import { expectProblem } from "../support/stack/problem";
 
-test("03 a store that accepts and never answers ends the run as store/silent", async ({ page }) => {
+test("03 a storage service that accepts and never answers ends the run as store/silent", async ({ page }) => {
   test.setTimeout(300_000);
   const id = await createGraph(page, { name: "e2e silent store" });
-  stop("s3");
-  up("s3-silent");
+  stop("storage");
+  up("storage-silent");
   try {
     await page.goto(`/graphs/${id}`);
     await page.getByRole("button", { name: "Run", exact: true }).click();
-    // STS is given 10 s; the run reports the failure it got.
+    // The server gives the service 8 s; the run reports the failure it got.
     await expectProblem(page, "store/silent", { within: 40_000 });
   } finally {
-    stop("s3-silent");
-    up("s3");
+    stop("storage-silent");
+    up("storage");
   }
 });
 
@@ -33,7 +33,7 @@ test("04 a store that refuses to vend ends the run as store/refused", async ({ p
 test("05 with the API down every list shows a problem, not an empty state", async ({ page, browser, baseURL }) => {
   test.setTimeout(600_000);
   await without(["acme-server"], async () => {
-    for (const path of ["/graphs", "/connections", "/settings/credentials", "/"]) {
+    for (const path of ["/graphs", "/connections", "/"]) {
       await page.goto(path);
       await expectProblem(page, "api/unreachable", { within: 35_000 });
     }

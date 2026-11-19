@@ -2,7 +2,7 @@
 
 import { use, useMemo } from "react";
 import { BookOpen, Database } from "lucide-react";
-import { Badge, SectionBody, SectionRoot, Tabs, TabsList, TabsTrigger, toast } from "@kanzo-tech/ui";
+import { SectionBody, SectionRoot, Tabs, TabsList, TabsTrigger, toast } from "@kanzo-tech/ui";
 import { actionsColumn, type ColumnDef, sortableHeader } from "@kanzo-tech/ui/table";
 import { useRouter } from "@kanzo-tech/navigation/next";
 import { useSession } from "@kanzo-tech/auth";
@@ -17,7 +17,7 @@ import { blocked } from "@/lib/permissions";
 /** A tab: a storage connection's kind. */
 type Tab = "data" | "vocab";
 
-const CHANGES = ["/v1/connections", "/v1/secrets"] as const;
+const CHANGES = ["/v1/connections"] as const;
 
 export default function ConnectionsPage({
   searchParams,
@@ -46,11 +46,6 @@ export default function ConnectionsPage({
         accessorKey: "name",
         header: sortableHeader("Name"),
         cell: ({ getValue }) => <span className="font-medium">{getValue<string>()}</span>,
-      },
-      {
-        accessorKey: "secret",
-        header: "Credential",
-        cell: ({ getValue }) => <Badge variant="outline">{getValue<string>()}</Badge>,
       },
       {
         id: "target",

@@ -127,7 +127,6 @@ async fn each_resource_that_is_not_there_says_which() {
     for (path, code) in [
         ("/v1/graphs/nope", "graph/not-found"),
         ("/v1/connections/nope", "connection/not-found"),
-        ("/v1/secrets/nope", "secret/not-found"),
     ] {
         let response = app
             .client
@@ -145,8 +144,7 @@ async fn each_resource_that_is_not_there_says_which() {
 }
 
 async fn sink(app: &TestApp) {
-    app.credential("key", "u-1").await;
-    app.connection("sink", "key", Direction::Sink, "u-1").await;
+    app.connection("sink", Direction::Sink, "u-1").await;
 }
 
 async fn age(app: &TestApp, id: &str, column: &str, seconds: i64) {
@@ -304,58 +302,61 @@ async fn a_burst_over_the_rate_is_refused_as_request_rate_limited() {
 
 /// A store that accepts and never answers is the whole answer, `store/silent` with how long it was
 /// given — from a probe as from a listing, and inside the request deadline, so never a failed check
-/// in a report nor `server/silent`.
+/// in a report nor `server/silent`. The storage service in front of it is the store to whoever
+/// asked: silent itself, or vending for a store that is.
 #[tokio::test]
 async fn a_store_that_never_answers_is_store_silent_from_a_probe_and_a_listing() {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let silent = format!("http://{}", listener.local_addr().unwrap());
-    let app = spawn_app_with(Options {
-        store: silent,
-        ..Options::default()
-    })
-    .await;
-    let member = app.token(EDITOR);
-    app.credential("hung", "u-1").await;
-    app.connection("data", "hung", Direction::Source, "u-1")
-        .await;
-
-    let spec = json!({ "kind": "s3", "access_key_id": "AK", "secret_access_key": "s" });
-    let started = std::time::Instant::now();
-    let (created, validated, listed) = tokio::join!(
-        app.send(
-            Method::POST,
-            "/v1/secrets",
-            &member,
-            json!({ "name": "fresh", "spec": spec, "probe_url": "s3://b/" }),
-        ),
-        app.send(
-            Method::POST,
-            "/v1/connections/data/validate",
-            &member,
-            json!({})
-        ),
-        async {
-            let response = app
-                .client
-                .get(url(&app, "/v1/connections/data/files"))
-                .bearer_auth(&member)
-                .send()
-                .await
-                .unwrap();
-            refused(response).await
-        },
-    );
-    for (what, (status, body)) in [
-        ("create", created),
-        ("validate", validated),
-        ("list", listed),
+    for storage in [
+        silent.clone(),
+        crate::helpers::fake_storage(&silent).await.url,
     ] {
-        assert_eq!(
-            (status, body["code"].as_str()),
-            (StatusCode::GATEWAY_TIMEOUT, Some("store/silent")),
-            "{what}: {body}"
+        let app = spawn_app_with(Options {
+            storage,
+            ..Options::default()
+        })
+        .await;
+        let member = app.token(EDITOR);
+        app.connection("data", Direction::Source, "u-1").await;
+
+        let started = std::time::Instant::now();
+        let (created, validated, listed) = tokio::join!(
+            app.send(
+                Method::POST,
+                "/v1/connections",
+                &member,
+                json!({ "name": "fresh", "target": { "url": "s3://b/fresh/" } }),
+            ),
+            app.send(
+                Method::POST,
+                "/v1/connections/data/validate",
+                &member,
+                json!({})
+            ),
+            async {
+                let response = app
+                    .client
+                    .get(url(&app, "/v1/connections/data/files"))
+                    .bearer_auth(&member)
+                    .send()
+                    .await
+                    .unwrap();
+                refused(response).await
+            },
         );
-        assert!(body["data"]["after"].is_u64(), "{what}: {body}");
+        for (what, (status, body)) in [
+            ("create", created),
+            ("validate", validated),
+            ("list", listed),
+        ] {
+            assert_eq!(
+                (status, body["code"].as_str()),
+                (StatusCode::GATEWAY_TIMEOUT, Some("store/silent")),
+                "{what}: {body}"
+            );
+            assert!(body["data"]["after"].is_u64(), "{what}: {body}");
+        }
+        assert!(started.elapsed() < keasy_server::startup::REQUEST_DEADLINE);
     }
-    assert!(started.elapsed() < keasy_server::startup::REQUEST_DEADLINE);
 }

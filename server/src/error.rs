@@ -52,8 +52,8 @@ pub struct Problem {
 /// What a problem carries beside its words.
 #[derive(Debug, Clone, Default, Serialize, ToSchema)]
 pub struct ProblemData {
-    /// What the refusal is about: what still uses a secret or connection,
-    /// or the connections a rotation would break.
+    /// What the refusal is about: what still uses a connection, or the
+    /// connections a location overlaps.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub dependents: Vec<String>,
     /// How long a deadline waited before it fired, in milliseconds: set on
@@ -159,8 +159,8 @@ impl Refusal {
     /// A probe ran and did not pass: the store or provider answered, and did
     /// not accept what it was shown. A store that refused to answer at all is
     /// `store/refused`, a 502, not this.
-    pub fn probe_failed(message: impl Into<String>, dependents: Vec<String>) -> Self {
-        Self::about(ServerCode::ProbeFailed, message, dependents)
+    pub fn probe_failed(message: impl Into<String>) -> Self {
+        Self::new(ServerCode::ProbeFailed, message)
     }
 
     /// The server failed; what failed is logged, never sent.

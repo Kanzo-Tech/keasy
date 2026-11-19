@@ -4,15 +4,15 @@
 use axum::http::{Method, StatusCode};
 use serde_json::json;
 
-use crate::helpers::{ADMIN, EDITOR, Options, fake_s3, spawn_app, spawn_app_with};
+use crate::helpers::{ADMIN, EDITOR, Options, fake_s3, fake_storage, spawn_app, spawn_app_with};
 use keasy_server::domain::Direction;
 
-/// A secret and a connection record their creator; an admin's change records
-/// the admin as the one who updated it and keeps who created it.
+/// A connection records its creator; an admin's change records the admin as
+/// the one who updated it and keeps who created it.
 #[tokio::test]
-async fn a_secret_and_a_connection_name_who_created_and_who_updated_them() {
+async fn a_connection_names_who_created_and_who_updated_it() {
     let app = spawn_app_with(Options {
-        store: fake_s3().await,
+        storage: fake_storage(&fake_s3().await).await.url,
         ..Options::default()
     })
     .await;
@@ -23,37 +23,20 @@ async fn a_secret_and_a_connection_name_who_created_and_who_updated_them() {
     );
     let bruno = app.token_profiled("u-bruno", ADMIN, json!({ "name": "Bruno" }));
 
-    let (status, secret) = app
-        .send(
-            Method::POST,
-            "/v1/secrets",
-            &ana,
-            json!({ "name": "store", "probe_url": "s3://b/", "spec": {
-                "kind": "s3", "access_key_id": "AK", "secret_access_key": "s"
-            }}),
-        )
-        .await;
-    assert_eq!(status, StatusCode::CREATED, "{secret}");
-    assert_eq!(
-        secret["created_by"],
-        json!({ "id": "u-ana", "name": "Ana Duarte" })
-    );
-    assert!(secret["created_at"].is_string());
-    assert!(
-        secret.get("updated_by").is_none() && secret.get("updated_at").is_none(),
-        "nobody has changed it yet: {secret}"
-    );
-
     let (status, connection) = app
         .send(
             Method::POST,
             "/v1/connections",
             &ana,
-            json!({ "name": "data", "secret": "store", "target": { "url": "s3://b/data/" } }),
+            json!({ "name": "data", "target": { "url": "s3://b/data/" } }),
         )
         .await;
     assert_eq!(status, StatusCode::CREATED, "{connection}");
-    assert_eq!(connection["created_by"]["name"], "Ana Duarte");
+    assert_eq!(
+        connection["created_by"],
+        json!({ "id": "u-ana", "name": "Ana Duarte" })
+    );
+    assert!(connection["created_at"].is_string());
     assert!(connection.get("updated_by").is_none(), "{connection}");
 
     let (status, renamed) = app
@@ -72,18 +55,6 @@ async fn a_secret_and_a_connection_name_who_created_and_who_updated_them() {
     );
     assert!(renamed["updated_at"].is_string());
 
-    let (status, renamed) = app
-        .send(
-            Method::PATCH,
-            "/v1/secrets/store",
-            &bruno,
-            json!({ "name": "store" }),
-        )
-        .await;
-    assert_eq!(status, StatusCode::OK, "{renamed}");
-    assert_eq!(renamed["created_by"]["name"], "Ana Duarte");
-    assert_eq!(renamed["updated_by"]["name"], "Bruno");
-
     let (_, listed) = app
         .send(Method::GET, "/v1/connections", &ana, json!(null))
         .await;
@@ -95,8 +66,7 @@ async fn a_secret_and_a_connection_name_who_created_and_who_updated_them() {
 #[tokio::test]
 async fn a_graph_names_its_creator_by_name_then_username_then_a_placeholder() {
     let app = spawn_app().await;
-    app.credential("key", "u-1").await;
-    app.connection("sink", "key", Direction::Sink, "u-1").await;
+    app.connection("sink", Direction::Sink, "u-1").await;
 
     for (profile, expected) in [
         (
@@ -130,8 +100,7 @@ async fn a_graph_names_its_creator_by_name_then_username_then_a_placeholder() {
 #[tokio::test]
 async fn the_name_is_kept_from_when_it_was_written() {
     let app = spawn_app().await;
-    app.credential("key", "u-1").await;
-    app.connection("sink", "key", Direction::Sink, "u-1").await;
+    app.connection("sink", Direction::Sink, "u-1").await;
     let before = app.token_profiled("u-ana", EDITOR, json!({ "name": "Ana Duarte" }));
     let after = app.token_profiled("u-ana", EDITOR, json!({ "name": "Ana D. Silva" }));
 
@@ -152,8 +121,7 @@ async fn the_name_is_kept_from_when_it_was_written() {
 #[tokio::test]
 async fn a_dashboard_names_who_saved_it_first_and_last() {
     let app = spawn_app().await;
-    app.credential("key", "u-1").await;
-    app.connection("sink", "key", Direction::Sink, "u-1").await;
+    app.connection("sink", Direction::Sink, "u-1").await;
     let ana = app.token_profiled("u-ana", EDITOR, json!({ "name": "Ana Duarte" }));
     let bruno = app.token_profiled("u-bruno", ADMIN, json!({ "name": "Bruno" }));
     let (_, graph) = app
@@ -198,8 +166,7 @@ async fn a_dashboard_names_who_saved_it_first_and_last() {
 #[tokio::test]
 async fn rules_name_who_saved_them_first_and_last() {
     let app = spawn_app().await;
-    app.credential("key", "u-1").await;
-    app.connection("sink", "key", Direction::Sink, "u-1").await;
+    app.connection("sink", Direction::Sink, "u-1").await;
     let ana = app.token_profiled("u-ana", EDITOR, json!({ "name": "Ana Duarte" }));
     let bruno = app.token_profiled("u-bruno", ADMIN, json!({ "name": "Bruno" }));
     let (_, graph) = app
@@ -247,50 +214,49 @@ async fn rules_name_who_saved_them_first_and_last() {
 
 /// What an instance declares at boot was made by the bootstrap — nobody who
 /// signs in — and is owned by the workspace: every editor tests it, only an
-/// admin changes it.
+/// admin changes it. Nobody has tested it yet: a probe is a person's.
 #[tokio::test]
-async fn a_declared_secret_is_the_bootstraps_and_the_workspace_owns_it() {
+async fn a_declared_connection_is_the_bootstraps_and_the_workspace_owns_it() {
     let app = spawn_app().await;
     let file = tempfile::NamedTempFile::new().unwrap();
     std::fs::write(
         file.path(),
-        json!({ "secrets": [{ "name": "declared", "spec": {
-            "kind": "s3", "access_key_id": "AK", "secret_access_key": "s"
-        }}]})
-        .to_string(),
+        json!({ "connections": [{ "name": "declared", "target": { "url": "s3://b/declared/" } }] })
+            .to_string(),
     )
     .unwrap();
-    keasy_server::bootstrap::ensure_declared(
-        &app.db,
-        file.path().to_str().unwrap(),
-        &app.endpoints,
-    )
-    .await;
+    keasy_server::bootstrap::ensure_declared(&app.db, file.path().to_str().unwrap()).await;
 
     let editor = app.token(EDITOR);
-    let (status, secret) = app
-        .send(Method::GET, "/v1/secrets/declared", &editor, json!(null))
+    let (status, declared) = app
+        .send(
+            Method::GET,
+            "/v1/connections/declared",
+            &editor,
+            json!(null),
+        )
         .await;
-    assert_eq!(status, StatusCode::OK, "{secret}");
+    assert_eq!(status, StatusCode::OK, "{declared}");
     assert_eq!(
-        secret["created_by"],
+        declared["created_by"],
         json!({ "id": "bootstrap", "name": "Bootstrap" })
     );
     assert_eq!(
-        secret["owner"],
+        declared["owner"],
         json!({ "id": "workspace", "name": "Workspace" })
     );
+    assert!(declared.get("validation").is_none(), "{declared}");
     assert_eq!(
-        secret["can"],
+        declared["can"],
         json!({ "use": true, "operate": true, "manage": false }),
         "every editor uses what the workspace owns; only an admin changes it"
     );
     let admin = app.token_for("u-9", ADMIN);
-    let (_, secret) = app
-        .send(Method::GET, "/v1/secrets/declared", &admin, json!(null))
+    let (_, declared) = app
+        .send(Method::GET, "/v1/connections/declared", &admin, json!(null))
         .await;
     assert_eq!(
-        secret["can"],
+        declared["can"],
         json!({ "use": true, "operate": true, "manage": true })
     );
 }

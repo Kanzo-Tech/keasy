@@ -5,14 +5,16 @@
 use axum::http::{Method, StatusCode};
 use serde_json::json;
 
-use crate::helpers::{ADMIN, EDITOR, Options, READER, TestApp, fake_s3, spawn_app, spawn_app_with};
+use crate::helpers::{
+    ADMIN, EDITOR, Options, READER, TestApp, fake_s3, fake_storage, spawn_app, spawn_app_with,
+};
 use keasy_server::domain::Direction;
 
-/// A workspace whose store answers, with a secret and a source the instance
-/// declared — owned by the workspace, as the seeded ones are.
+/// A workspace whose storage answers, with a source the instance declared —
+/// owned by the workspace, as the seeded ones are.
 async fn seeded() -> TestApp {
     let app = spawn_app_with(Options {
-        store: fake_s3().await,
+        storage: fake_storage(&fake_s3().await).await.url,
         ..Options::default()
     })
     .await;
@@ -20,25 +22,16 @@ async fn seeded() -> TestApp {
     std::fs::write(
         file.path(),
         json!({
-            "secrets": [{ "name": "seed", "spec": {
-                "kind": "s3", "access_key_id": "AK", "secret_access_key": "s"
-            }}],
-            "connections": [{ "name": "data", "secret": "seed",
-                              "target": { "url": "s3://b/data/" } }],
+            "connections": [{ "name": "data", "target": { "url": "s3://b/data/" } }],
         })
         .to_string(),
     )
     .unwrap();
-    keasy_server::bootstrap::ensure_declared(
-        &app.db,
-        file.path().to_str().unwrap(),
-        &app.endpoints,
-    )
-    .await;
+    keasy_server::bootstrap::ensure_declared(&app.db, file.path().to_str().unwrap()).await;
     app
 }
 
-/// Testing operates a connection or a secret, it does not change it: any
+/// Testing operates a connection, it does not change it: any
 /// editor tests what the workspace owns, the report names them, and the
 /// resource is not marked as updated by them. Changing it stays an admin's.
 #[tokio::test]
@@ -46,10 +39,7 @@ async fn an_editor_tests_what_the_workspace_owns_and_the_report_names_them() {
     let app = seeded().await;
     let editor = app.token_profiled("u-2", EDITOR, json!({ "name": "Bruno" }));
 
-    for (resource, path) in [
-        ("connection", "/v1/connections/data"),
-        ("secret", "/v1/secrets/seed"),
-    ] {
+    for (resource, path) in [("connection", "/v1/connections/data")] {
         let (status, before) = app.send(Method::GET, path, &editor, json!(null)).await;
         assert_eq!(status, StatusCode::OK, "{before}");
         assert_eq!(before["owner"]["id"], "workspace", "{resource}");
@@ -156,8 +146,7 @@ async fn an_editor_reruns_anothers_graph_and_its_owner_may_stop_it() {
     let owner = app.token_for("u-1", EDITOR);
     let runner = app.token_for("u-2", EDITOR);
     let bystander = app.token_for("u-3", EDITOR);
-    app.credential("key", "u-1").await;
-    app.connection("sink", "key", Direction::Sink, "u-1").await;
+    app.connection("sink", Direction::Sink, "u-1").await;
     let id = app.submitted(&owner).await;
 
     let (status, graph) = app.run(&runner, &id).await;
@@ -208,10 +197,10 @@ async fn an_editor_reruns_anothers_graph_and_its_owner_may_stop_it() {
     assert_eq!(again["runner"]["id"], "u-3", "run again by a third editor");
 }
 
-/// What the workspace owns, every editor uses: a connection on a seeded
-/// secret needs no one to share it, and who makes it owns it.
+/// A connection is a location and nothing else: any editor makes one, owns
+/// what they make, and its first test is theirs.
 #[tokio::test]
-async fn an_editor_builds_on_a_secret_the_workspace_owns() {
+async fn an_editor_makes_a_connection_and_owns_it() {
     let app = seeded().await;
     let editor = app.token_for("u-2", EDITOR);
     let (status, body) = app
@@ -219,7 +208,7 @@ async fn an_editor_builds_on_a_secret_the_workspace_owns() {
             Method::POST,
             "/v1/connections",
             &editor,
-            json!({ "name": "more", "secret": "seed", "target": { "url": "s3://b/more/" } }),
+            json!({ "name": "more", "target": { "url": "s3://b/more/" } }),
         )
         .await;
     assert_eq!(status, StatusCode::CREATED, "{body}");
@@ -229,68 +218,4 @@ async fn an_editor_builds_on_a_secret_the_workspace_owns() {
         body["can"],
         json!({ "use": true, "operate": true, "manage": true })
     );
-}
-
-/// A workspace whose store answers, with a secret `key` that `u-1` owns.
-async fn keyed() -> TestApp {
-    let app = spawn_app_with(Options {
-        store: fake_s3().await,
-        ..Options::default()
-    })
-    .await;
-    let owner = app.token_for("u-1", EDITOR);
-    let (status, body) = app
-        .send(
-            Method::POST,
-            "/v1/secrets",
-            &owner,
-            json!({ "name": "key", "spec": {
-                "kind": "s3", "access_key_id": "AK", "secret_access_key": "s"
-            }}),
-        )
-        .await;
-    assert_eq!(status, StatusCode::CREATED, "{body}");
-    app
-}
-
-async fn connect(app: &TestApp, token: &str, name: &str) -> (StatusCode, serde_json::Value) {
-    app.send(
-        Method::POST,
-        "/v1/connections",
-        token,
-        json!({ "name": name, "secret": "key", "target": { "url": format!("s3://b/{name}/") } }),
-    )
-    .await
-}
-
-/// Another person's secret is used by its owner or an admin, never by
-/// another editor, and the refusal says whom to ask.
-#[tokio::test]
-async fn anothers_secret_is_its_owners_and_an_admins() {
-    let app = keyed().await;
-    let owner = app.token_for("u-1", EDITOR);
-    let bruno = app.token_for("u-2", EDITOR);
-    let admin = app.token_for("u-9", ADMIN);
-
-    let (_, key) = app
-        .send(Method::GET, "/v1/secrets/key", &bruno, json!(null))
-        .await;
-    assert_eq!(key["can"]["use"], false);
-    let (status, body) = connect(&app, &bruno, "denied").await;
-    assert_eq!(
-        (status, body["code"].as_str()),
-        (StatusCode::FORBIDDEN, Some("rbac/forbidden")),
-        "{body}"
-    );
-    assert!(
-        body["detail"].as_str().unwrap().contains("ask its owner"),
-        "{body}"
-    );
-    for (who, token, name) in [
-        ("its owner", &owner, "ours"),
-        ("an admin", &admin, "theirs"),
-    ] {
-        let (status, body) = connect(&app, token, name).await;
-        assert_eq!(status, StatusCode::CREATED, "{who}: {body}");
-    }
 }

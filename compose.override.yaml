@@ -9,12 +9,19 @@
 #
 # `*.localhost` is loopback on the host and a network alias here, so one URL works from the browser
 # and from a container: the S3 endpoint a vended credential names is addressed that way.
+#
+# The storage service is kanzo-ui's too, at the same release: it vends every credential, as the
+# dev store's admin user standing in for the deployment's identity (infra/dev/storage.env).
 
 include:
   - path:
       - https://github.com/Kanzo-Tech/ui.git#v0.49.0:services/compose.dev.yaml
       # keasy's additions to the platform in development: its roles on the seeded groups.
       - infra/dev/platform.yaml
+  - path:
+      - https://github.com/Kanzo-Tech/ui.git#v0.50.0:services/storage/compose.yaml
+      - https://github.com/Kanzo-Tech/ui.git#v0.50.0:services/storage/compose.dev.yaml
+    env_file: infra/dev/storage.env
 
 services:
   web:
@@ -67,15 +74,8 @@ services:
       RUST_LOG: debug
       KEASY_ORG_ALIAS: acme
       KEASY_WORKSPACE_NAME: Acme Corporation
-      # The dev S3 credential, its data and shapes sources and the sink, in the API's own request
-      # format.
+      # The dev data and shapes sources and the sink, in the API's own request format.
       KEASY_BOOTSTRAP_FILE: /etc/keasy/bootstrap.json
-      # The dev store answers S3 and STS on one port, as the AWS SDKs read it.
-      AWS_ENDPOINT_URL_S3: http://s3.localhost:9000
-      AWS_ENDPOINT_URL_STS: http://s3.localhost:9000
-    secrets:
-      - source: acme-secret-key
-        target: secret-key
     healthcheck:
       retries: 30
       # The first `up` after `make clean` compiles every dependency.
@@ -88,10 +88,18 @@ services:
         condition: service_completed_successfully
       s3-init:
         condition: service_completed_successfully
+      storage:
+        condition: service_healthy
+
+  # The storage service waits for the store it vends for.
+  storage:
+    depends_on:
+      s3:
+        condition: service_healthy
 
   # The dev S3 store: SeaweedFS, one process. Static keys in s3.json; iam.json
-  # declares the role the server's vend assumes (STS AssumeRole with a session
-  # policy, on this same endpoint). The bucket's CORS is cors.json, put by
+  # declares the role the storage service assumes (STS AssumeRole with a
+  # session policy, on this same endpoint). The bucket's CORS is cors.json, put by
   # s3-init: the server default exposes no Content-Range, and the browser's
   # ranged reads (fossil's object_store) fail without it.
   # chrislusf/seaweedfs:4.48 is sha256:4e61d15fd35994cb1e43e1e553dff106794841fd9a99ade2fc8c8bfce4d7872d
@@ -164,20 +172,21 @@ services:
   # It starts with neither `make dev` nor `make e2e`: the suite starts and stops
   # it around the one scenario that needs it.
 
-  # A store that accepts every connection and never answers. Shares the S3
-  # store's alias, so with `s3` stopped every vend and read the server makes to
-  # `s3.localhost:9000` meets silence instead (scenario 3). Never up beside
-  # `s3`: Docker's DNS would answer the alias with both.
-  s3-silent:
+  # A storage service that accepts every connection and never answers. Shares the
+  # service's name on the default network, which the server joins too, so with
+  # `storage` stopped every credential the server asks for meets silence instead
+  # (scenario 3). Never up beside `storage`: Docker's DNS would answer the name
+  # with both.
+  storage-silent:
     profiles: [faults]
     image: python:3.12-alpine
-    command: ["python", "-u", "/faults/silent.py", "9000"]
+    command: ["python", "-u", "/faults/silent.py", "8090"]
     volumes:
       - ./e2e/faults:/faults:ro
     networks:
       default:
         aliases:
-          - s3.localhost
+          - storage
 
 # Development secrets, as files: the same names a deployment takes from its environment.
 secrets:
@@ -185,8 +194,6 @@ secrets:
     file: ./infra/dev/secrets/keasy-oidc
   keasy-cookie:
     file: ./infra/dev/secrets/keasy-cookie
-  acme-secret-key:
-    file: ./infra/dev/secrets/acme-secret-key
 
 volumes:
   keasy-data:

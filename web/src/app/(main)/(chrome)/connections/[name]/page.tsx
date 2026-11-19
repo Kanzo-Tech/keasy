@@ -72,11 +72,7 @@ function ConnectionView({ name }: { name: string }) {
   return (
     <SectionRoot>
       <SectionBody scale="page">
-        <DataList className="grid gap-x-12 sm:grid-cols-4" orientation="vertical">
-          <DataListItem>
-            <DataListItemLabel>Credential</DataListItemLabel>
-            <DataListItemValue className="font-medium">{connection.secret}</DataListItemValue>
-          </DataListItem>
+        <DataList className="grid gap-x-12 sm:grid-cols-3" orientation="vertical">
           <DataListItem>
             <DataListItemLabel>URL</DataListItemLabel>
             <DataListItemValue className="break-all font-mono">

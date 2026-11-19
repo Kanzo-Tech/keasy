@@ -1,15 +1,11 @@
-//! Everything the server is told, read from the environment: `KEASY_*`, and
-//! `NAME_FILE` for a secret mounted as a file. The image carries no config
-//! files.
+//! Everything the server is told, read from the environment: `KEASY_*`. The
+//! image carries no config files, and the server holds no secret: it verifies
+//! tokens against the realm's public keys, and the storage service vends.
 
 use std::net::SocketAddr;
 use std::path::PathBuf;
 
-use secrecy::{ExposeSecret, SecretString};
 use serde::{Deserialize, Serialize};
-
-use crate::credentials::sealing::SecretKey;
-use crate::storage_client::Endpoints;
 
 pub struct Settings {
     pub application: ApplicationSettings,
@@ -27,16 +23,18 @@ pub struct ApplicationSettings {
     /// The Keycloak organization this instance serves, by alias. Read from
     /// `KEASY_ORG_ALIAS`, required: a token's roles count only inside it.
     pub org_alias: String,
-    /// The credentials and connections to ensure at boot, in the API's own
-    /// request format. Read from `KEASY_BOOTSTRAP_FILE`.
+    /// The connections to ensure at boot, in the API's own request format.
+    /// Read from `KEASY_BOOTSTRAP_FILE`.
     pub bootstrap_file: Option<String>,
     /// How this instance looks: declared by the operator, the same for every
     /// visitor, public.
     pub branding: BrandingSettings,
-    /// Where S3 and STS answer when they are not AWS's own, read as the AWS
-    /// SDKs read it: `AWS_ENDPOINT_URL_S3` and `AWS_ENDPOINT_URL_STS`, each
-    /// over the global `AWS_ENDPOINT_URL`. Unset is AWS.
-    pub endpoints: Endpoints,
+    /// The platform's storage service (kanzo-ui `services/storage`), which
+    /// vends every credential this server hands out: `KEASY_STORAGE_URL`,
+    /// `http://storage:8090` on the platform's `kanzo-storage` network. Keasy
+    /// stores no key of the organization's; that service's identity is the
+    /// one the organization granted a role.
+    pub storage_url: String,
     /// Each caller's allowance. Not read from the environment: [`Rate::BUILT`].
     pub rate: Rate,
 }
@@ -176,8 +174,6 @@ impl BrandingSettings {
 pub struct DatabaseSettings {
     /// Read from `KEASY_DATA_DIR`, default `./data`.
     pub data_dir: PathBuf,
-    /// Seals every stored credential. Required: there is no plaintext mode.
-    pub secret_key: SecretKey,
 }
 
 impl DatabaseSettings {
@@ -186,7 +182,6 @@ impl DatabaseSettings {
             data_dir: PathBuf::from(
                 std::env::var("KEASY_DATA_DIR").unwrap_or_else(|_| "./data".to_string()),
             ),
-            secret_key: secret_key("KEASY_SECRET_KEY")?,
         })
     }
 
@@ -233,10 +228,8 @@ pub fn get_configuration() -> Result<Settings, String> {
             )?,
             bootstrap_file: nonblank("KEASY_BOOTSTRAP_FILE"),
             branding: BrandingSettings::from_env()?,
-            endpoints: Endpoints {
-                s3: nonblank("AWS_ENDPOINT_URL_S3").or_else(|| nonblank("AWS_ENDPOINT_URL")),
-                sts: nonblank("AWS_ENDPOINT_URL_STS").or_else(|| nonblank("AWS_ENDPOINT_URL")),
-            },
+            storage_url: nonblank("KEASY_STORAGE_URL")
+                .unwrap_or_else(|| "http://storage:8090".to_string()),
             rate: Rate::BUILT,
         },
         database: DatabaseSettings::from_env()?,
@@ -248,42 +241,12 @@ pub fn get_configuration() -> Result<Settings, String> {
     })
 }
 
-/// The sealing key in `name` (or the file `name_FILE` points to).
-pub fn secret_key(name: &str) -> Result<SecretKey, String> {
-    match resolve_secret(name)? {
-        Some(encoded) => SecretKey::from_base64(encoded.expose_secret()).map_err(|e| {
-            format!("{name} must be 32 random bytes in base64 (openssl rand -base64 32): it {e}")
-        }),
-        None => Err(format!(
-            "{name} is required to seal stored credentials \
-             (generate one with: openssl rand -base64 32)"
-        )),
-    }
-}
-
 /// An environment variable, or `None` when it is absent or blank.
 fn nonblank(name: &str) -> Option<String> {
     std::env::var(name)
         .ok()
         .map(|s| s.trim().to_string())
         .filter(|s| !s.is_empty())
-}
-
-/// `NAME_FILE` (a mounted secret) if set, else `NAME`.
-fn resolve_secret(name: &str) -> Result<Option<SecretString>, String> {
-    Ok(from_file_or_env(name)?.map(SecretString::from))
-}
-
-/// The contents of the file `NAME_FILE` names if it is set, else `NAME`;
-/// `None` when blank.
-fn from_file_or_env(name: &str) -> Result<Option<String>, String> {
-    let file_var = format!("{name}_FILE");
-    if let Ok(path) = std::env::var(&file_var) {
-        let contents = std::fs::read_to_string(&path)
-            .map_err(|e| format!("{file_var} points to {path} but could not read it: {e}"))?;
-        return Ok(Some(contents.trim().to_string()).filter(|s| !s.is_empty()));
-    }
-    Ok(nonblank(name))
 }
 
 #[cfg(test)]

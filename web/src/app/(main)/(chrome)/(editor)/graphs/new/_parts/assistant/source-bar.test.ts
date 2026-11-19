@@ -8,7 +8,7 @@ import { SourceBar } from "./source-bar";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const connection = { name: "nobel", url: "s3://lake/nobel/", kind: "data", direction: "source", secret: "aws" } as const;
+const connection = { name: "nobel", url: "s3://lake/nobel/", kind: "data", direction: "source" } as const;
 const file = (path: string, size: number): SourceFile => ({
   id: `nobel:${path}`,
   name: path.split("/").pop()!,

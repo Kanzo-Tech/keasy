@@ -2,7 +2,6 @@ import {
   Database,
   GalleryVerticalEnd,
   Home,
-  KeyRound,
   Settings2,
   Users,
   Workflow,
@@ -43,8 +42,6 @@ const ROUTES: Record<string, RouteDef> = {
   "/settings":                    { name: "Settings", icon: Settings2 },
   "/settings/preferences":        { name: "Preferences" },
   "/settings/security":           { name: "Security" },
-  "/settings/credentials":        { name: "Credentials", icon: KeyRound },
-  "/settings/credentials/new":    { name: "New credential" },
   "/settings/storage":            { name: "Workspace storage", icon: GalleryVerticalEnd },
   "/settings/members":            { name: "Members", icon: Users },
 };
@@ -52,13 +49,12 @@ const ROUTES: Record<string, RouteDef> = {
 /**
  * Routes with a dynamic segment: the name shown until the label resolves, and
  * what to resolve it from. Static routes win, so `/graphs/new` is not a graph.
- * A connection and a credential are keyed by their name, so the segment is it.
+ * A connection is keyed by its name, so the segment is it.
  */
 const DYNAMIC: { pattern: RegExp; name: string | ((id: string) => string); label?: (id: string) => CrumbLabel }[] = [
   { pattern: /^\/graphs\/([^/]+)$/, name: WORDS.graph, label: (id) => ({ kind: "graph", id }) },
   { pattern: /^\/graphs\/[^/]+\/discover$/, name: WORDS.explore },
   { pattern: /^\/connections\/([^/]+)$/, name: (name) => name },
-  { pattern: /^\/settings\/credentials\/([^/]+)$/, name: (name) => name },
 ];
 
 // ── Derived ──────────────────────────────────────────────────────────────────

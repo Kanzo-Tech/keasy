@@ -1,22 +1,35 @@
-//! A storage credential turned into an object store client, and the few
-//! operations keasy performs with one: vend, list, and the sink's write probe.
+//! Where every credential comes from, and the few operations keasy performs
+//! with one: list a source, and probe a connection.
+//!
+//! Keasy holds no key of the organization's. A credential is the platform's
+//! storage service's (kanzo-ui `services/storage`): asked for one location
+//! and one access, with the person's own token, after this server's permission
+//! check, and answered as Iceberg REST's `StorageCredential` — STS's session
+//! credentials, an Azure directory SAS, a downscoped Google token, each from
+//! the cloud's own SDK. What the browser reads and writes with is that
+//! credential, handed on unchanged; what this server lists with is the same,
+//! opened as an `object_store` client.
 
-pub mod vend;
-
+use std::collections::BTreeMap;
 use std::future::Future;
+use std::sync::Arc;
 use std::time::Duration;
 
 use futures::StreamExt;
 use futures::stream::BoxStream;
-use object_store::aws::{AmazonS3, AmazonS3Builder};
-use object_store::azure::{MicrosoftAzure, MicrosoftAzureBuilder};
+use object_store::aws::AmazonS3Builder;
+use object_store::azure::{AzureConfigKey, MicrosoftAzureBuilder};
+use object_store::gcp::{GcpCredential, GoogleCloudStorageBuilder};
 use object_store::path::Path as ObjectPath;
 use object_store::{
     BackoffConfig, ClientOptions, ObjectMeta, ObjectStore, PutPayload, RetryConfig,
+    StaticCredentialProvider,
 };
-use secrecy::ExposeSecret;
+use secrecy::{ExposeSecret, SecretString};
+use serde::Deserialize;
 
-use crate::domain::{SecretSpec, StorageLocation, StoreKind};
+use crate::authentication::role::AccessToken;
+use crate::domain::{Access, StorageLocation, Store, VendedCredential};
 use crate::error::{Refusal, ServerCode};
 use crate::startup::REQUEST_DEADLINE;
 
@@ -34,8 +47,8 @@ const STORE_CALL: Duration = STORE_REQUEST
     .saturating_mul(STORE_RETRIES + 1)
     .saturating_add(STORE_MAX_BACKOFF.saturating_mul(STORE_RETRIES));
 
-/// One store operation whole — a listing's every page, a probe's write and
-/// delete. Past it the store is `store/silent`: under the server's request
+/// One store operation whole — a listing's every page, a probe's credential
+/// and its write. Past it the store is `store/silent`: under the server's request
 /// deadline, so the code that reaches the screen names the store.
 pub const STORE_DEADLINE: Duration = Duration::from_secs(20);
 
@@ -70,6 +83,8 @@ fn retry() -> RetryConfig {
 #[derive(Debug)]
 pub enum StoreFailure {
     Refused(String),
+    /// The location is in none of the deployment's storage locations.
+    Undeclared(String),
     /// `who` did not answer within `after`.
     Silent {
         who: &'static str,
@@ -80,7 +95,7 @@ pub enum StoreFailure {
 impl std::fmt::Display for StoreFailure {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Refused(message) => f.write_str(message),
+            Self::Refused(message) | Self::Undeclared(message) => f.write_str(message),
             Self::Silent { who, after } => {
                 write!(f, "{who} did not answer within {} s", after.as_secs_f64())
             }
@@ -101,11 +116,15 @@ impl From<&str> for StoreFailure {
 }
 
 /// A store that said no is `store/refused` (502), one that said nothing in
-/// time `store/silent` (504) — whatever the server asked it.
+/// time `store/silent` (504) — whatever the server asked it. The storage
+/// service in front of it is the store, to whoever asked.
 impl From<StoreFailure> for Refusal {
     fn from(e: StoreFailure) -> Self {
         match e {
             StoreFailure::Refused(message) => Refusal::new(ServerCode::StoreRefused, message),
+            StoreFailure::Undeclared(message) => {
+                Refusal::field(ServerCode::StoreUndeclared, "url", message)
+            }
             silent @ StoreFailure::Silent { after, .. } => {
                 Refusal::silent(ServerCode::StoreSilent, silent.to_string(), after)
             }
@@ -169,124 +188,195 @@ pub async fn bounded<T>(
         }))
 }
 
-/// Where S3 and STS answer when they are not AWS's own — a dev store, a
-/// gateway. Deployment config, not a credential's: read as the AWS SDKs read
-/// it, `AWS_ENDPOINT_URL_S3` and `AWS_ENDPOINT_URL_STS` over the global
-/// `AWS_ENDPOINT_URL`
-/// (<https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoints.html>).
-/// `None` is AWS; an `http://` endpoint opts into plain HTTP.
-#[derive(Debug, Clone, Default)]
-pub struct Endpoints {
-    pub s3: Option<String>,
-    pub sts: Option<String>,
+/// The platform's storage service: `POST {url}/v1/credentials` `{location,
+/// access}`, the person's token in `x-forwarded-access-token`.
+#[derive(Clone)]
+pub struct StorageService {
+    url: Arc<str>,
+    http: reqwest::Client,
 }
 
-/// An object store client that keeps its provider, so it can sign.
-pub enum CloudStore {
-    Azure(MicrosoftAzure),
-    S3(AmazonS3),
+/// What the storage service answers: Iceberg REST's `LoadCredentialsResponse`.
+#[derive(Deserialize)]
+struct Answer {
+    #[serde(rename = "storage-credentials")]
+    storage_credentials: Vec<VendedCredential>,
 }
 
-/// The client `credential` opens on the bucket or container `location` names.
-pub fn store(
-    credential: &SecretSpec,
-    location: &StorageLocation,
-    endpoints: &Endpoints,
-) -> Result<CloudStore, String> {
-    if StoreKind::of(credential) != location.kind() {
-        return Err(format!(
-            "this credential reaches {} URLs, not {}",
-            StoreKind::of(credential).spellings(),
-            location.kind().spellings()
-        ));
+/// What it answers instead, as `application/problem+json`: its code is all
+/// this server reads.
+#[derive(Deserialize)]
+struct Refused {
+    code: Option<String>,
+    detail: Option<String>,
+}
+
+impl StorageService {
+    pub fn new(url: impl Into<String>) -> Self {
+        let url: String = url.into();
+        Self {
+            url: url.trim_end_matches('/').into(),
+            http: reqwest::Client::builder()
+                .connect_timeout(STORE_CONNECT)
+                .timeout(STORE_REQUEST)
+                .build()
+                .expect("a client with timeouts builds"),
+        }
     }
-    let bucket = location.bucket();
 
-    let store = match credential {
-        SecretSpec::S3 {
-            access_key_id,
-            secret_access_key,
-            region,
-            ..
-        } => {
+    /// A credential for `access` on `location` and nothing outside it, for the
+    /// person `token` names. Whether they may is this server's to have decided
+    /// already; the service decides only that the location is one the
+    /// deployment declared, and that the person belongs to its organization.
+    pub async fn vend(
+        &self,
+        location: &StorageLocation,
+        access: Access,
+        token: &AccessToken,
+    ) -> Result<VendedCredential, StoreFailure> {
+        let sent = self
+            .http
+            .post(format!("{}/v1/credentials", self.url))
+            .header("x-forwarded-access-token", token.0.expose_secret())
+            .json(&serde_json::json!({
+                "location": location.to_string(),
+                "access": match access { Access::Read => "read", Access::Write => "write" },
+            }))
+            .send()
+            .await;
+        let response = match sent {
+            Ok(response) => response,
+            Err(e) if e.is_timeout() => {
+                return Err(StoreFailure::Silent {
+                    who: "The storage service",
+                    after: STORE_REQUEST,
+                });
+            }
+            Err(e) => return Err(StoreFailure::Refused(format!("the storage service: {e}"))),
+        };
+        let status = response.status();
+        if status.is_success() {
+            let answer: Answer = response.json().await.map_err(|e| {
+                format!("the storage service answered what is not a credential: {e}")
+            })?;
+            return answer
+                .storage_credentials
+                .into_iter()
+                .next()
+                .ok_or_else(|| "the storage service answered no credential".into());
+        }
+        let refused: Refused = response.json().await.unwrap_or(Refused {
+            code: None,
+            detail: None,
+        });
+        let detail = refused
+            .detail
+            .unwrap_or_else(|| format!("the storage service answered {status}"));
+        Err(match refused.code.as_deref() {
+            Some("storage/path") => StoreFailure::Undeclared(detail),
+            _ => StoreFailure::Refused(detail),
+        })
+    }
+}
+
+/// An object store client.
+pub struct CloudStore(Box<dyn ObjectStore>);
+
+/// A key of the credential's `config`, or why it is missing.
+fn key<'a>(config: &'a BTreeMap<String, SecretString>, name: &str) -> Result<&'a str, String> {
+    config
+        .get(name)
+        .map(|v| v.expose_secret())
+        .ok_or_else(|| format!("the vended credential has no {name}"))
+}
+
+/// The client `credential` opens on the bucket or container `location` names,
+/// configured from Iceberg REST's keys and nothing else.
+pub fn store(
+    credential: &VendedCredential,
+    location: &StorageLocation,
+) -> Result<CloudStore, String> {
+    let config = &credential.config;
+    let store: Box<dyn ObjectStore> = match location.store() {
+        Store::S3 { bucket } => {
             let mut builder = AmazonS3Builder::new()
                 .with_bucket_name(bucket)
-                .with_access_key_id(access_key_id)
-                .with_secret_access_key(secret_access_key.expose_secret())
-                .with_region(region)
+                .with_access_key_id(key(config, "s3.access-key-id")?)
+                .with_secret_access_key(key(config, "s3.secret-access-key")?)
+                .with_token(key(config, "s3.session-token")?)
+                .with_region(key(config, "client.region").unwrap_or("us-east-1"))
                 .with_client_options(client_options())
                 .with_retry(retry());
-            if let Some(endpoint) = &endpoints.s3 {
+            if let Ok(endpoint) = key(config, "s3.endpoint") {
                 // object_store refuses plain HTTP unless told; an `http://`
                 // endpoint (a dev store on a laptop) is that telling.
                 builder = builder
                     .with_endpoint(endpoint)
                     .with_allow_http(endpoint.starts_with("http://"));
             }
-            CloudStore::S3(builder.build().map_err(|e| e.to_string())?)
+            Box::new(builder.build().map_err(|e| e.to_string())?)
         }
-        SecretSpec::AzureServicePrincipal {
-            account,
-            tenant_id,
-            client_id,
-            client_secret,
-        } => CloudStore::Azure(
-            azure(bucket, account)
-                .with_tenant_id(tenant_id)
-                .with_client_id(client_id)
-                .with_client_secret(client_secret.expose_secret())
-                .build()
-                .map_err(|e| e.to_string())?,
-        ),
+        Store::Azure { account, container } => {
+            let sas = key(
+                config,
+                &format!("adls.sas-token.{account}.dfs.core.windows.net"),
+            )?;
+            Box::new(
+                MicrosoftAzureBuilder::new()
+                    .with_account(account)
+                    .with_container_name(container)
+                    .with_config(AzureConfigKey::SasKey, sas)
+                    .with_client_options(client_options())
+                    .with_retry(retry())
+                    .build()
+                    .map_err(|e| e.to_string())?,
+            )
+        }
+        Store::Gcs { bucket } => {
+            let bearer = key(config, "gcs.oauth2.token")?.to_string();
+            Box::new(
+                GoogleCloudStorageBuilder::new()
+                    .with_bucket_name(bucket)
+                    .with_credentials(Arc::new(StaticCredentialProvider::new(GcpCredential {
+                        bearer,
+                    })))
+                    .with_client_options(client_options())
+                    .with_retry(retry())
+                    .build()
+                    .map_err(|e| e.to_string())?,
+            )
+        }
     };
-    Ok(store)
-}
-
-fn azure(container: &str, account: &str) -> MicrosoftAzureBuilder {
-    MicrosoftAzureBuilder::new()
-        .with_container_name(container)
-        .with_account(account)
-        .with_client_options(client_options())
-        .with_retry(retry())
+    Ok(CloudStore(store))
 }
 
 impl CloudStore {
     pub async fn put(&self, path: &ObjectPath, payload: PutPayload) -> object_store::Result<()> {
-        match self {
-            Self::Azure(s) => s.put(path, payload).await.map(drop),
-            Self::S3(s) => s.put(path, payload).await.map(drop),
-        }
-    }
-
-    pub async fn delete(&self, path: &ObjectPath) -> object_store::Result<()> {
-        match self {
-            Self::Azure(s) => s.delete(path).await,
-            Self::S3(s) => s.delete(path).await,
-        }
+        self.0.put(path, payload).await.map(drop)
     }
 
     /// Everything under `prefix`; the whole bucket for the empty path.
     pub fn list(&self, prefix: &ObjectPath) -> BoxStream<'_, object_store::Result<ObjectMeta>> {
         let prefix = (!prefix.as_ref().is_empty()).then_some(prefix);
-        match self {
-            Self::Azure(s) => s.list(prefix),
-            Self::S3(s) => s.list(prefix),
-        }
+        self.0.list(prefix)
     }
 }
 
 /// The first `limit` objects under `under` within `location`, within
-/// [`STORE_DEADLINE`], and whether there were more.
+/// [`STORE_DEADLINE`], and whether there were more: listed with a read
+/// credential on `location` the storage service vends to the person `token`
+/// names.
 pub async fn list_files(
-    credential: &SecretSpec,
+    service: &StorageService,
+    token: &AccessToken,
     location: &StorageLocation,
-    endpoints: &Endpoints,
     under: &ObjectPath,
     limit: usize,
 ) -> Result<(Vec<ObjectMeta>, bool), StoreFailure> {
-    let store = store(credential, location, endpoints)?;
-    let prefix: ObjectPath = location.path().parts().chain(under.parts()).collect();
     bounded(STORE_DEADLINE, async {
+        let credential = service.vend(location, Access::Read, token).await?;
+        let store = store(&credential, location)?;
+        let prefix: ObjectPath = location.path().parts().chain(under.parts()).collect();
         let mut entries = Vec::new();
         let mut listing = store.list(&prefix);
         while let Some(meta) = listing.next().await {
@@ -303,17 +393,6 @@ pub async fn list_files(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use secrecy::SecretString;
-
-    fn s3() -> SecretSpec {
-        SecretSpec::S3 {
-            access_key_id: "AK".into(),
-            secret_access_key: SecretString::from("SK"),
-            region: "us-east-1".into(),
-            role_arn: None,
-            external_id: None,
-        }
-    }
 
     #[tokio::test]
     async fn an_operation_past_its_deadline_names_the_store_silent() {
@@ -324,11 +403,34 @@ mod tests {
         assert!(matches!(refused, Err(StoreFailure::Refused(m)) if m == "no"));
     }
 
+    fn vended(config: &[(&str, &str)]) -> VendedCredential {
+        VendedCredential {
+            prefix: String::new(),
+            config: config
+                .iter()
+                .map(|(k, v)| (k.to_string(), SecretString::from(*v)))
+                .collect(),
+        }
+    }
+
     #[test]
-    fn a_credential_opens_only_its_own_stores() {
+    fn a_credential_opens_its_store_from_iceberg_keys_alone() {
         let url = |s: &str| StorageLocation::parse(s).unwrap();
-        let aws = Endpoints::default();
-        assert!(store(&s3(), &url("s3://bucket/data/x.csv"), &aws).is_ok());
-        assert!(store(&s3(), &url("az://container/x.csv"), &aws).is_err());
+        let s3 = vended(&[
+            ("s3.access-key-id", "AK"),
+            ("s3.secret-access-key", "SK"),
+            ("s3.session-token", "T"),
+            ("client.region", "eu-west-1"),
+            ("s3.endpoint", "http://127.0.0.1:9000"),
+        ]);
+        assert!(store(&s3, &url("s3://bucket/data/")).is_ok());
+        let sas = vended(&[(
+            "adls.sas-token.acct.dfs.core.windows.net",
+            "sv=2022-11-02&sr=d&sig=x",
+        )]);
+        assert!(store(&sas, &url("abfss://c@acct.dfs.core.windows.net/d/")).is_ok());
+        assert!(store(&sas, &url("abfss://c@other.dfs.core.windows.net/d/")).is_err());
+        assert!(store(&vended(&[("gcs.oauth2.token", "ya29")]), &url("gs://b/d/")).is_ok());
+        assert!(store(&vended(&[]), &url("s3://bucket/")).is_err());
     }
 }

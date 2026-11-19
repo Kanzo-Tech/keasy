@@ -1,40 +1,21 @@
-//! Connections: a secret put to use — a storage prefix.
+//! Connections: a storage location, by name. Nothing here opens one: every
+//! credential is the storage service's, vended for one request.
 
 pub mod persistence;
+pub mod probe;
 
-use crate::credentials::sealing::SecretKey;
+use crate::authentication::role::AccessToken;
 use crate::database::Database;
 use crate::domain::{
-    Actor, ConnectionView, Credential, Direction, Provenance, ResourceName, SecretSpec,
-    StorageLocation, StorageTarget,
+    Actor, ConnectionView, Direction, Provenance, ResourceName, StorageLocation, StorageTarget,
 };
 use crate::error::{Refusal, ServerCode};
-use crate::storage_client::Endpoints;
+use crate::storage_client::StorageService;
 
 /// The connection `name`, or 404.
 pub async fn named(db: &Database, name: &str) -> Result<ConnectionView, Refusal> {
     persistence::get(&*db.read().await, name)?
         .ok_or_else(|| Refusal::new(ServerCode::ConnectionNotFound, "No such connection"))
-}
-
-/// The secret `connection` points at, checked for reaching the URL's
-/// store. The URL is rewritten in its canonical form, which is the form every
-/// reader expands.
-fn fits(
-    credential: Option<Credential>,
-    connection: &mut ConnectionView,
-    endpoints: &Endpoints,
-) -> Result<Credential, Refusal> {
-    let credential = credential.ok_or_else(|| {
-        Refusal::invalid(format!("there is no secret named {:?}", connection.secret))
-    })?;
-    let location = StorageLocation::parse(&connection.target.url)
-        .and_then(|l| l.within(&credential.spec))
-        .map_err(Refusal::invalid)?;
-    crate::storage_client::store(&credential.spec, &location, endpoints)
-        .map_err(Refusal::invalid)?;
-    connection.target.url = location.to_string();
-    Ok(credential)
 }
 
 /// Refuse a storage location that shares a prefix with another connection's,
@@ -43,18 +24,16 @@ fn fits(
 /// source can never reach into the sink.
 async fn disjoint(
     db: &Database,
-    connection: &ConnectionView,
+    mine: &StorageLocation,
     name: Option<&str>,
 ) -> Result<(), Refusal> {
     let conn = db.read().await;
-    let (location, _) = storage(&conn, db.secret_key(), connection)?;
     let mut overlapping = Vec::new();
     for other in persistence::list(&conn)?
         .iter()
         .filter(|o| Some(o.name.as_str()) != name)
     {
-        let (theirs, _) = storage(&conn, db.secret_key(), other)?;
-        if theirs.overlaps(&location) {
+        if location(other)?.overlaps(mine) {
             overlapping.push(other.name.clone());
         }
     }
@@ -63,37 +42,43 @@ async fn disjoint(
     }
     Err(Refusal::overlaps(
         format!(
-            "{location} overlaps the location of {}: a prefix belongs to one connection",
+            "{mine} overlaps the location of {}: a prefix belongs to one connection",
             overlapping.join(", ")
         ),
         overlapping,
     ))
 }
 
+/// Who checks a connection before it is stored: the person saving it, whose
+/// token the storage service vends to. `None` stores it untested — what the
+/// instance declares at boot, before anyone has signed in.
+pub struct Prober<'a> {
+    pub service: &'a StorageService,
+    pub token: &'a AccessToken,
+}
+
 /// Check, probe and store `connection` as `name`'s new state (a new one when
-/// `name` is `None`). A connection that does not validate is not stored.
+/// `name` is `None`). A connection that does not validate is not stored. The
+/// URL is stored in its canonical form, which is the form every reader expands.
 pub async fn save(
     db: &Database,
     name: Option<&str>,
     mut connection: ConnectionView,
     by: &Actor,
-    endpoints: &Endpoints,
+    prober: Option<Prober<'_>>,
 ) -> Result<ConnectionView, Refusal> {
     ResourceName::parse(&connection.name).map_err(|e| Refusal::invalid_field("name", e))?;
-    let credential = crate::credentials::persistence::get(
-        &*db.read().await,
-        db.secret_key(),
-        &connection.secret,
-    )?;
-    let credential = fits(credential, &mut connection, endpoints)?;
-    disjoint(db, &connection, name).await?;
-    let report =
-        crate::credentials::probe::connection(&credential.spec, &connection.target, endpoints)
-            .await?;
-    if !report.passed() {
-        return Err(Refusal::probe_failed(report.failures(), Vec::new()));
+    let canonical = StorageLocation::parse(&connection.target.url)
+        .map_err(|e| Refusal::invalid_field("url", e))?;
+    connection.target.url = canonical.to_string();
+    disjoint(db, &canonical, name).await?;
+    if let Some(Prober { service, token }) = prober {
+        let report = probe::connection(service, token, &connection.target).await?;
+        if !report.passed() {
+            return Err(Refusal::probe_failed(report.failures()));
+        }
+        connection.validation = Some(report.taken_by(by));
     }
-    connection.validation = Some(report.taken_by(by));
 
     let conn = db.write().await;
     match name {
@@ -107,35 +92,24 @@ pub async fn save(
 pub async fn create(
     db: &Database,
     name: String,
-    secret: String,
     target: StorageTarget,
     by: &Actor,
-    endpoints: &Endpoints,
+    prober: Option<Prober<'_>>,
 ) -> Result<ConnectionView, Refusal> {
     let connection = ConnectionView {
         name,
-        secret,
         target,
         owner: by.as_owner(),
         provenance: Provenance::created(by.clone()),
         validation: None,
         can: Default::default(),
     };
-    save(db, None, connection, by, endpoints).await
+    save(db, None, connection, by, prober).await
 }
 
-/// A storage connection's location, as its secret reaches it, and that secret.
-pub fn storage(
-    conn: &rusqlite::Connection,
-    key: &SecretKey,
-    connection: &ConnectionView,
-) -> Result<(StorageLocation, SecretSpec), Refusal> {
-    let location = StorageLocation::parse(&connection.target.url).map_err(Refusal::invalid)?;
-    let spec = crate::credentials::persistence::get(conn, key, &connection.secret)?
-        .ok_or_else(|| Refusal::new(ServerCode::SecretNotFound, "No such secret"))?
-        .spec;
-    let location = location.within(&spec).map_err(Refusal::invalid)?;
-    Ok((location, spec))
+/// A storage connection's location.
+pub fn location(connection: &ConnectionView) -> Result<StorageLocation, Refusal> {
+    StorageLocation::parse(&connection.target.url).map_err(Refusal::invalid)
 }
 
 /// The source connection `name`: what a member reads, and never writes. The

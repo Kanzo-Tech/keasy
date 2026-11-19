@@ -5,9 +5,8 @@ pub mod rules;
 use rusqlite::Connection;
 
 use crate::authentication::role::Caller;
-use crate::credentials::sealing::SecretKey;
 use crate::database::Database;
-use crate::domain::{Graph, SecretSpec, StorageLocation};
+use crate::domain::{Graph, StorageLocation};
 use crate::error::{Refusal, ServerCode};
 
 /// End the graphs no runner holds ([`persistence::sweep`]). Every read of graphs
@@ -28,8 +27,7 @@ pub fn any(conn: &Connection, id: &str) -> Result<Graph, Refusal> {
 }
 
 /// The graph as `caller` is shown it: who may change and stop it, and where its
-/// output lands — as the sink's URL spells it, without reaching for the
-/// sink's secret.
+/// output lands, as the sink's URL spells it.
 pub fn present(conn: &Connection, caller: &Caller, mut graph: Graph) -> Result<Graph, Refusal> {
     let sink = crate::connections::persistence::get(conn, &graph.sink_connection)?;
     graph.output = sink
@@ -63,13 +61,8 @@ pub async fn transition(
     Err(Refusal::internal())
 }
 
-/// Where `graph`'s output lives, `{sink}/{folder}/`, as the sink's secret
-/// reaches it, and that secret.
-pub fn output(
-    conn: &Connection,
-    key: &SecretKey,
-    graph: &Graph,
-) -> Result<(StorageLocation, SecretSpec), Refusal> {
+/// Where `graph`'s output lives: `{sink}/{folder}/`.
+pub fn output(conn: &Connection, graph: &Graph) -> Result<StorageLocation, Refusal> {
     let sink =
         crate::connections::persistence::get(conn, &graph.sink_connection)?.ok_or_else(|| {
             Refusal::new(
@@ -77,10 +70,9 @@ pub fn output(
                 "The graph's destination connection no longer exists",
             )
         })?;
-    let (sink, spec) = crate::connections::storage(conn, key, &sink)?;
+    let sink = crate::connections::location(&sink)?;
     // Only a draft has no folder, and a draft has no output.
-    let output = graph
+    graph
         .output_under(&sink)
-        .ok_or_else(|| Refusal::invalid("The graph has no output folder"))?;
-    Ok((output, spec))
+        .ok_or_else(|| Refusal::invalid("The graph has no output folder"))
 }

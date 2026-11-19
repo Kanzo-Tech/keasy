@@ -1,8 +1,10 @@
 # One organization's server, which every organization's file extends (compose.override.yaml in
 # development). The server is per organization, and so is its data: it
 # validates the bearer token the web forwards against the realm's keys, checks `aud` against
-# keasy-api, and reads the roles for its organization alone. It holds no client secret and no
-# session; it holds its credential-sealing key, which exists nowhere else.
+# keasy-api, and reads the roles for its organization alone. It holds no secret at all: no client
+# secret, no session, no key of the organization's. Every storage credential is the platform's
+# storage service's (kanzo-ui services/storage), asked at http://storage:8090 on the
+# `kanzo-storage` network, which this server alone joins.
 services:
   server:
     image: ghcr.io/kanzo-tech/keasy-server:${KEASY_VERSION:-dev}
@@ -11,7 +13,8 @@ services:
       KEASY_OIDC_ISSUER_URL: ${KC_HOSTNAME:-http://localhost:8080}/realms/${KC_REALM:-kanzo}
       KEASY_OIDC_INTERNAL_BASE_URL: http://keycloak:8080
       KEASY_OIDC_CLIENT_ID: keasy
-      KEASY_SECRET_KEY_FILE: /run/secrets/secret-key
+      KEASY_STORAGE_URL: http://storage:8090
+    networks: [default, storage]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/healthz/ready"]
       interval: 10s

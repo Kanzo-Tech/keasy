@@ -2,7 +2,7 @@ use axum::extract::{Request, State};
 use axum::middleware::Next;
 use axum::response::Response;
 
-use super::role::Roles;
+use super::role::{AccessToken, Roles};
 use super::token::{TokenError, bearer};
 use crate::error::Refusal;
 use crate::startup::AppState;
@@ -21,6 +21,8 @@ pub struct AuthenticatedUser {
     /// [`Claims::display_name`]: super::token::Claims::display_name
     pub name: String,
     pub roles: Roles,
+    /// The token itself, to forward to the storage service.
+    pub token: AccessToken,
 }
 
 /// Every protected route's front door: a verified bearer token, or nothing.
@@ -32,6 +34,7 @@ pub async fn bearer_required(
 ) -> Result<Response, Refusal> {
     let token = bearer(request.headers()).ok_or(TokenError::Missing)?;
     let claims = state.auth.verify(token).await?;
+    let token = AccessToken::from(token);
     tracing::Span::current().record("user_id", claims.sub.as_str());
 
     let roles = claims
@@ -46,6 +49,7 @@ pub async fn bearer_required(
         name: claims.display_name(),
         user_id: claims.sub,
         roles,
+        token,
     });
     Ok(next.run(request).await)
 }

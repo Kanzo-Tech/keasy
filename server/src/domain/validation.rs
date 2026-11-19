@@ -11,8 +11,6 @@ pub enum Operation {
     List,
     /// Wrote an object under a sink.
     Write,
-    /// Deleted the object the write left.
-    Delete,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]

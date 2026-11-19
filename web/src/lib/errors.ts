@@ -111,7 +111,12 @@ const registry: Partial<Record<RefusalCode | ClientCode | Code, Copy>> = {
   "storage/host-silent": { title: "keasy did not answer the data reader in time." },
   "module/unreachable": { title: "Part of the app could not be downloaded. Check the connection and retry." },
   // The server's own title stands; keasy adds where to fix it.
-  "probe/failed": { link: { label: "Go to Credentials", href: "/settings/credentials" } },
+  "probe/failed": { link: { label: "Go to Connections", href: "/connections" } },
+  "store/undeclared": {
+    title: "That location is not in your organization's storage",
+    detail:
+      "keasy reaches only the storage your organization connected it to. Check the URL, or ask whoever runs this workspace to add the location.",
+  },
   "source/not-found": {
     title: "The source names no file",
     detail: (data) => {

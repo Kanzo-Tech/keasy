@@ -165,7 +165,6 @@ pub(crate) mod tests {
     pub(crate) fn seed_sink(conn: &Connection, name: &str) {
         let target = StorageTarget {
             url: "s3://b/output/".into(),
-            kind: Default::default(),
             direction: crate::domain::Direction::Sink,
         };
         insert(conn, &connection(name, target), &user()).unwrap();
@@ -198,7 +197,6 @@ pub(crate) mod tests {
         seed_sink(&conn, "out");
         let second = StorageTarget {
             url: "s3://b/elsewhere/".into(),
-            kind: Default::default(),
             direction: crate::domain::Direction::Sink,
         };
         let err = insert(&conn, &connection("out2", second), &user()).unwrap_err();

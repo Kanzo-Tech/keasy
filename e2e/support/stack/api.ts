@@ -70,8 +70,8 @@ export const SOURCE = "E2E source";
 export const SHAPES = "E2E shapes";
 
 export const CONNECTIONS = [
-  { name: SOURCE, target: { url: "s3://keasy-dev/e2e/data/", kind: "data", direction: "source" } },
-  { name: SHAPES, target: { url: "s3://keasy-dev/e2e/vocab/", kind: "vocab", direction: "source" } },
+  { name: SOURCE, target: { url: "s3://keasy-dev/e2e/data/", direction: "source" } },
+  { name: SHAPES, target: { url: "s3://keasy-dev/e2e/vocab/", direction: "source" } },
 ] as const;
 
 /** The program over the fixtures. */

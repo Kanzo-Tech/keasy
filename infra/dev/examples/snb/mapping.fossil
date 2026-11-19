@@ -13,17 +13,17 @@
 // forum_hasMember_person, person_likes_*, person_hasInterest_tag,
 // person_studyAt/workAt_organisation) and post.csv's `Forum.id` column.
 
-type { Place, Organisation, TagClass, Tag, Person, Forum, Post, Comment, Knowing } := io.shex("@LDBC SNB shapes/shapes.shex")
+type { Place, Organisation, TagClass, Tag, Person, Forum, Post, Comment, Knowing } := io.shex("@LDBC SNB/shapes/shapes.shex")
 
-PlaceRow        := io.csv("@LDBC SNB/static/place_0_0.csv", delimiter = "|")
-OrganisationRow := io.csv("@LDBC SNB/static/organisation_0_0.csv", delimiter = "|")
-TagClassRow     := io.csv("@LDBC SNB/static/tagclass_0_0.csv", delimiter = "|")
-TagRow          := io.csv("@LDBC SNB/static/tag_0_0.csv", delimiter = "|")
-PersonRow       := io.csv("@LDBC SNB/dynamic/person_0_0.csv", delimiter = "|")
-ForumRow        := io.csv("@LDBC SNB/dynamic/forum_0_0.csv", delimiter = "|")
-PostRow         := io.csv("@LDBC SNB/dynamic/post_0_0.csv", delimiter = "|")
-CommentRow      := io.csv("@LDBC SNB/dynamic/comment_0_0.csv", delimiter = "|")
-KnowsRow        := io.csv("@LDBC SNB/dynamic/person_knows_person_0_0.csv", delimiter = "|")
+PlaceRow        := io.csv("@LDBC SNB/data/static/place_0_0.csv", delimiter = "|")
+OrganisationRow := io.csv("@LDBC SNB/data/static/organisation_0_0.csv", delimiter = "|")
+TagClassRow     := io.csv("@LDBC SNB/data/static/tagclass_0_0.csv", delimiter = "|")
+TagRow          := io.csv("@LDBC SNB/data/static/tag_0_0.csv", delimiter = "|")
+PersonRow       := io.csv("@LDBC SNB/data/dynamic/person_0_0.csv", delimiter = "|")
+ForumRow        := io.csv("@LDBC SNB/data/dynamic/forum_0_0.csv", delimiter = "|")
+PostRow         := io.csv("@LDBC SNB/data/dynamic/post_0_0.csv", delimiter = "|")
+CommentRow      := io.csv("@LDBC SNB/data/dynamic/comment_0_0.csv", delimiter = "|")
+KnowsRow        := io.csv("@LDBC SNB/data/dynamic/person_knows_person_0_0.csv", delimiter = "|")
 
 // The roots of the two hierarchies (continents, `Thing`) have no parent, and a
 // mapping writes an edge for every row it reads: the roots are their own

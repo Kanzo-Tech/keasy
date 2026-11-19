@@ -3,7 +3,7 @@ import type { ModelTurn } from "@kanzo-tech/testing";
 
 import { AskPanel } from "../support/app";
 import { chooseRadio } from "../support/app/controls";
-import { promptsOf, scriptModel } from "../support/model";
+import { scriptModel } from "../support/model";
 import { demo } from "./record";
 
 /** The Nobel example's connection, as the dev stack names it, and its six files. */
@@ -15,31 +15,25 @@ const ABOUT = "Nobel prizes: who won them, in what, and where they worked";
 /** The decision with no safe default, and the answer the demo gives it. */
 const LINK = "Each row of affiliations links award to institution. Is a row only that link, or a thing counted on its own?";
 const ONE = "Only a link: award → institution";
-/** The decision a safe default settled — a country by its id — and the one the demo changes it to. */
-const COUNTRY = "Which column tells one country from another?";
 
 const BY_CATEGORY = "How many prizes were awarded in each category?";
 const BY_INSTITUTION = "Which institutions are behind the most prizes?";
 
 /**
- * What the model proposes over the Nobel files: a type per thing, each on the file and key the profile
- * offers, the awards linked to their laureate and category, and to their institutions across
- * `affiliations` — which raises the one decision with no safe default. Countries stand alone, so which
- * of their two keys identifies one is a default, said as an assumption.
+ * What the model names over the Nobel files. The structure is the profile's: a thing per file with a
+ * key, the awards linked to their laureate and category, and to their institutions across
+ * `affiliations` — which raises the one decision with no safe default. A field left unnamed keeps its
+ * column's name.
  */
-const DRAFT = {
-  types: [
-    { name: "Laureate", source: "laureates", key: "id", fields: [{ name: "name", column: "name" }, { name: "gender", column: "gender" }] },
-    { name: "Award", source: "awards", key: "id", fields: [{ name: "year", column: "year" }, { name: "share", column: "share" }] },
-    { name: "Category", source: "categories", key: "id", fields: [{ name: "name", column: "name" }] },
-    { name: "Institution", source: "institutions", key: "id", fields: [{ name: "name", column: "name" }, { name: "city", column: "city" }] },
-    { name: "Country", source: "countries", key: "id", fields: [{ name: "name", column: "name" }] },
-  ],
-  edges: [
-    { name: "laureate", from: "Award", to: "Laureate", via: "awards.laureate → laureates.id" },
-    { name: "category", from: "Award", to: "Category", via: "awards.category → categories.id" },
-    { name: "institution", from: "Award", to: "Institution", via: "affiliations.institution → institutions.id" },
-  ],
+const NAMES = {
+  types: { laureates: "Laureate", awards: "Award", categories: "Category", institutions: "Institution", countries: "Country" },
+  edges: {
+    "awards.laureate → laureates.id": "laureate",
+    "awards.category → categories.id": "category",
+    "affiliations.institution → institutions.id": "institution",
+    "laureates.country → countries.id": "country",
+  },
+  fields: {},
 };
 
 /** The questions the model suggests: three chips, two of which the demo takes. */
@@ -52,11 +46,11 @@ const REQUIREMENTS = {
 };
 
 /**
- * The mappings the model writes, each `@subject` the one keasy computes under the page's origin; a
- * country identified by `countryKey`. Held against fossil's checker over the real Nobel profile when
- * this demo was written: one attempt, no diagnostic.
+ * The mappings the model writes, each `@subject` the one keasy computes under the page's origin. Held
+ * against fossil's checker over the real Nobel profile when this demo was written: one attempt, no
+ * diagnostic.
  */
-function mappings(origin: string, countryKey: "id" | "name"): string {
+function mappings(origin: string): string {
   const id = (type: string, column: string) => `"${origin}/id/${type}/{${column}}"`;
   return `Laureates : Laureate from laureates
     @subject = ${id("laureate", "laureates.id")}
@@ -80,7 +74,7 @@ Institutions : Institution from institutions
     city = institutions.city
 
 Countries : Country from countries
-    @subject = ${id("country", `countries.${countryKey}`)}
+    @subject = ${id("country", "countries.id")}
     name = countries.name
 
 Affiliations : Award from awards.join(affiliations, on = awards.id == affiliations.award)
@@ -95,17 +89,15 @@ Affiliations : Award from awards.join(affiliations, on = awards.id == affiliatio
 
 /**
  * Every call of the flow, by the words its prompt carries: the `model` Task's and the `requirements`
- * Task's instructions (`web/…/assistant/tasks/`), the `mapping` Task's — the country's subject telling
- * the program written after the decision changed from the first — and Ask's, per question. The second
- * question's prompt carries the first, so it is looked for first.
+ * Task's instructions (`web/…/assistant/tasks/`), the `mapping` Task's, and Ask's, per question. The
+ * second question's prompt carries the first, so it is looked for first.
  */
 function script(origin: string): ModelTurn[] {
   const json = (value: unknown) => ({ text: JSON.stringify(value) });
   return [
-    { when: "You design what a person's data is about", reply: json(DRAFT) },
+    { when: "You design what a person's data is about", reply: json(NAMES) },
     { when: "You suggest questions a person could ask", reply: json(REQUIREMENTS) },
-    { when: "{countries.name}", reply: { text: mappings(origin, "name") } },
-    { when: "You write the mappings of a Fossil program", reply: { text: mappings(origin, "id") } },
+    { when: "You write the mappings of a Fossil program", reply: { text: mappings(origin) } },
     {
       when: `Question: ${BY_INSTITUTION}`,
       reply: json({ spec: { of: "Award", show: { kind: "chart", type: "bar", x: "institution.name", y: { op: "count" } } } }),
@@ -120,8 +112,8 @@ function script(origin: string): ModelTurn[] {
 /** How fast the double answers: a beat before the first word, then a short one a word. */
 const PACE = { wait: 1_200, perWord: 25 };
 
-/** The connection's pill above the composer: *+ @Nobel laureates*, then *@Nobel laureates · 6 files*. */
-const pill = (page: Page) => page.locator(`[data-connection="${CONNECTION}"]`).getByRole("button", { name: new RegExp(`^@${CONNECTION}`) });
+/** The composer's +, which lists the connections and then a connection's files. */
+const plus = (page: Page) => page.getByRole("button", { name: "Add files" });
 
 /** The preview's answers, once each kept question has its card and none is being replaced. */
 async function answered(page: Page): Promise<number> {
@@ -132,11 +124,10 @@ async function answered(page: Page): Promise<number> {
 
 /**
  * The guided assistant over the Nobel example, as one thread, from the files to Ask: the files picked on
- * the connection's pill above the composer (*Select all*), what they are about typed and sent with them,
- * the steps it says it takes (*What I am doing*), what is in them, the one decision with no safe answer
- * answered, an assumption shown and changed through its *Change*, two of the questions on offer taken,
- * the preview answering them in the thread over the first 200 rows, then the whole graph built (*Build
- * the graph*) and asked in Discover.
+ * the composer's + (*Select all* in the connection's files), what they are about typed and sent with them,
+ * what is in them under the panel's *Data*, two of the questions on offer taken and answered under its
+ * *Preview* over the first 200 rows while the one decision with no safe answer is still open, that
+ * decision answered, then the whole graph built (*Build the graph*) and asked in Discover.
  *
  * The model is a double (`support/model.ts`), as the e2e suite's is: the assistant's Tasks are three
  * calls and a mapping written to fossil's grammar, and a recording that depended on a small model
@@ -144,7 +135,7 @@ async function answered(page: Page): Promise<number> {
  * profile is fossil's over the files in the store, the program is checked by fossil, the preview and the
  * build are runs on the page's engine, and every answer is read from the graph.
  *
- * Written against `web/…/assistant/` (`source-bar.tsx`, `turns.tsx`, `steps.ts`) without a browser to
+ * Written against `web/…/assistant/` (`source-bar.tsx`, `turns.tsx`, `panel.tsx`) without a browser to
  * run it in: the selectors below are read from those components, not observed.
  */
 demo("nobel-assistant", "The guided assistant: the Nobel files to a preview in the chat, a graph built, then Ask", {
@@ -157,8 +148,8 @@ demo("nobel-assistant", "The guided assistant: the Nobel files to a preview in t
     // At a model's pace, so each turn arrives on camera rather than all at once.
     await scriptModel(page, { turns: script(origin), pace: PACE });
     await page.goto("/graphs/new/assistant");
-    // The connection is a pill above the composer's field, before anything is picked.
-    await expect(pill(page)).toBeVisible();
+    // The composer's +, before anything is picked.
+    await expect(plus(page)).toBeVisible();
     return { page };
   },
 
@@ -166,12 +157,14 @@ demo("nobel-assistant", "The guided assistant: the Nobel files to a preview in t
     {
       subtitle: "Pick the files on the composer",
       async action() {
-        // The pill opens a menu of what the connection lists; it stays open while files are ticked.
-        await pill(page).click();
-        await page.getByRole("menuitem", { name: "Select all" }).click();
+        // The + lists the connections; the connection opens to its files, and stays open while they are picked.
+        await plus(page).click();
+        await page.getByRole("option", { name: CONNECTION, exact: true }).click();
+        await page.getByRole("option", { name: "Select all" }).click();
         await page.keyboard.press("Escape");
       },
-      check: () => expect(pill(page)).toContainText(`${FILES.length} files`),
+      // Three cards, then the rest of the connection as one.
+      check: () => expect(page.locator("[data-file-card]").last()).toContainText(`+${FILES.length - 3} more files`),
     },
     {
       subtitle: "Say what it is about, and send",
@@ -180,28 +173,13 @@ demo("nobel-assistant", "The guided assistant: the Nobel files to a preview in t
         await about.pressSequentially(ABOUT, { delay: 25 });
         await about.press("Enter");
       },
-      // The details are pinned above the thread once the first message is sent.
-      check: () => expect(page.locator("[data-details]")).toContainText(ABOUT),
+      // The first message is the files and what they are about; the panel opens beside it.
+      check: () => expect(page.locator("[data-reply]").first()).toContainText(ABOUT),
     },
     {
-      subtitle: "What I am doing, step by step",
-      action: () => page.getByRole("list", { name: "What I am doing" }).first().scrollIntoViewIfNeeded(),
-      check: () => expect(page.getByRole("list", { name: "What I am doing" }).first()).toContainText("Proposed the types", { timeout: 60_000 }),
-    },
-    {
-      subtitle: "What is in your data",
-      action: () => expect(page.getByText("Here’s what’s in your data")).toBeVisible({ timeout: 60_000 }),
-      check: () => expect(page.locator("[data-things] > li")).toHaveCount(FILES.length),
-    },
-    {
-      subtitle: "What has no safe answer is yours to decide",
-      action: () => chooseRadio(env, env.rootElement, LINK, ONE),
-      check: () => expect(page.getByRole("radiogroup", { name: LINK }).getByRole("radio", { name: ONE })).toBeChecked(),
-    },
-    {
-      subtitle: "What has a safe default is taken, and said",
-      action: () => page.locator('[data-assumption="key/countries"]').scrollIntoViewIfNeeded(),
-      check: () => expect(page.locator('[data-assumption="key/countries"]')).toContainText("I assumed: id"),
+      subtitle: "What is in your data, beside the conversation",
+      action: () => expect(page.getByRole("complementary", { name: "Your graph" })).toBeVisible(),
+      check: () => expect(page.locator("[data-things] > li")).toHaveCount(FILES.length, { timeout: 60_000 }),
     },
     {
       subtitle: "Take the questions it suggests",
@@ -212,30 +190,20 @@ demo("nobel-assistant", "The guided assistant: the Nobel files to a preview in t
       check: () => expect(page.locator("[data-question]")).toHaveCount(2),
     },
     {
-      subtitle: "That's all: show me a preview",
-      action: () => page.getByRole("button", { name: "That's all, show me a preview" }).click(),
-      check: () => expect(page.getByText("Here is your data over its first 200 rows")).toBeVisible({ timeout: 60_000 }),
-    },
-    {
-      subtitle: "Each question answered, over the first 200 rows",
-      action: () => page.locator("[data-preview-answers]").scrollIntoViewIfNeeded(),
+      subtitle: "Each question answered over the first 200 rows, with nothing decided yet",
+      action: () => expect(page.locator("[data-checkpoint]")).toBeVisible({ timeout: 60_000 }),
       check: () => expect.poll(() => answered(page), { timeout: 60_000 }).toBe(2),
       poster: true,
     },
     {
-      subtitle: "Change an assumption: the preview runs again",
-      async action() {
-        // The assumption's one door to its options.
-        await page.locator('[data-decision="key/countries"]').getByRole("button", { name: "Change" }).click();
-        await page.getByRole("radiogroup", { name: COUNTRY }).scrollIntoViewIfNeeded();
-        await chooseRadio(env, env.rootElement, COUNTRY, "name");
-      },
-      async check() {
-        // The program written again, for the country's other key, and the answers read over it.
-        await expect.poll(async () => (await promptsOf(page)).some((p) => p.includes("{countries.name}")), { timeout: 60_000 }).toBe(true);
-        await page.locator("[data-preview-answers]").scrollIntoViewIfNeeded();
-        await expect.poll(() => answered(page), { timeout: 60_000 }).toBe(2);
-      },
+      subtitle: "Only the build waits on what has no safe answer",
+      action: () => expect(page.locator("[data-waits]")).toContainText("1 question with no safe answer"),
+      check: () => expect(page.getByRole("button", { name: "Build the graph" })).toBeDisabled(),
+    },
+    {
+      subtitle: "Decide it",
+      action: () => chooseRadio(env, env.rootElement, LINK, ONE),
+      check: () => expect(page.getByRole("button", { name: "Build the graph" })).toBeEnabled(),
     },
     {
       subtitle: "Build the graph",

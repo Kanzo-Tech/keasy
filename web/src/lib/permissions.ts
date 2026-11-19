@@ -1,9 +1,9 @@
 import type { Schemas } from "@/lib/api/client";
 
 /**
- * What the server says the caller may do to one object (docs/design/permissions.md): use it — build
- * a connection on a secret —, operate it — test a connection or a secret, run a graph —, manage it
- * — change, rename, delete. The web draws what this says and never re-derives it from roles.
+ * What the server says the caller may do to one object (docs/design/permissions.md): use it — read
+ * a source's files in a graph —, operate it — test a connection, run a graph —, manage it — change,
+ * rename, delete. The web draws what this says and never re-derives it from roles.
  */
 export type Can = Schemas["Can"];
 

@@ -74,7 +74,7 @@ services:
       RUST_LOG: debug
       KEASY_ORG_ALIAS: acme
       KEASY_WORKSPACE_NAME: Acme Corporation
-      # The dev data and shapes sources and the sink, in the API's own request format.
+      # A source per example (its data and its shapes) and the sink, in the API's own request format.
       KEASY_BOOTSTRAP_FILE: /etc/keasy/bootstrap.json
     healthcheck:
       retries: 30

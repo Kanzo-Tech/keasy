@@ -9,10 +9,10 @@
  * of the picked files, read once over all of them (`tasks/profile.ts`) — before any model is asked;
  * and then the Tasks of docs/design/assistant.md, in order, on the page's model (`useModel`):
  * `model` once the files are read and *what is it about?* is answered — the relations and the
- * decisions; `requirements` once its decisions are taken — the question chips (`useTask`), and
- * whether each question kept is answerable; `mapping` once the person has asked all they wanted —
- * the program **Open in the editor** opens, and the preview and the build run. A Task that fails is in
- * `failures`, with its retry.
+ * decisions; then, over the model accepted with each open decision at its first option meanwhile,
+ * `requirements` — the question chips (`useTask`), and whether each question kept is answerable —
+ * and `mapping` — the program **Open in the editor** opens, and the preview and the build run. A Task
+ * that fails is in `failures`, with its retry.
  *
  * A conversation kept is started again from its `seed`: the files picked, the person's choices and
  * the program last written — everything else is read and asked again, from the files.
@@ -36,7 +36,7 @@ import { listChildren } from "../use-sources";
 import { useModel } from "@/lib/ai";
 import { type AssistantData, type DecisionItem, optionOf, type Question, type QuestionOffer, type TaskFailure, type Thing } from "./model";
 import { declare, fossilCheck, mapping, mappingOf, programOf } from "./tasks/mapping";
-import { accept, type Accepted, decisionsOf, defaultsOf, type Draft, modelTask, relationsOf } from "./tasks/model";
+import { accept, type Accepted, decisionsOf, defaultsOf, type Draft, draftOf, modelTask, relationsOf, structureOf } from "./tasks/model";
 import { type Profiled, profiledOf, thingName } from "./tasks/profile";
 import { isAnswerable, joinGraphOf, requirements } from "./tasks/requirements";
 
@@ -54,7 +54,7 @@ const locationOf = (id: string): FileReference => {
 };
 
 /** The connections the assistant reads: the sink is written to, not read from. */
-const readable = (c: StorageConnection) => c.kind === "data" && c.direction !== "sink";
+const readable = (c: StorageConnection) => c.direction !== "sink";
 
 /**
  * A kept file as the tree writes it (`childrenOf`, down the folders it is in), without listing them:
@@ -104,10 +104,17 @@ function decisionItems(draft: Draft, profiled: Profiled, chosen: Readonly<Record
   }));
 }
 
-/** A proposal's value, once its oracles held it; what they still said after the last attempt is the failure. */
-function held<A>({ task, value, verdict }: Proposal<A>): A {
+/** What each Task writes, as a failure names it. */
+const WRITES: Record<string, string> = { model: "The names", requirements: "The questions", mapping: "The program" };
+
+/**
+ * A proposal's value, once its oracles held it. What they still said after the last attempt is the
+ * failure — `task/unheld`, what was tried and why it did not hold, not a model call that failed.
+ */
+export function held<A>({ task, value, verdict, attempts }: Proposal<A>): A {
   if (!("diagnostics" in verdict)) return value;
-  throw new ClientError("llm/failed", `The ${task} proposed did not hold.`, verdict.diagnostics.map((d) => d.message).join(" "));
+  const tries = attempts === 1 ? "1 attempt" : `${attempts} attempts`;
+  throw new ClientError("task/unheld", `${WRITES[task] ?? `The ${task}`} did not hold after ${tries}.`, verdict.diagnostics.map((d) => d.message).join(" "));
 }
 
 const NO_MODEL: Accepted = { types: [], edges: [] };
@@ -134,7 +141,8 @@ export interface Assistant extends AssistantData {
   /** Pick `files`, or drop them: what a pill's menu does. */
   pick: (files: readonly SourceFile[], on: boolean) => void;
   /** Drop every file of a connection: the cross on its pill. */
-  clear: (connection: string) => void;
+  /** Drops picked files by id. */
+  drop: (ids: readonly string[]) => void;
   /** The person's pick of a decision's option. */
   choose: (decision: string, option: string) => void;
   /** The picked files as the program's binding lines: what Open in the editor opens the editor with. */
@@ -156,7 +164,6 @@ export function useAssistant({
   connections,
   formats,
   about,
-  asked,
   questions,
   seed,
 }: {
@@ -164,8 +171,6 @@ export function useAssistant({
   formats: readonly Format[];
   /** *What is it about?*: `undefined` until answered, `""` when skipped. */
   about: string | undefined;
-  /** The person has asked all they wanted. */
-  asked: boolean;
   /** The questions the person kept, whose `answerable` this answers. */
   questions: readonly Question[];
   /** A kept conversation to start from. */
@@ -192,8 +197,8 @@ export function useAssistant({
       }),
     [],
   );
-  const clear = useCallback(
-    (connection: string) => setChosenFiles((prev) => new Map([...prev].filter(([id]) => !id.startsWith(`${connection}:`)))),
+  const drop = useCallback(
+    (ids: readonly string[]) => setChosenFiles((prev) => new Map([...prev].filter(([id]) => !ids.includes(id)))),
     [],
   );
   const [chosen, setChosen] = useState<Record<string, string>>(() => ({ ...seed?.chosen }));
@@ -210,7 +215,10 @@ export function useAssistant({
   const keptFiles = keptRead.data ?? NONE_KEPT;
   const [keptProgram] = useState(() => seed?.program ?? null);
 
-  const picked = [...chosenFiles].flatMap(([id, file]) => file ?? keptFiles.get(id) ?? []);
+  const every = [...chosenFiles].flatMap(([id, file]) => file ?? keptFiles.get(id) ?? []);
+  // A vocabulary is not data: it is not profiled, and the things are the data's.
+  const picked = every.filter((f) => !f.vocabulary);
+  const vocabularies = new Set(every.filter((f) => f.vocabulary).map((f) => f.id));
   // A kept file no connection reads any more is said, never dropped.
   const unreachable = [...chosenFiles].filter(([id, file]) => file === null && keptFiles.get(id) === null).map(([id]) => id);
   const lines = picked.map((f) => f.line).sort();
@@ -249,7 +257,8 @@ export function useAssistant({
   const drafted = useQuery({
     queryKey: ["assistant", "model", lines, about],
     queryFn: async ({ signal }) => {
-      return held(await runTask(modelTask(profiled!), { profiled: profiled!, about: about ?? "" }, { model, signal }));
+      const names = held(await runTask(modelTask(profiled!), { profiled: profiled!, about: about ?? "" }, { model, signal }));
+      return draftOf(structureOf(profiled!), names);
     },
     enabled: profiled !== null && profiled.sources.length > 0 && about !== undefined,
     retry: false,
@@ -257,17 +266,13 @@ export function useAssistant({
   });
   const draft = drafted.data ?? null;
   const decisions = useMemo(() => (draft && profiled ? decisionItems(draft, profiled, chosen) : null), [draft, profiled, chosen]);
-  const accepted = useMemo(
-    () => (draft && profiled && decisions ? accept(draft, profiled, (id) => standing(decisions, id)) : null),
-    [draft, profiled, decisions],
-  );
-  // Said before the decisions are taken: each one still open read at its first option meanwhile.
-  const relations = useMemo(() => {
+  // Each decision still open read at its first option meanwhile: nothing waits on it but the build.
+  const accepted = useMemo(() => {
     if (!draft || !profiled || !decisions) return null;
     const first = (id: string) => decisions.find((d) => d.decision.id === id)?.decision.options[0]?.id ?? null;
-    const shown = accepted ?? accept(draft, profiled, (id) => standing(decisions, id) ?? first(id));
-    return shown ? relationsOf(shown, profiled) : null;
-  }, [draft, profiled, decisions, accepted]);
+    return accept(draft, profiled, (id) => standing(decisions, id) ?? first(id));
+  }, [draft, profiled, decisions]);
+  const relations = useMemo(() => (accepted && profiled ? relationsOf(accepted, profiled) : null), [accepted, profiled]);
   const acceptedKey = accepted ? JSON.stringify(accepted) : null;
 
   // ── fossil declares the accepted model, and the graph it will be is described by fossil's mapping of it ──
@@ -312,7 +317,7 @@ export function useAssistant({
     return marked[typed.indexOf(q)]?.data ?? null;
   };
 
-  // ── mapping: the program, once the person has asked all they wanted ──
+  // ── mapping: the program, as soon as the model is accepted ──
   const mapped = useQuery({
     queryKey: ["assistant", "mapping", acceptedKey],
     queryFn: async ({ signal }) => {
@@ -324,7 +329,7 @@ export function useAssistant({
         check.close();
       }
     },
-    enabled: accepted !== null && declared.data !== undefined && asked,
+    enabled: accepted !== null && declared.data !== undefined,
     retry: false,
     staleTime: Infinity,
     // A decision changed is a program written again: the last one stays the preview's meanwhile.
@@ -342,6 +347,7 @@ export function useAssistant({
     connections: readableConnections,
     list,
     selected,
+    vocabularies,
     reading: picked.length > 0 && read.isPending ? { done: 0, total: picked.length } : null,
     problems,
     understanding: { things: profiled ? thingsOf(profiled, picked) : [], relations },
@@ -350,10 +356,10 @@ export function useAssistant({
     failures,
     questions: questions.map((q) => ({ ...q, answerable: answerable(q) })),
     pick,
-    clear,
+    drop,
     choose: (decision, option) => setChosen((prev) => ({ ...prev, [decision]: option })),
     // The mapping's program once it holds; until then the picked files' bindings.
-    program: mapped.data ?? picked.map((f) => f.line).join("\n"),
+    program: mapped.data ?? every.map((f) => f.line).join("\n"),
     files: [...chosenFiles.keys()].map(locationOf),
     mapped: accepted === null ? null : (mapped.data ?? keptProgram),
     writing: mapped.isFetching,

@@ -36,7 +36,7 @@ pub enum Action {
 /// What kind of object a permission is asked of: the matrix has a row for each.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Kind {
-    /// A source connection: data or a vocabulary.
+    /// A source connection: the files a program reads.
     Source,
     /// The workspace's one sink: an admin's, reached through its graphs.
     Sink,

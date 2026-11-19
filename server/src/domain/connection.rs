@@ -8,19 +8,6 @@ use utoipa::ToSchema;
 
 use super::{Actor, Provenance, ValidationReport};
 
-#[derive(
-    Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq, ToSchema, strum::AsRefStr,
-)]
-#[serde(rename_all = "snake_case")]
-#[strum(serialize_all = "snake_case")]
-pub enum ConnectionKind {
-    /// Tables a program reads.
-    #[default]
-    Data,
-    /// Shapes and vocabularies the editor offers.
-    Vocab,
-}
-
 /// A source is read through `@name/…`; the one sink is where graph output lands.
 #[derive(
     Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq, ToSchema, strum::AsRefStr,
@@ -39,8 +26,6 @@ pub struct StorageTarget {
     /// `abfss://container@account.dfs.core.windows.net/prefix/` or `gs://bucket/prefix/`.
     #[schema(format = "uri")]
     pub url: String,
-    #[serde(default)]
-    pub kind: ConnectionKind,
     #[serde(default)]
     pub direction: Direction,
 }

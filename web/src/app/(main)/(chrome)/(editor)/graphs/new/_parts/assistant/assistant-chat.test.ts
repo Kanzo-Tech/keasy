@@ -91,7 +91,7 @@ const share: DecisionItem = {
   chosen: null,
 };
 
-const nobel = { name: "nobel", url: "s3://lake/nobel/", direction: "source", secret: "aws" } as const;
+const nobel = { name: "nobel", url: "s3://lake/nobel/", direction: "source" } as const;
 const file = (name: string, size: number): SourceFile => ({
   id: `nobel:${name}`,
   name,

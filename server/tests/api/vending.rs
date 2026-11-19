@@ -7,10 +7,8 @@ use keasy_server::domain::Direction;
 async fn workspace() -> (TestApp, String) {
     let app = spawn_app().await;
     let member = app.token(EDITOR);
-    app.credential("key", "u-1").await;
-    app.connection("source", "key", Direction::Source, "u-1")
-        .await;
-    app.connection("sink", "key", Direction::Sink, "u-1").await;
+    app.connection("source", Direction::Source, "u-1").await;
+    app.connection("sink", Direction::Sink, "u-1").await;
     (app, member)
 }
 
@@ -104,5 +102,68 @@ async fn an_ended_graph_is_never_written() {
     assert_eq!(
         app.vend(&member, json!({ "job": id }), "write").await,
         (StatusCode::CONFLICT, Some("graph/ended".to_owned()))
+    );
+}
+
+/// What the storage service vends is what fossil's host is handed, unchanged:
+/// asked for the graph's own output — `{sink}/{folder}/` — or the source's
+/// location, with the caller's own token, after keasy's own check.
+#[tokio::test]
+async fn the_storage_service_vends_to_the_caller_for_exactly_the_scopes_location() {
+    let storage = crate::helpers::fake_storage(&crate::helpers::fake_s3().await).await;
+    let app = crate::helpers::spawn_app_with(crate::helpers::Options {
+        storage: storage.url.clone(),
+        ..crate::helpers::Options::default()
+    })
+    .await;
+    let member = app.token(EDITOR);
+    app.connection("source", Direction::Source, "u-1").await;
+    app.connection("sink", Direction::Sink, "u-1").await;
+    let id = app.running(&member).await;
+    let (_, graph) = app
+        .send(
+            Method::GET,
+            &format!("/v1/graphs/{id}"),
+            &member,
+            json!(null),
+        )
+        .await;
+    let output = graph["output"].as_str().unwrap().to_owned();
+    assert!(output.starts_with("s3://b/sink/out-"), "{output}");
+
+    let response = app
+        .client
+        .post(format!("{}/v1/storage-credentials", app.address))
+        .bearer_auth(&member)
+        .json(&json!({ "scope": { "job": id }, "access": "write" }))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(response.headers()["cache-control"], "no-store");
+    let body: serde_json::Value = response.json().await.unwrap();
+    let credential = &body["storage_credentials"][0];
+    assert_eq!(credential["prefix"], output);
+    assert_eq!(credential["config"]["s3.session-token"], "T");
+
+    assert_eq!(
+        app.vend(&member, json!({ "connection": "source" }), "read")
+            .await
+            .0,
+        StatusCode::OK
+    );
+    let asked: Vec<_> = storage
+        .asked
+        .lock()
+        .unwrap()
+        .iter()
+        .map(|a| (a.location.clone(), a.access.clone(), a.token == member))
+        .collect();
+    assert_eq!(
+        asked,
+        vec![
+            (output, "write".to_owned(), true),
+            ("s3://b/source/".to_owned(), "read".to_owned(), true),
+        ]
     );
 }

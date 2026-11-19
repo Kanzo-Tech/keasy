@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { Database } from "lucide-react";
-import { Badge, SectionBody, SectionRoot, toast } from "@kanzo-tech/ui";
+import { SectionBody, SectionRoot, toast } from "@kanzo-tech/ui";
 import { actionsColumn, type ColumnDef, sortableHeader } from "@kanzo-tech/ui/table";
 import { useSession } from "@kanzo-tech/auth";
 import { BlockedMenuItem } from "@/components/blocked";
@@ -13,7 +13,7 @@ import { $api, connectionsQuery } from "@/lib/api/client";
 import type { Connection } from "@/lib/connections";
 import { blocked } from "@/lib/permissions";
 
-const CHANGES = ["/v1/connections", "/v1/secrets"] as const;
+const CHANGES = ["/v1/connections"] as const;
 
 /**
  * The storage connections a program reads from. A connection is a location and nothing more: what a
@@ -40,11 +40,6 @@ export default function ConnectionsPage() {
         accessorKey: "name",
         header: sortableHeader("Name"),
         cell: ({ getValue }) => <span className="font-medium">{getValue<string>()}</span>,
-      },
-      {
-        accessorKey: "secret",
-        header: "Credential",
-        cell: ({ getValue }) => <Badge variant="outline">{getValue<string>()}</Badge>,
       },
       {
         id: "target",

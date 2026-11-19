@@ -15,7 +15,6 @@ const snb: StorageConnection = {
   name: "snb",
   url: "s3://lake/ldbc/",
   direction: "source",
-  secret: "aws",
 };
 
 describe("childrenOf", () => {

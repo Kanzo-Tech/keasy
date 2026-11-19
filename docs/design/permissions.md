@@ -50,8 +50,8 @@ reading, so it was closed on harmless actions and open on powerful ones:
 | Action | Means |
 |---|---|
 | **read** | See the object and its status. |
-| **use** | Build on it: a source in a graph, its files listed or read; a secret in a connection; a completed graph's output read. |
-| **operate** | Change its status, not its configuration: test a connection or a secret; run or re-run a graph. |
+| **use** | Build on it: a source in a graph, its files listed or read; a completed graph's output read. |
+| **operate** | Change its status, not its configuration: test a connection; run or re-run a graph. |
 | **manage** | Change its configuration: edit, rename, delete; a graph's rules and dashboard. |
 
 Stopping a run is its own case: its runner, or whoever manages the graph.
@@ -61,7 +61,7 @@ Stopping a run is its own case: its runner, or whoever manages the graph.
 | Role | On every object of the workspace |
 |---|---|
 | reader | read graphs, outputs, dashboards, rules and connection metadata; use completed outputs; Ask |
-| editor | reader, plus create; **use** and **operate** everything but another person's secret; **manage** what they own |
+| editor | reader, plus create; **use** and **operate** everything; **manage** what they own |
 | admin | editor, plus **manage** everything, the workspace's own objects and the sink included |
 
 The roles stay Keycloak client roles, composites declared once (`compose.yaml`, `x-application`),
@@ -70,17 +70,16 @@ console: a keasy admin is not an organisation admin.
 
 ## Ownership
 
-Every secret, connection and graph has an **owner**, kept apart from its provenance:
+Every connection and graph has an **owner**, kept apart from its provenance:
 `created_by` says who made it and never changes; `owner` says whose it is and is what permissions
 read. The owner is a person's `sub` or the principal **`workspace`**. What the bootstrap declares
-(the seeded secrets and connections, the sink) is owned by `workspace`: every editor uses and
+(the seeded connections, the sink) is owned by `workspace`: every editor uses and
 operates it, only an admin manages it. Views answer `owner: { id, name }`.
 
 ## The matrix
 
 | Object | read | use | operate | manage | create |
 |---|---|---|---|---|---|
-| Secret (metadata; the value is never returned) | editor | owner, admin; every editor on the workspace's | editor (Test) | owner, admin | editor |
 | Source connection (data, vocabulary) | reader | editor (in a graph, list files, vend a read) | editor (Test) | owner, admin | editor |
 | Sink / workspace storage | reader | through its graphs only | admin (Test) | admin | admin |
 | Graph | reader | reader (vend a completed output) | editor (run, run again); stop: runner, owner, admin | owner, admin | editor |
@@ -90,7 +89,7 @@ operates it, only an admin manages it. Views answer `owner: { id, name }`.
 
 The server holds it in one function, `Caller::may` (`server/src/authentication/permission.rs`);
 handlers call `caller.ensure(Action::…, &object)`, and only that: graph routes load with the
-module's own lookup (`graphs::any`) and ask `caller.ensure` as secrets and connections do — the
+module's own lookup (`graphs::any`) and ask `caller.ensure` as connections do — the
 graph-only `graphs::permitted`, which loaded and ensured in one call, is gone. *What would reverse
 it:* a fourth kind of object whose every route loads-then-ensures — then one generic
 `permitted<T: Securable>` serves all of them, not a graph-only one. A route still states the least
@@ -115,11 +114,12 @@ can change it".
 
 1. **An editor may run, and run again, another person's graph**: it is operate. Running overwrites
    the output, which is the point of running again.
-2. **Using another person's secret is not possible without its owner or an admin.** Unity
-   Catalog's rule is that using a credential takes an explicit grant; with no way to grant, the grant
-   is nobody's, so an editor uses their own secrets and the workspace's (seeded) ones, and an admin
-   uses any. It is asked where a connection is created or repointed, and only there: a connection
-   already made on a secret keeps working, as an external location keeps its storage credential.
+2. **There is no storage credential to grant.** A connection is a name and a URL and keasy holds no
+   key ([cleanup](cleanup.md#storage-credentials-are-the-storage-services)): what storage any
+   connection may reach is the deployment's declared locations, held by the platform's storage
+   service, as Unity Catalog's external locations hold their storage credential. Within them, the
+   matrix above is the whole of who may. The decision it replaced — using another person's secret
+   took its owner or an admin — went with the secrets.
 3. **Readers do not see a source's files**: listing them is use, an editor's, as reading them is.
 4. **No fourth role**: reader ⊂ editor ⊂ admin.
 5. **Folders carry no permissions yet.**
@@ -160,7 +160,7 @@ dashboards — then this step is deleted, not kept.
 ## Sharing waits for its dialog
 
 **Decided 2026-10-13: grants, sharing and transfer are removed until a Share dialog exists.** Phase B's
-server was built ahead of its screen: `PUT /v1/{secrets,connections,graphs}/{id}/grants` and
+server was built ahead of its screen: `PUT /v1/{secrets,connections,graphs}/{id}/grants` (secrets have since gone too) and
 `PUT …/owner` had no web caller, the only client was one e2e test (`roles.spec.ts`), and the dialog
 waited on a directory nobody has decided how to read (below). An API nobody can reach from the product
 is surface to keep secure, documented and tested for no one; and the three copies of share and of
@@ -181,7 +181,7 @@ What stays: `owner` apart from `created_by`, the `workspace` principal, the four
 `Caller::may` as one match. The schema changes with no migration ([The schema](#the-schema)).
 
 *What would reverse it:* a Share dialog being built — a screen where a person picks someone in the
-workspace and says *manager* or *may use this secret*. Then phase B comes back as it was designed: the
+workspace and says *manager*. Then phase B comes back as it was designed: the
 `grants` table as Zanzibar tuples in keasy's SQLite file (object, relation, principal; the object in
 one of three columns with its foreign key), grants to people and to Keycloak organization groups by id
 from the token, `PUT …/grants` replacing an object's grants whole as Drive's dialog applies on *Save*,

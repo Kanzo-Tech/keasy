@@ -348,7 +348,7 @@ impl From<Transition> for Refusal {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::authentication::role::Roles;
+    use crate::authentication::role::{AccessToken, Roles};
     use serde_json::json;
 
     fn caller(sub: &str, role: &str) -> Caller {
@@ -356,6 +356,7 @@ mod tests {
             user_id: sub.into(),
             name: sub.into(),
             roles: Roles::from_claim([role]),
+            token: AccessToken::from("t"),
         }
     }
 

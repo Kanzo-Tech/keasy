@@ -13,9 +13,8 @@ A step marked ⇧ waits for a library release, and keasy deletes in the same cha
 | ⇧ **The Ask evaluation set to kanzo-ui** ([assistant](assistant.md#order)) | kanzo-ui taking the set |
 | ⇧ **kanzo-ui**: `Structure`, the conversation's keeping, library hooks on keasy's `QueryClient` ([below](#what-the-libraries-take)) | a kanzo-ui release |
 | **`joinGraphOf`'s tables stay**, described by fossil's mapping; why and what would reverse it on [the assistant page](assistant.md#the-three-steps-and-the-one-task) | a `JoinGraph` from a mapping in kanzo-ui, and `@fossil-lang/types` exporting the `Primitive` table |
-| **Azure's signer**: keasy's minimal user-delegation SAS signer ([below](#azure-has-one-credential-a-user-delegation-sas-through-the-azure-sdk)) | the Azure SDK's SAS builder |
 | **The two module stores** (`lib/fossil/build.ts`, `use-browser-graph-runner.ts`) stay `useSyncExternalStore`: a build's state names its graph before it ends, and a live run holds its Stop and its ending, neither of which a mutation's state carries | nothing; a state a mutation can carry reopens it |
-| **Field labels and file icons**: credential field labels are still the property names (utoipa 5 has no `title` on a field, only on a type); the source picker picks an icon by extension (the file's `reader` names a format, not whether it is a table) | utoipa; fossil |
+| **File icons**: the source picker picks an icon by extension (the file's `reader` names a format, not whether it is a table) | fossil |
 | **e2e**: `page.clock` for windows of time, and one `seeded(example)` fixture | see [e2e](#e2e) |
 
 ## What the libraries take
@@ -60,37 +59,29 @@ reverse it:* people who need the shape at a glance and do not get it from the ta
 large to read as two lists — and then it is drawn with `@kanzo-tech/graph`'s canvas over the same
 `Structure`, never a second graph stack.
 
-## Azure has one credential: a user-delegation SAS through the Azure SDK
+## Storage credentials are the storage service's
 
-**keasy vends Azure storage one way.** A service principal gets an Entra token,
-the token gets a user-delegation key, and the key signs a directory-scoped user-delegation SAS
-(`sr=d`, `sdd`). This is how Apache Polaris and Unity Catalog vend Azure credentials, and it is what
-Microsoft recommends over account keys. The SAS is tied to an Entra identity, can be revoked with
-the key, and never carries the account key.
+**keasy signs nothing and stores no key.** A connection is a name and a URL; every credential —
+the browser's for a graph's prefix, the server's own to test a connection or list its files — is
+the platform's storage service's (kanzo-ui `services/storage`), asked with the person's token after
+keasy's permission check, and signed with the deployment's identity by each cloud's own SDK (STS
+AssumeRole with a session policy, a user-delegation SAS over a directory, a Credential Access
+Boundary). The deployment declares the locations the service may vend for, as Unity Catalog's
+external locations; a connection outside them is `store/undeclared`.
 
-**There is no account-key kind**: Azure has one secret kind, `AzureServicePrincipal`.
+It replaced a `credentials` table of sealed keys per organization, an Azure SAS signer written by
+hand (no Rust crate built a directory SAS), and a credentials screen. The argument, and what it
+cost, is kanzo-ui's [services page](https://github.com/Kanzo-Tech/ui/blob/main/docs/content/docs/design/services.mdx#the-storage-service).
 
-`storage_client/vend.rs` gets the Entra token and the key through the Azure SDK for Rust, and signs the SAS itself:
+Testing a sink writes `.keasy-validate` under it and leaves it there: a write credential cannot
+delete, which is the point of it.
 
-- **The token**: `azure_identity`'s `ClientSecretCredential`, scope
-  `https://storage.azure.com/.default`.
-- **The key**: `azure_storage_blob` (1.1)'s `BlobServiceClient::get_user_delegation_key`.
-- **The signature**: the maintained `azure_storage_blob` 1.1 has no SAS builder. The retired
-  `azure_storage` 0.21 has one (`BlobSharedAccessSignature`), and it is **rejected**: it is the SDK
-  keasy would be leaving, it pins `azure_core` 0.21 beside 1.x, and it brings in the `time` crate as a
-  third clock. keasy keeps a minimal user-delegation SAS signer (`user_delegation_sas`, ~60 lines with
-  `hmac` and `sha2`) until `azure_storage_blob` can build the SAS, and then deletes it.
+A connection declared at boot is not tested: a test is a person's, and the bootstrap has no token.
 
-The timestamps are `jiff`'s, so the server has one time crate. The tests at the end of `vend.rs` stay: the SAS names the directory it opens, and a silent Entra or blob endpoint is named `silent` within keasy's deadline. The SDK's client options (retries, timeouts) are set so those tests keep passing. *What would reverse it:* a customer whose storage account cannot use Entra. Then
-an account key comes back as a second kind, signed by the SDK, never by hand.
-
-**The token and the key are the Azure SDK's.** The SDK sends through keasy's own `reqwest` client (`Bounded`, an `HttpClient`), with no retries, so the silent tests name Entra and Azure Blob within keasy's deadline; they reach a silent `https` listener, because the SDK reaches Entra over `https` only, and Azure Blob with a credential that has its token already. The signer stays: no 1.x crate builds a SAS.
-
-The SDK brings what rejecting `azure_storage` 0.21 was partly about: `time` 0.3 beside `jiff`, and
-`azure_core` 1.1's `hmac` 0.12 and `sha2` 0.10 beside keasy's 0.13 and 0.11. The price is taken for less of keasy's own
-code between it and Entra. *What would reverse it:* an SDK version, or a dependency it
-brings, that breaks the build or an advisory check; or the `https`-only authority host blocking a real
-deployment's Entra — then the token and the key are fetched by hand.
+*What would reverse it:* a Rust SDK that vends on every cloud, at which point the service's vending
+is a library keasy's server links — still with no key of keasy's. Or an organization whose storage
+cannot grant the deployment's identity a role; then a key comes back, held by the storage service,
+never by keasy.
 
 ## Configuration is what a deployment sets
 
@@ -123,7 +114,7 @@ it cannot prove.
 
 Each is TanStack Query's own pattern, already a dependency.
 
-- **One list page.** Connections, credentials and graphs (`page.tsx`, 220, 203 and 191 lines) are the
+- **One list page.** Connections and graphs (`page.tsx`, 220 and 191 lines) are the
   same skeleton — section, boundary, `useSuspenseQuery`, `useDataTable`, empty state or table with
   toolbar, search, *Create*, pagination and a row menu. One keasy `ResourceList<T>({ query, columns,
   empty, create, href, search })`, and each page keeps its columns. ~150. *What would reverse it:* a
@@ -160,17 +151,17 @@ Each is TanStack Query's own pattern, already a dependency.
   do not offer — then `Intl` directly, still under the page's locale.
 - **Error titles come from the server.** keasy's words for its own failures live in
   `server/src/error.rs`'s `title()`; `lib/errors.ts` re-titles the server's codes (`probe/failed`,
-  `resource/in-use`, `secret/not-found`, `graph/*`, `rbac/*`, `store/*`, `server/silent`), and
+  `resource/in-use`, `graph/*`, `rbac/*`, `store/*`, `server/silent`), and
   `graph/interrupted` is worded three times. The web registry keeps only codes the server does not
   own — fossil's, kanzo-ui's, the browser's — and `markInterrupted` sends `{ code }` and the server
   fills the title. ~30. *What would reverse it:* a server code whose title the web must say
   differently for where it is shown — then the difference is a `detail`, not a second title.
 - **Names come from the API, not title-casing.** Breadcrumbs title-case URL segments
   (`route-config.ts`), so `/connections/{name}` reads its slug capitalised; the workspace name is
-  `titleCase(slug)`; credential field labels are property names with `_` replaced; a graph falls back
+  `titleCase(slug)`; a graph falls back
   to `id.slice(0, 8)`. They become the resource's own `name` (as graphs' crumbs already resolve
   theirs), the organization's name (`@kanzo-tech/auth`'s `Organization` gains `name`; until then
-  `branding.name`), `#[schema(title = "…")]` on each credential field, and a `name` the server
+  `branding.name`), and a `name` the server
   requires. ~40. *What would reverse it:* a resource with no name of its own — then the route table
   names it, never a transform of the URL.
 - **Formats are fossil's.** `connections/new/page.tsx` hard-codes *CSV, Parquet, JSON* and *ShEx,

@@ -143,7 +143,6 @@ function Overview() {
   const connections = useConnections();
   const sources = connections.filter((c) => c.target.direction === "source");
   const outputs = connections.length - sources.length;
-  const credentials = new Set(sources.map((c) => c.secret)).size;
   return (
     <Figures
       figures={[
@@ -156,7 +155,7 @@ function Overview() {
         {
           label: "Sources",
           value: sources.length,
-          description: `through ${counted(credentials, "credential")} · ${counted(outputs, lower(WORDS.output))}`,
+          description: counted(outputs, lower(WORDS.output)),
           href: "/connections",
         },
       ]}
@@ -213,19 +212,12 @@ function RecentGraphs() {
 
 /** What is left before the workspace has shown what it holds, in the order it is done in. */
 function Setup() {
-  const secrets = settled($api.useSuspenseQuery("get", "/v1/secrets"));
   const connections = useConnections();
   const graphs = useGraphs();
   const sources = connections.filter((c) => c.target.direction === "source");
   const outputs = connections.length - sources.length;
   const built = graphs.find((g) => g.status === "completed");
   const steps = [
-    {
-      title: "Add a credential",
-      done: secrets.length > 0,
-      description: secrets[0]?.name ?? "Who keasy is when it reaches a store",
-      href: "/settings/credentials/new",
-    },
     {
       title: "Connect a source",
       done: sources.length > 0,

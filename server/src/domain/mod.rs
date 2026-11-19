@@ -1,6 +1,5 @@
 mod connection;
 mod conversation;
-mod credential;
 mod dashboard;
 mod graph;
 mod graph_folder;
@@ -14,7 +13,6 @@ mod vended;
 
 pub use connection::*;
 pub use conversation::Conversation;
-pub use credential::*;
 pub use dashboard::Dashboard;
 pub use graph::*;
 pub use graph_folder::GraphFolder;

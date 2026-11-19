@@ -68,11 +68,10 @@ export const SINK = "Workspace output";
 /** The suite's own connections, over its fixtures (e2e/fixtures/, mirrored by `s3-init`). */
 export const SOURCE = "E2E source";
 export const SHAPES = "E2E shapes";
-const CREDENTIAL = "Dev S3";
 
 export const CONNECTIONS = [
-  { name: SOURCE, secret: CREDENTIAL, target: { url: "s3://keasy-dev/e2e/data/", direction: "source" } },
-  { name: SHAPES, secret: CREDENTIAL, target: { url: "s3://keasy-dev/e2e/vocab/", direction: "source" } },
+  { name: SOURCE, target: { url: "s3://keasy-dev/e2e/data/", direction: "source" } },
+  { name: SHAPES, target: { url: "s3://keasy-dev/e2e/vocab/", direction: "source" } },
 ] as const;
 
 /** The program over the fixtures. */

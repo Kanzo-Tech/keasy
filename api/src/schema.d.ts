@@ -133,7 +133,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * LIST a source, WRITE and DELETE under the sink. Any editor tests a source,
+         * LIST a source, WRITE under the sink, with what the storage service vends to
+         *     the caller. Any editor tests a source,
          *     an admin the sink: testing operates a connection, it does not change it, so
          *     who asked is kept on the report and never as who updated the connection.
          */
@@ -324,67 +325,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/secrets": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["list_secrets"];
-        put?: never;
-        /**
-         * An editor creates one, and owns it; any editor may use it in a connection
-         *     and test it, and its owner or an admin changes it.
-         */
-        post: operations["create_secret"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/secrets/{name}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["get_secret"];
-        put?: never;
-        post?: never;
-        delete: operations["delete_secret"];
-        options?: never;
-        head?: never;
-        /**
-         * Rotation replaces the whole spec, and is committed only if every connection
-         *     using the secret still validates with the new one.
-         */
-        patch: operations["update_secret"];
-        trace?: never;
-    };
-    "/v1/secrets/{name}/validate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Probe the secret through every connection that uses it. Any editor may:
-         *     testing operates the secret, it does not change it, so who asked is kept on
-         *     the report and never as who updated the secret.
-         */
-        post: operations["validate_secret"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/storage-credentials": {
         parameters: {
             query?: never;
@@ -399,6 +339,7 @@ export interface paths {
          *     completed graph's dataset. An editor reads a source connection — Unity
          *     Catalog's temporary path credentials over an external location — to build
          *     a graph, and writes a graph's dataset while it runs, if they are its runner.
+         *     The credential is vended to the caller: their token goes with the ask.
          */
         post: operations["vend"];
         delete?: never;
@@ -459,10 +400,7 @@ export interface components {
             manage: boolean;
             /** @description Test it, or run it (again). */
             operate: boolean;
-            /**
-             * @description Build on it: a secret in a connection. Every editor uses a connection
-             *     and reads a graph's output, so the interface reads this for secrets.
-             */
+            /** @description Build on it: read a source, or a graph's output. */
             use: boolean;
         };
         Check: {
@@ -482,7 +420,6 @@ export interface components {
              *     declares. Its owner or an admin manages it; the sink is an admin's.
              */
             owner: components["schemas"]["Actor"];
-            secret: string;
             target: components["schemas"]["StorageTarget"];
             validation?: null | components["schemas"]["ValidationReport"];
         };
@@ -510,8 +447,6 @@ export interface components {
         CreateConnectionRequest: {
             /** @description What programs write after `@`, and the connection's key. */
             name: components["schemas"]["ResourceName"];
-            /** @description The secret it signs with. */
-            secret: string;
             target: components["schemas"]["StorageTarget"];
         };
         CreateGraphRequest: {
@@ -525,17 +460,6 @@ export interface components {
             script: string;
             /** @description Where the output lands: the sink connection's name. */
             sink_connection: string;
-        };
-        CreateSecretRequest: {
-            name: components["schemas"]["ResourceName"];
-            /**
-             * Format: uri
-             * @description A storage URL to LIST before the secret is stored. A secret has
-             *     no location of its own, so without one it is only checked to build a
-             *     client.
-             */
-            probe_url?: string | null;
-            spec: components["schemas"]["SecretSpec"];
         };
         /**
          * @description A graph's saved dashboard. `spec` is the dashboard the web's BI kit
@@ -658,7 +582,7 @@ export interface components {
          * @description What a probe tried.
          * @enum {string}
          */
-        Operation: "list" | "write" | "delete";
+        Operation: "list" | "write";
         /** @enum {string} */
         Outcome: "pass" | "fail" | "skip";
         /**
@@ -700,8 +624,8 @@ export interface components {
              */
             column?: number | null;
             /**
-             * @description What the refusal is about: what still uses a secret or connection,
-             *     or the connections a rotation would break.
+             * @description What the refusal is about: what still uses a connection, or the
+             *     connections a location overlaps.
              */
             dependents?: string[];
             /**
@@ -784,74 +708,13 @@ export interface components {
              */
             job: string;
         };
-        /** @description A secret's spec as a request states it, its values included. */
-        SecretSpec: {
-            access_key_id: string;
-            /**
-             * @description AWS's guard against the confused deputy, when the role's trust
-             *     policy asks for one.
-             */
-            external_id?: string | null;
-            /** @enum {string} */
-            kind: "s3";
-            /** @default us-east-1 */
-            region?: string;
-            /**
-             * @description The role keasy assumes to vend a credential scoped to one prefix.
-             *     AWS needs it.
-             */
-            role_arn?: string | null;
-            /** Format: password */
-            secret_access_key: $Write<string>;
-        } | {
-            account: string;
-            client_id: string;
-            /** Format: password */
-            client_secret: $Write<string>;
-            /** @enum {string} */
-            kind: "azure_service_principal";
-            tenant_id: string;
-        };
-        /** @description A secret's spec as a response shows it: what names it, never what signs with it. */
-        SecretSpecView: {
-            access_key_id: string;
-            external_id?: string | null;
-            /** @enum {string} */
-            kind: "s3";
-            region: string;
-            role_arn?: string | null;
-        } | {
-            account: string;
-            client_id: string;
-            /** @enum {string} */
-            kind: "azure_service_principal";
-            tenant_id: string;
-        };
-        SecretView: components["schemas"]["Provenance"] & {
-            /**
-             * @description What the caller may do to it: use it in a connection (its owner or an
-             *     admin; every editor the workspace's), test it (any editor) and manage
-             *     it (its owner or an admin). Its value is never returned to anyone.
-             */
-            can: components["schemas"]["Can"];
-            name: string;
-            /**
-             * @description Who owns it: its creator, or the workspace for what the instance
-             *     declares. Its owner or an admin manages it.
-             */
-            owner: components["schemas"]["Actor"];
-            spec: components["schemas"]["SecretSpecView"];
-            /** @description The connections that use this secret. */
-            used_by: string[];
-            validation?: null | components["schemas"]["ValidationReport"];
-        };
         /**
          * @description Every code the server answers with. Closed: a code `problems.bnf` does not
          *     declare cannot be sent. Each variant is its wire name spelled in Rust,
          *     `area/kind-x` as `AreaKindX`.
          * @enum {string}
          */
-        ServerCode: "auth/session-required" | "auth/keys-unavailable" | "rbac/no-membership" | "rbac/insufficient-role" | "rbac/forbidden" | "request/rate-limited" | "request/invalid" | "request/malformed" | "request/method-not-allowed" | "request/too-large" | "route/not-found" | "server/internal" | "server/silent" | "server/not-ready" | "graph/not-found" | "graph/not-draft" | "graph/not-completed" | "graph/not-running" | "graph/ended" | "graph/still-running" | "graph/already-running" | "graph/abandoned" | "graph/interrupted" | "graph/invalid-destination" | "graph/no-destination" | "graph/folder-taken" | "conversation/not-found" | "conversation/built" | "secret/not-found" | "connection/not-found" | "resource/already-exists" | "resource/in-use" | "connection/overlaps" | "probe/failed" | "store/refused" | "store/silent" | "rules/refused";
+        ServerCode: "auth/session-required" | "auth/keys-unavailable" | "rbac/no-membership" | "rbac/insufficient-role" | "rbac/forbidden" | "request/rate-limited" | "request/invalid" | "request/malformed" | "request/method-not-allowed" | "request/too-large" | "route/not-found" | "server/internal" | "server/silent" | "server/not-ready" | "graph/not-found" | "graph/not-draft" | "graph/not-completed" | "graph/not-running" | "graph/ended" | "graph/still-running" | "graph/already-running" | "graph/abandoned" | "graph/interrupted" | "graph/invalid-destination" | "graph/no-destination" | "graph/folder-taken" | "conversation/not-found" | "conversation/built" | "connection/not-found" | "resource/already-exists" | "resource/in-use" | "connection/overlaps" | "probe/failed" | "store/undeclared" | "store/refused" | "store/silent" | "rules/refused";
         StorageCredentialsRequest: {
             access: components["schemas"]["Access"];
             scope: components["schemas"]["Scope"];
@@ -860,7 +723,8 @@ export interface components {
             direction?: components["schemas"]["Direction"];
             /**
              * Format: uri
-             * @description The prefix the connection is: `s3://bucket/prefix/` or `az://container/prefix/`.
+             * @description The prefix the connection is: `s3://bucket/prefix/`,
+             *     `abfss://container@account.dfs.core.windows.net/prefix/` or `gs://bucket/prefix/`.
              */
             url: string;
         };
@@ -877,17 +741,7 @@ export interface components {
         };
         UpdateConnectionRequest: {
             name?: null | components["schemas"]["ResourceName"];
-            secret?: string | null;
             target?: null | components["schemas"]["StorageTarget"];
-        };
-        /**
-         * @description A rename, a rotation or both. `spec` replaces the whole spec, secrets
-         *     included, and is stored only if every connection using the secret
-         *     still validates with it.
-         */
-        UpdateSecretRequest: {
-            name?: null | components["schemas"]["ResourceName"];
-            spec?: null | components["schemas"]["SecretSpec"];
         };
         /** @description One probe of a credential or a connection, check by check. */
         ValidationReport: {
@@ -902,6 +756,7 @@ export interface components {
          *     reader of vended credentials reads it. Handing it out is the point, so
          *     this is the one response type that carries a secret: its values stay
          *     [`SecretString`] until the moment they are written into the response.
+         *     Read from the storage service's answer as it wrote it.
          */
         VendedCredential: {
             config: {
@@ -1076,7 +931,7 @@ export interface operations {
                     "application/json": components["schemas"]["ConnectionView"];
                 };
             };
-            /** @description No such secret, or a URL it does not reach */
+            /** @description Not a storage URL, or one outside the deployment's storage (`store/undeclared`) */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -1085,7 +940,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description A sink by anyone but an admin, or on a secret the caller may not use */
+            /** @description A sink by anyone but an admin */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -1228,7 +1083,16 @@ export interface operations {
                     "application/json": components["schemas"]["ConnectionView"];
                 };
             };
-            /** @description Neither its owner nor an admin; the sink, anyone but an admin; or a secret the caller may not use */
+            /** @description Not a storage URL, or one outside the deployment's storage (`store/undeclared`) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Neither its owner nor an admin; the sink, anyone but an admin */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -2099,270 +1963,6 @@ export interface operations {
             };
         };
     };
-    list_secrets: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The secrets, with the connections using each; never a secret's value */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SecretView"][];
-                };
-            };
-        };
-    };
-    create_secret: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateSecretRequest"];
-            };
-        };
-        responses: {
-            /** @description Validated and stored */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SecretView"];
-                };
-            };
-            /** @description An invalid name */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
-            /** @description A secret of that name exists */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
-            /** @description The secret did not validate */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
-            /** @description The store did not answer the probe in time */
-            504: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
-        };
-    };
-    get_secret: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Secret name */
-                name: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The secret; never its value */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SecretView"];
-                };
-            };
-            /** @description No such secret */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
-        };
-    };
-    delete_secret: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Secret name */
-                name: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Deleted */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Neither its owner nor an admin */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
-            /** @description No such secret */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
-            /** @description Connections still use it; `dependents` names them */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
-        };
-    };
-    update_secret: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Secret name */
-                name: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateSecretRequest"];
-            };
-        };
-        responses: {
-            /** @description Renamed and/or rotated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SecretView"];
-                };
-            };
-            /** @description Neither its owner nor an admin */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
-            /** @description No such secret */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
-            /** @description A connection using it would not validate with the new spec; `dependents` names them */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
-            /** @description The store did not answer the probe in time */
-            504: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
-        };
-    };
-    validate_secret: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Secret name */
-                name: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The probe's report, stored with the secret and naming who asked for it */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ValidationReport"];
-                };
-            };
-            /** @description No such secret */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
-            /** @description The store did not answer the probe in time */
-            504: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
-        };
-    };
     vend: {
         parameters: {
             query?: never;
@@ -2385,7 +1985,7 @@ export interface operations {
                     "application/json": components["schemas"]["VendedCredentials"];
                 };
             };
-            /** @description Not a storage source, or an access the scope does not give */
+            /** @description Not a storage source, an access the scope does not give, or a location outside the deployment's storage (`store/undeclared`) */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -2421,7 +2021,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The store refused to vend */
+            /** @description The storage service, or the cloud behind it, refused to vend */
             502: {
                 headers: {
                     [name: string]: unknown;
@@ -2430,7 +2030,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The store, or the identity service before it, did not answer in time */
+            /** @description The storage service did not answer in time */
             504: {
                 headers: {
                     [name: string]: unknown;

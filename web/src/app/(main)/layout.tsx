@@ -26,7 +26,7 @@ export default async function MainLayout({
 
   return (
     <AuthProvider session={session}>
-      <SidebarProvider className="h-dvh min-h-0 overflow-hidden" defaultOpen={defaultOpen}>
+      <SidebarProvider className="h-dvh min-h-0 overflow-hidden" defaultOpen={defaultOpen} hotkey="mod+b">
         <Shell>{children}</Shell>
       </SidebarProvider>
     </AuthProvider>

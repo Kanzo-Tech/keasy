@@ -1,6 +1,7 @@
 //! The one door a credential is vended through: fossil's `Host.credentials`
 //! — a scope, an access — as an HTTP call. A scope is a source connection's
-//! prefix or a graph's dataset, `{sink}/{folder}/`; the store holds the
+//! prefix or a graph's dataset, `{sink}/{folder}/`. This server decides who may
+//! open it; the storage service vends the credential, and the store holds the
 //! boundary, so the credential opens nothing else.
 
 use axum::Json;
@@ -16,7 +17,6 @@ use crate::authentication::role::Reader;
 use crate::domain::{Access, VendedCredentials};
 use crate::error::{Problem, Refusal};
 use crate::startup::AppState;
-use crate::storage_client;
 
 /// What a credential is asked for: fossil's `Scope`, verbatim.
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
@@ -40,18 +40,19 @@ pub struct StorageCredentialsRequest {
     request_body = StorageCredentialsRequest,
     responses(
         (status = 200, description = "A credential that opens the scope's prefix, and only it, for an hour", body = VendedCredentials),
-        (status = 400, description = "Not a storage source, or an access the scope does not give", body = Problem, content_type = "application/problem+json"),
+        (status = 400, description = "Not a storage source, an access the scope does not give, or a location outside the deployment's storage (`store/undeclared`)", body = Problem, content_type = "application/problem+json"),
         (status = 403, description = "A source read below editor; a graph written below editor, or by anyone but its runner", body = Problem, content_type = "application/problem+json"),
         (status = 404, description = "No such connection, or no such graph", body = Problem, content_type = "application/problem+json"),
         (status = 409, description = "A graph read before it completed (`graph/not-completed`), or written before it runs (`graph/not-running`) or after it ended (`graph/ended`)", body = Problem, content_type = "application/problem+json"),
-        (status = 502, description = "The store refused to vend", body = Problem, content_type = "application/problem+json"),
-        (status = 504, description = "The store, or the identity service before it, did not answer in time", body = Problem, content_type = "application/problem+json"),
+        (status = 502, description = "The storage service, or the cloud behind it, refused to vend", body = Problem, content_type = "application/problem+json"),
+        (status = 504, description = "The storage service did not answer in time", body = Problem, content_type = "application/problem+json"),
     )
 )]
 /// Vend a credential over `scope` for `access`. Anyone in the workspace reads a
 /// completed graph's dataset. An editor reads a source connection — Unity
 /// Catalog's temporary path credentials over an external location — to build
 /// a graph, and writes a graph's dataset while it runs, if they are its runner.
+/// The credential is vended to the caller: their token goes with the ask.
 pub async fn vend(
     caller: Reader,
     State(state): State<AppState>,
@@ -62,11 +63,10 @@ pub async fn vend(
     if matches!(req.scope, Scope::Graph(_)) && access == Access::Write {
         crate::graphs::sweep(&state.db).await?;
     }
-    // What the scope is and the secret that reaches it, read at once; the
-    // store is asked after, with no database held.
-    let (location, credential) = {
+    // Where the scope is, read at once; the storage service is asked after,
+    // with no database held.
+    let location = {
         let conn = state.db.read().await;
-        let key = state.db.secret_key();
         match req.scope {
             Scope::Connection(name) => {
                 let source = crate::connections::source(&conn, &name)?;
@@ -74,7 +74,7 @@ pub async fn vend(
                 if access != Access::Read {
                     return Err(Refusal::invalid("a source is read, never written"));
                 }
-                crate::connections::storage(&conn, key, &source)?
+                crate::connections::location(&source)?
             }
             Scope::Graph(id) => {
                 let graph = crate::graphs::any(&conn, &id)?;
@@ -86,12 +86,15 @@ pub async fn vend(
                 };
                 caller.ensure(action, &graph)?;
                 graph.may(access, &caller)?;
-                crate::graphs::output(&conn, key, &graph)?
+                crate::graphs::output(&conn, &graph)?
             }
         }
     };
-    let vended =
-        storage_client::vend::vend(&credential, &location, &state.endpoints, access).await?;
+    let vended = state
+        .storage
+        .vend(&location, access, &caller.token)
+        .await
+        .map_err(Refusal::from)?;
     Ok((
         [(header::CACHE_CONTROL, "no-store")],
         Json(VendedCredentials {

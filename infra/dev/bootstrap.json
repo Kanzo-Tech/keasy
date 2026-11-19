@@ -1,34 +1,19 @@
 {
-  "secrets": [
-    {
-      "name": "Dev S3",
-      "spec": {
-        "kind": "s3",
-        "access_key_id": "keasy-admin",
-        "secret_access_key": "keasy-admin-secret",
-        "region": "us-east-1"
-      }
-    }
-  ],
   "connections": [
     {
       "name": "LDBC SNB",
-      "secret": "Dev S3",
       "target": { "url": "s3://keasy-dev/examples/snb/", "direction": "source" }
     },
     {
       "name": "OpenFlights",
-      "secret": "Dev S3",
       "target": { "url": "s3://keasy-dev/examples/openflights/", "direction": "source" }
     },
     {
       "name": "Nobel laureates",
-      "secret": "Dev S3",
       "target": { "url": "s3://keasy-dev/examples/nobel/", "direction": "source" }
     },
     {
       "name": "Workspace output",
-      "secret": "Dev S3",
       "target": { "url": "s3://keasy-dev/output/", "direction": "sink" }
     }
   ]

@@ -29,7 +29,7 @@ use crate::configuration::{BrandingSettings, DatabaseSettings, Rate, Settings};
 use crate::database::Database;
 use crate::error::{Problem, ProblemData, Refusal, ServerCode};
 use crate::routes;
-use crate::storage_client::Endpoints;
+use crate::storage_client::StorageService;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -42,8 +42,8 @@ pub struct AppState {
     pub branding: Arc<BrandingSettings>,
     /// Verifies the bearer token every protected request carries.
     pub auth: SharedValidator,
-    /// Where S3 and STS answer, when not at AWS (`AWS_ENDPOINT_URL_S3`, `_STS`).
-    pub endpoints: Arc<Endpoints>,
+    /// Where every credential comes from: the platform's storage service (`KEASY_STORAGE_URL`).
+    pub storage: StorageService,
 }
 
 /// The server, bound and ready to serve.
@@ -64,9 +64,8 @@ impl Application {
         } = settings;
         let db = get_database(&database).await?;
 
-        // After the key check: a declared credential is sealed with the key.
         if let Some(path) = &application.bootstrap_file {
-            crate::bootstrap::ensure_declared(&db, path, &application.endpoints).await;
+            crate::bootstrap::ensure_declared(&db, path).await;
         }
 
         // Built without touching the network: Keycloak is routinely not up yet, and
@@ -90,7 +89,7 @@ impl Application {
             workspace_name: application.workspace_name,
             branding: Arc::new(application.branding),
             auth,
-            endpoints: Arc::new(application.endpoints),
+            storage: StorageService::new(application.storage_url),
         };
 
         let listener = TcpListener::bind(application.bind_addr)
@@ -124,28 +123,14 @@ impl Application {
     }
 }
 
-/// The instance database, refused when the configured key does not open what
-/// it stores.
+/// The instance database.
 pub async fn get_database(settings: &DatabaseSettings) -> Result<Database, String> {
     std::fs::create_dir_all(&settings.data_dir)
         .map_err(|e| format!("failed to create data dir {:?}: {e}", settings.data_dir))?;
 
     let path = settings.path();
-    let db = Database::open(&path, settings.secret_key.clone())
-        .map_err(|e| format!("failed to open the database: {e}"))?;
+    let db = Database::open(&path).map_err(|e| format!("failed to open the database: {e}"))?;
     info!(path = %path.display(), "Database opened");
-
-    if !db
-        .key_opens_credentials()
-        .await
-        .map_err(|e| format!("failed to read the stored credentials: {e}"))?
-    {
-        return Err(
-            "KEASY_SECRET_KEY does not open the secrets this database stores. \
-             Set the key it was created with, or delete the data volume to start fresh"
-                .into(),
-        );
-    }
     Ok(db)
 }
 
@@ -162,7 +147,6 @@ fn routes() -> (OpenApiRouter<AppState>, OpenApiRouter<AppState>) {
         .merge(routes::storage_credentials::router())
         .merge(routes::graphs::dashboard::router())
         .merge(routes::graphs::rules::router())
-        .merge(routes::secrets::router())
         .merge(routes::connections::router())
         .merge(routes::conversations::router());
     (public, protected)

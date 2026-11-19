@@ -1,9 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
 import {
   Button,
-  createListCollection,
   Field,
   FieldDescription,
   FieldError,
@@ -11,10 +9,6 @@ import {
   FieldLabel,
   FieldRequiredIndicator,
   Input,
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-  InputGroupText,
   SectionBody,
   SectionDescription,
   SectionFooter,
@@ -22,11 +16,6 @@ import {
   SectionRoot,
   SectionTitle,
   SectionTitleGroup,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
   Skeleton,
 } from "@kanzo-tech/ui";
 import { revalidateLogic, useForm } from "@tanstack/react-form";
@@ -34,23 +23,20 @@ import * as z from "zod";
 import { Link, useRouter } from "@kanzo-tech/navigation/next";
 import { UnsavedChangesGuard } from "@/lib/ui/unsaved-changes-guard";
 import { $api } from "@/lib/api/client";
-import { cloudOf, type Credential } from "@/lib/connections";
 import { requiredName } from "@/lib/resource-name";
-import { getProviderIcon } from "@/lib/ui/provider-icons";
 import { ProblemView } from "@/components/problem-view";
 import { Boundary, Loading } from "@/components/boundary";
-import { settled } from "@/lib/api/settled";
 
 const errorText = (errors: ReadonlyArray<{ message: string } | undefined>) =>
   errors.map((issue) => issue?.message).join(", ");
 
 const NAME = requiredName("Give the connection a name.");
-const CREDENTIAL = z.string().min(1, "Choose the credential it signs with.");
+/** A storage URL, whole: the server says which stores it reaches and whether this one is the organization's. */
 const LOCATION = z
   .string()
   .trim()
-  .min(1, "Name the bucket or container, and a prefix if any.")
-  .refine((location) => !location.includes("://"), "Write it without the scheme.");
+  .min(1, "Name the place: its storage URL, with a prefix if any.")
+  .refine((location) => /^[a-z][a-z0-9+.-]*:\/\/[^/]/i.test(location), "Write the whole URL: s3://bucket/prefix/.");
 
 /** An editor's connection: a source. */
 export default function NewConnectionPage() {
@@ -67,51 +53,26 @@ export default function NewConnectionPage() {
         </Loading>
       }
     >
-      <Credentials />
+      <Form />
     </Boundary>
   );
 }
 
-function Credentials() {
-  return <Form credentials={settled($api.useSuspenseQuery("get", "/v1/secrets"))} />;
-}
-
-function Form({ credentials }: { credentials: Credential[] }) {
+function Form() {
   const router = useRouter();
   const create = $api.useMutation("post", "/v1/connections", {
-    meta: { success: "Connection validated and created", invalidates: ["/v1/connections", "/v1/secrets"] },
+    meta: { success: "Connection validated and created", invalidates: ["/v1/connections"] },
     onSuccess: () => router.push("/connections"),
   });
   const sending = create.isPending || create.isSuccess;
-  const collection = useMemo(
-    () =>
-      createListCollection({
-        // A credential someone else owns is theirs and an admin's (docs/design/permissions.md):
-        // offered, disabled, saying whose.
-        items: credentials.map((c) => ({
-          label: c.name,
-          value: c.name,
-          kind: c.spec.kind,
-          disabled: !c.can.use,
-          owner: c.owner.name,
-        })),
-      }),
-    [credentials],
-  );
-  const schemeOf = (credential: string) => {
-    const found = credentials.find((c) => c.name === credential);
-    return found ? cloudOf(found.spec.kind).scheme : undefined;
-  };
-
   const form = useForm({
-    defaultValues: { name: "", secret: "", location: "" },
+    defaultValues: { name: "", location: "" },
     validationLogic: revalidateLogic(),
     onSubmit: ({ value }) => {
       create.mutate({
         body: {
           name: value.name.trim(),
-          secret: value.secret,
-          target: { direction: "source", url: `${schemeOf(value.secret)}${value.location.trim()}` },
+          target: { direction: "source", url: value.location.trim() },
         },
       });
     },
@@ -161,84 +122,31 @@ function Form({ credentials }: { credentials: Credential[] }) {
               )}
             </form.Field>
 
-            <form.Field name="secret" validators={{ onDynamic: CREDENTIAL }}>
+            <form.Field name="location" validators={{ onDynamic: LOCATION }}>
               {(field) => (
                 <Field invalid={!field.state.meta.isValid} required>
                   <FieldLabel>
-                    Credential
+                    Location
                     <FieldRequiredIndicator />
                   </FieldLabel>
-                  <Select
-                    collection={collection}
+                  <Input
+                    className="font-mono"
                     name={field.name}
-                    onOpenChange={(details) => {
-                      if (!details.open) field.handleBlur();
-                    }}
-                    onValueChange={(details) => field.handleChange(details.value[0] ?? "")}
-                    value={field.state.value ? [field.state.value] : []}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select a credential" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {collection.items.map((item) => {
-                        const Icon = getProviderIcon(item.kind);
-                        return (
-                          <SelectItem item={item} key={item.value}>
-                            <Icon className="size-3.5 opacity-60" />
-                            {item.label}
-                            {item.disabled && (
-                              <span className="text-muted-foreground ms-auto text-xs">Only {item.owner} or an admin can use it</span>
-                            )}
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
-                  {credentials.length === 0 && (
-                    <FieldDescription>
-                      None yet?{" "}
-                      <Link className="text-primary hover:underline" href="/settings/credentials/new">
-                        Add a credential
-                      </Link>
-                    </FieldDescription>
-                  )}
+                    onBlur={field.handleBlur}
+                    onChange={(event) => field.handleChange(event.target.value)}
+                    placeholder="s3://my-bucket/prefix/"
+                    value={field.state.value}
+                  />
+                  <FieldDescription>
+                    In your organization&apos;s storage: <code className="font-mono">s3://</code>,{" "}
+                    <code className="font-mono">abfss://container@account.dfs.core.windows.net/</code> or{" "}
+                    <code className="font-mono">gs://</code>
+                  </FieldDescription>
                   <FieldError>{errorText(field.state.meta.errors)}</FieldError>
                 </Field>
               )}
             </form.Field>
           </FieldGroup>
-
-          <form.Subscribe selector={(state) => state.values.secret}>
-            {(secret) => (
-              <form.Field name="location" validators={{ onDynamic: LOCATION }}>
-                {(field) => (
-                  <Field disabled={!secret} invalid={!field.state.meta.isValid} required>
-                    <FieldLabel>
-                      Location
-                      <FieldRequiredIndicator />
-                    </FieldLabel>
-                    <InputGroup>
-                      {secret && (
-                        <InputGroupAddon>
-                          <InputGroupText className="font-mono">{schemeOf(secret)}</InputGroupText>
-                        </InputGroupAddon>
-                      )}
-                      <InputGroupInput
-                        className="font-mono"
-                        name={field.name}
-                        onBlur={field.handleBlur}
-                        onChange={(event) => field.handleChange(event.target.value)}
-                        placeholder="my-bucket/prefix/"
-                        value={field.state.value}
-                      />
-                    </InputGroup>
-                    <FieldError>{errorText(field.state.meta.errors)}</FieldError>
-                  </Field>
-                )}
-              </form.Field>
-            )}
-          </form.Subscribe>
 
           {create.error && <ProblemView error={create.error} />}
         </SectionBody>

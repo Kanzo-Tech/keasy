@@ -15,7 +15,6 @@ use rusqlite::Connection;
 use serde::de::DeserializeOwned;
 use tokio::sync::{Mutex, MutexGuard};
 
-use crate::credentials::sealing::SecretKey;
 use crate::domain::{Actor, Provenance};
 use crate::error::{Refusal, ServerCode};
 
@@ -24,7 +23,7 @@ const READ_POOL_SIZE: usize = 4;
 /// What reading or writing the instance database can fail with.
 #[derive(Debug, thiserror::Error)]
 pub enum DbError {
-    /// The caller asked for something the data does not allow (a credential
+    /// The caller asked for something the data does not allow (a connection
     /// that does not exist).
     #[error("{0}")]
     Invalid(String),
@@ -44,8 +43,6 @@ pub enum DbError {
     Sql(#[from] rusqlite::Error),
     #[error("stored JSON: {0}")]
     Json(#[from] serde_json::Error),
-    #[error("stored secret: {0}")]
-    Secret(String),
 }
 
 pub type DbResult<T> = Result<T, DbError>;
@@ -169,11 +166,10 @@ pub struct Database {
     write_conn: Arc<Mutex<Connection>>,
     read_conns: Arc<[Mutex<Connection>]>,
     next_read: Arc<AtomicUsize>,
-    secret_key: SecretKey,
 }
 
 impl Database {
-    pub fn open(path: &Path, secret_key: SecretKey) -> Result<Self, String> {
+    pub fn open(path: &Path) -> Result<Self, String> {
         let write_conn = open_conn(path)?;
         write_conn
             .execute_batch(
@@ -197,23 +193,12 @@ impl Database {
             write_conn: Arc::new(Mutex::new(write_conn)),
             read_conns: read_conns.into(),
             next_read: Arc::new(AtomicUsize::new(0)),
-            secret_key,
         })
     }
 
     /// The one write connection.
     pub async fn write(&self) -> MutexGuard<'_, Connection> {
         self.write_conn.lock().await
-    }
-
-    pub fn secret_key(&self) -> &SecretKey {
-        &self.secret_key
-    }
-
-    /// Whether the configured key opens the stored credentials; true when
-    /// none is stored.
-    pub async fn key_opens_credentials(&self) -> DbResult<bool> {
-        crate::credentials::persistence::key_opens(&*self.read().await, &self.secret_key)
     }
 
     /// A free read connection, or — when all are busy — the next one in turn.
@@ -236,27 +221,10 @@ fn open_conn(path: &Path) -> Result<Connection, String> {
 // authorization compares; `*_by_name` is what they were called when they wrote
 // it, for people to read. `updated_*` stay NULL until a row is changed.
 const SCHEMA: &str = "
--- The spec is sealed whole (AES-256-GCM, AAD = 'credential:' || name).
-CREATE TABLE credentials (
-    name            TEXT PRIMARY KEY,
-    spec            BLOB NOT NULL,
-    -- Who owns it: a `sub`, or 'workspace' for what the instance declares.
-    -- What permissions read; who created it is kept apart, and never changes.
-    owner           TEXT NOT NULL,
-    owner_name      TEXT NOT NULL,
-    created_by      TEXT NOT NULL,
-    created_by_name TEXT NOT NULL,
-    created_at      TEXT NOT NULL,
-    updated_by      TEXT,
-    updated_by_name TEXT,
-    updated_at      TEXT,
-    validation      TEXT
-);
-
--- RESTRICT keeps a credential in use from being deleted.
+-- A connection is a location and nothing that opens it: every credential is
+-- vended by the platform's storage service, for one request.
 CREATE TABLE connections (
     name            TEXT PRIMARY KEY,
-    credential      TEXT NOT NULL,
     target          TEXT NOT NULL CHECK (json_type(target) = 'object'),
     direction       TEXT GENERATED ALWAYS AS (json_extract(target, '$.direction')) VIRTUAL,
     -- Who owns it: a `sub`, or 'workspace' for what the instance declares.
@@ -269,9 +237,7 @@ CREATE TABLE connections (
     updated_by      TEXT,
     updated_by_name TEXT,
     updated_at      TEXT,
-    validation      TEXT,
-    FOREIGN KEY (credential) REFERENCES credentials (name)
-        ON UPDATE CASCADE ON DELETE RESTRICT
+    validation      TEXT
 );
 -- Exactly one write sink per workspace.
 CREATE UNIQUE INDEX connections_one_sink ON connections(direction) WHERE direction = 'sink';
@@ -406,12 +372,12 @@ mod tests {
         let tables: i64 = conn
             .query_row(
                 "SELECT count(*) FROM sqlite_master WHERE type='table' AND name IN \
-                 ('credentials','connections','graphs','dashboards','rules','conversations')",
+                 ('connections','graphs','dashboards','rules','conversations')",
                 [],
                 |r| r.get(0),
             )
             .unwrap();
-        assert_eq!(tables, 6);
+        assert_eq!(tables, 5);
     }
 
     /// Messages are a JSON array, or nothing is stored.

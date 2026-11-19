@@ -1,5 +1,5 @@
-//! Connections: where a secret is used — a storage location. None of these
-//! types can hold a secret.
+//! Connections: a storage location, by name. None of these types can hold a
+//! secret, and none is stored: the storage service vends one per request.
 
 use crate::authentication::permission::{Can, Kind, Securable};
 use crate::authentication::role::Caller;
@@ -22,7 +22,8 @@ pub enum Direction {
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct StorageTarget {
-    /// The prefix the connection is: `s3://bucket/prefix/` or `az://container/prefix/`.
+    /// The prefix the connection is: `s3://bucket/prefix/`,
+    /// `abfss://container@account.dfs.core.windows.net/prefix/` or `gs://bucket/prefix/`.
     #[schema(format = "uri")]
     pub url: String,
     #[serde(default)]
@@ -38,7 +39,6 @@ impl StorageTarget {
 #[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct ConnectionView {
     pub name: String,
-    pub secret: String,
     pub target: StorageTarget,
     /// Who owns it: its creator, or the workspace for what the instance
     /// declares. Its owner or an admin manages it; the sink is an admin's.

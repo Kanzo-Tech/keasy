@@ -1,4 +1,4 @@
-//! The `connections` table. Nothing here holds a secret.
+//! The `connections` table: a name and a location, and nothing that opens it.
 
 use rusqlite::{Connection, OptionalExtension, params};
 
@@ -7,14 +7,13 @@ use crate::database::{
 };
 use crate::domain::{Actor, ConnectionView, ValidationReport};
 
-const COLUMNS: &str = "name, credential, target, owner, owner_name, created_by, \
+const COLUMNS: &str = "name, target, owner, owner_name, created_by, \
                        created_by_name, created_at, updated_by, updated_by_name, updated_at, \
                        validation";
 
 fn row(r: &rusqlite::Row<'_>) -> rusqlite::Result<ConnectionView> {
     Ok(ConnectionView {
         name: r.get("name")?,
-        secret: r.get("credential")?,
         target: json_column(r, "target")?,
         owner: owner_columns(r)?,
         provenance: provenance_columns(r)?,
@@ -34,10 +33,6 @@ fn refused(connection: &ConnectionView, e: rusqlite::Error) -> DbError {
         Some(ffi::SQLITE_CONSTRAINT_UNIQUE) => {
             DbError::AlreadyExists("the workspace has a sink already".into())
         }
-        Some(ffi::SQLITE_CONSTRAINT_FOREIGNKEY) => DbError::Invalid(format!(
-            "there is no credential named {:?}",
-            connection.secret
-        )),
         _ => e.into(),
     }
 }
@@ -48,12 +43,11 @@ pub fn insert(conn: &Connection, connection: &ConnectionView, by: &Actor) -> DbR
     let owner = by.as_owner();
     conn.execute(
         "INSERT INTO connections
-             (name, credential, target, owner, owner_name, created_by, created_by_name,
+             (name, target, owner, owner_name, created_by, created_by_name,
               created_at, validation)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
         params![
             connection.name,
-            connection.secret,
             serde_json::to_string(&connection.target)?,
             owner.id,
             owner.name,
@@ -101,28 +95,16 @@ pub fn list(conn: &Connection) -> DbResult<Vec<ConnectionView>> {
     Ok(connections)
 }
 
-/// The connections that sign with `credential`.
-pub fn using(conn: &Connection, credential: &str) -> DbResult<Vec<ConnectionView>> {
-    let connections = conn
-        .prepare(&format!(
-            "SELECT {COLUMNS} FROM connections WHERE credential = ?1 ORDER BY name"
-        ))?
-        .query_map([credential], row)?
-        .collect::<rusqlite::Result<_>>()?;
-    Ok(connections)
-}
-
 /// Replace the connection `name` with `updated`. A rename cascades to the graphs
 /// that write to it.
 pub fn update(conn: &Connection, name: &str, updated: &ConnectionView, by: &Actor) -> DbResult<()> {
     conn.execute(
         "UPDATE connections
-         SET name = ?1, credential = ?2, target = ?3,
-             updated_by = ?4, updated_by_name = ?5, updated_at = ?6, validation = ?7
-         WHERE name = ?8",
+         SET name = ?1, target = ?2,
+             updated_by = ?3, updated_by_name = ?4, updated_at = ?5, validation = ?6
+         WHERE name = ?7",
         params![
             updated.name,
-            updated.secret,
             serde_json::to_string(&updated.target)?,
             by.id,
             by.name,
@@ -177,44 +159,20 @@ pub fn delete(conn: &Connection, name: &str) -> DbResult<()> {
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
-    use crate::credentials::persistence as credentials;
-    use crate::credentials::sealing::SecretKey;
-    use crate::domain::{Provenance, ResourceName, SecretSpec, StorageTarget};
-    use secrecy::SecretString;
+    use crate::domain::{Provenance, StorageTarget};
 
-    fn report() -> ValidationReport {
-        ValidationReport {
-            at: "now".into(),
-            results: Vec::new(),
-            by: None,
-        }
-    }
-
-    /// A storage credential and a sink connection `name` on it, stored as they
-    /// are: a fixture nobody probes.
+    /// A sink connection `name`, stored as it is: a fixture nobody probes.
     pub(crate) fn seed_sink(conn: &Connection, name: &str) {
-        let spec = s3();
-        let credential = format!("{name}-key");
-        credentials::insert(
-            conn,
-            &SecretKey::for_tests(),
-            &ResourceName::parse(&credential).unwrap(),
-            &spec,
-            &user(),
-            &report(),
-        )
-        .unwrap();
         let target = StorageTarget {
             url: "s3://b/output/".into(),
             direction: crate::domain::Direction::Sink,
         };
-        insert(conn, &connection(name, &credential, target), &user()).unwrap();
+        insert(conn, &connection(name, target), &user()).unwrap();
     }
 
-    fn connection(name: &str, credential: &str, target: StorageTarget) -> ConnectionView {
+    fn connection(name: &str, target: StorageTarget) -> ConnectionView {
         ConnectionView {
             name: name.into(),
-            secret: credential.into(),
             target,
             owner: user(),
             provenance: Provenance::created(user()),
@@ -230,46 +188,18 @@ pub(crate) mod tests {
         }
     }
 
-    fn s3() -> SecretSpec {
-        SecretSpec::S3 {
-            access_key_id: "AK".into(),
-            secret_access_key: SecretString::from("SK"),
-            region: "us-east-1".into(),
-            role_arn: None,
-            external_id: None,
-        }
-    }
-
-    /// The database itself keeps a connection on a credential that exists,
-    /// whatever a handler checked first, and keeps a used credential.
+    /// The schema keeps one sink, whatever a handler checked first.
     #[test]
-    fn a_connection_needs_its_credential_and_keeps_it() {
+    fn a_workspace_has_one_sink() {
         let conn = Connection::open_in_memory().unwrap();
         conn.execute_batch("PRAGMA foreign_keys=ON;").unwrap();
         crate::database::apply_schema(&conn).unwrap();
-        let bucket = || StorageTarget {
-            url: "s3://b/".into(),
-            direction: Default::default(),
+        seed_sink(&conn, "out");
+        let second = StorageTarget {
+            url: "s3://b/elsewhere/".into(),
+            direction: crate::domain::Direction::Sink,
         };
-        let err = insert(&conn, &connection("bucket", "minio", bucket()), &user()).unwrap_err();
-        assert!(matches!(err, DbError::Invalid(_)), "{err}");
-
-        let minio = ResourceName::parse("minio").unwrap();
-        credentials::insert(
-            &conn,
-            &SecretKey::for_tests(),
-            &minio,
-            &s3(),
-            &user(),
-            &report(),
-        )
-        .unwrap();
-        insert(&conn, &connection("bucket", "minio", bucket()), &user()).unwrap();
-        assert!(matches!(
-            credentials::delete(&conn, "minio"),
-            Err(DbError::InUse { dependents, .. }) if dependents == ["bucket"]
-        ));
-        let bypass = conn.execute("DELETE FROM credentials WHERE name = 'minio'", []);
-        assert!(bypass.is_err(), "the foreign key restricts the delete");
+        let err = insert(&conn, &connection("out2", second), &user()).unwrap_err();
+        assert!(matches!(err, DbError::AlreadyExists(_)), "{err}");
     }
 }

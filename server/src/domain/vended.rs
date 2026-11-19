@@ -18,7 +18,8 @@ pub enum Access {
 /// reader of vended credentials reads it. Handing it out is the point, so
 /// this is the one response type that carries a secret: its values stay
 /// [`SecretString`] until the moment they are written into the response.
-#[derive(Debug, Serialize, ToSchema)]
+/// Read from the storage service's answer as it wrote it.
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct VendedCredential {
     /// The canonical prefix it opens, ending in `/`.
     pub prefix: String,

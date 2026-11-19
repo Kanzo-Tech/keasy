@@ -23,12 +23,13 @@ jobs:
       - name: Development resolves
         run: docker compose --profile faults config --quiet
 
-      # The platform's tag is the @kanzo-tech/ui version the web is built against: one release.
+      # Every kanzo-ui service included — the platform, the storage service — is at the
+      # @kanzo-tech/ui version the web is built against: one release.
       - name: The platform is the web's kanzo-ui
         run: |
-          included=$(sed -n 's|.*github.com/Kanzo-Tech/ui.git#v\([^:]*\):services/.*|\1|p' compose.override.yaml)
+          included=$(sed -n 's|.*github.com/Kanzo-Tech/ui.git#v\([^:]*\):services/.*|\1|p' compose.override.yaml | sort -u)
           pinned=$(jq -r '.dependencies["@kanzo-tech/ui"] | ltrimstr("^")' web/package.json)
-          echo "compose.override.yaml includes kanzo-ui v$included; web/package.json names @kanzo-tech/ui $pinned"
+          echo "compose.override.yaml includes kanzo-ui $(echo $included | sed 's/^/v/; s/ / v/g'); web/package.json names @kanzo-tech/ui $pinned"
           [ -n "$included" ] && [ "$included" = "$pinned" ]
 
       - name: The scripts

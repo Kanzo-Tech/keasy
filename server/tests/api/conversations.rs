@@ -97,8 +97,7 @@ async fn a_graph_keeps_the_conversation_it_was_built_from() {
     let app = spawn_app().await;
     let mine = app.token_for("u-1", EDITOR);
     let theirs = app.token_for("u-2", EDITOR);
-    app.credential("key", "u-1").await;
-    app.connection("sink", "key", keasy_server::domain::Direction::Sink, "u-1")
+    app.connection("sink", keasy_server::domain::Direction::Sink, "u-1")
         .await;
     let id = "7a2c9e10-4b3d-4f8e-9c1a-2d3e4f5a6b70";
     app.send(

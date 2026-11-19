@@ -11,8 +11,7 @@ use utoipa_axum::routes;
 
 use crate::authentication::permission::Action;
 use crate::authentication::role::{Caller, Editor, Reader};
-use crate::connections::{named, persistence};
-use crate::database::Database;
+use crate::connections::{Prober, named, persistence};
 use crate::domain::{ConnectionView, Provenance, ResourceName, StorageTarget, ValidationReport};
 use crate::error::{Problem, Refusal};
 use crate::startup::AppState;
@@ -23,8 +22,6 @@ pub struct CreateConnectionRequest {
     /// What programs write after `@`, and the connection's key.
     #[schema(value_type = ResourceName)]
     pub name: String,
-    /// The secret it signs with.
-    pub secret: String,
     pub target: StorageTarget,
 }
 
@@ -33,8 +30,6 @@ pub struct UpdateConnectionRequest {
     #[serde(default)]
     #[schema(value_type = Option<ResourceName>)]
     pub name: Option<String>,
-    #[serde(default)]
-    pub secret: Option<String>,
     #[serde(default)]
     pub target: Option<StorageTarget>,
 }
@@ -80,12 +75,10 @@ impl From<ObjectMeta> for FileEntry {
 }
 
 /// Whether `caller` may make `proposed` the connection `current` was (a new
-/// one when `None`): manage it as it was, manage the sink if it becomes the
-/// sink — an admin's alone — and use the secret it signs with, if that is new
-/// to it. A source any editor makes, and owns.
-async fn may_change(
+/// one when `None`): manage it as it was, and manage the sink if it becomes
+/// the sink — an admin's alone. A source any editor makes, and owns.
+fn may_change(
     caller: &Caller,
-    db: &Database,
     current: Option<&ConnectionView>,
     proposed: &ConnectionView,
 ) -> Result<(), Refusal> {
@@ -94,17 +87,6 @@ async fn may_change(
     }
     if proposed.target.is_sink() {
         caller.ensure(Action::Manage, proposed)?;
-    }
-    if current.is_none_or(|c| c.secret != proposed.secret) {
-        let credential = crate::credentials::persistence::get(
-            &*db.read().await,
-            db.secret_key(),
-            &proposed.secret,
-        )?;
-        // No such secret is the save's to say, with the field it is about.
-        if let Some(credential) = credential {
-            caller.ensure(Action::Use, &credential)?;
-        }
     }
     Ok(())
 }
@@ -129,8 +111,8 @@ pub async fn list_connections(
     request_body = CreateConnectionRequest,
     responses(
         (status = 201, description = "Validated and stored", body = ConnectionView),
-        (status = 400, description = "No such secret, or a URL it does not reach", body = Problem, content_type = "application/problem+json"),
-        (status = 403, description = "A sink by anyone but an admin, or on a secret the caller may not use", body = Problem, content_type = "application/problem+json"),
+        (status = 400, description = "Not a storage URL, or one outside the deployment's storage (`store/undeclared`)", body = Problem, content_type = "application/problem+json"),
+        (status = 403, description = "A sink by anyone but an admin", body = Problem, content_type = "application/problem+json"),
         (status = 409, description = "A connection of that name, or a second sink", body = Problem, content_type = "application/problem+json"),
         (status = 422, description = "The connection did not validate", body = Problem, content_type = "application/problem+json"),
         (status = 504, description = "The store did not answer the probe in time", body = Problem, content_type = "application/problem+json"),
@@ -143,21 +125,22 @@ pub async fn create_connection(
 ) -> Result<impl IntoResponse, Refusal> {
     let proposed = ConnectionView {
         name: request.name.clone(),
-        secret: request.secret.clone(),
         target: request.target.clone(),
         owner: caller.actor(),
         provenance: Provenance::created(caller.actor()),
         validation: None,
         can: Default::default(),
     };
-    may_change(&caller, &state.db, None, &proposed).await?;
+    may_change(&caller, None, &proposed)?;
     let view = crate::connections::create(
         &state.db,
         request.name,
-        request.secret,
         request.target,
         &caller.actor(),
-        &state.endpoints,
+        Some(Prober {
+            service: &state.storage,
+            token: &caller.token,
+        }),
     )
     .await?;
     Ok((StatusCode::CREATED, Json(view.seen_by(&caller))))
@@ -183,7 +166,8 @@ pub async fn get_connection(
     request_body = UpdateConnectionRequest,
     responses(
         (status = 200, description = "Validated again and stored", body = ConnectionView),
-        (status = 403, description = "Neither its owner nor an admin; the sink, anyone but an admin; or a secret the caller may not use", body = Problem, content_type = "application/problem+json"),
+        (status = 400, description = "Not a storage URL, or one outside the deployment's storage (`store/undeclared`)", body = Problem, content_type = "application/problem+json"),
+        (status = 403, description = "Neither its owner nor an admin; the sink, anyone but an admin", body = Problem, content_type = "application/problem+json"),
         (status = 404, description = "No such connection", body = Problem, content_type = "application/problem+json"),
         (status = 422, description = "The connection did not validate", body = Problem, content_type = "application/problem+json"),
         (status = 504, description = "The store did not answer the probe in time", body = Problem, content_type = "application/problem+json"),
@@ -200,20 +184,20 @@ pub async fn update_connection(
     if let Some(new_name) = request.name {
         updated.name = new_name;
     }
-    if let Some(secret) = request.secret {
-        updated.secret = secret;
-    }
     if let Some(target) = request.target {
         updated.target = target;
     }
-    may_change(&caller, &state.db, Some(&current), &updated).await?;
+    may_change(&caller, Some(&current), &updated)?;
     Ok(Json(
         crate::connections::save(
             &state.db,
             Some(&name),
             updated,
             &caller.actor(),
-            &state.endpoints,
+            Some(Prober {
+                service: &state.storage,
+                token: &caller.token,
+            }),
         )
         .await?
         .seen_by(&caller),
@@ -249,7 +233,8 @@ pub async fn delete_connection(
         (status = 504, description = "The store did not answer the probe in time", body = Problem, content_type = "application/problem+json"),
     )
 )]
-/// LIST a source, WRITE and DELETE under the sink. Any editor tests a source,
+/// LIST a source, WRITE under the sink, with what the storage service vends to
+/// the caller. Any editor tests a source,
 /// an admin the sink: testing operates a connection, it does not change it, so
 /// who asked is kept on the report and never as who updated the connection.
 pub async fn validate_connection(
@@ -259,14 +244,10 @@ pub async fn validate_connection(
 ) -> Result<impl IntoResponse, Refusal> {
     let connection = named(&state.db, &name).await?;
     caller.ensure(Action::Operate, &connection)?;
-    let credential = crate::credentials::named(&state.db, &connection.secret).await?;
-    let report = crate::credentials::probe::connection(
-        &credential.spec,
-        &connection.target,
-        &state.endpoints,
-    )
-    .await?
-    .taken_by(&caller.actor());
+    let report =
+        crate::connections::probe::connection(&state.storage, &caller.token, &connection.target)
+            .await?
+            .taken_by(&caller.actor());
     persistence::set_validation(&*state.db.write().await, &name, &report)?;
     Ok(Json(report))
 }
@@ -292,15 +273,15 @@ pub async fn list_connection_files(
     let under = ObjectPath::parse(query.prefix.as_deref().unwrap_or_default())
         .map_err(|e| Refusal::invalid_field("prefix", e.to_string()))?;
     let limit = query.limit.unwrap_or(MAX_FILES).min(MAX_FILES);
-    let (url, credential) = {
+    let url = {
         let conn = state.db.read().await;
         // The sink is reached through its graphs, here as when a credential is vended for it.
         let source = crate::connections::source(&conn, &name)?;
         caller.ensure(Action::Use, &source)?;
-        crate::connections::storage(&conn, state.db.secret_key(), &source)?
+        crate::connections::location(&source)?
     };
     let (files, truncated) =
-        storage_client::list_files(&credential, &url, &state.endpoints, &under, limit).await?;
+        storage_client::list_files(&state.storage, &caller.token, &url, &under, limit).await?;
     Ok(Json(FileListing {
         files: files.into_iter().map(FileEntry::from).collect(),
         truncated,

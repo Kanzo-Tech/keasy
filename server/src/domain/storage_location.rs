@@ -2,54 +2,28 @@ use std::fmt;
 
 use object_store::path::Path as ObjectPath;
 
-use super::SecretSpec;
-
 const S3: &[&str] = &["s3", "s3a"];
-const AZURE: &[&str] = &["az", "azure", "abfs", "abfss", "adl"];
+const AZURE: &[&str] = &["abfss", "abfs", "az", "azure", "adl"];
 const AZURE_HOSTS: &[&str] = &[".dfs.core.windows.net", ".blob.core.windows.net"];
+const GCS: &[&str] = &["gs", "gcs"];
 
-/// The kind of store a location is in, as a credential reaches it.
+/// The kind of store a location is in.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StoreKind {
     S3,
     Azure,
+    Gcs,
 }
 
-impl StoreKind {
-    /// The schemes that name this store, as a person would type them.
-    pub fn spellings(self) -> String {
-        let schemes = match self {
-            Self::S3 => S3,
-            Self::Azure => AZURE,
-        };
-        schemes
-            .iter()
-            .map(|s| format!("{s}://"))
-            .collect::<Vec<_>>()
-            .join(", ")
-    }
-
-    pub fn of(credential: &SecretSpec) -> Self {
-        match credential {
-            SecretSpec::S3 { .. } => Self::S3,
-            SecretSpec::AzureServicePrincipal { .. } => Self::Azure,
-        }
-    }
-}
-
-/// The bucket a location is in, and for Azure the account that serves it: the
-/// account is part of the identity, and is `None` until
-/// [`StorageLocation::within`] names it from a credential. An S3 bucket names
-/// itself — the service is the deployment's one (`AWS_ENDPOINT_URL_S3`).
+/// The bucket a location is in, and for Azure the account that serves it: an
+/// account is part of a container's identity, so a location names it — the
+/// storage service opens nothing it has to guess. An S3 or GCS bucket names
+/// itself.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Store {
-    S3 {
-        bucket: String,
-    },
-    Azure {
-        account: Option<String>,
-        container: String,
-    },
+    S3 { bucket: String },
+    Azure { account: String, container: String },
+    Gcs { bucket: String },
 }
 
 /// A place in an object store, in one canonical form: the store, and a path
@@ -62,7 +36,7 @@ pub struct StorageLocation {
 }
 
 impl StorageLocation {
-    /// `s3://bucket/a/b`, `az://container/a`, `abfss://container@account.dfs.core.windows.net/a`.
+    /// `s3://bucket/a/b`, `abfss://container@account.dfs.core.windows.net/a`, `gs://bucket/a`.
     ///
     /// The path is decoded segment by segment from the text itself, so `.`,
     /// `..` and their percent-encodings are refused rather than resolved — a
@@ -77,34 +51,37 @@ impl StorageLocation {
         if authority.is_empty() {
             return Err(format!("{s:?} names no bucket or container"));
         }
-        let store = if S3.contains(&scheme.as_str()) {
+        let bucket = |authority: &str| {
             if authority.contains(['@', ':']) {
-                return Err(format!("{s:?}: {authority:?} is not a bucket name"));
+                Err(format!("{s:?}: {authority:?} is not a bucket name"))
+            } else {
+                Ok(authority.to_string())
             }
+        };
+        let store = if S3.contains(&scheme.as_str()) {
             Store::S3 {
-                bucket: authority.to_string(),
+                bucket: bucket(authority)?,
+            }
+        } else if GCS.contains(&scheme.as_str()) {
+            Store::Gcs {
+                bucket: bucket(authority)?,
             }
         } else if AZURE.contains(&scheme.as_str()) {
-            match authority.split_once('@') {
-                None => Store::Azure {
-                    account: None,
-                    container: authority.to_string(),
-                },
-                Some((container, host)) => {
-                    let account = AZURE_HOSTS
-                        .iter()
-                        .find_map(|suffix| host.strip_suffix(suffix))
-                        .filter(|a| !a.is_empty() && !a.contains('.'))
-                        .ok_or_else(|| format!("{s:?}: {host:?} is not an Azure storage host"))?;
-                    Store::Azure {
-                        account: Some(account.to_string()),
-                        container: container.to_string(),
-                    }
-                }
+            let (container, host) = authority.split_once('@').ok_or_else(|| {
+                format!("{s:?} names no account: abfss://container@account.dfs.core.windows.net/")
+            })?;
+            let account = AZURE_HOSTS
+                .iter()
+                .find_map(|suffix| host.strip_suffix(suffix))
+                .filter(|a| !a.is_empty() && !a.contains('.'))
+                .ok_or_else(|| format!("{s:?}: {host:?} is not an Azure storage host"))?;
+            Store::Azure {
+                account: account.to_ascii_lowercase(),
+                container: container.to_string(),
             }
         } else {
             return Err(format!(
-                "{scheme}:// is not a store keasy reaches (s3://, az://, abfss://, …)"
+                "{scheme}:// is not a store keasy reaches (s3://, abfss://, gs://)"
             ));
         };
         let path = ObjectPath::from_url_path(path).map_err(|e| format!("{s:?}: {e}"))?;
@@ -115,6 +92,7 @@ impl StorageLocation {
         match self.store {
             Store::S3 { .. } => StoreKind::S3,
             Store::Azure { .. } => StoreKind::Azure,
+            Store::Gcs { .. } => StoreKind::Gcs,
         }
     }
 
@@ -122,10 +100,10 @@ impl StorageLocation {
         &self.store
     }
 
-    /// The bucket (S3) or container (Azure).
+    /// The bucket (S3, GCS) or container (Azure).
     pub fn bucket(&self) -> &str {
         match &self.store {
-            Store::S3 { bucket, .. } => bucket,
+            Store::S3 { bucket } | Store::Gcs { bucket } => bucket,
             Store::Azure { container, .. } => container,
         }
     }
@@ -133,34 +111,6 @@ impl StorageLocation {
     /// The object path under the bucket; empty for the bucket's root.
     pub fn path(&self) -> &ObjectPath {
         &self.path
-    }
-
-    /// This location as reached through `credential`: an Azure credential
-    /// names the account the text leaves implicit.
-    pub fn within(mut self, credential: &SecretSpec) -> Result<Self, String> {
-        if StoreKind::of(credential) != self.kind() {
-            return Err(format!(
-                "this credential reaches {} URLs, not {}",
-                StoreKind::of(credential).spellings(),
-                self.kind().spellings()
-            ));
-        }
-        match (&mut self.store, credential) {
-            (Store::S3 { .. }, SecretSpec::S3 { .. }) => {}
-            (
-                Store::Azure { account, .. },
-                SecretSpec::AzureServicePrincipal { account: a, .. },
-            ) => match account {
-                Some(named) if named != a => {
-                    return Err(format!(
-                        "the URL names the account {named:?} and the credential {a:?}"
-                    ));
-                }
-                _ => *account = Some(a.clone()),
-            },
-            _ => unreachable!("kinds were compared above"),
-        }
-        Ok(self)
     }
 
     /// Whether `other` lies at or under this location: the same store, and
@@ -188,15 +138,11 @@ impl StorageLocation {
 impl fmt::Display for StorageLocation {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.store {
-            Store::S3 { bucket, .. } => write!(f, "s3://{bucket}/")?,
-            Store::Azure {
-                account: Some(account),
-                container,
-            } => write!(f, "abfss://{container}@{account}.dfs.core.windows.net/")?,
-            Store::Azure {
-                account: None,
-                container,
-            } => write!(f, "az://{container}/")?,
+            Store::S3 { bucket } => write!(f, "s3://{bucket}/")?,
+            Store::Gcs { bucket } => write!(f, "gs://{bucket}/")?,
+            Store::Azure { account, container } => {
+                write!(f, "abfss://{container}@{account}.dfs.core.windows.net/")?
+            }
         }
         match self.path.as_ref() {
             "" => Ok(()),
@@ -208,20 +154,9 @@ impl fmt::Display for StorageLocation {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use secrecy::SecretString;
 
     fn loc(s: &str) -> StorageLocation {
         StorageLocation::parse(s).unwrap()
-    }
-
-    fn s3() -> SecretSpec {
-        SecretSpec::S3 {
-            access_key_id: "AK".into(),
-            secret_access_key: SecretString::from("SK"),
-            region: "us-east-1".into(),
-            role_arn: None,
-            external_id: None,
-        }
     }
 
     #[test]
@@ -240,6 +175,12 @@ mod tests {
             abfss.to_string(),
             "abfss://cont@acct.dfs.core.windows.net/data/x.csv/"
         );
+        assert_eq!(
+            loc("az://cont@ACCT.blob.core.windows.net/d").to_string(),
+            "abfss://cont@acct.dfs.core.windows.net/d/"
+        );
+        assert_eq!(loc("gs://b/d").kind(), StoreKind::Gcs);
+        assert_eq!(loc("gcs://b/d").to_string(), "gs://b/d/");
         for bad in [
             "https://example.org/x",
             "s3:///x",
@@ -247,6 +188,7 @@ mod tests {
             "/tmp/x",
             "s3://user@b/x",
             "abfss://c@example.org/x",
+            "az://container/x",
         ] {
             assert!(StorageLocation::parse(bad).is_err(), "{bad}");
         }
@@ -279,29 +221,10 @@ mod tests {
         assert!(loc("s3://b/").contains(&loc("s3a://b/output/graph/x")));
         assert!(loc("s3://b/output/").overlaps(&loc("s3://b/output/graph")));
         assert!(!loc("s3://b/data/").overlaps(&loc("s3://b/output/")));
-    }
-
-    #[test]
-    fn the_account_a_credential_reaches_is_part_of_the_identity() {
-        let data = loc("s3://b/data/").within(&s3()).unwrap();
-        assert!(data.contains(&loc("s3://b/data/x").within(&s3()).unwrap()));
-        let az = SecretSpec::AzureServicePrincipal {
-            account: "acct".into(),
-            tenant_id: "t".into(),
-            client_id: "c".into(),
-            client_secret: SecretString::from("s"),
-        };
-        assert!(loc("s3://b/").within(&az).is_err());
         assert!(
-            loc("abfss://c@other.dfs.core.windows.net/")
-                .within(&az)
-                .is_err()
+            !loc("abfss://c@one.dfs.core.windows.net/")
+                .contains(&loc("abfss://c@two.dfs.core.windows.net/x"))
         );
-        assert_eq!(
-            loc("az://c/p").within(&az).unwrap(),
-            loc("abfss://c@acct.dfs.core.windows.net/p")
-                .within(&az)
-                .unwrap()
-        );
+        assert!(!loc("s3://b/").contains(&loc("gs://b/x")));
     }
 }

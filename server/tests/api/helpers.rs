@@ -1,26 +1,19 @@
-use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::{Arc, Mutex};
 
 use axum::http::{HeaderMap, Method, StatusCode, header};
 use axum::response::IntoResponse;
 use axum::{Json, Router, routing::get};
-use base64::Engine;
 use jsonwebtoken::jwk::{Jwk, JwkSet};
 use jsonwebtoken::{Algorithm, EncodingKey, Header, encode};
-use secrecy::SecretString;
 use serde_json::json;
 
 use keasy_server::configuration::{
     ApplicationSettings, BrandingSettings, DatabaseSettings, OidcSettings, Rate, Settings,
 };
-use keasy_server::credentials::sealing::SecretKey;
 use keasy_server::database::Database;
-use keasy_server::domain::{
-    Actor, ConnectionView, Direction, Provenance, ResourceName, SecretSpec, StorageTarget,
-    ValidationReport,
-};
+use keasy_server::domain::{Actor, ConnectionView, Direction, Provenance, StorageTarget};
 use keasy_server::startup::Application;
-use keasy_server::storage_client::Endpoints;
 
 /// The server on a free port over a fresh database, verifying tokens against
 /// a fake realm; `db` is a second handle on the same file.
@@ -29,8 +22,6 @@ pub struct TestApp {
     pub client: reqwest::Client,
     pub db: Database,
     pub realm: Realm,
-    /// Where its S3 and STS answer: the deployment's, as `AWS_ENDPOINT_URL_S3` sets it.
-    pub endpoints: Endpoints,
     _dir: tempfile::TempDir,
 }
 
@@ -43,10 +34,6 @@ pub const READER: &[&str] = &["reader"];
 pub const EDITOR: &[&str] = &["editor", "reader"];
 pub const ADMIN: &[&str] = &["admin", "editor", "reader"];
 
-pub fn secret_key() -> SecretKey {
-    SecretKey::from_base64(&base64::engine::general_purpose::STANDARD.encode([42u8; 32])).unwrap()
-}
-
 /// The server with every default of [`Options`].
 pub async fn spawn_app() -> TestApp {
     spawn_app_with(Options::default()).await
@@ -54,8 +41,8 @@ pub async fn spawn_app() -> TestApp {
 
 /// How a test's server differs from the default one; each field defaults on its own.
 pub struct Options {
-    /// Where its S3 and STS answer: [`DEAD`] unless said.
-    pub store: String,
+    /// Where its storage service answers: [`DEAD`] unless said.
+    pub storage: String,
     /// Each caller's allowance: the build's.
     pub rate: Rate,
     /// Its declared look: none.
@@ -65,7 +52,7 @@ pub struct Options {
 impl Default for Options {
     fn default() -> Self {
         Self {
-            store: DEAD.into(),
+            storage: DEAD.into(),
             rate: Rate::BUILT,
             branding: BrandingSettings::default(),
         }
@@ -75,19 +62,14 @@ impl Default for Options {
 /// The server as `options` describe it.
 pub async fn spawn_app_with(options: Options) -> TestApp {
     let Options {
-        store,
+        storage,
         rate,
         branding,
     } = options;
-    let endpoints = Endpoints {
-        s3: Some(store.clone()),
-        sts: Some(store),
-    };
     let realm = realm("k1").await;
     let dir = tempfile::tempdir().unwrap();
     let database = DatabaseSettings {
         data_dir: dir.path().to_path_buf(),
-        secret_key: secret_key(),
     };
     let db_path = database.path();
     let settings = Settings {
@@ -97,7 +79,7 @@ pub async fn spawn_app_with(options: Options) -> TestApp {
             org_alias: ORG.into(),
             bootstrap_file: None,
             branding,
-            endpoints: endpoints.clone(),
+            storage_url: storage,
             rate,
         },
         database,
@@ -114,9 +96,8 @@ pub async fn spawn_app_with(options: Options) -> TestApp {
     TestApp {
         address,
         client: reqwest::Client::builder().build().unwrap(),
-        db: Database::open(&db_path, secret_key()).unwrap(),
+        db: Database::open(&db_path).unwrap(),
         realm,
-        endpoints,
         _dir: dir,
     }
 }
@@ -293,28 +274,14 @@ impl TestApp {
         (status, body["code"].as_str().map(str::to_owned))
     }
 
-    /// A stored S3 credential, unprobed, created by `by`.
-    pub async fn credential(&self, name: &str, by: &str) {
-        keasy_server::credentials::persistence::insert(
-            &*self.db.write().await,
-            self.db.secret_key(),
-            &ResourceName::parse(name).unwrap(),
-            &s3("original-secret"),
-            &actor(by),
-            &unprobed(),
-        )
-        .unwrap();
-    }
-
-    /// A stored storage connection on `credential`, unprobed.
-    pub async fn connection(&self, name: &str, credential: &str, direction: Direction, by: &str) {
+    /// A stored storage connection, unprobed.
+    pub async fn connection(&self, name: &str, direction: Direction, by: &str) {
         let target = StorageTarget {
             url: format!("s3://b/{name}/"),
             direction,
         };
         let view = ConnectionView {
             name: name.into(),
-            secret: credential.into(),
             target,
             owner: actor(by).as_owner(),
             provenance: Provenance::created(actor(by)),
@@ -334,30 +301,82 @@ fn actor(sub: &str) -> Actor {
     }
 }
 
-pub fn unprobed() -> ValidationReport {
-    ValidationReport {
-        at: "now".into(),
-        results: Vec::new(),
-        by: None,
-    }
-}
-
-pub fn s3(secret: &str) -> SecretSpec {
-    SecretSpec::S3 {
-        access_key_id: "AK".into(),
-        secret_access_key: SecretString::from(secret),
-        region: "us-east-1".into(),
-        role_arn: None,
-        external_id: None,
-    }
-}
-
 /// Nothing listens here: a probe through it fails at once.
 pub const DEAD: &str = "http://127.0.0.1:1";
 
-/// A store that answers as S3 does, enough for LIST, PUT and DELETE: every
-/// bucket is empty and every write lands — for the access key `AK`. Any other
-/// key is refused, as S3 refuses a key it does not know.
+/// What the storage service was asked: a location, an access, and the token
+/// the person called keasy with.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Asked {
+    pub location: String,
+    pub access: String,
+    pub token: String,
+}
+
+/// A storage service, as kanzo-ui's answers: the deployment declares
+/// `s3://b/`, and a location in it is vended as session credentials for the
+/// key `AK` on `s3` — the store's own; anything else is `storage/path`. No
+/// token is a 401, as the service's own reader of tokens answers.
+pub struct FakeStorage {
+    pub url: String,
+    pub asked: Arc<Mutex<Vec<Asked>>>,
+}
+
+pub async fn fake_storage(s3: &str) -> FakeStorage {
+    let asked = Arc::new(Mutex::new(Vec::new()));
+    let (seen, s3) = (asked.clone(), s3.to_string());
+    let answer = move |headers: HeaderMap, Json(body): Json<serde_json::Value>| {
+        let (seen, s3) = (seen.clone(), s3.clone());
+        async move {
+            let Some(token) = headers
+                .get("x-forwarded-access-token")
+                .and_then(|v| v.to_str().ok())
+            else {
+                return (
+                    StatusCode::UNAUTHORIZED,
+                    Json(json!({ "code": "session/absent" })),
+                )
+                    .into_response();
+            };
+            let location = body["location"].as_str().unwrap_or_default().to_string();
+            seen.lock().unwrap().push(Asked {
+                location: location.clone(),
+                access: body["access"].as_str().unwrap_or_default().to_string(),
+                token: token.to_string(),
+            });
+            if !location.starts_with("s3://b/") || location == "s3://b/" {
+                return (
+                    StatusCode::BAD_REQUEST,
+                    Json(json!({ "code": "storage/path", "detail": format!("{location} is in no storage location of this deployment") })),
+                )
+                    .into_response();
+            }
+            Json(json!({ "storage-credentials": [{ "prefix": location, "config": {
+                "s3.access-key-id": "AK", "s3.secret-access-key": "SK", "s3.session-token": "T",
+                "s3.session-token-expires-at-ms": "0", "client.region": "us-east-1", "s3.endpoint": s3,
+            } }] }))
+            .into_response()
+        }
+    };
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    tokio::spawn(async move {
+        axum::serve(
+            listener,
+            Router::new().route("/v1/credentials", axum::routing::post(answer)),
+        )
+        .await
+        .unwrap();
+    });
+    FakeStorage {
+        url: format!("http://{addr}"),
+        asked,
+    }
+}
+
+/// A store that answers as S3 does, enough for LIST and PUT: every bucket is
+/// empty and every write lands — for the access key `AK`. Any other key is
+/// refused, as S3 refuses a key it does not know.
 pub async fn fake_s3() -> String {
     async fn answer(method: Method, headers: HeaderMap) -> axum::response::Response {
         let signed_by_ak = headers

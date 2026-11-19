@@ -13,6 +13,8 @@ use std::ops::Deref;
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
 
+use secrecy::SecretString;
+
 use super::middleware::AuthenticatedUser;
 use crate::domain::Actor;
 use crate::error::{Refusal, ServerCode};
@@ -101,6 +103,18 @@ impl From<RbacError> for Refusal {
     }
 }
 
+/// The access token a request came with, verified, kept to forward as it came:
+/// the storage service vends to the person it names, not to this server.
+/// Never logged.
+#[derive(Clone, Debug)]
+pub struct AccessToken(pub SecretString);
+
+impl From<&str> for AccessToken {
+    fn from(token: &str) -> Self {
+        Self(SecretString::from(token))
+    }
+}
+
 /// Who is calling, and the roles they hold here.
 #[derive(Clone, Debug)]
 pub struct Caller {
@@ -109,6 +123,8 @@ pub struct Caller {
     /// Their display name, kept with what they write. Never logged.
     pub name: String,
     pub roles: Roles,
+    /// The token they called with.
+    pub token: AccessToken,
 }
 
 impl Caller {
@@ -149,6 +165,7 @@ fn admit(parts: &Parts, min: Role) -> Result<Caller, Refusal> {
         user_id: user.user_id.clone(),
         name: user.name.clone(),
         roles: user.roles,
+        token: user.token.clone(),
     };
     caller.require(min)?;
     Ok(caller)
@@ -182,7 +199,7 @@ least_role!(
     Role::Reader
 );
 least_role!(
-    /// Admits an editor or an admin: who builds graphs, connections and secrets.
+    /// Admits an editor or an admin: who builds graphs and connections.
     Editor,
     Role::Editor
 );
@@ -231,6 +248,7 @@ mod tests {
                             user_id: "u-1".to_string(),
                             name: "Ana Duarte".to_string(),
                             roles: held,
+                            token: AccessToken::from("t"),
                         });
                     }
                     next.run(request).await

@@ -85,11 +85,9 @@ pub enum ServerCode {
     /// A graph was built from the conversation: it is that graph's record, and is not saved over.
     #[serde(rename = "conversation/built")]
     ConversationBuilt,
-    #[serde(rename = "secret/not-found")]
-    SecretNotFound,
     #[serde(rename = "connection/not-found")]
     ConnectionNotFound,
-    /// A secret or connection of that name exists already, or a second sink.
+    /// A connection of that name exists already, or a second sink.
     #[serde(rename = "resource/already-exists")]
     ResourceAlreadyExists,
     /// Still used: `dependents` names what uses it.
@@ -98,13 +96,16 @@ pub enum ServerCode {
     /// A storage connection's location lies within another's, or holds one: `dependents` names them. Locations never overlap, so a prefix has one owner.
     #[serde(rename = "connection/overlaps")]
     ConnectionOverlaps,
-    /// A secret or connection was probed and did not pass; `dependents` names the connections that failed.
+    /// A connection was probed and did not pass.
     #[serde(rename = "probe/failed")]
     ProbeFailed,
+    /// A location none of the deployment's storage locations holds: the storage service opens only what the organization granted, and its admin declares where that is.
+    #[serde(rename = "store/undeclared")]
+    StoreUndeclared,
     /// The store answered and refused: to vend, or to list.
     #[serde(rename = "store/refused")]
     StoreRefused,
-    /// The store, or the identity service in front of it (Entra, STS), did not answer within its deadline; `after` says how long it was given, in milliseconds.
+    /// The store, or the storage service in front of it, did not answer within its deadline; `after` says how long it was given, in milliseconds.
     #[serde(rename = "store/silent")]
     StoreSilent,
     /// rudof refused a rules document: it is not Turtle, or not a SHACL shapes graph. `line` and `column` place it when the Turtle parser does.
@@ -144,12 +145,12 @@ impl ServerCode {
             Self::GraphFolderTaken => "graph/folder-taken",
             Self::ConversationNotFound => "conversation/not-found",
             Self::ConversationBuilt => "conversation/built",
-            Self::SecretNotFound => "secret/not-found",
             Self::ConnectionNotFound => "connection/not-found",
             Self::ResourceAlreadyExists => "resource/already-exists",
             Self::ResourceInUse => "resource/in-use",
             Self::ConnectionOverlaps => "connection/overlaps",
             Self::ProbeFailed => "probe/failed",
+            Self::StoreUndeclared => "store/undeclared",
             Self::StoreRefused => "store/refused",
             Self::StoreSilent => "store/silent",
             Self::RulesRefused => "rules/refused",
@@ -188,12 +189,12 @@ impl ServerCode {
             Self::GraphFolderTaken => "Another graph writes to that folder",
             Self::ConversationNotFound => "Conversation not found",
             Self::ConversationBuilt => "A graph was built from this conversation",
-            Self::SecretNotFound => "Secret not found",
             Self::ConnectionNotFound => "Connection not found",
             Self::ResourceAlreadyExists => "It exists already",
             Self::ResourceInUse => "Still in use",
             Self::ConnectionOverlaps => "The location overlaps another",
             Self::ProbeFailed => "Validation failed",
+            Self::StoreUndeclared => "Not in this deployment's storage",
             Self::StoreRefused => "The store refused",
             Self::StoreSilent => "The store did not answer in time",
             Self::RulesRefused => "The rules could not be read",
@@ -232,12 +233,12 @@ impl ServerCode {
             Self::GraphFolderTaken => Some(409),
             Self::ConversationNotFound => Some(404),
             Self::ConversationBuilt => Some(409),
-            Self::SecretNotFound => Some(404),
             Self::ConnectionNotFound => Some(404),
             Self::ResourceAlreadyExists => Some(409),
             Self::ResourceInUse => Some(409),
             Self::ConnectionOverlaps => Some(409),
             Self::ProbeFailed => Some(422),
+            Self::StoreUndeclared => Some(400),
             Self::StoreRefused => Some(502),
             Self::StoreSilent => Some(504),
             Self::RulesRefused => Some(422),

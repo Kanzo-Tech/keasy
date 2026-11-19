@@ -47,7 +47,7 @@ the user is in, which the seed maps onto keasy's roles (`configs.keasy-roles` in
 | User | acme (this instance) | globex | What it shows |
 |------|----------------------|--------|---------------|
 | `ana` | admin (*Admins*) | reader (*Readers*) | everything; the switcher between two organizations |
-| `bruno` | editor (*Data team*) | — | builds graphs, connections and secrets; changes what he made |
+| `bruno` | editor (*Data team*) | — | builds graphs and connections; changes what he made |
 | `eva` | reader (*Analysts*) | — | reads graphs, outputs and connections; creates nothing |
 | `fede` | member, no group | — | signed in, no role here: the forbidden page |
 | `carla` | — | admin (*Platform*) | a member of another organization only: no role here |
@@ -61,7 +61,7 @@ and its admin maps keasy's roles onto the organization's groups.
 
 `make dev` also brings up an S3 store, dev-only: [SeaweedFS](https://github.com/seaweedfs/seaweedfs),
 configured by `infra/dev/seaweedfs/` (its keys in `s3.json`, and in `iam.json` the role
-the server assumes to vend a credential scoped to one prefix). It has no console.
+the storage service assumes to vend a credential scoped to one prefix). It has no console.
 
 | What | Where |
 |------|-------|
@@ -108,8 +108,8 @@ Each example is one folder under `infra/dev/examples/<name>/`: `fetch.sh` (what 
 for it), `shapes.shex`, `mapping.fossil` and the gitignored `data/` it fetches. In the bucket it is
 `examples/<name>/data/` and `examples/<name>/shapes/`. At boot the instance declares one connection
 per example over its folder — **LDBC SNB**, **OpenFlights** and **Nobel laureates**, each holding its
-data and its vocabulary — and the sink, **Workspace output** (`output/`). Access is proved
-before each connection row is written, and an existing sink is never overwritten. Each example's
+data and its vocabulary — and the sink, **Workspace output** (`output/`). A declared connection is tested
+the first time someone tests it — a probe is vended to a person — and an existing sink is never overwritten. Each example's
 program reads its own connection; paste one into the studio to map its graph into `output/`:
 
 | Program | Graph |
@@ -124,8 +124,8 @@ an ICAO field that is not a four-letter ICAO code), and two kinds draw a warning
 zone and 218 above 4,000 ft, where takeoff performance is limited.
 
 `s3.localhost` is load-bearing: Docker's DNS answers it inside the compose network
-and `*.localhost` is loopback on the host, so the endpoint the server is given
-(`AWS_ENDPOINT_URL_S3`, and the vended credential names) works from both sides. The issuer is `http://localhost:8080/realms/kanzo`, the one the
+and `*.localhost` is loopback on the host, so the endpoint a vended credential names
+(`s3Endpoint` in `infra/dev/storage.env`) works from both sides. The issuer is `http://localhost:8080/realms/kanzo`, the one the
 browser sees; the server and the web fetch its keys at `http://keycloak:8080`
 (`KEASY_OIDC_INTERNAL_BASE_URL`, `KEASY_OIDC_JWKS_URL`).
 
@@ -142,6 +142,8 @@ graph TD
     Web -->|"JWKS"| Keycloak
     Server -->|"JWKS"| Keycloak
     Server --> SQLite[("SQLite")]
+    Server -->|"location + person's token"| Storage["Storage service (kanzo-ui)"]
+    Storage -->|"STS / SAS / downscoped token"| Cloud[("Organization's storage")]
     Keycloak --> PostgreSQL[("PostgreSQL")]
 ```
 
@@ -160,7 +162,7 @@ server of the organization the request addresses (`KEASY_API_URL`, with `{tenant
 alias), and refuses one the token does not name.
 
 Mappings run in the browser (DuckDB-WASM + `@fossil-lang/*`), and so does source
-introspection; the server hosts connections, vends credentials scoped to one prefix, graphs and the catalog,
+introspection; the server hosts connections, graphs and the catalog, asks the storage service for credentials scoped to one prefix,
 and never reads a data file. Every graph names a sink as its destination. The work
 is shared: everyone in the workspace reads every graph, every editor runs it, and its
 owner or an admin changes it (roles `reader ⊂ editor ⊂ admin`, from the Keycloak
@@ -171,11 +173,16 @@ WebGPU in a worker of its own, the models this origin's `/models/app-config.json
 (`web/public/models/`; the weights themselves come from Hugging Face, once). No call
 leaves the page, so there is nothing to forward, no model key and no budget to keep.
 
-A **credential** (S3 or Azure) is who keasy is when it reaches a store; a
-**connection** puts one to use (a storage prefix — a source or the one sink). Both
-are validated on every write,
-and a credential in use cannot be deleted. `KEASY_BOOTSTRAP_FILE` declares them at
-boot in the API's own request format (dev: `infra/dev/bootstrap.json`).
+A **connection** is a storage location by name — a source or the one sink, `s3://`,
+`abfss://` or `gs://` — and nothing that opens it: keasy stores no key. Every credential
+is vended, for one prefix and one hour, by the platform's **storage service** (kanzo-ui
+`services/storage`), which this server alone reaches on the `kanzo-storage` network: it
+asks after its own permission check, with the person's token, and the service signs with the
+deployment's identity, which the organization's admin granted a role on its storage once
+(Snowflake's storage integration, Unity Catalog's external locations). A location outside
+the ones the deployment declares is refused (`store/undeclared`). A connection is tested
+on every write, and `KEASY_BOOTSTRAP_FILE` declares connections at boot in the API's own
+request format (dev: `infra/dev/bootstrap.json`).
 
 An instance's look is declared, not edited: `KEASY_BRANDING_FILE` names a YAML
 file holding exactly what kanzo-ui's theme generator exports (`branding:` with
@@ -183,12 +190,10 @@ file holding exactly what kanzo-ui's theme generator exports (`branding:` with
 boot and served publicly at `GET /v1/branding`. Without it every shipped theme is
 offered. Example: `infra/dev/branding.example.yml`.
 
-Stored credentials are sealed with `KEASY_SECRET_KEY`: 32 random bytes in base64
-(`openssl rand -base64 32`). The server refuses to start without one, and refuses
-a database whose schema is not the one it ships — there are no migrations: a schema
-change is the database dropped and created again, so wipe the volume (`make clean`, or
-`docker compose down -v`) and start the stack again. The latest such change is the
-`conversations` table (the assistant's conversations, and each graph's own).
+The server refuses a database whose schema is not the one it ships — there are no
+migrations: a schema change is the database dropped and created again, so wipe the volume
+(`make clean`, or `docker compose down -v`) and start the stack again. The latest such
+change is a connection without a credential (the `credentials` table is gone).
 
 ## Development
 
@@ -266,13 +271,13 @@ e2e/                @keasy/e2e: one Playwright test per failure scenario, the sm
 compose.yaml        keasy as it runs anywhere: the web, its sessions, its declaration in the realm
 compose.server.yaml one organization's server, which compose.override.yaml extends
 compose.override.yaml  development: the platform in its dev shape, builds, the S3 store, the faults
-infra/dev/          development's organization, secrets, roles, S3 config and seed examples
+infra/dev/          development's organization, secrets, roles, S3 and storage-service config, seed examples
 server/             Rust API (Dockerfile = release, Dockerfile.dev = cargo-watch)
   src/main.rs       configures from the environment and serves
   src/startup.rs    Application, AppState, the router and the spec it publishes
   src/routes/       one file per resource: handlers with their bodies
   src/domain/       the records and parse-don't-validate types
-  src/{credentials,connections,graphs}/  persistence and shared behaviour
+  src/{connections,graphs}/  persistence and shared behaviour
   tests/api/        black-box HTTP tests through spawn_app, and the spec golden
 web/                Next.js app and the API forward (Dockerfile = release, Dockerfile.dev = HMR)
 ```

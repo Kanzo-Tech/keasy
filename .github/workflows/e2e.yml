@@ -1,10 +1,13 @@
 name: e2e
 
 # The failure scenarios (e2e/tests) and the smoke over the dev seeds (e2e/smoke), against the whole
-# compose stack: every PR to main.
+# compose stack: every PR to main, and main itself, so a merge that broke the stack is seen on the
+# commit that broke it rather than on the next PR.
 
 on:
   pull_request:
+    branches: [main]
+  push:
     branches: [main]
 
 concurrency:

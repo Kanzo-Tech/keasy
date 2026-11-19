@@ -12,7 +12,7 @@ A step marked ⇧ waits for a library release, and keasy deletes in the same cha
 |---|---|
 | ⇧ **The Ask evaluation set to kanzo-ui** ([assistant](assistant.md#order)) | kanzo-ui taking the set |
 | ⇧ **kanzo-ui**: `Structure`, the conversation's keeping, library hooks on keasy's `QueryClient` ([below](#what-the-libraries-take)) | a kanzo-ui release |
-| **`joinGraphOf`'s tables stay**, described by fossil's mapping; why and what would reverse it on [the assistant page](assistant.md#the-three-tasks) | a `JoinGraph` from a mapping in kanzo-ui, and `@fossil-lang/types` exporting the `Primitive` table |
+| **`joinGraphOf`'s tables stay**, described by fossil's mapping; why and what would reverse it on [the assistant page](assistant.md#the-three-steps-and-the-one-task) | a `JoinGraph` from a mapping in kanzo-ui, and `@fossil-lang/types` exporting the `Primitive` table |
 | **Azure's signer**: keasy's minimal user-delegation SAS signer ([below](#azure-has-one-credential-a-user-delegation-sas-through-the-azure-sdk)) | the Azure SDK's SAS builder |
 | **The two module stores** (`lib/fossil/build.ts`, `use-browser-graph-runner.ts`) stay `useSyncExternalStore`: a build's state names its graph before it ends, and a live run holds its Stop and its ending, neither of which a mutation's state carries | nothing; a state a mutation can carry reopens it |
 | **Field labels and file icons**: credential field labels are still the property names (utoipa 5 has no `title` on a field, only on a type); the source picker picks an icon by extension (the file's `reader` names a format, not whether it is a table) | utoipa; fossil |
@@ -26,7 +26,7 @@ improved.
 | What keasy carries | Where | Goes to | Owned on |
 |---|---|---|---|
 | The conversation's keeping: whole saves after each reply, one at a time, the sealed record carried on in a new id | `lib/assistant-conversation.ts`, its hook test | `@kanzo-tech/ai`, on the AI SDK's `UIMessage[]` per id and `validateUIMessages`; keasy gives `load`/`save` against `/v1/conversations` and the privacy `keep` | [assistant](assistant.md#the-conversation-is-kept) |
-| `requirements`, and the guessed half of `profile` and `model` | `graphs/new/_parts/assistant/tasks/` | `JoinResolver` and Ask's paths; labels from annotations with `Intl`; the graph's facts on `JoinGraph` | [assistant](assistant.md#the-three-tasks) |
+| `requirements`, and the guessed half of `profile` and `model` | `graphs/new/_parts/assistant/tasks/` | `JoinResolver` and Ask's paths; labels from annotations with `Intl`; the graph's facts on `JoinGraph` | [assistant](assistant.md#the-three-steps-and-the-one-task) |
 | Library reads wrapped in keasy's own `useQuery` | `use-assistant.ts`, `use-source-descriptors.ts`, `overview.tsx`'s `useQueryRows` | the library's own hook, using TanStack Query inside on keasy's `QueryClient` from `QueryClientProvider` (a peer dependency) | here |
 
 **The catalogue is read once.** `@kanzo-tech/graph` reads a graph's catalogue (`graphar_vertex_types`,

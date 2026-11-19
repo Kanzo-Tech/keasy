@@ -345,6 +345,7 @@ export function BuildTurn({
 }
 
 const FAILED: Record<TaskFailure["task"], string> = {
+  model: "I could not read what these files hold together.",
   mapping: "I could not write how these files become your graph.",
 };
 

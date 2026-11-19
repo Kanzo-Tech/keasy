@@ -15,6 +15,7 @@ const file = (path: string, size: number): SourceFile => ({
   kind: "file",
   reader: "csv",
   line: `${path} := io.csv("@nobel/${path}")`,
+  reference: `@nobel/${path}`,
   size,
   vocabulary: false,
 });

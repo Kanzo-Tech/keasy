@@ -32,6 +32,8 @@ export interface SourceFile {
   kind: "file";
   /** Its whole line, `name := io.<reader>("@conn/path")`. */
   line: string;
+  /** The reference a program writes for it, `@conn/path`: what fossil's profile reads it by. */
+  reference: string;
   /** Its reader, the `io.` constructor its extension names. */
   reader: string;
   /** Its size in bytes, as the listing gave it. */
@@ -97,6 +99,7 @@ export async function childrenOf(
         kind: "file",
         reader: read.format.name,
         line: `${await bindingName(rest, { signal })} := io.${read.format.name}("${ref}")`,
+        reference: ref,
         size,
         vocabulary: read.vocabulary,
       });

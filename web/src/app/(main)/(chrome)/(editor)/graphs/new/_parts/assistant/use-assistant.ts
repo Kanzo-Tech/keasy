@@ -7,10 +7,10 @@
  * What it answers, from real data: the tree, from the connections' listings (`useSources`, the
  * studio's); once the first message is sent, one thing per file with its count and columns, from
  * fossil's profile of the picked files, read once over all of them (`tasks/profile.ts`); and then the
- * steps of docs/design/assistant.md, in order, none of them a model's: the model, named from the
- * files' own words — the relations and the decisions; then, over the model accepted with each open
- * decision at its first option meanwhile, the question chips, and the program fossil checks —
- * which **Open in the editor** opens, and the preview and the build run. No model is asked here: a
+ * steps of docs/design/assistant.md, in order, none of them a model's: the model fossil infers
+ * from the profile — the relations, and its ambiguities said as decisions; then, over that model with
+ * each open ambiguity at its first option meanwhile, the question chips, and the program fossil
+ * writes and checks — which **Open in the editor** opens, and the preview and the build run. No model is asked here: a
  * question is the preview's Ask's to answer. A step that fails is in `failures`, with its retry.
  *
  * A conversation kept is started again from its `seed`: the files picked, the person's choices and
@@ -21,7 +21,7 @@ import { useCallback, useMemo, useState } from "react";
 // eslint-disable-next-line no-restricted-imports -- one listing per opened folder, the profile of the picked files and each Task's answer; each failure is shown in its place, beside the rest
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import type { Format, Profiled as Described } from "@fossil-lang/types";
-import { inputs, profile } from "@fossil-lang/wasm";
+import { infer, profile } from "@fossil-lang/wasm";
 import { engine } from "@kanzo-tech/mosaic/engine";
 import type { FileReference } from "@/lib/assistant-conversation";
 import type { StorageConnection } from "@/lib/connections";
@@ -29,9 +29,9 @@ import { ClientError } from "@/lib/errors";
 import { host } from "@/lib/fossil/host";
 import { childrenOf, connectionNode, type SourceBranch, type SourceFile, type SourceNode } from "../sources";
 import { listChildren } from "../use-sources";
-import { type AssistantData, type DecisionItem, optionOf, type QuestionOffer, type TaskFailure, type Thing } from "./model";
-import { declare, fossilCheck, mappingOf, writeProgram } from "./tasks/mapping";
-import { accept, decisionsOf, defaultsOf, type Draft, draftOf, namesOf, relationsOf, structureOf } from "./tasks/model";
+import { type AssistantData, type DecisionItem, type QuestionOffer, type TaskFailure, type Thing } from "./model";
+import { fossilCheck, mappingOf, writeProgram } from "./tasks/mapping";
+import { assumedOf, decisionsOf, relationsOf } from "./tasks/model";
 import { type Profiled, profiledOf, thingName } from "./tasks/profile";
 import { joinGraphOf, offersOf } from "./tasks/requirements";
 
@@ -74,7 +74,7 @@ async function keptFile(
 }
 
 /** The picked file a source's reference names, by its id; the reference itself when none does. */
-const fileOf = (picked: readonly SourceFile[], key: string) => picked.find((f) => f.line.includes(`"${key}"`))?.id ?? key;
+const fileOf = (picked: readonly SourceFile[], key: string) => picked.find((f) => f.reference === key)?.id ?? key;
 
 /** One thing per file read, with its count and what it holds: what the profile says before any model. */
 function thingsOf(profiled: Profiled, picked: readonly SourceFile[]): Thing[] {
@@ -84,25 +84,6 @@ function thingsOf(profiled: Profiled, picked: readonly SourceFile[]): Thing[] {
     count: s.rows,
     holds: s.columns.map((c) => c.name),
   }));
-}
-
-/**
- * The decisions a draft raises, each with the default the profile settles it with, if any, and the
- * person's pick over it.
- */
-function decisionItems(draft: Draft, profiled: Profiled, chosen: Readonly<Record<string, string>>): DecisionItem[] {
-  const defaults = defaultsOf(profiled);
-  return decisionsOf(draft, profiled).map((decision) => ({
-    decision,
-    assumed: defaults[decision.id]?.assume ?? null,
-    chosen: chosen[decision.id] ?? null,
-  }));
-}
-
-/** The option the decision `id` stands at: the person's pick, else its default. */
-function standing(items: readonly DecisionItem[], id: string): string | null {
-  const item = items.find((d) => d.decision.id === id);
-  return item ? optionOf(item) : null;
 }
 
 /** Where a kept conversation stood: what the hook starts from instead of nothing. */
@@ -194,19 +175,13 @@ export function useAssistant({
   const vocabularies = new Set(every.filter((f) => f.vocabulary).map((f) => f.id));
   // A kept file no connection reads any more is said, never dropped.
   const unreachable = [...chosenFiles].filter(([id, file]) => file === null && keptFiles.get(id) === null).map(([id]) => id);
-  const lines = picked.map((f) => f.line).sort();
+  const sources = picked.map((f) => ({ reference: f.reference, format: f.reader })).sort((a, b) => a.reference.localeCompare(b.reference));
   // The files are read together, once: the inclusions between two of them are part of the answer.
   const read = useQuery({
-    queryKey: ["assistant", "profile", lines],
+    queryKey: ["assistant", "profile", sources],
     queryFn: async ({ signal }) => {
-      const sources = await inputs(lines.join("\n"), { host, signal });
-      const described = await profile(sources, {
-        host,
-        engine: await engine({ signal }),
-        options: { shown: SHOWN },
-        signal,
-      });
-      return { profiled: profiledOf(described.profile, sources), undescribed: described.undescribed, described };
+      const described = await profile(sources, { host, engine: await engine({ signal }), options: { shown: SHOWN }, signal });
+      return { profiled: profiledOf(described.profile), undescribed: described.undescribed, described };
     },
     // Nothing is read until the first message is sent: picking files is not asking.
     enabled: picked.length > 0 && about !== undefined,
@@ -225,66 +200,70 @@ export function useAssistant({
       : (read.data?.undescribed ?? []).map(({ source, problem }) => ({ id: fileOf(picked, source.key), problem }))),
   ];
 
-  // ── model: the types and their names, from the files alone, once they are read ──
-  const draft = useMemo(() => {
-    if (profiled === null || profiled.sources.length === 0) return null;
-    const structure = structureOf(profiled);
-    return draftOf(structure, namesOf(structure));
-  }, [profiled]);
-  const decisions = useMemo(() => (draft && profiled ? decisionItems(draft, profiled, chosen) : null), [draft, profiled, chosen]);
-  // Each decision still open read at its first option meanwhile: nothing waits on it but the build.
-  const accepted = useMemo(() => {
-    if (!draft || !profiled || !decisions) return null;
-    const first = (id: string) => decisions.find((d) => d.decision.id === id)?.decision.options[0]?.id ?? null;
-    return accept(draft, profiled, (id) => standing(decisions, id) ?? first(id));
-  }, [draft, profiled, decisions]);
-  const relations = useMemo(() => (accepted && profiled ? relationsOf(accepted, profiled) : null), [accepted, profiled]);
-  const acceptedKey = accepted ? JSON.stringify(accepted) : null;
-
-  // ── fossil declares the accepted model, and the graph it will be is described by fossil's mapping of it ──
-  const declared = useQuery({
-    queryKey: ["assistant", "declared", acceptedKey],
-    queryFn: async ({ signal }) => {
-      const declaration = await declare(accepted!, profiled!, { base: window.location.origin, signal });
-      return { declaration, graph: joinGraphOf(accepted!, await mappingOf(declaration.prelude, { host, signal })) };
-    },
-    enabled: accepted !== null,
+  // ── model: fossil's, from the profile, each ambiguity at the person's choice or its first option ──
+  const describedProfile = read.data?.described.profile;
+  const inferred = useQuery({
+    queryKey: ["assistant", "model", describedProfile, chosen],
+    queryFn: ({ signal }) => infer(describedProfile!, { choices: chosen, signal }),
+    enabled: describedProfile !== undefined && profiled !== null && profiled.sources.length > 0,
     retry: false,
     staleTime: Infinity,
+    // A choice is a model inferred again: the last one stays meanwhile.
+    placeholderData: keepPreviousData,
   });
-  const graph = accepted ? (declared.data?.graph ?? null) : null;
+  const model = inferred.data?.model ?? null;
+  const decisions = useMemo((): DecisionItem[] | null => {
+    if (!inferred.data || !profiled) return null;
+    const { ambiguities } = inferred.data;
+    return decisionsOf(inferred.data, profiled).map((decision, i) => ({
+      decision,
+      assumed: assumedOf(ambiguities[i]!),
+      chosen: chosen[decision.id] ?? null,
+    }));
+  }, [inferred.data, profiled, chosen]);
+  const relations = useMemo(() => (model && profiled ? relationsOf(model, profiled) : null), [model, profiled]);
+  const modelKey = model ? JSON.stringify(model) : null;
 
-  // ── requirements: questions to start from, once the model is accepted ──
-  const offered = useQuery({
-    queryKey: ["assistant", "offers", acceptedKey],
-    queryFn: async () => (await offersOf(accepted!, graph!)).map((r, i): QuestionOffer => ({ id: `offer-${i}`, ...r })),
-    enabled: graph !== null,
-    retry: false,
-    staleTime: Infinity,
-  });
-  const offers = accepted ? (offered.data ?? null) : null;
-
-  // ── mapping: the program, as soon as the model is accepted ──
+  // ── mapping: the program fossil writes of the model, and the graph its mapping describes ──
   const mapped = useQuery({
-    queryKey: ["assistant", "mapping", acceptedKey],
+    queryKey: ["assistant", "mapping", modelKey],
     queryFn: async ({ signal }) => {
       const check = fossilCheck({ host, engine: await engine({ signal }) });
       try {
-        return await writeProgram({ accepted: accepted!, ...declared.data!.declaration, check }, signal);
+        return await writeProgram(model!, { base: window.location.origin, check, signal });
       } finally {
         check.close();
       }
     },
-    enabled: accepted !== null && declared.data !== undefined,
+    enabled: model !== null,
     retry: false,
     staleTime: Infinity,
     // A decision changed is a program written again: the last one stays the preview's meanwhile.
     placeholderData: keepPreviousData,
   });
+  const graphed = useQuery({
+    queryKey: ["assistant", "graph", modelKey],
+    queryFn: async ({ signal }) => joinGraphOf(model!, await mappingOf(mapped.data!, { host, signal })),
+    enabled: model !== null && mapped.data !== undefined && !mapped.isPlaceholderData,
+    retry: false,
+    staleTime: Infinity,
+  });
+  const graph = model ? (graphed.data ?? null) : null;
+
+  // ── requirements: questions to start from, once the model is accepted ──
+  const offered = useQuery({
+    queryKey: ["assistant", "offers", modelKey],
+    queryFn: async () => (await offersOf(model!, graph!)).map((r, i): QuestionOffer => ({ id: `offer-${i}`, ...r })),
+    enabled: graph !== null,
+    retry: false,
+    staleTime: Infinity,
+  });
+  const offers = model ? (offered.data ?? null) : null;
 
   const failures: TaskFailure[] = [
-    ...(declared.isError ? [{ task: "mapping" as const, problem: declared.error, retry: () => void declared.refetch() }] : []),
-    ...(mapped.isError ? [{ task: "mapping" as const, problem: mapped.error, retry: () => void mapped.refetch() }] : []),
+    ...(inferred.isError ? [{ task: "model" as const, problem: inferred.error, retry: () => void inferred.refetch() }] : []),
+    // Writing the program and describing its graph are one step to the person: the first that failed says it.
+    ...[mapped, graphed].filter((q) => q.isError).slice(0, 1).map((q) => ({ task: "mapping" as const, problem: q.error, retry: () => void q.refetch() })),
   ];
 
   return {
@@ -304,7 +283,7 @@ export function useAssistant({
     // The mapping's program once it holds; until then the picked files' bindings.
     program: mapped.data ?? every.map((f) => f.line).join("\n"),
     files: [...chosenFiles.keys()].map(locationOf),
-    mapped: accepted === null ? null : (mapped.data ?? keptProgram),
+    mapped: model === null ? null : (mapped.data ?? keptProgram),
     writing: mapped.isFetching,
     described: read.data?.described ?? null,
   };

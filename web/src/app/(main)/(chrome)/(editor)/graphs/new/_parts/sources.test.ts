@@ -48,6 +48,7 @@ describe("childrenOf", () => {
     expect(inside[1]).toMatchObject({
       reader: "csv",
       line: 'person_0_0 := io.csv("@snb/dynamic/person_0_0.csv")',
+      reference: "@snb/dynamic/person_0_0.csv",
       size: 200,
     });
   });

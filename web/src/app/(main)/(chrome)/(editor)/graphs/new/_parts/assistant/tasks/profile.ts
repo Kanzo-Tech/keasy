@@ -5,7 +5,7 @@
  * model can pick from a closed list. Nothing here asks a model.
  */
 
-import type { Input, Primitive, Profile } from "@fossil-lang/types";
+import type { Primitive, Profile } from "@fossil-lang/types";
 import { splitWords } from "@kanzo-tech/relations";
 
 /** One column of a source, with what the profile counted of it. */
@@ -25,9 +25,6 @@ export interface Source {
   key: string;
   /** The file's own name, for the person: `laureates.csv`. */
   file: string;
-  format: string;
-  /** The reader option the binding wrote (`delimiter = "|"`), verbatim. */
-  option?: string;
   columns: readonly Column[];
   /** How many rows it has, when the profile read every one; `null` when it read a sample. */
   rows: number | null;
@@ -63,16 +60,13 @@ const fileOf = (key: string) => key.slice(key.lastIndexOf("/") + 1);
  * counts, keys and sample, and each inclusion between two of them. fossil names every source by its
  * binding, so a binding is one source and the inclusions name the same.
  */
-export function profiledOf(profile: Profile, inputs: readonly Input[]): Profiled {
+export function profiledOf(profile: Profile): Profiled {
   const sources = profile.sources.map((s): Source => {
     const key = s.descriptor.key;
-    const input = inputs.find((i) => i.binding === s.binding);
     return {
       name: s.binding,
       key,
       file: fileOf(key),
-      format: input?.format ?? "csv",
-      option: input?.option,
       columns: s.descriptor.columns.map((c) => {
         const stats = s.columns.find((x) => x.name === c.name);
         return { name: c.name, primitive: c.primitive, nulls: stats?.null_count ?? 0, distinct: stats?.distinct_count ?? 0 };
@@ -87,12 +81,6 @@ export function profiledOf(profile: Profile, inputs: readonly Input[]): Profiled
     named.has(i.from.source) && named.has(i.to.source) ? [{ id: inclusionId(i.from, i.to), from: i.from, to: i.to }] : [],
   );
   return { sources, inclusions };
-}
-
-/** The `delimiter = "…"` a binding's option wrote, which a vocabulary carries apart. */
-export function delimiterOf(option: string | undefined): string | undefined {
-  const m = option?.match(/delimiter\s*=\s*"((?:[^"\\]|\\.)*)"/);
-  return m ? m[1]!.replace(/\\(.)/g, "$1") : undefined;
 }
 
 /** A source's sample rows as records, column by column. */

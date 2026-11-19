@@ -1,6 +1,6 @@
 import "client-only";
 
-import { formats, openProgram, type FossilProgram } from "@fossil-lang/wasm";
+import { formats, open, type FossilProgram } from "@fossil-lang/wasm";
 
 import { queryClient } from "@/lib/api/query-client";
 
@@ -16,7 +16,7 @@ export const GRAPH_URI = "graph.fossil";
 export function graphProgram(): Promise<FossilProgram> {
   return queryClient.fetchQuery({
     queryKey: ["fossil", "program"],
-    queryFn: () => openProgram(GRAPH_URI, { host }),
+    queryFn: () => open(GRAPH_URI, { host }),
     staleTime: Infinity,
     gcTime: Infinity,
   });

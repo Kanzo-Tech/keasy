@@ -75,12 +75,13 @@ function useShowTile(
         { duration: RING_MS, easing: "ease-in" },
       );
       // The tiles above it are still drawing, and each one that grows pushes it down: it is kept in
-      // view while the board settles, until the reader scrolls for themselves or the time is up.
+      // view while the board settles, until the reader scrolls for themselves or the time is up. What
+      // grows is the scroll area's content; its root keeps the size the page gives it.
       settling = new ResizeObserver(() => {
         if (performance.now() > until) return done.abort();
         element.scrollIntoView({ block: "center", behavior: "auto" });
       });
-      settling.observe(board);
+      settling.observe(board.querySelector('[data-slot="scroll-area-content"]') ?? board);
       for (const type of ["wheel", "touchstart", "keydown"] as const) {
         window.addEventListener(type, () => done.abort(), { signal: done.signal, passive: true });
       }

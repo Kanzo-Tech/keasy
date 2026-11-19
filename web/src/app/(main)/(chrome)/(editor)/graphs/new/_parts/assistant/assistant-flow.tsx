@@ -171,7 +171,7 @@ function Resumed({
       onAdvanced={advanced}
       onBuild={onBuild}
       onChoose={assistant.choose}
-      onClear={assistant.clear}
+      onDrop={assistant.drop}
       onPick={assistant.pick}
       onQuestionsChange={setQuestions}
       onReplies={onReplies}

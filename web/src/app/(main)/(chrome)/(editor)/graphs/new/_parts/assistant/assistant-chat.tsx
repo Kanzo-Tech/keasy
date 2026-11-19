@@ -50,7 +50,7 @@ import {
 export interface AssistantChatProps extends AssistantData {
   /** Pick files, or drop them, and drop a connection's: what the pills above the field do. */
   onPick: SourceBarProps["onPick"];
-  onClear: SourceBarProps["onClear"];
+  onDrop: SourceBarProps["onDrop"];
   onChoose: (decision: string, option: string) => void;
   /** The person's questions, kept by the host, which says whether each can be answered. */
   questions: readonly Question[];
@@ -281,7 +281,7 @@ export function AssistantChat(props: AssistantChatProps) {
         <Composer
           onAsk={(text) => (isChange(text) ? setChange(text.trim()) : ask(`written-${++written}`, text))}
           onPick={props.onPick}
-          onClear={props.onClear}
+          onDrop={props.onDrop}
           onSend={(text) => reply({ about: text })}
           connections={props.connections}
           list={props.list}
@@ -412,13 +412,13 @@ function Composer({
   list,
   selected,
   onPick,
-  onClear,
+  onDrop,
   onSend,
   onAsk,
 }: {
   waiting: Waiting;
   placeholder: string;
-} & Pick<SourceBarProps, "connections" | "list" | "selected" | "onPick" | "onClear"> & {
+} & Pick<SourceBarProps, "connections" | "list" | "selected" | "onPick" | "onDrop"> & {
     onSend: (about: string) => void;
     onAsk: (text: string) => void;
   }) {
@@ -442,7 +442,7 @@ function Composer({
           send();
         }}
       >
-        {first && <SourceBar connections={connections} list={list} onClear={onClear} onPick={onPick} selected={selected} />}
+        {first && <SourceBar connections={connections} list={list} onDrop={onDrop} onPick={onPick} selected={selected} />}
         <PromptInputTextarea
           aria-label={first ? "What is this data about?" : "Your question"}
           className="min-h-14"

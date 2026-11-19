@@ -120,7 +120,7 @@ const base: AssistantChatProps = {
   preview: { state: "idle", rerun: () => {} },
   onBuild: () => {},
   onPick: () => {},
-  onClear: () => {},
+  onDrop: () => {},
   writing: false,
   onChoose: () => {},
   questions: [],
@@ -179,18 +179,19 @@ describe("the assistant, as a conversation", () => {
     expect(host.querySelector("[data-empty]")?.textContent).toContain("What would you like to explore?");
     expect(host.querySelector("[data-empty]")?.textContent).toContain("Add a connection’s files from the badges below");
     expect(send(host).disabled).toBe(true);
-    // One pill per readable connection, empty until something is picked.
-    expect(host.querySelector('[data-connection="nobel"]')?.textContent).toBe("@nobel");
+    // One +, and no card until something is picked.
+    expect(host.querySelector('[aria-label="Add files"]')).not.toBeNull();
+    expect(host.querySelector("[data-file-card]")).toBeNull();
     // The chat alone: the panel opens with the first message.
     expect(host.querySelector('[aria-label="Your graph"]')).toBeNull();
   });
 
-  it("shows what was picked on its pill, and clears it with the cross", async () => {
-    const onClear = vi.fn();
-    const { host } = mount({ selected: new Set(["nobel:laureates.csv", "nobel:awards.csv"]), onClear });
-    expect(host.querySelector('[data-connection="nobel"]')?.textContent).toContain("@nobel · 2 files");
-    await act(async () => host.querySelector<HTMLElement>('[aria-label="Remove @nobel"]')!.click());
-    expect(onClear).toHaveBeenCalledWith("nobel");
+  it("shows what was picked as cards, and drops one with its cross", async () => {
+    const onDrop = vi.fn();
+    const { host } = mount({ selected: new Set(["nobel:laureates.csv", "nobel:awards.csv"]), onDrop });
+    expect([...host.querySelectorAll("[data-file-card]")].map((c) => c.textContent)).toEqual(["laureates.csv", "awards.csv"]);
+    await act(async () => host.querySelector<HTMLElement>('[aria-label="Remove awards.csv"]')!.click());
+    expect(onDrop).toHaveBeenCalledWith(["nobel:awards.csv"]);
   });
 
   it("the first message is the files as a chip above what they are about, and one line says they are read", async () => {
@@ -545,7 +546,7 @@ function useFakeAssistant({ seed, questions }: { seed: Seed; questions: Question
     writing: false,
     described: null,
     pick: () => {},
-    clear: () => {},
+    drop: () => {},
     choose: (decision: string, picked: string) => setChosen((prev) => ({ ...prev, [decision]: picked })),
   };
 }

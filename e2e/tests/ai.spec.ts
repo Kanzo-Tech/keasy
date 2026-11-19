@@ -41,7 +41,7 @@ const REQUIREMENTS = "You suggest questions a person could ask";
 const PERSON = { types: { people: "Person" }, edges: {}, fields: { "people.signed_up_on": "signedUpOn" } };
 
 /**
- * The guided chat's questions turn, over the suite's source: the people file picked from its pill and
+ * The guided chat's questions turn, over the suite's source: the people file picked through the + and
  * sent with nothing said about it, and the types the double proposes accepted — where the
  * `requirements` Task is asked for its chips.
  */
@@ -51,11 +51,13 @@ async function askForRequirements(page: Page) {
   await expect(page).toHaveURL(/\/graphs\/new\/assistant(\?conversation=[\w-]+)?$/);
   // In the dev stack TanStack's devtools button floats over the chat's corner.
   await page.addStyleTag({ content: ".tsqd-parent-container { display: none !important; }" });
-  // The connection is a pill above the composer; its menu lists the files, each a checkable item.
-  await page.getByRole("button", { name: `@${SOURCE}`, exact: true }).click();
-  await page.getByRole("menuitemcheckbox", { name: /^people\.csv/ }).click();
-  // The pick closes the menu, and the pill counts what is picked.
-  await expect(page.getByRole("button", { name: `@${SOURCE} · 1 file`, exact: true })).toBeVisible();
+  // The + lists the connections, and a connection its files, each picked on select.
+  await page.getByRole("button", { name: "Add files" }).click();
+  await page.getByRole("option", { name: SOURCE, exact: true }).click();
+  await page.getByRole("option", { name: /^people\.csv/ }).click();
+  await page.keyboard.press("Escape");
+  // What is picked is a card above the field.
+  await expect(page.locator("[data-file-card]")).toHaveText(["people.csv"]);
   // Nothing said about what the files are: the send goes with the sources alone.
   await page.getByRole("button", { name: "Send" }).click();
   // The profile is read on the page's engine, then the double's types are accepted.

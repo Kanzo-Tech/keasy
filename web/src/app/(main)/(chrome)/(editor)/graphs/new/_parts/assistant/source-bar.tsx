@@ -1,83 +1,87 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Database, Plus, X } from "lucide-react";
+import { ArrowLeft, Check, Database, FileText, Plus, X } from "lucide-react";
 import { PromptInputHeader } from "@kanzo-tech/ai";
 import {
+  Command,
+  CommandContent,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  createListCollection,
   FormatByte,
   InputGroupButton,
-  Menu,
-  MenuCheckboxItem,
-  MenuContent,
-  MenuGroup,
-  MenuItem,
-  MenuSub,
-  MenuSubContent,
-  MenuSubTrigger,
-  MenuTrigger,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
 } from "@kanzo-tech/ui";
 import { ProblemView } from "@/components/problem-view";
 import type { StorageConnection } from "@/lib/connections";
-import { connectionNode, type SourceBranch, type SourceFile, type SourceNode } from "../sources";
+import { connectionNode, type SourceBranch, type SourceFile } from "../sources";
 import type { AssistantData } from "./model";
 
 export interface SourceBarProps extends Pick<AssistantData, "connections" | "list" | "selected"> {
   /** Pick `files`, or drop them. */
   onPick: (files: readonly SourceFile[], on: boolean) => void;
-  /** Drop every file of a connection. */
-  onClear: (connection: string) => void;
+  /** Drop files by id: a card's cross. */
+  onDrop: (ids: readonly string[]) => void;
 }
 
-/** How many of a connection's files are picked: file ids are `<connection>:<path>`. */
-const countOf = (selected: ReadonlySet<string>, connection: StorageConnection) =>
-  [...selected].filter((id) => id.startsWith(`${connection.name}:`)).length;
+/** How many file cards a connection shows before the rest are one: *+4 more files · Nobel laureates*. */
+const SHOWN = 3;
+
+/** A file id is `<connection>:<path>`. */
+const split = (id: string) => {
+  const colon = id.indexOf(":");
+  return { connection: id.slice(0, colon), path: id.slice(colon + 1) };
+};
 
 /**
- * Above the composer's field, one pill per readable connection — *+ @Nobel laureates* — as Claude's connectors
- * are (docs/design/assistant.md, *Sources in the composer*). A pill opens a menu of what the
- * connection lists: its name with **Select all**, then each file as a checkable item with its size,
- * and a submenu for each folder the listing returns. What is picked stays on the pill, *@Nobel
- * laureates · 6 files*, and its cross clears it.
+ * Above the composer's field: one **+**, as Claude's composer has (docs/design/assistant.md, *One +,
+ * as Claude's*), and what is picked as **file cards** — *awards.csv*, then *+4 more files · Nobel
+ * laureates* — each with a cross. The **+** lists the connections; one opens to its files, every
+ * folder's included, with a search over them.
  */
-export function SourceBar({ connections, list, selected, onPick, onClear }: SourceBarProps) {
+export function SourceBar({ connections, list, selected, onPick, onDrop }: SourceBarProps) {
+  const byConnection = new Map<string, string[]>();
+  for (const id of selected) {
+    const { connection } = split(id);
+    byConnection.set(connection, [...(byConnection.get(connection) ?? []), id]);
+  }
   return (
     <PromptInputHeader aria-label="Sources">
-      {connections.map((connection) => {
-        const count = countOf(selected, connection);
-        const name = `@${connection.name}`;
-        return (
-          <span
-            className={
-              count > 0
-                ? "inline-flex items-center rounded-full border border-primary bg-primary/10 text-primary"
-                : "inline-flex items-center"
-            }
-            data-connection={connection.name}
-            key={connection.name}
-          >
-            <Menu closeOnSelect={false}>
-              <MenuTrigger asChild>
-                <InputGroupButton pill variant={count > 0 ? "ghost" : "outline"}>
-                  {count > 0 ? <Database /> : <Plus />}
-                  {name}
-                  {count > 0 && <> · {count === 1 ? "1 file" : `${count} files`}</>}
-                </InputGroupButton>
-              </MenuTrigger>
-              <MenuContent className="w-72">
-                <MenuGroup heading={name}>
-                  <Listing list={list} node={connectionNode(connection)} onPick={onPick} root selected={selected} />
-                </MenuGroup>
-              </MenuContent>
-            </Menu>
-            {count > 0 && (
-              <InputGroupButton aria-label={`Remove ${name}`} onClick={() => onClear(connection.name)} pill size="icon-sm" variant="ghost">
-                <X />
-              </InputGroupButton>
-            )}
-          </span>
-        );
-      })}
+      <AddFiles connections={connections} list={list} onPick={onPick} selected={selected} />
+      {[...byConnection].map(([connection, ids]) => (
+        <span className="contents" data-connection={connection} key={connection}>
+          {ids.slice(0, SHOWN).map((id) => (
+            <FileCard key={id} label={split(id).path.split("/").pop()!} onDrop={() => onDrop([id])} title={split(id).path} />
+          ))}
+          {ids.length > SHOWN && (
+            <FileCard
+              label={`+${ids.length - SHOWN} more ${ids.length - SHOWN === 1 ? "file" : "files"} · ${connection}`}
+              onDrop={() => onDrop(ids.slice(SHOWN))}
+              title={ids.slice(SHOWN).map((id) => split(id).path).join("\n")}
+            />
+          )}
+        </span>
+      ))}
     </PromptInputHeader>
+  );
+}
+
+/** A picked file, or the rest of a connection's, as a card with a cross. */
+function FileCard({ label, title, onDrop }: { label: string; title: string; onDrop: () => void }) {
+  return (
+    <span className="inline-flex max-w-56 items-center gap-1.5 rounded-lg border bg-muted/40 py-0.5 ps-2 pe-0.5 text-sm" data-file-card="" title={title}>
+      <FileText aria-hidden className="size-3.5 shrink-0 text-muted-foreground" />
+      <span className="truncate">{label}</span>
+      <InputGroupButton aria-label={`Remove ${label}`} onClick={onDrop} size="icon-sm" variant="ghost">
+        <X />
+      </InputGroupButton>
+    </span>
   );
 }
 
@@ -88,61 +92,147 @@ async function filesUnder(node: SourceBranch, list: SourceBarProps["list"]): Pro
   return nested.flat();
 }
 
-type Listed = { state: "loading" } | { state: "failed"; problem: unknown } | { state: "listed"; nodes: SourceNode[] };
+/** The **+**: the connections, then the files of the one opened, searched as typed. */
+function AddFiles({ connections, list, selected, onPick }: Pick<SourceBarProps, "connections" | "list" | "selected" | "onPick">) {
+  const [open, setOpen] = useState(false);
+  const [opened, setOpened] = useState<StorageConnection | null>(null);
+  return (
+    <Popover
+      lazyMount
+      onOpenChange={(d) => {
+        setOpen(d.open);
+        if (!d.open) setOpened(null);
+      }}
+      open={open}
+      positioning={{ placement: "top-start" }}
+      unmountOnExit
+    >
+      <PopoverTrigger asChild>
+        <InputGroupButton aria-label="Add files" size="icon-sm" variant="outline">
+          <Plus />
+        </InputGroupButton>
+      </PopoverTrigger>
+      <PopoverContent className="flex h-96 w-80 flex-col p-0">
+        {opened === null ? (
+          <Connections connections={connections} onOpen={setOpened} />
+        ) : (
+          <Files connection={opened} list={list} onBack={() => setOpened(null)} onPick={onPick} selected={selected} />
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+}
 
-/** What `node` lists, read when its menu opens (the content mounts then) and not before. */
-function Listing({
-  node,
+/** The first level: *From a connection*, each connection one item. */
+function Connections({ connections, onOpen }: { connections: readonly StorageConnection[]; onOpen: (c: StorageConnection) => void }) {
+  const [query, setQuery] = useState("");
+  const shown = connections.filter((c) => c.name.toLowerCase().includes(query.toLowerCase()));
+  const collection = createListCollection({ items: shown, itemToValue: (c) => c.name, itemToString: (c) => c.name });
+  return (
+    <Command
+      className="rounded-none border-0"
+      collection={collection}
+      onInputValueChange={({ inputValue }) => setQuery(inputValue)}
+      onSelect={({ itemValue }) => {
+        const c = connections.find((x) => x.name === itemValue);
+        if (c) onOpen(c);
+      }}
+    >
+      <CommandInput aria-label="Search the connections" placeholder="Search the connections…" />
+      <CommandContent>
+        <CommandEmpty>No connection by that name.</CommandEmpty>
+        <CommandList>
+          <CommandGroup heading="From a connection">
+            {shown.map((c) => (
+              <CommandItem item={c} key={c.name}>
+                <Database aria-hidden className="size-4 text-muted-foreground" />
+                <span className="flex-1 truncate">{c.name}</span>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        </CommandList>
+      </CommandContent>
+    </Command>
+  );
+}
+
+type Listed = { state: "loading" } | { state: "failed"; problem: unknown } | { state: "listed"; files: SourceFile[] };
+
+const BACK = "\u0000back";
+const ALL = "\u0000all";
+
+/** The second level: a connection's files, every folder's included, each picked or dropped on select. */
+function Files({
+  connection,
   list,
   selected,
   onPick,
-  root = false,
-}: { node: SourceBranch; root?: boolean } & Pick<SourceBarProps, "list" | "selected" | "onPick">) {
+  onBack,
+}: { connection: StorageConnection; onBack: () => void } & Pick<SourceBarProps, "list" | "selected" | "onPick">) {
   const [listed, setListed] = useState<Listed>({ state: "loading" });
+  const [query, setQuery] = useState("");
   useEffect(() => {
     let live = true;
-    list(node).then(
-      (nodes) => live && setListed({ state: "listed", nodes }),
+    filesUnder(connectionNode(connection), list).then(
+      (files) => live && setListed({ state: "listed", files }),
       (problem: unknown) => live && setListed({ state: "failed", problem }),
     );
     return () => {
       live = false;
     };
-  }, [list, node.id]); // eslint-disable-line react-hooks/exhaustive-deps -- a branch is its id; the node is rebuilt each render
-  if (listed.state === "loading") return <p className="px-2 py-1.5 text-muted-foreground text-xs">Listing the files…</p>;
-  if (listed.state === "failed") return <ProblemView error={listed.problem} />;
-  const { nodes } = listed;
-  if (nodes.length === 0) return <p className="px-2 py-1.5 text-muted-foreground text-xs">No files here that can be read.</p>;
+  }, [connection, list]);
+
+  const files = listed.state === "listed" ? listed.files : [];
+  const shown = files.filter((f) => split(f.id).path.toLowerCase().includes(query.toLowerCase()));
+  const every = files.length > 0 && files.every((f) => selected.has(f.id));
+  type Row = { value: string; label: string; file?: SourceFile };
+  const rows: Row[] = [
+    { value: BACK, label: "All connections" },
+    ...(files.length > 0 && query === "" ? [{ value: ALL, label: every ? "Remove all" : "Select all" }] : []),
+    ...shown.map((file) => ({ value: file.id, label: split(file.id).path, file })),
+  ];
+  const collection = createListCollection({ items: rows, itemToValue: (r) => r.value, itemToString: (r) => r.label });
   return (
-    <>
-      {root && (
-        <MenuItem
-          onSelect={() => {
-            // Everything the connection lists, folders included: a folder's files are listed to be picked.
-            void filesUnder(node, list).then((every) => onPick(every, !every.every((f) => selected.has(f.id))));
-          }}
-          value="select-all"
-        >
-          Select all
-        </MenuItem>
-      )}
-      {nodes.map((n) =>
-        n.kind === "file" ? (
-          <MenuCheckboxItem checked={selected.has(n.id)} key={n.id} onCheckedChange={(on) => onPick([n], on)} value={n.id}>
-            <span className="flex-1 truncate">{n.name}</span>
-            <span className="text-muted-foreground text-xs tabular-nums">
-              <FormatByte value={n.size} />
-            </span>
-          </MenuCheckboxItem>
-        ) : (
-          <MenuSub key={n.id}>
-            <MenuSubTrigger>{n.name}</MenuSubTrigger>
-            <MenuSubContent className="w-72">
-              <Listing list={list} node={n} onPick={onPick} selected={selected} />
-            </MenuSubContent>
-          </MenuSub>
-        ),
-      )}
-    </>
+    <Command
+      className="rounded-none border-0"
+      collection={collection}
+      onInputValueChange={({ inputValue }) => setQuery(inputValue)}
+      onSelect={({ itemValue }) => {
+        if (itemValue === BACK) return onBack();
+        if (itemValue === ALL) return onPick(files, !every);
+        const file = files.find((f) => f.id === itemValue);
+        if (file) onPick([file], !selected.has(file.id));
+      }}
+    >
+      <CommandInput aria-label={`Search ${connection.name}`} placeholder={`Search ${connection.name}…`} />
+      <CommandContent>
+        <CommandList>
+          {rows.slice(0, rows[1]?.value === ALL ? 2 : 1).map((row) => (
+            <CommandItem item={row} key={row.value}>
+              {row.value === BACK && <ArrowLeft aria-hidden className="size-4 text-muted-foreground" />}
+              {row.label}
+            </CommandItem>
+          ))}
+          <CommandGroup heading={connection.name}>
+            {listed.state === "loading" && <p className="px-2 py-1.5 text-muted-foreground text-xs">Listing the files…</p>}
+            {listed.state === "failed" && <ProblemView error={listed.problem} />}
+            {listed.state === "listed" && files.length === 0 && (
+              <p className="px-2 py-1.5 text-muted-foreground text-xs">No files here that can be read.</p>
+            )}
+            {rows
+              .filter((r) => r.file)
+              .map(({ value, label, file }) => (
+                <CommandItem data-picked={selected.has(value) || undefined} item={{ value, label, file }} key={value}>
+                  <Check aria-hidden className={selected.has(value) ? "size-4" : "invisible size-4"} />
+                  <span className="flex-1 truncate">{label}</span>
+                  <span className="text-muted-foreground text-xs tabular-nums">
+                    <FormatByte value={file!.size} />
+                  </span>
+                </CommandItem>
+              ))}
+          </CommandGroup>
+        </CommandList>
+      </CommandContent>
+    </Command>
   );
 }

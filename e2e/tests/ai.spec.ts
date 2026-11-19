@@ -65,6 +65,26 @@ test("13 a model that stops writing mid-answer can be stopped, and the next ques
   expect(await answers.rows()).toEqual([{ Count: String(PEOPLE) }]);
 });
 
+test("14 a model that fails mid-answer fails the answer in Ask as llm/failed, not as a short answer", async ({ page, env, builtGraph }) => {
+  // Half a spec, then the engine fails: what was written is not taken for the answer.
+  const words = "How many people are there?";
+  await scriptModel(page, {
+    turns: [{ when: question(words), reply: { after: '{"spec":{"of":"Person","show":{"kind":"stat"', fail: "The GPU device was lost" } }],
+  });
+  await (await askPanel(page, env, builtGraph)).send(words);
+  await expect(page.locator('[data-slot="chat-error"] [data-code="llm/failed"]')).toBeVisible({ timeout: 15_000 });
+  await expect(page.locator('[data-slot="answer-card"]')).toHaveCount(0);
+});
+
+test("15 a structured answer that does not parse fails the answer in Ask as llm/failed, not as no answer", async ({ page, env, builtGraph }) => {
+  // The spec is asked for as JSON; prose instead fails the call, and says so.
+  const words = "How many people are there?";
+  await scriptModel(page, { turns: [{ when: question(words), reply: { text: "You should look at the people table." } }] });
+  await (await askPanel(page, env, builtGraph)).send(words);
+  await expect(page.locator('[data-slot="chat-error"] [data-code="llm/failed"]')).toBeVisible({ timeout: 15_000 });
+  await expect(page.locator('[data-slot="answer-card"]')).toHaveCount(0);
+});
+
 test("16 an answer the spec does not admit is refused in the reply, and the model reads why", async ({ page, env, builtGraph }) => {
   // The model names a field Person does not have, every time it is asked: the spec is checked before
   // anything runs, sent back with the check's own words, and refused once the attempts are spent.

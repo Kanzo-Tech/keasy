@@ -1,20 +1,20 @@
 /**
- * **The `requirements` Task** — docs/design/assistant.md, *The three Tasks*. The questions a
- * person could ask of the graph the accepted model will be, offered as chips, and whether a question
- * the person typed can be answered. The oracle is Ask's own: a question names what it counts and the
- * paths it reads from there, as Ask's model writes them (`affiliation.name`, `^laureate.name`), and
- * `JoinResolver` over the join graph the accepted model will be reaches each one or says why not; a
- * typed question is put through Ask's Task, `ask`, as Discover will put it.
+ * **The requirements** — docs/design/assistant.md, *The three Tasks*. The questions a person could
+ * ask of the graph the accepted model will be, offered as chips, and whether a question the person
+ * typed can be answered. The chips are written from the model, not by a model — a count by a field,
+ * the thing an edge reaches most — and each is kept only if Ask's resolver reaches every path it
+ * reads (`affiliation.name`) over the join graph the accepted model will be. A typed question is put
+ * through Ask's Task, `ask`, as Discover will put it: that is the one place a model reads it.
  */
 
-import { jsonSchema, type LanguageModel } from "ai";
-import { type JoinGraph, JoinResolver, type MappingModel, withMapping } from "@kanzo-tech/relations";
+import type { LanguageModel } from "ai";
+import { type JoinGraph, JoinResolver, type MappingModel, splitWords, withMapping } from "@kanzo-tech/relations";
 import { ask } from "@kanzo-tech/ai/data";
-import { defineTask, type Finding, runTask } from "@kanzo-tech/ai/task";
+import { runTask } from "@kanzo-tech/ai/task";
 import type { Primitive } from "@fossil-lang/types";
 import type { Accepted } from "./model";
 
-/** A question, as the model offers it: what it counts and the paths it reads from there. */
+/** A question on offer: what it counts and the paths it reads from there. */
 export interface Requirement {
   text: string;
   /** The type it counts or describes. */
@@ -22,23 +22,6 @@ export interface Requirement {
   /** The fields it reads, each a path from `of`: `category`, `laureate.affiliation.name`. */
   fields: string[];
 }
-
-export interface RequirementsInput {
-  accepted: Accepted;
-  /** The join graph the accepted model will be (`joinGraphOf`). */
-  graph: JoinGraph;
-  about: string;
-}
-
-/** The names a question may read: each type, and the paths from each. */
-export interface RequirementsContext {
-  types: string[];
-  /** Each type's paths, two links out at most. */
-  paths: Record<string, readonly string[]>;
-}
-
-/** How far from what it counts a question reads: a field of the type, across one link, or two. */
-const HOPS = 2;
 
 /** The DuckDB type a field of a primitive is read as, in the graph the accepted model will write. */
 const DUCKDB: Record<Primitive, string> = {
@@ -81,52 +64,44 @@ function tablesOf(accepted: Accepted): JoinGraph {
   };
 }
 
-/** Ask's word: each path is one the joins reach from what the question counts. */
-function answerable(value: Requirement, input: RequirementsInput): Finding | undefined {
-  if (!value.text.trim()) return { code: "requirements/empty", at: "/text", message: "A question has words." };
-  const resolver = new JoinResolver(input.graph);
-  const missed = value.fields.filter((path) => "code" in resolver.field({ root: value.of, path: [] }, path));
-  if (missed.length === 0) return undefined;
-  return {
-    code: "requirements/unreachable",
-    at: "/fields",
-    message: `${value.text}: nothing in these files reaches ${missed.join(", ")} from ${value.of}.`,
-  };
+/** The most chips on offer. */
+const OFFERED = 4;
+
+/** Fields a breakdown by is no answer: one value per thing. */
+const NAMING = /^(name|title|label|description|url|email|id)$/i;
+
+/** `Award` → `awards`, `Category` → `categories`. */
+function plural(type: string): string {
+  const words = splitWords(type).toLowerCase();
+  if (/[^aeiou]y$/.test(words)) return `${words.slice(0, -1)}ies`;
+  if (/(s|x|ch|sh)$/.test(words)) return `${words}es`;
+  return `${words}s`;
 }
 
-const REQUIREMENTS = `You suggest questions a person could ask of their data once it is a graph, in their own words and in plain language.
-Each names the type it counts or describes (of) and the fields it reads, each a path from that type: a field of it (name), or across its links (affiliation.name). Ask only what these paths can answer: a count, a breakdown, a ranking, or something across a link.`;
-
-export const requirements = defineTask<RequirementsInput, Requirement, RequirementsContext>({
-  name: "requirements",
-  context: ({ accepted, graph }) => {
-    const resolver = new JoinResolver(graph);
-    const types = accepted.types.map((t) => t.name);
-    return { types, paths: Object.fromEntries(types.map((t) => [t, resolver.paths(t, HOPS).filter((p) => p !== "id" && !p.endsWith(".id"))])) };
-  },
-  instructions: REQUIREMENTS,
-  prompt: (input, context) =>
-    [
-      `What the data is about: ${input.about.trim() || "(not said)"}`,
-      "What links the types:",
-      ...input.accepted.edges.map((e) => `- ${e.from}.${e.name} links to ${e.to}${e.many ? `, several per ${e.from}` : ""}`),
-      "Each type, and the paths a question about it may read:",
-      ...context.types.map((t) => `- ${t}: ${context.paths[t]!.join(", ")}`),
-    ].join("\n"),
-  output: (_, context) =>
-    jsonSchema<Requirement>({
-      type: "object",
-      properties: {
-        text: { type: "string", description: "The question, as the person would ask it." },
-        of: { type: "string", enum: context.types },
-        fields: { type: "array", items: { type: "string", enum: [...new Set(Object.values(context.paths).flat())] } },
-      },
-      required: ["text", "of", "fields"],
-      additionalProperties: false,
-    }),
-  target: () => ({ add: "/questions" }),
-  verify: [answerable],
-});
+/**
+ * The questions to start from, written from `accepted`: for each edge one thing reaches, which of
+ * them has the most (*Which laureate has the most awards?*), and for each type a count by its first
+ * date or category-like field (*How many awards are there by year?*). Each kept only if `graph`'s
+ * resolver reaches what it reads.
+ */
+export function offersOf(accepted: Accepted, graph: JoinGraph): Requirement[] {
+  const resolver = new JoinResolver(graph);
+  const reaches = (r: Requirement) => r.fields.every((path) => !("code" in resolver.field({ root: r.of, path: [] }, path)));
+  const label = (type: string) => accepted.types.find((t) => t.name === type)?.fields.find((f) => NAMING.test(f.name) && f.primitive === "string")?.name;
+  const offers: Requirement[] = [];
+  for (const e of accepted.edges.filter((x) => !x.many)) {
+    const named = label(e.to);
+    if (!named) continue;
+    offers.push({ text: `Which ${splitWords(e.to).toLowerCase()} has the most ${plural(e.from)}?`, of: e.from, fields: [`${e.name}.${named}`] });
+  }
+  for (const t of accepted.types) {
+    const by =
+      t.fields.find((f) => ["date", "g_year", "date_time"].includes(f.primitive)) ??
+      t.fields.find((f) => f.primitive === "string" && !NAMING.test(f.name));
+    if (by) offers.push({ text: `How many ${plural(t.name)} are there by ${splitWords(by.name).toLowerCase()}?`, of: t.name, fields: [by.name] });
+  }
+  return offers.filter(reaches).slice(0, OFFERED);
+}
 
 // ── A question the person typed ─────────────────────────────────────────────
 

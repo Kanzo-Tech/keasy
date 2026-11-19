@@ -1,93 +1,119 @@
 import { describe, expect, it } from "vitest";
 import { runTask, verify } from "@kanzo-tech/ai/task";
-import { accept, type Draft, decisionsOf, modelTask, relationsOf } from "./model";
-import { DRAFT, NOBEL, scripted } from "./nobel.fixture";
+import { accept, decisionsOf, modelTask, type Names, relationsOf, structureOf } from "./model";
+import { profiledOf } from "./profile";
+import { DRAFT, INPUTS, NAMES, NOBEL, PROFILE, scripted } from "./nobel.fixture";
 
 /** The parts of a JSON Schema a test reads. */
 interface Schema {
   properties: Record<string, Schema>;
-  items: Schema;
-  enum: string[];
+  required: string[];
+  additionalProperties: boolean;
 }
 
 const input = { profiled: NOBEL, about: "Nobel prizes and the people who won them" };
 const task = modelTask(NOBEL);
 
-/** The draft with `change` made to a copy of it. */
-const changed = (change: (d: Draft) => void): Draft => {
-  const copy = structuredClone(DRAFT);
+/** The names with `change` made to a copy of them. */
+const changed = (change: (n: Names) => void): Names => {
+  const copy = structuredClone(NAMES);
   change(copy);
   return copy;
 };
 
-const codes = async (draft: Draft) => {
-  const verdict = await verify(task, draft, input);
+const codes = async (names: Names) => {
+  const verdict = await verify(task, names, input);
   return "diagnostics" in verdict ? verdict.diagnostics.map((d) => d.code) : [];
 };
 
-describe("the model Task's context and contract", () => {
-  it("shows the model every file with its columns, keys and real rows, and every inclusion", async () => {
-    const { model, prompts } = scripted(DRAFT);
-    await runTask(task, input, { model });
-    expect(prompts[0]).toContain("Nobel prizes and the people who won them");
-    expect(prompts[0]).toContain("laureates (3 rows): id (integer), name (string), gender (string), born (date)");
-    expect(prompts[0]).toContain("candidate keys: id, name");
-    expect(prompts[0]).toContain("e.g. 1 · Marie Curie · female · 1867-11-07");
-    expect(prompts[0]).toContain("affiliations.institution_id → institutions.id");
+describe("the structure, from the profile", () => {
+  it("is a thing per file with a key, an edge per inclusion on a key, and a keyless link file as a bridge", () => {
+    expect(structureOf(NOBEL)).toEqual({
+      types: [
+        { source: "laureates", key: "id", columns: ["name", "gender", "born"] },
+        { source: "awards", key: "id", columns: ["year", "category", "share"] },
+        { source: "institutions", key: "id", columns: ["name", "city"] },
+        { source: "countries", key: "code", columns: ["name"] },
+      ],
+      edges: [
+        { via: "awards.laureate_id → laureates.id", from: "awards", to: "laureates" },
+        { via: "affiliations.institution_id → institutions.id", from: "laureates", to: "institutions", across: "affiliations" },
+      ],
+    });
   });
 
-  it("closes every file, column and inclusion to the profile's in the schema", () => {
-    const schema = task.output!(input, NOBEL) as unknown as { jsonSchema: Schema };
-    const type = schema.jsonSchema.properties.types.items;
-    expect(type.properties.source.enum).toEqual(["laureates", "awards", "institutions", "affiliations", "countries"]);
-    expect(type.properties.key.enum).toContain("laureate_id");
-    expect(schema.jsonSchema.properties.edges.items.properties.via.enum).toHaveLength(3);
+  it("keys a thing by the candidate an inclusion lands on, not by its first", () => {
+    // Laureates are pointed at by name: name identifies one, and id is a field.
+    const byName = profiledOf(
+      {
+        ...PROFILE,
+        sources: PROFILE.sources.map((s) =>
+          s.binding === "awards" ? { ...s, descriptor: { ...s.descriptor, columns: s.descriptor.columns.map((c) => (c.name === "laureate_id" ? { ...c, primitive: "string" as const } : c)) } } : s,
+        ),
+        inclusions: [{ from: { source: "awards", column: "laureate_id" }, to: { source: "laureates", column: "name" } }],
+      },
+      INPUTS,
+    );
+    expect(structureOf(byName).types[0]).toEqual({ source: "laureates", key: "name", columns: ["id", "gender", "born"] });
+  });
+
+  it("is what the names are laid on, the draft the decisions and the person read", () => {
+    expect(DRAFT.edges).toEqual([
+      { name: "laureate", from: "Award", to: "Laureate", via: "awards.laureate_id → laureates.id" },
+      { name: "affiliation", from: "Laureate", to: "Institution", via: "affiliations.institution_id → institutions.id" },
+    ]);
+    expect(DRAFT.types.map((t) => [t.name, t.key])).toEqual([["Laureate", "id"], ["Award", "id"], ["Institution", "id"], ["Country", "code"]]);
+  });
+});
+
+describe("the model Task's context and contract", () => {
+  it("shows the model every thing with its fields and real rows, and every link with its ends", async () => {
+    const { model, prompts } = scripted(NAMES);
+    await runTask(task, input, { model });
+    expect(prompts[0]).toContain("Nobel prizes and the people who won them");
+    expect(prompts[0]).toContain("types.laureates (3 rows): one per id; fields: name (string), gender (string), born (date)");
+    expect(prompts[0]).toContain("e.g. 1 · Marie Curie · female · 1867-11-07");
+    expect(prompts[0]).toContain('edges["affiliations.institution_id → institutions.id"]: from laureates to institutions, across affiliations');
+  });
+
+  it("asks for a name per slot of the structure, every one required and no other", () => {
+    const { jsonSchema } = task.output!(input, NOBEL) as unknown as { jsonSchema: Schema };
+    expect(jsonSchema.properties.types.required).toEqual(["laureates", "awards", "institutions", "countries"]);
+    expect(jsonSchema.properties.edges.required).toHaveLength(2);
+    expect(jsonSchema.properties.fields.required).toContain("laureates.born");
+    expect(jsonSchema.properties.fields.additionalProperties).toBe(false);
   });
 });
 
 describe("the model Task's oracles", () => {
-  it("accept a draft that holds, assuming a key where the profile has two", async () => {
-    const proposal = await runTask(task, input, { model: scripted(DRAFT).model });
+  it("accept names that hold, assuming a key where the profile has two", async () => {
+    const proposal = await runTask(task, input, { model: scripted(NAMES).model });
     // The affiliations file links laureates to institutions: how that counts is the person's.
     expect(proposal.verdict).toMatchObject({ ok: false, decision: { id: "count/affiliations" } });
     expect(proposal.attempts).toBe(1);
   });
 
-  it("refuse a field whose column is another file's", async () => {
-    expect(await codes(changed((d) => d.types[0]!.fields.push({ name: "year", column: "year" })))).toEqual(["model/foreign-column"]);
+  it("refuse two things of one name, and two members of one thing", async () => {
+    expect(await codes(changed((n) => (n.types.countries = "Award")))).toEqual(["model/duplicate-name"]);
+    expect(await codes(changed((n) => (n.fields["laureates.gender"] = "name")))).toEqual(["model/duplicate-name"]);
   });
 
-  it("refuse a key that is not unique in the profile", async () => {
-    expect(await codes(changed((d) => (d.types[1]!.key = "category")))).toContain("model/not-a-key");
+  it("refuse a name that is a word of Fossil", async () => {
+    expect(await codes(changed((n) => (n.fields["institutions.city"] = "from")))).toEqual(["model/duplicate-name"]);
   });
 
-  it("refuse an edge no inclusion backs", async () => {
-    // awards.laureate_id lands on laureates, not on institutions.
-    expect(await codes(changed((d) => (d.edges[0]!.to = "Institution")))).toEqual(["model/unbacked-edge"]);
-  });
-
-  it("refuse an edge to a type the draft does not have", async () => {
-    expect(await codes(changed((d) => (d.edges[0]!.to = "Prize")))).toEqual(["model/unknown-type"]);
-  });
-
-  it("refuse two types of one name, and a field named as a word of Fossil", async () => {
-    expect(await codes(changed((d) => (d.types[3]!.name = "Award")))).toContain("model/duplicate-name");
-    expect(await codes(changed((d) => (d.types[2]!.fields[1]!.name = "from")))).toEqual(["model/duplicate-name"]);
-  });
-
-  it("send what they refused back, and take the repair", async () => {
-    const wrong = changed((d) => (d.types[1]!.key = "category"));
-    const { model, prompts } = scripted(wrong, DRAFT);
+  it("send what they refused back, at its slot, and take the repair", async () => {
+    const { model, prompts } = scripted(changed((n) => (n.types.countries = "Award")), NAMES);
     const proposal = await runTask(task, input, { model });
     expect(proposal.attempts).toBe(2);
-    expect(prompts[1]).toContain("/types/1/key: Award: category does not identify a row of awards; its candidate keys are id.");
+    expect(prompts[1]).toContain("/types/countries: countries and awards are both called Award.");
   });
 
   it("give up after three attempts, with the diagnostics as the answer", async () => {
-    const { model, prompts } = scripted(changed((d) => (d.types[1]!.key = "category")));
+    const { model, prompts } = scripted(changed((n) => (n.types.countries = "Award")));
     const proposal = await runTask(task, input, { model });
     expect(prompts).toHaveLength(3);
-    expect(proposal.verdict).toMatchObject({ ok: false, diagnostics: [{ code: "model/not-a-key" }] });
+    expect(proposal.verdict).toMatchObject({ ok: false, diagnostics: [{ code: "model/duplicate-name" }] });
   });
 });
 
@@ -111,7 +137,7 @@ describe("the decisions a draft raises", () => {
   });
 
   it("are settled, without a model, once the person picks", async () => {
-    const verdict = await verify({ ...task, decide: { ...task.decide, "count/affiliations": { assume: "link" } } }, DRAFT, input);
+    const verdict = await verify({ ...task, decide: { ...task.decide, "count/affiliations": { assume: "link" } } }, NAMES, input);
     expect(verdict).toMatchObject({ ok: true, assumed: [{ decision: { id: "key/countries" }, option: "code" }, { option: "link" }] });
   });
 });

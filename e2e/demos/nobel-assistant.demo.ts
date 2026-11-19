@@ -22,24 +22,20 @@ const BY_CATEGORY = "How many prizes were awarded in each category?";
 const BY_INSTITUTION = "Which institutions are behind the most prizes?";
 
 /**
- * What the model proposes over the Nobel files: a type per thing, each on the file and key the profile
- * offers, the awards linked to their laureate and category, and to their institutions across
- * `affiliations` — which raises the one decision with no safe default. Countries stand alone, so which
- * of their two keys identifies one is a default, said as an assumption.
+ * What the model names over the Nobel files. The structure is the profile's: a thing per file with a
+ * key, the awards linked to their laureate and category, and to their institutions across
+ * `affiliations` — which raises the one decision with no safe default. A field left unnamed keeps its
+ * column's name.
  */
-const DRAFT = {
-  types: [
-    { name: "Laureate", source: "laureates", key: "id", fields: [{ name: "name", column: "name" }, { name: "gender", column: "gender" }] },
-    { name: "Award", source: "awards", key: "id", fields: [{ name: "year", column: "year" }, { name: "share", column: "share" }] },
-    { name: "Category", source: "categories", key: "id", fields: [{ name: "name", column: "name" }] },
-    { name: "Institution", source: "institutions", key: "id", fields: [{ name: "name", column: "name" }, { name: "city", column: "city" }] },
-    { name: "Country", source: "countries", key: "id", fields: [{ name: "name", column: "name" }] },
-  ],
-  edges: [
-    { name: "laureate", from: "Award", to: "Laureate", via: "awards.laureate → laureates.id" },
-    { name: "category", from: "Award", to: "Category", via: "awards.category → categories.id" },
-    { name: "institution", from: "Award", to: "Institution", via: "affiliations.institution → institutions.id" },
-  ],
+const NAMES = {
+  types: { laureates: "Laureate", awards: "Award", categories: "Category", institutions: "Institution", countries: "Country" },
+  edges: {
+    "awards.laureate → laureates.id": "laureate",
+    "awards.category → categories.id": "category",
+    "affiliations.institution → institutions.id": "institution",
+    "laureates.country → countries.id": "country",
+  },
+  fields: {},
 };
 
 /** The questions the model suggests: three chips, two of which the demo takes. */
@@ -102,7 +98,7 @@ Affiliations : Award from awards.join(affiliations, on = awards.id == affiliatio
 function script(origin: string): ModelTurn[] {
   const json = (value: unknown) => ({ text: JSON.stringify(value) });
   return [
-    { when: "You design what a person's data is about", reply: json(DRAFT) },
+    { when: "You design what a person's data is about", reply: json(NAMES) },
     { when: "You suggest questions a person could ask", reply: json(REQUIREMENTS) },
     { when: "{countries.name}", reply: { text: mappings(origin, "name") } },
     { when: "You write the mappings of a Fossil program", reply: { text: mappings(origin, "id") } },

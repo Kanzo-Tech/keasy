@@ -36,7 +36,7 @@ import { listChildren } from "../use-sources";
 import { useModel } from "@/lib/ai";
 import { type AssistantData, type DecisionItem, optionOf, type Question, type QuestionOffer, type TaskFailure, type Thing } from "./model";
 import { declare, fossilCheck, mapping, mappingOf, programOf } from "./tasks/mapping";
-import { accept, type Accepted, decisionsOf, defaultsOf, type Draft, modelTask, relationsOf } from "./tasks/model";
+import { accept, type Accepted, decisionsOf, defaultsOf, type Draft, draftOf, modelTask, relationsOf, structureOf } from "./tasks/model";
 import { type Profiled, profiledOf, thingName } from "./tasks/profile";
 import { isAnswerable, joinGraphOf, requirements } from "./tasks/requirements";
 
@@ -104,10 +104,17 @@ function decisionItems(draft: Draft, profiled: Profiled, chosen: Readonly<Record
   }));
 }
 
-/** A proposal's value, once its oracles held it; what they still said after the last attempt is the failure. */
-function held<A>({ task, value, verdict }: Proposal<A>): A {
+/** What each Task writes, as a failure names it. */
+const WRITES: Record<string, string> = { model: "The names", requirements: "The questions", mapping: "The program" };
+
+/**
+ * A proposal's value, once its oracles held it. What they still said after the last attempt is the
+ * failure — `task/unheld`, what was tried and why it did not hold, not a model call that failed.
+ */
+export function held<A>({ task, value, verdict, attempts }: Proposal<A>): A {
   if (!("diagnostics" in verdict)) return value;
-  throw new ClientError("llm/failed", `The ${task} proposed did not hold.`, verdict.diagnostics.map((d) => d.message).join(" "));
+  const tries = attempts === 1 ? "1 attempt" : `${attempts} attempts`;
+  throw new ClientError("task/unheld", `${WRITES[task] ?? `The ${task}`} did not hold after ${tries}.`, verdict.diagnostics.map((d) => d.message).join(" "));
 }
 
 const NO_MODEL: Accepted = { types: [], edges: [] };
@@ -249,7 +256,8 @@ export function useAssistant({
   const drafted = useQuery({
     queryKey: ["assistant", "model", lines, about],
     queryFn: async ({ signal }) => {
-      return held(await runTask(modelTask(profiled!), { profiled: profiled!, about: about ?? "" }, { model, signal }));
+      const names = held(await runTask(modelTask(profiled!), { profiled: profiled!, about: about ?? "" }, { model, signal }));
+      return draftOf(structureOf(profiled!), names);
     },
     enabled: profiled !== null && profiled.sources.length > 0 && about !== undefined,
     retry: false,

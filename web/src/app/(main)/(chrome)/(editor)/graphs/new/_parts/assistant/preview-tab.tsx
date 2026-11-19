@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import type { UIMessage } from "ai";
 import { MessageCircleQuestion, Sparkles } from "lucide-react";
+import { askEdit } from "@kanzo-tech/ai/data";
 import { Spinner } from "@kanzo-tech/ui";
 import { askParts } from "@/components/ask-parts";
 import { Boundary } from "@/components/boundary";
@@ -87,8 +88,9 @@ function Answers({ graph, questions }: { graph: AttachedGraph; questions: readon
 }
 
 /**
- * Ask over the preview, as Discover's panel runs it (`useGraphAsk`): each kept question sent in turn
- * once the model is ready — one at a time, as a chat answers — and each part drawn as `Chat` draws it
+ * Ask over the preview, as Discover's panel runs it (`useGraphAsk`): each kept question sent in turn —
+ * one at a time, as a chat answers; a chip's spec at once, a typed question once the model is ready —
+ * and each part drawn as `Chat` draws it
  * (`askParts`): an answer as an `AnswerCard` with its `AskChips`, which ask an edited spec again with
  * no model, and a decision as a question.
  */
@@ -97,10 +99,14 @@ function Asked({ questions }: { questions: readonly Question[] }) {
   const ready = useModelLoad().state === "ready";
   const { messages, status, sendMessage } = chat;
   const sent = messages.filter((m) => m.role === "user").length;
-  // The next question, once the last one is answered: a chat answers one at a time.
-  const next = ready && (status === "ready" || status === "error") && sent < questions.length ? questions[sent].text : null;
+  // The next question, once the last one is answered: a chat answers one at a time. One taken from a
+  // chip is asked as its spec, which needs no model; one the person typed waits for it.
+  const waiting = (status === "ready" || status === "error") && sent < questions.length ? questions[sent] : null;
+  const next = waiting && (waiting.spec || ready) ? waiting : null;
   useEffect(() => {
-    if (next !== null) void sendMessage({ text: next });
+    if (next === null) return;
+    // The chip's own words, beside the spec Ask reads (`askEdit`).
+    void sendMessage(next.spec ? { parts: [{ type: "text", text: next.text }, ...askEdit(next.spec).parts.slice(1)] } : { text: next.text });
   }, [next, sendMessage]);
 
   const streaming = status === "streaming" || status === "submitted";
@@ -108,7 +114,7 @@ function Asked({ questions }: { questions: readonly Question[] }) {
   // A question and its answer are one cell: each answer under the question that asked it.
   return (
     <div className="flex flex-col gap-3" data-preview-answers="">
-      {!ready && <Working>Preparing the model to answer your questions…</Working>}
+      {waiting && !next && <Working>Preparing the model to answer your questions…</Working>}
       <div className="grid gap-3">
         {messages.map((message, index) =>
           message.role === "user" ? (

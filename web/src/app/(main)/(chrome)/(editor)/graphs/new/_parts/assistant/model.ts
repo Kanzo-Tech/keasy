@@ -10,6 +10,7 @@
  * sentences and rows.
  */
 
+import type { AskSpec } from "@kanzo-tech/ai/data";
 import type { Decision } from "@kanzo-tech/ai/task";
 import type { StorageConnection } from "@/lib/connections";
 import type { SourceBranch, SourceNode } from "../sources";
@@ -26,6 +27,8 @@ export interface ReadingProgress {
 export interface QuestionOffer {
   id: string;
   text: string;
+  /** Ask's spec, held by Ask's oracles before it is offered: what the preview asks, with no model. */
+  spec: AskSpec;
   /** Why it is on offer: what in the files answers it. */
   rationale?: string;
 }
@@ -36,6 +39,8 @@ export interface Question {
   text: string;
   /** Whether these files can answer it: `null` until an oracle has said. */
   answerable: boolean | null;
+  /** The spec of the offer it was taken from, asked as it is; none for a question the person typed. */
+  spec?: AskSpec;
 }
 
 // ── What is in it ───────────────────────────────────────────────────────────

@@ -20,7 +20,8 @@ vi.mock("@kanzo-tech/navigation/next", () => ({
 // What the chat and the flow read from outside, each a double: the page's model, the preview's
 // graph and Ask over it, the preview and the build, the kept conversation, and the hook's Tasks.
 const ask = vi.hoisted(() => ({ sendMessage: vi.fn(async () => {}) }));
-vi.mock("@/lib/ai", () => ({ usePreloadModel: () => {}, useModelLoad: () => ({ state: "ready" }) }));
+const load = vi.hoisted(() => ({ state: "ready" }));
+vi.mock("@/lib/ai", () => ({ usePreloadModel: () => {}, useModelLoad: () => load }));
 vi.mock("@/components/model-status", () => ({ ModelStatus: () => null }));
 vi.mock("@/lib/fossil/graph", () => ({ GraphScope: ({ children }: { children: unknown }) => children }));
 vi.mock("@/lib/fossil/ask", () => ({
@@ -113,7 +114,7 @@ const base: AssistantChatProps = {
     things: [{ id: "laureates", name: "Laureates", count: 1018, holds: ["name", "gender", "birth_date"] }],
     relations: [{ id: "r", sentence: "Each award has a laureate, a category and a year.", example: ["Marie Curie", "Physics", "1903"] }],
   },
-  offers: [{ id: "q1", text: "Who has won more than one Nobel?" }],
+  offers: [{ id: "q1", text: "Who has won more than one Nobel?", spec: { of: "Award", show: { kind: "chart", type: "bar", x: "laureate.name", y: { op: "count" } } } }],
   decisions: null,
   build: null,
   failures: [],
@@ -373,6 +374,31 @@ describe("the assistant, as a conversation", () => {
     expect(host.querySelector('[aria-label="Preview"]')?.textContent).toContain("Ask a question in the conversation, and it is answered here.");
     await act(async () => button(host, "Who has won more than one Nobel?")!.click());
     expect(ask.sendMessage).toHaveBeenCalledWith({ text: "Who has won more than one Nobel?" });
+  });
+
+  it("asks a question taken from a chip as its spec, with no model to wait for", async () => {
+    ask.sendMessage.mockClear();
+    load.state = "loading";
+    try {
+      const spec = { of: "Award", show: { kind: "chart", type: "bar", x: "category", y: { op: "count" } } } as const;
+      const { host } = mount({
+        selected: new Set(["nobel:laureates.csv"]),
+        decisions: [],
+        program: "program",
+        preview: { state: "ready", graph: { name: "preview-1" } as never, rerun: () => {} },
+        questions: [{ id: "q1", text: "Award count by category", answerable: true, spec }],
+      });
+      await through(host);
+      expect(ask.sendMessage).toHaveBeenCalledWith({
+        parts: [
+          { type: "text", text: "Award count by category" },
+          { type: "data-ask", data: { spec } },
+        ],
+      });
+      expect(host.textContent).not.toContain("Preparing the model");
+    } finally {
+      load.state = "ready";
+    }
   });
 
   it("says a failed preview with its problem and a retry", async () => {

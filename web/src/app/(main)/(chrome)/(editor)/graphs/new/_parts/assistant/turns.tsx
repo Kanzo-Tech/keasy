@@ -1,10 +1,9 @@
 "use client";
 
-import { ArrowRight, Check, CircleHelp, CircleX, ExternalLink, Lightbulb, MessageCircleQuestion } from "lucide-react";
+import { ArrowRight, Check, CircleHelp, CircleX, Lightbulb, MessageCircleQuestion } from "lucide-react";
 import { useId, useState } from "react";
 import { Link } from "@kanzo-tech/navigation/next";
-import { Message, MessageContent } from "@kanzo-tech/ai";
-import { splitWords } from "@kanzo-tech/relations";
+import { Checkpoint, CheckpointIcon, Message, MessageContent, Working } from "@kanzo-tech/ai";
 import {
   Badge,
   Button,
@@ -13,31 +12,22 @@ import {
   QuestionChoices,
   QuestionDescription,
   QuestionPrompt,
-  StatDescription,
-  StatLabel,
-  StatRoot,
-  StatValue,
   Suggestion,
   Suggestions,
-  FormatNumber,
 } from "@kanzo-tech/ui";
 import { ProblemView } from "@/components/problem-view";
 import { askHref } from "@/app/(main)/(workspace)/graphs/[id]/discover/_parts/ask-handoff";
 import { type SentSource, takenLabel } from "./conversation";
-import type { Step } from "./steps";
-import { listed } from "./tasks/model";
 import {
   type BuildProgress,
   type DecisionItem,
   optionOf,
   type Question as AskedQuestion,
   type QuestionOffer,
-  type Relation,
   type TaskFailure,
   type Thing,
 } from "./model";
-import { ChainOfThought, ChainOfThoughtStep } from "./chain-of-thought";
-
+import { ROWS } from "./preview-tab";
 
 /** The assistant's turn: its words first, then what it carries. */
 export function Said({ children, label, decision }: { children: React.ReactNode; label?: string; decision?: string }) {
@@ -73,7 +63,7 @@ function Label({ children }: { children: React.ReactNode }) {
   return <h3 className="font-medium text-muted-foreground text-xs uppercase tracking-wide">{children}</h3>;
 }
 
-// ── What the person sent, and the steps ─────────────────────────────────────
+// ── What the person sent, and the work under way ────────────────────────────
 
 /** A connection's chip on the first message: *@Nobel laureates · 6 files*. */
 const chipOf = ({ connection, files }: SentSource) => `@${connection} · ${files === 1 ? "1 file" : `${files} files`}`;
@@ -99,124 +89,35 @@ export function SentTurn({ sources, about }: { sources: readonly SentSource[]; a
   );
 }
 
-/**
- * *What I am doing*: a list of steps, each done, under way, waiting on the person or still to come,
- * so what the assistant has done and what is left are read in one place. **Open in the editor** is an
- * action on the step that wrote the program, and what a step stopped on is said under the list.
- */
-export function StepsTurn({
-  steps,
-  onEditor,
-  problems = [],
-}: {
-  steps: readonly Step[];
-  onEditor: () => void;
-  problems?: readonly { id: string; problem: unknown }[];
-}) {
+/** What the assistant is doing now, at the thread's end: one line, gone when the work is done. */
+export function WorkingLine({ children }: { children: string }) {
   return (
-    <div className="flex flex-col gap-2">
-      <ChainOfThought aria-label="What I am doing">
-        {steps.map((step) => (
-          <ChainOfThoughtStep
-            description={step.description}
-            icon={step.failed ? CircleX : undefined}
-            key={step.id}
-            label={step.label}
-            status={step.status}
-          >
-            {step.action === "editor" && (
-              <Button className="h-auto p-0 font-normal text-sm" onClick={onEditor} title="Write the shapes and the program yourself" variant="link">
-                Open in the editor
-                <ExternalLink aria-hidden className="size-3.5" />
-              </Button>
-            )}
-          </ChainOfThoughtStep>
-        ))}
-      </ChainOfThought>
-      {problems.map(({ id, problem }) => (
-        <ProblemView error={problem} key={id} />
-      ))}
-    </div>
+    <li data-working="">
+      <Working className="text-muted-foreground text-sm">{children}</Working>
+    </li>
   );
 }
 
 // ── What is in it ───────────────────────────────────────────────────────────
 
 /**
- * What each one of a thing holds, from its columns: "name, gender, birth date and 4 more". Column
- * names are the data's own words, so they are said (`birth_date` → "birth date", by mosaic's `splitWords`) and not renamed.
+ * What was understood, said in a line: how many kinds of thing, with what each holds beside the
+ * conversation, under *Data*. The cards and the counts are the panel's.
  */
-export function holdsLine(holds: readonly string[], shown = 4): string | null {
-  if (holds.length === 0) return null;
-  const words = holds.map(splitWords);
-  if (words.length <= shown + 1) return listed(words);
-  return `${words.slice(0, shown).join(", ")} and ${words.length - shown} more`;
-}
-
-/** One thing as a stat: its name, how many, and what each one holds. */
-function ThingCard({ thing }: { thing: Thing }) {
-  const holds = holdsLine(thing.holds);
-  return (
-    <StatRoot className="w-full content-start gap-y-0.5 py-3" data-thing={thing.id}>
-      <StatLabel className="text-foreground">{thing.name}</StatLabel>
-      {thing.count === null ? (
-        <span className="col-span-full pt-1 text-muted-foreground text-xs">Not counted yet</span>
-      ) : (
-        <StatValue className="pt-1 text-xl"><FormatNumber value={thing.count} /></StatValue>
-      )}
-      {holds && <StatDescription className="col-span-full pt-1 text-xs">Each one holds {holds}.</StatDescription>}
-    </StatRoot>
-  );
-}
-
-/** A relation as its sentence, with one real row of it as a chip. */
-function RelationLine({ relation }: { relation: Relation }) {
-  return (
-    <li className="flex flex-col items-start gap-1.5 py-2.5 first:pt-0 last:pb-0">
-      <span>{relation.sentence}</span>
-      {relation.example && (
-        <Badge className="max-w-full font-normal text-muted-foreground" variant="outline">
-          <span className="text-muted-foreground/80">e.g.</span>
-          <span className="truncate text-foreground">{relation.example.join(" · ")}</span>
-        </Badge>
-      )}
-    </li>
-  );
-}
-
-/** "Here's what's in your data:" — the things with their counts, and how they hang together. */
-export function UnderstoodTurn({ things, relations }: { things: readonly Thing[]; relations: readonly Relation[] | null }) {
-  if (things.length === 0) {
-    return (
-      <Said>
-        <p>I could not find anything to read in these files.</p>
-      </Said>
-    );
-  }
+export function UnderstoodTurn({ things, problems = [] }: { things: readonly Thing[]; problems?: readonly { id: string; problem: unknown }[] }) {
   return (
     <Said>
-      <p>
-        Here&rsquo;s what&rsquo;s in your data. Kinds of thing: <span className="font-medium">{things.length}</span>.
-      </p>
-      {/* Rows that fill: three to a row in the column, the last row's cards widened to close it, and one
-          to a row on a phone — never a card alone beside a hole. */}
-      <ul className="flex flex-wrap gap-2" data-things="">
-        {things.map((thing) => (
-          <li className="flex flex-1 basis-56" key={thing.id}>
-            <ThingCard thing={thing} />
-          </li>
-        ))}
-      </ul>
-      {relations && relations.length > 0 && (
-        <section className="flex flex-col gap-2 pt-2">
-          <Label>How it fits together</Label>
-          <ul className="flex flex-col divide-y">
-            {relations.map((r) => (
-              <RelationLine key={r.id} relation={r} />
-            ))}
-          </ul>
-        </section>
+      {things.length === 0 ? (
+        <p>I could not find anything to read in these files.</p>
+      ) : (
+        <p>
+          I read your files. Kinds of thing: <span className="font-medium">{things.length}</span>. What each one holds is under{" "}
+          <span className="font-medium">Data</span>, beside this.
+        </p>
       )}
+      {problems.map(({ id, problem }) => (
+        <ProblemView error={problem} key={id} />
+      ))}
     </Said>
   );
 }
@@ -257,7 +158,10 @@ export function DecisionChoice({
   );
 }
 
-/** A decision with no safe default, as a turn of its own: the question, then its options. */
+/**
+ * A decision with no safe default, as a turn of its own: the question, then its options. It blocks
+ * nothing: until it is chosen the graph and the preview read its first option, and the build waits.
+ */
 export function DecideTurn({
   item,
   index,
@@ -273,7 +177,8 @@ export function DecideTurn({
     <Said decision={item.decision.id} label={item.decision.question}>
       {index === 0 && (
         <p className="text-muted-foreground">
-          Decisions with no safe answer: {of}. They are yours to decide.
+          Decisions with no safe answer: {of}. They are yours to decide; until you do, the preview reads the first option, and the
+          graph is built once you have.
         </p>
       )}
       <DecisionChoice description={of > 1 ? `Decision ${index + 1} of ${of}` : undefined} item={item} onChoose={onChoose} />
@@ -284,7 +189,7 @@ export function DecideTurn({
 /**
  * A default taken without asking, said as what was taken under what was understood — *I assumed:
  * A fraction of the prize · Change* — with its options behind **Change**, the one door to them:
- * picking another is how it changes. It blocks nothing.
+ * picking another is how it changes.
  */
 export function AssumedTurn({ item, onChoose }: { item: DecisionItem; onChoose: (option: string) => void }) {
   const [open, setOpen] = useState(false);
@@ -327,8 +232,8 @@ export function Answerable({ answerable }: { answerable: boolean | null }) {
 }
 
 /**
- * "What would you like to know?" — the questions on offer as chips, and the composer for one's own,
- * while the questions are asked; after, only what the questions under it are.
+ * "What would you like to know?" — the questions on offer as chips, while the conversation is open.
+ * The field under the conversation takes the person's own at any time.
  */
 export function AskTurn({
   offers,
@@ -346,19 +251,10 @@ export function AskTurn({
   return (
     <Said>
       <p className="font-medium text-base">What would you like to know?</p>
-      {live ? (
-        <p className="text-muted-foreground">
-          {offers === null || open.length > 0 ? "Take one of these, or write your own below" : "Write your questions below"}. I&rsquo;ll
-          check whether these files can answer each one.
-        </p>
-      ) : (
-        questions.length > 0 && (
-          <p className="text-muted-foreground">
-            {questions.length === 1 ? "Your question, and whether" : "Your questions, and whether"} these files can answer{" "}
-            {questions.length === 1 ? "it" : "each one"}:
-          </p>
-        )
-      )}
+      <p className="text-muted-foreground">
+        {live && (offers === null || open.length > 0) ? "Take one of these, or ask your own below" : "Ask your own below"}. I&rsquo;ll answer
+        each one under <span className="font-medium">Preview</span>, over the first {ROWS} rows.
+      </p>
       {live && (offers === null || open.length > 0) && (
         <Suggestions pending={offers === null ? 3 : 0}>
           {open.map((o) => (
@@ -371,56 +267,35 @@ export function AskTurn({
 }
 
 /**
- * The way on from the questions, under them: the preview answers what was asked. At the start, as
- * every turn's action is — the end is where the log's scroll button floats.
+ * The checkpoint: the preview has answers, and from here the person is asking their data. A marker
+ * in the thread — `@kanzo-tech/ai`'s `Checkpoint` with no way back, since it is not a state to return to.
  */
-export function AskDone({ questions, onDone }: { questions: number; onDone: () => void }) {
+export function CheckpointTurn() {
   return (
-    <div className="flex">
-      <Button onClick={onDone} size="sm" variant={questions === 0 ? "outline" : "default"}>
-        {questions === 0 ? "Skip, show me a preview" : "That's all, show me a preview"}
-        <ArrowRight />
-      </Button>
-    </div>
+    <Checkpoint data-checkpoint="">
+      <CheckpointIcon />
+      Your data is ready to ask · first {ROWS} rows
+    </Checkpoint>
   );
 }
 
 // ── The graph ───────────────────────────────────────────────────────────────
 
 /**
- * *Build the graph*, on request, once the preview has been seen: every row of every file, as a graph
- * of its own (`useBuild`). Its progress is the steps' (`StepsTurn`); once it is done, a tinted panel —
- * **Ask your data** as the primary action, **Open the graph**, and the person's questions to take to
- * Discover.
+ * The whole graph, once the person asked for it from the panel (`useBuild`): under way, the working
+ * line says so; failed, its problem and a retry; done, a tinted panel — **Ask your data** as the
+ * primary action, **Open the graph**, and the person's questions to take to Discover.
  */
 export function BuildTurn({
   build,
-  ready,
   onBuild,
   questions,
 }: {
   build: BuildProgress | null;
-  /** There is a program to build: the mapping has written it. */
-  ready: boolean;
   onBuild: () => void;
   questions: readonly AskedQuestion[];
 }) {
-  if (build === null) {
-    return (
-      <section className="flex flex-col gap-3 border-t pt-4">
-        <p>
-          {questions.length > 0 ? "When the answers look right" : "When you are ready"}, I&rsquo;ll build the whole graph: every row of
-          every file. This conversation is kept with it.
-        </p>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <Button disabled={!ready} onClick={onBuild} size="lg">
-            Build the graph
-          </Button>
-          <span className="text-muted-foreground text-sm">or change a decision above, and the preview runs again</span>
-        </div>
-      </section>
-    );
-  }
+  if (build === null) return null;
   switch (build.state) {
     case "building":
       return null;
@@ -466,6 +341,25 @@ export function BuildTurn({
         </section>
       );
   }
+}
+
+/**
+ * The reply to typed text that changes the graph: it is not taken as an instruction, and says where
+ * that is changed — what each kind of thing holds and is called is under *Data*.
+ */
+export function ChangeTurn({ text, onData }: { text: string; onData: () => void }) {
+  return (
+    <Said>
+      <p data-change="">
+        &ldquo;{text}&rdquo; changes your graph rather than asking your data, so I have not taken it as a question. What
+        each kind of thing is called and holds is under{" "}
+        <Button className="h-auto p-0 text-base" onClick={onData} variant="link">
+          Data
+        </Button>
+        ; the questions here are answered under <span className="font-medium">Preview</span>.
+      </p>
+    </Said>
+  );
 }
 
 const FAILED: Record<TaskFailure["task"], string> = {

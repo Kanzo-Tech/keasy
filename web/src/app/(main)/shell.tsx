@@ -3,7 +3,7 @@
 import { Suspense, useState } from "react";
 import { useSession } from "@kanzo-tech/auth";
 import { useQueryClient } from "@tanstack/react-query";
-import { Check, ChevronsUpDown, GalleryVerticalEnd, Loader2, LogOut, Settings } from "lucide-react";
+import { ArrowLeft, Check, ChevronsUpDown, GalleryVerticalEnd, Loader2, LogOut, Settings } from "lucide-react";
 import { usePathname } from "next/navigation";
 import {
   AlertDialog,
@@ -13,6 +13,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AvatarFallback,
+  Button,
   isActivePath,
   Menu,
   MenuContent,
@@ -64,6 +65,12 @@ function workspaceUrl(slug: string, current: string) {
 }
 
 /**
+ * Pages that are one task from start to end, as Claude's conversation is: the rail is folded away
+ * behind *← Graphs* so the page has the width (docs/design/assistant.md, *A shell of its own*).
+ */
+const FOCUSED = ["/graphs/new/assistant"];
+
+/**
  * The app frame, arranged as the kanzo-ui `app-shell` showcase: workspace switcher, nav and user
  * menu in the rail; trigger and breadcrumbs in the header. Reads `useSidebar()`, so it renders
  * below the provider.
@@ -80,6 +87,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const routes = getSidebarRoutes();
   const crumbs = generateBreadcrumbs(pathname);
   const collapsed = state === "collapsed" && !isMobile;
+  const focused = FOCUSED.some((path) => isActivePath(pathname, path));
   const closeMobile = () => setOpenMobile(false);
 
   const userName = session?.user.name ?? session?.user.email ?? "";
@@ -87,121 +95,132 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <Sidebar collapsible="icon">
-        <SidebarHeader>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <WorkspaceSwitcher collapsed={collapsed} isMobile={isMobile} role={role} />
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarHeader>
+      <Show when={!focused}>
+        <Sidebar collapsible="icon">
+          <SidebarHeader>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <WorkspaceSwitcher collapsed={collapsed} isMobile={isMobile} role={role} />
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarHeader>
 
-        <SidebarContent>
-          <nav aria-label="Platform">
-            <SidebarGroup>
-              <SidebarGroupLabel>Platform</SidebarGroupLabel>
-              <SidebarMenu>
-                {routes.map((route) => (
-                  <SidebarMenuItem key={route.path}>
+          <SidebarContent>
+            <nav aria-label="Platform">
+              <SidebarGroup>
+                <SidebarGroupLabel>Platform</SidebarGroupLabel>
+                <SidebarMenu>
+                  {routes.map((route) => (
+                    <SidebarMenuItem key={route.path}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={route.path === "/" ? pathname === "/" : isActivePath(pathname, route.path)}
+                        tooltip={route.name}
+                      >
+                        <Link href={route.path} onClick={closeMobile}>
+                          {route.icon && <route.icon />}
+                          <span className="truncate">{route.name}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroup>
+            </nav>
+          </SidebarContent>
+
+          <SidebarFooter>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <Menu positioning={{ placement: isMobile ? "bottom-end" : "right-end", gutter: 4 }}>
+                  <MenuTrigger asChild>
                     <SidebarMenuButton
-                      asChild
-                      isActive={route.path === "/" ? pathname === "/" : isActivePath(pathname, route.path)}
-                      tooltip={route.name}
+                      aria-label={userName}
+                      className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:rounded-full data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                      size="lg"
                     >
-                      <Link href={route.path} onClick={closeMobile}>
-                        {route.icon && <route.icon />}
-                        <span className="truncate">{route.name}</span>
-                      </Link>
+                      <SidebarIdentity collapsed={collapsed} responsive>
+                        <SidebarIdentityAvatar>
+                          <AvatarFallback>{initials(userName)}</AvatarFallback>
+                        </SidebarIdentityAvatar>
+                        <SidebarIdentityText>
+                          <SidebarIdentityLabel>{userName}</SidebarIdentityLabel>
+                          <SidebarIdentityDescription>{userEmail}</SidebarIdentityDescription>
+                        </SidebarIdentityText>
+                      </SidebarIdentity>
+                      <ChevronsUpDown className="ms-auto group-data-[collapsible=icon]:hidden" />
                     </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroup>
-          </nav>
-        </SidebarContent>
+                  </MenuTrigger>
+                  <MenuContent className="w-(--reference-width) min-w-56">
+                    <div className="px-2 py-1.5">
+                      <SidebarIdentity>
+                        <SidebarIdentityAvatar>
+                          <AvatarFallback>{initials(userName)}</AvatarFallback>
+                        </SidebarIdentityAvatar>
+                        <SidebarIdentityText>
+                          <SidebarIdentityLabel>{userName}</SidebarIdentityLabel>
+                          <SidebarIdentityDescription>{userEmail}</SidebarIdentityDescription>
+                        </SidebarIdentityText>
+                      </SidebarIdentity>
+                    </div>
+                    <MenuSeparator />
+                    <MenuItem asChild value="settings">
+                      <Link href="/settings" onClick={closeMobile}>
+                        <Settings />
+                        Settings
+                      </Link>
+                    </MenuItem>
+                    <MenuSeparator />
+                    <MenuItem onSelect={() => setConfirmingLogout(true)} value="log-out" variant="destructive">
+                      <LogOut />
+                      Log out
+                    </MenuItem>
+                  </MenuContent>
+                </Menu>
 
-        <SidebarFooter>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <Menu positioning={{ placement: isMobile ? "bottom-end" : "right-end", gutter: 4 }}>
-                <MenuTrigger asChild>
-                  <SidebarMenuButton
-                    aria-label={userName}
-                    className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:rounded-full data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-                    size="lg"
-                  >
-                    <SidebarIdentity collapsed={collapsed} responsive>
-                      <SidebarIdentityAvatar>
-                        <AvatarFallback>{initials(userName)}</AvatarFallback>
-                      </SidebarIdentityAvatar>
-                      <SidebarIdentityText>
-                        <SidebarIdentityLabel>{userName}</SidebarIdentityLabel>
-                        <SidebarIdentityDescription>{userEmail}</SidebarIdentityDescription>
-                      </SidebarIdentityText>
-                    </SidebarIdentity>
-                    <ChevronsUpDown className="ms-auto group-data-[collapsible=icon]:hidden" />
-                  </SidebarMenuButton>
-                </MenuTrigger>
-                <MenuContent className="w-(--reference-width) min-w-56">
-                  <div className="px-2 py-1.5">
-                    <SidebarIdentity>
-                      <SidebarIdentityAvatar>
-                        <AvatarFallback>{initials(userName)}</AvatarFallback>
-                      </SidebarIdentityAvatar>
-                      <SidebarIdentityText>
-                        <SidebarIdentityLabel>{userName}</SidebarIdentityLabel>
-                        <SidebarIdentityDescription>{userEmail}</SidebarIdentityDescription>
-                      </SidebarIdentityText>
-                    </SidebarIdentity>
-                  </div>
-                  <MenuSeparator />
-                  <MenuItem asChild value="settings">
-                    <Link href="/settings" onClick={closeMobile}>
-                      <Settings />
-                      Settings
-                    </Link>
-                  </MenuItem>
-                  <MenuSeparator />
-                  <MenuItem onSelect={() => setConfirmingLogout(true)} value="log-out" variant="destructive">
-                    <LogOut />
-                    Log out
-                  </MenuItem>
-                </MenuContent>
-              </Menu>
-
-              {/* A sibling of the menu: Ark closes the menu on select, which would unmount a
-                  dialog nested inside it before it painted. */}
-              <AlertDialog
-                onOpenChange={(details) => setConfirmingLogout(details.open)}
-                open={confirmingLogout}
-              >
-                <AlertDialogContent size="sm">
-                  <AlertDialogHeader description="Are you sure you want to log out?" title="Log out?" />
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      disabled={loggingOut}
-                      onClick={() => {
-                        // The edge signs out, here and at the identity provider, and comes back to sign in.
-                        setLoggingOut(true);
-                        window.location.assign(signOutUrl("/"));
-                      }}
-                      variant="destructive"
-                    >
-                      {loggingOut ? "Logging out…" : "Log out"}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarFooter>
-        <SidebarRail />
-      </Sidebar>
+                {/* A sibling of the menu: Ark closes the menu on select, which would unmount a
+                    dialog nested inside it before it painted. */}
+                <AlertDialog
+                  onOpenChange={(details) => setConfirmingLogout(details.open)}
+                  open={confirmingLogout}
+                >
+                  <AlertDialogContent size="sm">
+                    <AlertDialogHeader description="Are you sure you want to log out?" title="Log out?" />
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        disabled={loggingOut}
+                        onClick={() => {
+                          // The edge signs out, here and at the identity provider, and comes back to sign in.
+                          setLoggingOut(true);
+                          window.location.assign(signOutUrl("/"));
+                        }}
+                        variant="destructive"
+                      >
+                        {loggingOut ? "Logging out…" : "Log out"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarFooter>
+          <SidebarRail />
+        </Sidebar>
+      </Show>
 
       <SidebarInset className="overflow-hidden">
         <ShellHeader className="h-12 min-w-0 flex-row items-center gap-2 px-3">
-          <SidebarTrigger />
+          {focused ? (
+            <Button asChild size="sm" variant="ghost">
+              <Link href="/graphs">
+                <ArrowLeft />
+                Graphs
+              </Link>
+            </Button>
+          ) : (
+            <SidebarTrigger />
+          )}
           <Separator className="h-4" orientation="vertical" />
           <Suspense fallback={<Trail crumbs={crumbs} />}>
             <SearchTrail pathname={pathname} />

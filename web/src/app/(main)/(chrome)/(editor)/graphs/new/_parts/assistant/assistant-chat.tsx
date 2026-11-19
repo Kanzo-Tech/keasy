@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Link } from "@kanzo-tech/navigation/next";
 import {
   Conversation,
@@ -12,27 +12,39 @@ import {
   PromptInputTextarea,
   PromptInputToolbar,
 } from "@kanzo-tech/ai";
-import { Button } from "@kanzo-tech/ui";
+import {
+  Button,
+  Resizable,
+  ResizablePanel,
+  ResizableResizeTrigger,
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetHeader,
+  SheetTrigger,
+  ShellAside,
+} from "@kanzo-tech/ui";
 import { HeaderEnd } from "@/app/(main)/_parts/header-end";
 import type { AssistantMessage, FileReference } from "@/lib/assistant-conversation";
-import { converse, graphName, messagesOf, NO_REPLIES, type Replies, type Turn, waitingFor, type Waiting } from "./conversation";
-import type { AssistantData, BuildProgress, Question } from "./model";
-import { type Preview, PreviewTurn, ROWS } from "./preview-turn";
-import { Source, Sources, SourcesContent, SourcesTrigger } from "./sources";
+import { converse, graphName, isChange, messagesOf, NO_REPLIES, placeholderOf, type Replies, type Turn, type Waiting } from "./conversation";
+import { type AssistantData, blocks, type BuildProgress, type Question } from "./model";
+import { AssistantPanel, type PanelTab } from "./panel";
+import type { Preview } from "./preview-tab";
 import { SourceBar, type SourceBarProps } from "./source-bar";
-import { stepsOf } from "./steps";
+import { workingOf } from "./working";
 import {
   Answerable,
-  AskDone,
   AskTurn,
   AssumedTurn,
   BuildTurn,
+  ChangeTurn,
+  CheckpointTurn,
   DecideTurn,
   Reply,
   SentTurn,
-  StepsTurn,
   TaskFailed,
   UnderstoodTurn,
+  WorkingLine,
 } from "./turns";
 
 export interface AssistantChatProps extends AssistantData {
@@ -43,7 +55,7 @@ export interface AssistantChatProps extends AssistantData {
   /** The person's questions, kept by the host, which says whether each can be answered. */
   questions: readonly Question[];
   onQuestionsChange: (questions: Question[]) => void;
-  /** **Open in the editor**, on the step that wrote the program. */
+  /** **Open in the editor**, on the panel once there is a program. */
   onAdvanced: () => void;
   /** The mapping is writing the program again: a decision changed. */
   writing: boolean;
@@ -55,7 +67,7 @@ export interface AssistantChatProps extends AssistantData {
   files: readonly FileReference[];
   /** The program the mapping wrote, `null` until it has: what the preview runs and the build builds. */
   program: string | null;
-  /** The preview of `program`, answered in the chat. */
+  /** The preview of `program`, answered in the panel. */
   preview: Preview;
   /** The whole graph's build, `null` until the person asks for it. */
   build: BuildProgress | null;
@@ -72,12 +84,13 @@ export interface AssistantChatProps extends AssistantData {
 let written = 0;
 
 /**
- * The guided chat (docs/design/assistant.md): the assistant's turns as `converse` orders them, each
- * carrying what it is about, and the person's replies as their messages. What the hook answers is
- * read here, the person's questions with it; what else they have replied — whether the files were
- * sent, what it is about, that they asked all they wanted — is kept here. The composer takes free text only where the turn above asks for it.
- * The transcript is kept as its structure (`messagesOf`) after each reply, and a kept one starts the
- * chat where it stood (`initial`); its last turns are the preview and the build, on request.
+ * The assistant (docs/design/assistant.md, *A conversation beside its graph*): the conversation on
+ * the left — the assistant's turns as `converse` orders them and the person's replies as their
+ * messages — and, once the first message is sent, the panel on the right with what was found
+ * (*Data*) and the answers over the first rows (*Preview*), and the actions on the graph. What the
+ * hook answers is read here, the person's questions with it; what else they have replied is kept
+ * here. The field takes a question at any time; the transcript is kept as its structure
+ * (`messagesOf`) after each reply, and a kept one starts the chat where it stood (`initial`).
  */
 export function AssistantChat(props: AssistantChatProps) {
   const { onAdvanced, questions, onReplies, onSave } = props;
@@ -101,7 +114,19 @@ export function AssistantChat(props: AssistantChatProps) {
     setReplied(true);
     props.onQuestionsChange(next);
   };
-  const conversation = converse(props, replies);
+
+  // The preview has answered once: from then on the conversation is asking the data, and the panel
+  // shows the answers.
+  const [previewed, setPreviewed] = useState(false);
+  const [tab, setTab] = useState<PanelTab>("data");
+  const ready = props.preview.state === "ready";
+  useEffect(() => {
+    if (!ready || previewed) return;
+    setPreviewed(true);
+    setTab("preview");
+  }, [ready, previewed]);
+
+  const conversation = converse({ ...props, previewed }, replies);
   const { turns, waiting } = conversation;
   const closed = conversation.closed || props.built === true;
 
@@ -120,50 +145,56 @@ export function AssistantChat(props: AssistantChatProps) {
     onSave?.(JSON.parse(transcript) as AssistantMessage[]);
   }, [replied, settling, transcript, onSave]);
 
+  // The last typed line that asked the graph to change: answered once, where it was typed, and not kept.
+  const [change, setChange] = useState<string | null>(null);
   const ask = (id: string, text: string) => {
     const t = text.trim();
+    setChange(null);
     if (!t || questions.some((q) => q.text === t)) return;
     onQuestionsChange([...questions, { id, text: t, answerable: null }]);
+    setTab("preview");
   };
 
   // *Build the graph*: the person's message is part of the transcript, which is saved before the
   // graph is built from it — and so is not saved again by the effect above.
   const buildNow = () => {
-    const next = messagesOf(converse(props, { ...replies, built: true }).turns, { files: props.files, program: props.program });
+    const next = messagesOf(converse({ ...props, previewed }, { ...replies, built: true }).turns, { files: props.files, program: props.program });
     last.current = JSON.stringify(next);
     reply({ built: true });
     props.onBuild(next);
   };
 
-  const facts = {
+  const open = (props.decisions ?? []).filter(blocks);
+  const narrow = useNarrow();
+  const [sheet, setSheet] = useState(false);
+  const thread = useRef<HTMLUListElement>(null);
+  // The build's wait leads to the first decision it waits on — out of the sheet, on a phone.
+  const toOpen = () => {
+    setSheet(false);
+    const id = open[0]?.decision.id;
+    const turn = id ? thread.current?.querySelector(`[data-decision="${CSS.escape(id)}"]`) : null;
+    turn?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
+
+  const working = workingOf({
     files: props.selected.size,
     reading: props.reading,
     things: props.understanding.things,
     decisions: props.decisions,
     failures: props.failures,
-    asked: replies.asked,
     program: props.program,
     writing: props.writing,
     preview: props.preview.state,
     build: props.build,
-  };
+  });
 
   const draw = (turn: Turn, index: number) => {
     const key = `${turn.kind}-${index}`;
     switch (turn.kind) {
       case "sent":
         return <SentTurn about={turn.about} key={key} sources={turn.sources} />;
-      case "steps":
-        return (
-          <StepsTurn
-            key={`steps-${turn.group}`}
-            onEditor={onAdvanced}
-            problems={turn.group === "read" ? props.problems : undefined}
-            steps={stepsOf(turn.group, facts, ROWS)}
-          />
-        );
       case "understood":
-        return <UnderstoodTurn key={key} relations={props.understanding.relations} things={props.understanding.things} />;
+        return <UnderstoodTurn key={key} problems={props.problems} things={props.understanding.things} />;
       case "decide":
         return (
           <DecideTurn
@@ -186,63 +217,34 @@ export function AssistantChat(props: AssistantChatProps) {
           />
         );
       case "ask":
-        return (
-          <AskTurn key={key} live={waiting === "ask"} offers={props.offers} onAsk={ask} questions={questions} />
-        );
+        return <AskTurn key={key} live={!closed} offers={props.offers} onAsk={ask} questions={questions} />;
+      case "checkpoint":
+        return <CheckpointTurn key={key} />;
       case "asked":
         return (
           <Reply
             key={turn.question.id}
-            onRemove={
-              waiting === "ask" ? () => onQuestionsChange(questions.filter((q) => q.id !== turn.question.id)) : undefined
-            }
+            onRemove={closed ? undefined : () => onQuestionsChange(questions.filter((q) => q.id !== turn.question.id))}
           >
             <span data-question={turn.question.id}>{turn.question.text}</span>
             <Answerable answerable={turn.question.answerable} />
           </Reply>
         );
-      case "asked-all":
-        return <Reply key={key}>{turn.questions === 0 ? "No questions for now. Show me." : "That's all. Show me."}</Reply>;
-      case "preview":
-        return <PreviewTurn key={key} preview={props.preview} questions={questions} />;
       case "build-reply":
         return <Reply key={key}>Build the graph</Reply>;
       case "build":
-        // Closed, there is nothing to ask for: the bar below says what the conversation built.
-        if (props.built) return null;
-        return (
-          <BuildTurn build={props.build} key={key} onBuild={buildNow} questions={questions} ready={props.program !== null} />
-        );
+        return <BuildTurn build={props.build} key={key} onBuild={buildNow} questions={questions} />;
     }
   };
 
   const name = graphName(props.files);
   const sent = replies.about !== undefined;
-  return (
+  const chat = (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <HeaderEnd>{props.status}</HeaderEnd>
-
-      {/* What the thread was made from, pinned above it: the steps never move it. */}
-      {sent && (
-        <div className="mx-auto flex w-full max-w-3xl shrink-0 flex-col gap-1 border-b px-4 py-2.5" data-details="">
-          {replies.about && <p className="truncate font-medium text-sm">{replies.about}</p>}
-          <Sources>
-            <SourcesTrigger count={props.files.length} />
-            <SourcesContent>
-              {props.files.map((f) => (
-                <Source key={`${f.connection}:${f.path}`}>
-                  @{f.connection}/{f.path}
-                </Source>
-              ))}
-            </SourcesContent>
-          </Sources>
-        </div>
-      )}
-
       {/* A turn added takes the pin back, as Conversation's own does; reading back up releases it. */}
       <Conversation>
         <ConversationContent className="py-8">
-          <MessageList className="gap-5">
+          <MessageList className="gap-5" ref={thread}>
             {turns.length === 0 && (
               <div className="flex flex-col gap-1.5" data-empty="">
                 <h2 className="font-semibold text-xl">What would you like to explore?</h2>
@@ -252,14 +254,24 @@ export function AssistantChat(props: AssistantChatProps) {
               </div>
             )}
             {turns.map((turn, index) => draw(turn, index))}
+            {change !== null && !closed && (
+              <>
+                <Reply>{change}</Reply>
+                <ChangeTurn
+                  onData={() => {
+                    setTab("data");
+                    if (narrow) setSheet(true);
+                  }}
+                  text={change}
+                />
+              </>
+            )}
             {props.failures.map((f) => (
               <TaskFailed failure={f} key={f.task} />
             ))}
-            {waiting === "ask" && <AskDone onDone={() => reply({ asked: true })} questions={questions.length} />}
+            {working && <WorkingLine>{working}</WorkingLine>}
           </MessageList>
         </ConversationContent>
-        {/* At the log's end edge, not its middle: the turns' actions — *Build the graph*, *That's all* —
-            sit at its start, and a button floating over the log never covers them. */}
         <ConversationScrollButton className="inset-x-auto end-4" />
       </Conversation>
 
@@ -267,20 +279,100 @@ export function AssistantChat(props: AssistantChatProps) {
         <ClosedBar name={name} />
       ) : (
         <Composer
-          onAsk={(text) => ask(`written-${++written}`, text)}
+          onAsk={(text) => (isChange(text) ? setChange(text.trim()) : ask(`written-${++written}`, text))}
           onPick={props.onPick}
           onClear={props.onClear}
           onSend={(text) => reply({ about: text })}
           connections={props.connections}
           list={props.list}
-          placeholder={waitingFor(waiting)}
+          placeholder={placeholderOf(waiting, previewed)}
           selected={props.selected}
           waiting={waiting}
         />
       )}
     </div>
   );
+
+  const panel = (
+    <AssistantPanel
+      done={props.build !== null || props.built === true}
+      onBuild={buildNow}
+      onEditor={onAdvanced}
+      onOpen={toOpen}
+      onTab={setTab}
+      open={open.length}
+      preview={props.preview}
+      program={props.program}
+      questions={questions}
+      relations={props.understanding.relations}
+      tab={tab}
+      things={props.understanding.things}
+    />
+  );
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <HeaderEnd>{props.status}</HeaderEnd>
+      {!sent ? (
+        chat
+      ) : narrow ? (
+        // A phone has no beside: the panel is a sheet over the conversation, opened from a bar.
+        <Sheet onOpenChange={(d) => setSheet(d.open)} open={sheet}>
+          <SheetTrigger asChild>
+            <Button className="mx-3 mt-2 shrink-0 justify-start" variant="outline">
+              {barOf(props.understanding.things.length, open.length)}
+            </Button>
+          </SheetTrigger>
+          {chat}
+          <SheetContent className="h-[85dvh]" placement="bottom">
+            <SheetHeader title="Your graph" />
+            <SheetBody className="flex min-h-0 flex-1 flex-col p-0">{panel}</SheetBody>
+          </SheetContent>
+        </Sheet>
+      ) : (
+        <Resizable
+          className="min-h-0 flex-1"
+          defaultSize={[55, 45]}
+          panels={[
+            { id: "conversation", minSize: 35 },
+            { id: "panel", minSize: 25 },
+          ]}
+        >
+          <ResizablePanel className="flex min-w-0 flex-col overflow-hidden" id="conversation">
+            {chat}
+          </ResizablePanel>
+          <ResizableResizeTrigger id="conversation:panel" withHandle />
+          <ResizablePanel className="flex min-h-0 min-w-0 flex-col" id="panel">
+            <ShellAside aria-label="Your graph" className="size-full min-h-0 border-s-0" side="end">
+              {panel}
+            </ShellAside>
+          </ResizablePanel>
+        </Resizable>
+      )}
+    </div>
+  );
 }
+
+/** The phone's bar to the panel: *Your graph · 5 kinds · 1 open question*. */
+export function barOf(kinds: number, open: number): string {
+  const parts = ["Your graph", kinds === 1 ? "1 kind" : `${kinds} kinds`];
+  if (open > 0) parts.push(open === 1 ? "1 open question" : `${open} open questions`);
+  return parts.join(" · ");
+}
+
+/** Narrower than the panel and the conversation fit side by side: below `md`, as the app's own sidebar turns. */
+const NARROW = "(max-width: 767px)";
+const subscribe = (change: () => void) => {
+  const query = window.matchMedia(NARROW);
+  query.addEventListener("change", change);
+  return () => query.removeEventListener("change", change);
+};
+const useNarrow = () =>
+  useSyncExternalStore(
+    subscribe,
+    () => window.matchMedia(NARROW).matches,
+    () => false,
+  );
 
 const ABOUT_EXAMPLE = "e.g. Nobel prizes and the people who won them";
 
@@ -309,10 +401,9 @@ function ClosedBar({ name }: { name: string }) {
 }
 
 /**
- * The one composer, whatever the thread waits on. Sending the first message: the sources are pills
- * above the field and the field says what they are about. Asking a question: free text. Waiting on
- * something above, it stays where it is, off, and says what it waits for in its placeholder. After
- * the questions are asked there is none (a question beyond them is asked in Discover).
+ * The one composer. Sending the first message: the sources are pills above the field and the field
+ * says what they are about. After it, the field takes a question about the data at any time — kept,
+ * and answered under *Preview* — and is off only while the files are read.
  */
 function Composer({
   waiting,
@@ -326,19 +417,19 @@ function Composer({
   onAsk,
 }: {
   waiting: Waiting;
-  placeholder: string | null;
+  placeholder: string;
 } & Pick<SourceBarProps, "connections" | "list" | "selected" | "onPick" | "onClear"> & {
     onSend: (about: string) => void;
     onAsk: (text: string) => void;
   }) {
   const [draft, setDraft] = useState("");
   if (waiting === null) return null;
-  const writing = waiting === "send" || waiting === "ask";
+  const first = waiting === "send";
   // The first message needs a source; a question needs words.
-  const canSend = waiting === "send" ? selected.size > 0 : waiting === "ask" && draft.trim() !== "";
+  const canSend = first ? selected.size > 0 : waiting === "ask" && draft.trim() !== "";
   const send = () => {
     if (!canSend) return;
-    if (waiting === "send") onSend(draft.trim());
+    if (first) onSend(draft.trim());
     else onAsk(draft);
     setDraft("");
   };
@@ -351,13 +442,13 @@ function Composer({
           send();
         }}
       >
-        {waiting === "send" && <SourceBar connections={connections} list={list} onClear={onClear} onPick={onPick} selected={selected} />}
+        {first && <SourceBar connections={connections} list={list} onClear={onClear} onPick={onPick} selected={selected} />}
         <PromptInputTextarea
-          aria-label={waiting === "send" ? "What is this data about?" : "Your question"}
+          aria-label={first ? "What is this data about?" : "Your question"}
           className="min-h-14"
-          disabled={!writing}
+          disabled={waiting === "reading"}
           onChange={(e) => setDraft(e.target.value)}
-          placeholder={writing ? (waiting === "send" ? ABOUT_EXAMPLE : "Ask your own question…") : (placeholder ?? "")}
+          placeholder={first ? ABOUT_EXAMPLE : placeholder}
           value={draft}
         />
         <PromptInputToolbar className="justify-end">

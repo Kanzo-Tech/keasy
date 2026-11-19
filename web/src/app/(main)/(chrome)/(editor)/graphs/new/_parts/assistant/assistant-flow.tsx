@@ -22,7 +22,7 @@ import { useBuild } from "../use-build";
 import { AssistantChat } from "./assistant-chat";
 import { graphName, type Replies, type Restored, restore } from "./conversation";
 import type { Question } from "./model";
-import type { Preview } from "./preview-turn";
+import type { Preview } from "./preview-tab";
 import { useAssistant } from "./use-assistant";
 
 /**
@@ -119,7 +119,7 @@ function Resumed({
   const onReplies = useCallback((next: Replies) => setReplies(next), []);
   // The questions kept; whether each can be answered is the hook's to say.
   const [questions, setQuestions] = useState<Question[]>(seed.questions);
-  const assistant = useAssistant({ connections, formats, about: replies.about, asked: replies.asked, questions, seed });
+  const assistant = useAssistant({ connections, formats, about: replies.about, questions, seed });
 
   // The preview runs the mapping's program; while it writes the next one, the last stays on screen.
   const ran = usePreview(assistant.mapped, assistant.described);

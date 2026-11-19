@@ -13,6 +13,9 @@ test("08 with Keycloak down a web that cannot fetch the realm's keys lands on /a
   // that one lapses, and Keycloak is down from here.
   await page.goto("/");
   await page.getByRole("navigation", { name: "Platform" }).waitFor();
+  // Off the app before the web restarts: its dev client reloads the page when its socket comes
+  // back, and that reload would interrupt the navigation below.
+  await page.goto("about:blank");
   stop("keycloak");
   try {
     restart("web");

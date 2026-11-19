@@ -15,12 +15,12 @@
 
 include:
   - path:
-      - https://github.com/Kanzo-Tech/ui.git#v0.50.0:services/compose.dev.yaml
+      - https://github.com/Kanzo-Tech/ui.git#v0.50.1:services/compose.dev.yaml
       # keasy's additions to the platform in development: its roles on the seeded groups.
       - infra/dev/platform.yaml
   - path:
-      - https://github.com/Kanzo-Tech/ui.git#v0.50.0:services/storage/compose.yaml
-      - https://github.com/Kanzo-Tech/ui.git#v0.50.0:services/storage/compose.dev.yaml
+      - https://github.com/Kanzo-Tech/ui.git#v0.50.1:services/storage/compose.yaml
+      - https://github.com/Kanzo-Tech/ui.git#v0.50.1:services/storage/compose.dev.yaml
     env_file: infra/dev/storage.env
 
 services:

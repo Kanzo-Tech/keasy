@@ -14,7 +14,7 @@ import { useSearchParams } from "next/navigation";
  * does not know is read as absent.
  */
 
-export const VIEW_IDS = ["graph", "dashboard"] as const;
+export const VIEW_IDS = ["graph", "dashboard", "query"] as const;
 export type ViewId = (typeof VIEW_IDS)[number];
 
 export const PANEL_IDS = ["info", "ask", "settings"] as const;
@@ -30,7 +30,7 @@ export interface DiscoverState {
 
 /** What the dock holds in `view` when the URL does not say. */
 export function defaultPanel(view: ViewId): Dock {
-  return view === "dashboard" ? "none" : "info";
+  return view === "graph" ? "info" : "none";
 }
 
 const isView = (value: string | null): value is ViewId => VIEW_IDS.includes(value as ViewId);

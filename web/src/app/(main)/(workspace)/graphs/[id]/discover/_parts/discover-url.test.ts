@@ -44,4 +44,9 @@ describe("Discovery's URL", () => {
       }
     }
   });
+
+  it("opens the query view with the dock collapsed", () => {
+    expect(read("view=query")).toEqual({ view: "query", panel: "none" });
+    expect(write("", { view: "query", panel: "none" })).toBe("view=query");
+  });
 });

@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { createContext, use, useState } from "react";
 import {
   BarChart3Icon,
+  DatabaseIcon,
   InfoIcon,
   MessageCircleIcon,
   NetworkIcon,
@@ -82,6 +83,11 @@ const DashboardView = dynamic(() => import("./_parts/dashboard-view"), {
   loading: () => <Skeleton className="h-full w-full" />,
 });
 
+const QueryView = dynamic(() => import("./_parts/query-view"), {
+  ssr: false,
+  loading: () => <Skeleton className="h-full w-full" />,
+});
+
 const PANELS = [
   { id: "info", label: "Info", icon: InfoIcon },
   { id: "ask", label: "Ask", icon: MessageCircleIcon },
@@ -97,6 +103,7 @@ const PANEL_BODY: Record<PanelId, React.ComponentType> = {
 const VIEWS = [
   { id: "graph", label: "Graph", icon: NetworkIcon },
   { id: "dashboard", label: "Dashboard", icon: BarChart3Icon },
+  { id: "query", label: "Query", icon: DatabaseIcon },
 ] as const satisfies readonly { id: ViewId; label: string; icon: React.ComponentType }[];
 
 export default function DiscoverPage({ params }: { params: Promise<{ id: string }> }) {
@@ -186,6 +193,9 @@ function Workspace() {
   const graph = useJoinGraph();
   const [relation, setRelation] = useState<Relation>(() => ({ root: graph.types[0]?.name ?? "", path: [] }));
   const [{ view, panel }, setDiscover] = useDiscoverState();
+  // Query se crea la primera vez que se abre y después solo se oculta, para no perder la consulta
+  const [queryOpened, setQueryOpened] = useState(view === "query");
+  if (view === "query" && !queryOpened) setQueryOpened(true);
   const panelOpen = panel !== "none";
   // The dock's width while it is open; closed, it collapses to nothing and the main region stays
   // mounted where it is, so the dashboard keeps what the reader filtered.
@@ -231,7 +241,7 @@ function Workspace() {
           onValueChange={(d) => {
             const next = d.value[0] as ViewId | undefined;
             if (!next) return;
-            setDiscover(next === "dashboard" ? { view: next, panel: "none" } : { view: next });
+            setDiscover(next === "graph" ? { view: next } : { view: next, panel: "none" });
           }}
           size="sm"
           spacing={2}
@@ -276,6 +286,11 @@ function Workspace() {
             <ShellMain className="flex size-full min-h-0 flex-col bg-background">
               <div className="relative min-h-0 flex-1">
                 {view === "graph" && <GraphRegion />}
+                {queryOpened && (
+                  <div className="size-full min-h-0" hidden={view !== "query"}>
+                    <QueryView />
+                  </div>
+                )}
                 {/* Hidden, not unmounted, in Graph view: its filters keep filtering the page and stay
                     in the bar as they are drawn in Dashboard, and its charts ask nothing until it is
                     shown again. */}

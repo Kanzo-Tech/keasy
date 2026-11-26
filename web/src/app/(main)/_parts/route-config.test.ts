@@ -42,4 +42,8 @@ describe("getSidebarRoutes", () => {
     expect(generateBreadcrumbs("/settings/storage").at(-1)?.name).toBe("Workspace storage");
     expect(generateBreadcrumbs("/settings/members").at(-1)?.name).toBe("Members");
   });
+
+  it("names the AI model settings", () => {
+    expect(generateBreadcrumbs("/settings/ai").at(-1)?.name).toBe("AI model");
+  });
 });

@@ -43,6 +43,7 @@ const ROUTES: Record<string, RouteDef> = {
   "/settings":                    { name: "Settings", icon: Settings2 },
   "/settings/preferences":        { name: "Preferences" },
   "/settings/security":           { name: "Security" },
+  "/settings/ai":                 { name: "AI model" },
   "/settings/credentials":        { name: "Credentials", icon: KeyRound },
   "/settings/credentials/new":    { name: "New credential" },
   "/settings/storage":            { name: "Workspace storage", icon: GalleryVerticalEnd },

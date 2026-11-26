@@ -1,6 +1,6 @@
 "use client";
 
-import { GalleryVerticalEnd, KeyRound, Paintbrush, ShieldCheck, Users } from "lucide-react";
+import { GalleryVerticalEnd, KeyRound, Paintbrush, ShieldCheck, Sparkles, Users } from "lucide-react";
 import { usePathname } from "next/navigation";
 import {
   isActivePath,
@@ -18,6 +18,7 @@ import { useSession } from "@kanzo-tech/auth";
 const GENERAL = [
   { href: "/settings/preferences", label: "Preferences", icon: Paintbrush },
   { href: "/settings/security", label: "Security", icon: ShieldCheck },
+  { href: "/settings/ai", label: "AI model", icon: Sparkles },
 ];
 
 // Cloud accounts and AI keys: an editor's.

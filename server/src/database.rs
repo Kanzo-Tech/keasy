@@ -350,6 +350,19 @@ CREATE TABLE rules (
     updated_by_name TEXT,
     updated_at      TEXT
 );
+
+-- The external model the workspace's Ask and assistant call, set by an admin:
+-- one row or none. The key is sealed (AES-256-GCM, AAD = 'ai-model'); NULL for
+-- an endpoint that takes none, such as a local Ollama.
+CREATE TABLE ai_model (
+    id              INTEGER PRIMARY KEY CHECK (id = 1),
+    base_url        TEXT NOT NULL,
+    model           TEXT NOT NULL,
+    api_key         BLOB,
+    updated_by      TEXT NOT NULL,
+    updated_by_name TEXT NOT NULL,
+    updated_at      TEXT NOT NULL
+);
 ";
 
 /// Every table and index a fresh database of `schema` holds.

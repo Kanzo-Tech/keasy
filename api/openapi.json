@@ -52,6 +52,99 @@
         ]
       }
     },
+    "/v1/ai/model": {
+      "get": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Every member reads which model their Ask and assistant run on.",
+        "operationId": "get_ai_model",
+        "responses": {
+          "200": {
+            "description": "The workspace's external model, or none; never its key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiModelSettings"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": [
+              "reader"
+            ]
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "An admin sets the workspace's external model; every member's calls go to it.",
+        "operationId": "set_ai_model",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetAiModelRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Stored, the key sealed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiModelView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Not an http(s) root, or no model",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": [
+              "admin"
+            ]
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "An admin removes the external model, key and all.",
+        "operationId": "delete_ai_model",
+        "responses": {
+          "204": {
+            "description": "Removed, or there was none: Ask and the assistant run on the model in the page"
+          }
+        },
+        "security": [
+          {
+            "bearer": [
+              "admin"
+            ]
+          }
+        ]
+      }
+    },
     "/v1/branding": {
       "get": {
         "tags": [
@@ -2050,6 +2143,51 @@
           }
         }
       },
+      "AiModelSettings": {
+        "type": "object",
+        "description": "The workspace's model, as every member may see it.",
+        "properties": {
+          "external": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AiModelView",
+                "description": "The external model Ask and the assistant call, or `null` while they run\non the model in the page."
+              }
+            ]
+          }
+        }
+      },
+      "AiModelView": {
+        "type": "object",
+        "description": "What anyone may see of the external model: never its key, only whether\nthere is one.",
+        "required": [
+          "base_url",
+          "model",
+          "has_key",
+          "updated_by",
+          "updated_at"
+        ],
+        "properties": {
+          "base_url": {
+            "type": "string"
+          },
+          "has_key": {
+            "type": "boolean"
+          },
+          "model": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "updated_by": {
+            "$ref": "#/components/schemas/Actor"
+          }
+        }
+      },
       "Branding": {
         "type": "object",
         "description": "How this instance looks, as its deployment declares it (`KEASY_BRANDING_FILE`).\nPublic: the web reads it to render the login page and the first paint,\nbefore anyone has signed in.",
@@ -3083,6 +3221,34 @@
           "store/silent",
           "rules/refused"
         ]
+      },
+      "SetAiModelRequest": {
+        "type": "object",
+        "description": "An external model for the whole workspace.",
+        "required": [
+          "base_url",
+          "model"
+        ],
+        "properties": {
+          "api_key": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "password",
+            "description": "The key the provider takes. Left out, the stored one is kept; empty, the\nmodel is called with none, as a local Ollama is.",
+            "writeOnly": true
+          },
+          "base_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "The root of an OpenAI-compatible API, `http` or `https`."
+          },
+          "model": {
+            "type": "string",
+            "description": "The model to call, as the provider names it."
+          }
+        }
       },
       "StorageCredentialsRequest": {
         "type": "object",

@@ -55,6 +55,25 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/ai/model": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every member reads which model their Ask and assistant run on. */
+        get: operations["get_ai_model"];
+        /** An admin sets the workspace's external model; every member's calls go to it. */
+        put: operations["set_ai_model"];
+        post?: never;
+        /** An admin removes the external model, key and all. */
+        delete: operations["delete_ai_model"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/branding": {
         parameters: {
             query?: never;
@@ -422,6 +441,21 @@ export interface components {
             id: string;
             /** @description Their display name when they wrote it: for people to read, never to authorize on. */
             name: string;
+        };
+        /** @description The workspace's model, as every member may see it. */
+        AiModelSettings: {
+            external?: null | components["schemas"]["AiModelView"];
+        };
+        /**
+         * @description What anyone may see of the external model: never its key, only whether
+         *     there is one.
+         */
+        AiModelView: {
+            base_url: string;
+            has_key: boolean;
+            model: string;
+            updated_at: string;
+            updated_by: components["schemas"]["Actor"];
         };
         /**
          * @description How this instance looks, as its deployment declares it (`KEASY_BRANDING_FILE`).
@@ -852,6 +886,22 @@ export interface components {
          * @enum {string}
          */
         ServerCode: "auth/session-required" | "auth/keys-unavailable" | "rbac/no-membership" | "rbac/insufficient-role" | "rbac/forbidden" | "request/rate-limited" | "request/invalid" | "request/malformed" | "request/method-not-allowed" | "request/too-large" | "route/not-found" | "server/internal" | "server/silent" | "server/not-ready" | "graph/not-found" | "graph/not-draft" | "graph/not-completed" | "graph/not-running" | "graph/ended" | "graph/still-running" | "graph/already-running" | "graph/abandoned" | "graph/interrupted" | "graph/invalid-destination" | "graph/no-destination" | "graph/folder-taken" | "conversation/not-found" | "conversation/built" | "secret/not-found" | "connection/not-found" | "resource/already-exists" | "resource/in-use" | "connection/overlaps" | "probe/failed" | "store/refused" | "store/silent" | "rules/refused";
+        /** @description An external model for the whole workspace. */
+        SetAiModelRequest: {
+            /**
+             * Format: password
+             * @description The key the provider takes. Left out, the stored one is kept; empty, the
+             *     model is called with none, as a local Ollama is.
+             */
+            api_key?: $Write<string | null>;
+            /**
+             * Format: uri
+             * @description The root of an OpenAI-compatible API, `http` or `https`.
+             */
+            base_url: string;
+            /** @description The model to call, as the provider names it. */
+            model: string;
+        };
         StorageCredentialsRequest: {
             access: components["schemas"]["Access"];
             scope: components["schemas"]["Scope"];
@@ -1011,6 +1061,77 @@ export interface operations {
                 content: {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
+            };
+        };
+    };
+    get_ai_model: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The workspace's external model, or none; never its key */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiModelSettings"];
+                };
+            };
+        };
+    };
+    set_ai_model: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetAiModelRequest"];
+            };
+        };
+        responses: {
+            /** @description Stored, the key sealed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiModelView"];
+                };
+            };
+            /** @description Not an http(s) root, or no model */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    delete_ai_model: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed, or there was none: Ask and the assistant run on the model in the page */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

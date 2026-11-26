@@ -1,3 +1,4 @@
+pub mod ai_model;
 pub mod authentication;
 pub mod bootstrap;
 pub mod configuration;

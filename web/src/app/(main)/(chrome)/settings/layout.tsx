@@ -18,15 +18,15 @@ import { useSession } from "@kanzo-tech/auth";
 const GENERAL = [
   { href: "/settings/preferences", label: "Preferences", icon: Paintbrush },
   { href: "/settings/security", label: "Security", icon: ShieldCheck },
-  { href: "/settings/ai", label: "AI model", icon: Sparkles },
 ];
 
 // Cloud accounts and AI keys: an editor's.
 const DATA = [{ href: "/settings/credentials", label: "Credentials", icon: KeyRound }];
 
-// Where graph outputs land, and who belongs: an admin's.
+// Where graph outputs land, which model every member's AI runs on, and who belongs: an admin's.
 const WORKSPACE = [
   { href: "/settings/storage", label: "Workspace storage", icon: GalleryVerticalEnd },
+  { href: "/settings/ai", label: "AI model", icon: Sparkles },
   { href: "/settings/members", label: "Members", icon: Users },
 ];
 

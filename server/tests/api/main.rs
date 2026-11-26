@@ -1,3 +1,4 @@
+mod ai;
 mod ai_model;
 mod authentication;
 mod authorization;

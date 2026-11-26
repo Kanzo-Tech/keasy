@@ -55,6 +55,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/ai/chat/completions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Relay one chat completion to the workspace's model, for any member. The
+         *     answer streams back as the provider sends it, byte for byte; a reader who
+         *     leaves drops the stream, and with it the call to the provider.
+         */
+        post: operations["chat_completions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/ai/model": {
         parameters: {
             query?: never;
@@ -69,6 +90,27 @@ export interface paths {
         post?: never;
         /** An admin removes the external model, key and all. */
         delete: operations["delete_ai_model"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ai/model/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * An admin tries a model before saving it: one short question, its answer
+         *     discarded. Nothing is stored. With no `api_key` the stored key is tried,
+         *     as a save would keep it.
+         */
+        post: operations["test_ai_model"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -446,6 +488,14 @@ export interface components {
         AiModelSettings: {
             external?: null | components["schemas"]["AiModelView"];
         };
+        /** @description The call that answered, its time to answer. */
+        AiModelTested: {
+            /**
+             * Format: int64
+             * @description How long the provider took to answer, in milliseconds.
+             */
+            latency_ms: number;
+        };
         /**
          * @description What anyone may see of the external model: never its key, only whether
          *     there is one.
@@ -498,6 +548,19 @@ export interface components {
              *     and reads a graph's output, so the interface reads this for secrets.
              */
             use: boolean;
+        };
+        /**
+         * @description An OpenAI chat completion request. `model` is the workspace's, whatever the
+         *     page names; everything else the protocol carries (`stream`, `tools`,
+         *     `response_format`, `temperature`) goes to the provider untouched.
+         */
+        ChatCompletionRequest: {
+            /** Format: int32 */
+            max_completion_tokens?: number | null;
+            /** Format: int32 */
+            max_tokens?: number | null;
+            /** @description The conversation, in the OpenAI message format. */
+            messages: Record<string, never>[];
         };
         Check: {
             message?: string | null;
@@ -885,7 +948,7 @@ export interface components {
          *     `area/kind-x` as `AreaKindX`.
          * @enum {string}
          */
-        ServerCode: "auth/session-required" | "auth/keys-unavailable" | "rbac/no-membership" | "rbac/insufficient-role" | "rbac/forbidden" | "request/rate-limited" | "request/invalid" | "request/malformed" | "request/method-not-allowed" | "request/too-large" | "route/not-found" | "server/internal" | "server/silent" | "server/not-ready" | "graph/not-found" | "graph/not-draft" | "graph/not-completed" | "graph/not-running" | "graph/ended" | "graph/still-running" | "graph/already-running" | "graph/abandoned" | "graph/interrupted" | "graph/invalid-destination" | "graph/no-destination" | "graph/folder-taken" | "conversation/not-found" | "conversation/built" | "secret/not-found" | "connection/not-found" | "resource/already-exists" | "resource/in-use" | "connection/overlaps" | "probe/failed" | "store/refused" | "store/silent" | "rules/refused";
+        ServerCode: "auth/session-required" | "auth/keys-unavailable" | "rbac/no-membership" | "rbac/insufficient-role" | "rbac/forbidden" | "request/rate-limited" | "request/invalid" | "request/malformed" | "request/method-not-allowed" | "request/too-large" | "route/not-found" | "server/internal" | "server/silent" | "server/not-ready" | "graph/not-found" | "graph/not-draft" | "graph/not-completed" | "graph/not-running" | "graph/ended" | "graph/still-running" | "graph/already-running" | "graph/abandoned" | "graph/interrupted" | "graph/invalid-destination" | "graph/no-destination" | "graph/folder-taken" | "conversation/not-found" | "conversation/built" | "secret/not-found" | "connection/not-found" | "resource/already-exists" | "resource/in-use" | "connection/overlaps" | "probe/failed" | "store/refused" | "store/silent" | "rules/refused" | "ai/not-configured" | "ai/unreachable" | "ai/refused" | "ai/silent";
         /** @description An external model for the whole workspace. */
         SetAiModelRequest: {
             /**
@@ -1064,6 +1127,55 @@ export interface operations {
             };
         };
     };
+    chat_completions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChatCompletionRequest"];
+            };
+        };
+        responses: {
+            /** @description The provider's answer as it streams: OpenAI chat completion chunks (`text/event-stream`), ended by an error event carrying `ai/silent` if the provider goes quiet mid-answer; or one completion (`application/json`) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No external model is set */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The provider could not be reached, or refused */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The provider did not begin its answer in time */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     get_ai_model: {
         parameters: {
             query?: never;
@@ -1132,6 +1244,57 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    test_ai_model: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetAiModelRequest"];
+            };
+        };
+        responses: {
+            /** @description The model answered */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiModelTested"];
+                };
+            };
+            /** @description Not an http(s) root, or no model */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The provider could not be reached, or refused: a wrong key, an unknown model */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The provider did not answer in time */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
             };
         };
     };

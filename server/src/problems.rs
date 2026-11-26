@@ -110,6 +110,18 @@ pub enum ServerCode {
     /// rudof refused a rules document: it is not Turtle, or not a SHACL shapes graph. `line` and `column` place it when the Turtle parser does.
     #[serde(rename = "rules/refused")]
     RulesRefused,
+    /// No external model is set: Ask and the assistant run on the model in the page, and nothing is relayed.
+    #[serde(rename = "ai/not-configured")]
+    AiNotConfigured,
+    /// The workspace's AI provider could not be reached: a wrong URL, or it is down.
+    #[serde(rename = "ai/unreachable")]
+    AiUnreachable,
+    /// The AI provider answered with a failure of its own - a wrong key, an unknown model, a spent quota - its status and message in `detail`. Never its status: a 401 of the provider's is not the caller's session.
+    #[serde(rename = "ai/refused")]
+    AiRefused,
+    /// The AI provider sent nothing within its deadline, before its answer or between two chunks of it; `after` says how long it was given, in milliseconds.
+    #[serde(rename = "ai/silent")]
+    AiSilent,
 }
 
 impl ServerCode {
@@ -153,6 +165,10 @@ impl ServerCode {
             Self::StoreRefused => "store/refused",
             Self::StoreSilent => "store/silent",
             Self::RulesRefused => "rules/refused",
+            Self::AiNotConfigured => "ai/not-configured",
+            Self::AiUnreachable => "ai/unreachable",
+            Self::AiRefused => "ai/refused",
+            Self::AiSilent => "ai/silent",
         }
     }
 
@@ -197,6 +213,10 @@ impl ServerCode {
             Self::StoreRefused => "The store refused",
             Self::StoreSilent => "The store did not answer in time",
             Self::RulesRefused => "The rules could not be read",
+            Self::AiNotConfigured => "No external AI model is set",
+            Self::AiUnreachable => "The AI provider could not be reached",
+            Self::AiRefused => "The AI provider refused",
+            Self::AiSilent => "The AI provider did not answer in time",
         }
     }
 
@@ -241,6 +261,10 @@ impl ServerCode {
             Self::StoreRefused => Some(502),
             Self::StoreSilent => Some(504),
             Self::RulesRefused => Some(422),
+            Self::AiNotConfigured => Some(409),
+            Self::AiUnreachable => Some(502),
+            Self::AiRefused => Some(502),
+            Self::AiSilent => Some(504),
         }
     }
 }

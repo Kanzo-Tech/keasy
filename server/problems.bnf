@@ -85,3 +85,15 @@ row store/silent                = 504 ; "The store did not answer in time"      
 (* rudof refused a rules document: it is not Turtle, or not a SHACL shapes graph. `line` and `column`
    place it when the Turtle parser does. *)
 row rules/refused               = 422 ; "The rules could not be read"                 ; field: string, line?: number, column?: number .
+(* No external model is set: Ask and the assistant run on the model in the page, and nothing is
+   relayed. *)
+row ai/not-configured           = 409 ; "No external AI model is set"                 ; - .
+(* The workspace's AI provider could not be reached: a wrong URL, or it is down. *)
+row ai/unreachable              = 502 ; "The AI provider could not be reached"        ; - .
+(* The AI provider answered with a failure of its own - a wrong key, an unknown model, a spent
+   quota - its status and message in `detail`. Never its status: a 401 of the provider's is not the
+   caller's session. *)
+row ai/refused                  = 502 ; "The AI provider refused"                     ; - .
+(* The AI provider sent nothing within its deadline, before its answer or between two chunks of
+   it; `after` says how long it was given, in milliseconds. *)
+row ai/silent                   = 504 ; "The AI provider did not answer in time"      ; after: number .

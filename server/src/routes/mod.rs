@@ -1,3 +1,4 @@
+pub mod ai;
 pub mod ai_model;
 pub mod branding;
 pub mod connections;

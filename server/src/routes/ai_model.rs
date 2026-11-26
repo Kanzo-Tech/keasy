@@ -41,7 +41,7 @@ const MODEL_MAX: usize = 200;
 
 /// `raw` as the root every call is sent under: an `http` or `https` URL with no
 /// query, fragment or credentials of its own, without its trailing `/`.
-fn base_url(raw: &str) -> Result<String, Refusal> {
+pub(crate) fn base_url(raw: &str) -> Result<String, Refusal> {
     let trimmed = raw.trim();
     let url = url::Url::parse(trimmed)
         .map_err(|e| Refusal::invalid_field("base_url", format!("not a URL: {e}")))?;
@@ -63,7 +63,7 @@ fn base_url(raw: &str) -> Result<String, Refusal> {
     Ok(trimmed.trim_end_matches('/').to_string())
 }
 
-fn model(raw: &str) -> Result<String, Refusal> {
+pub(crate) fn model(raw: &str) -> Result<String, Refusal> {
     let trimmed = raw.trim();
     if trimmed.is_empty() {
         return Err(Refusal::invalid_field("model", "a model is required"));

@@ -52,6 +52,67 @@
         ]
       }
     },
+    "/v1/ai/chat/completions": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Relay one chat completion to the workspace's model, for any member. The\nanswer streams back as the provider sends it, byte for byte; a reader who\nleaves drops the stream, and with it the call to the provider.",
+        "operationId": "chat_completions",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatCompletionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The provider's answer as it streams: OpenAI chat completion chunks (`text/event-stream`), ended by an error event carrying `ai/silent` if the provider goes quiet mid-answer; or one completion (`application/json`)"
+          },
+          "409": {
+            "description": "No external model is set",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The provider could not be reached, or refused",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "The provider did not begin its answer in time",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": [
+              "reader"
+            ]
+          }
+        ]
+      }
+    },
     "/v1/ai/model": {
       "get": {
         "tags": [
@@ -134,6 +195,74 @@
         "responses": {
           "204": {
             "description": "Removed, or there was none: Ask and the assistant run on the model in the page"
+          }
+        },
+        "security": [
+          {
+            "bearer": [
+              "admin"
+            ]
+          }
+        ]
+      }
+    },
+    "/v1/ai/model/test": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "An admin tries a model before saving it: one short question, its answer\ndiscarded. Nothing is stored. With no `api_key` the stored key is tried,\nas a save would keep it.",
+        "operationId": "test_ai_model",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetAiModelRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The model answered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiModelTested"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Not an http(s) root, or no model",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The provider could not be reached, or refused: a wrong key, an unknown model",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "The provider did not answer in time",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2160,6 +2289,21 @@
           }
         }
       },
+      "AiModelTested": {
+        "type": "object",
+        "description": "The call that answered, its time to answer.",
+        "required": [
+          "latency_ms"
+        ],
+        "properties": {
+          "latency_ms": {
+            "type": "integer",
+            "format": "int64",
+            "description": "How long the provider took to answer, in milliseconds.",
+            "minimum": 0
+          }
+        }
+      },
       "AiModelView": {
         "type": "object",
         "description": "What anyone may see of the external model: never its key, only whether\nthere is one.",
@@ -2260,6 +2404,38 @@
           "use": {
             "type": "boolean",
             "description": "Build on it: a secret in a connection. Every editor uses a connection\nand reads a graph's output, so the interface reads this for secrets."
+          }
+        }
+      },
+      "ChatCompletionRequest": {
+        "type": "object",
+        "description": "An OpenAI chat completion request. `model` is the workspace's, whatever the\npage names; everything else the protocol carries (`stream`, `tools`,\n`response_format`, `temperature`) goes to the provider untouched.",
+        "required": [
+          "messages"
+        ],
+        "properties": {
+          "max_completion_tokens": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "minimum": 0
+          },
+          "max_tokens": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "minimum": 0
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "The conversation, in the OpenAI message format."
           }
         }
       },
@@ -3219,7 +3395,11 @@
           "probe/failed",
           "store/refused",
           "store/silent",
-          "rules/refused"
+          "rules/refused",
+          "ai/not-configured",
+          "ai/unreachable",
+          "ai/refused",
+          "ai/silent"
         ]
       },
       "SetAiModelRequest": {

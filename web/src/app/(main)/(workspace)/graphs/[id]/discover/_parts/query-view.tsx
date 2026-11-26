@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { PlayIcon, SquareIcon, TableIcon } from "lucide-react";
+import { ArrowRightLeftIcon, PlayIcon, SquareIcon, TableIcon } from "lucide-react";
 import { Button } from "@kanzo-tech/ui";
-import { useAttachedGraph } from "@/lib/fossil/graph";
+import { useAttachedGraph, useJoinGraph } from "@/lib/fossil/graph";
 
 /**
  * The Query view: SQL typed by the reader, run on the page's one DuckDB over the graph that is already
@@ -21,12 +21,6 @@ const MAX_ROWS = 1000;
 
 /** The statements a query may start with: every one of them only reads. */
 const READ_ONLY = /^\s*(select|with|from|describe|show|summarize|explain)\b/i;
-
-interface Column {
-  table: string;
-  column: string;
-  type: string;
-}
 
 interface Result {
   names: string[];
@@ -59,47 +53,66 @@ function cell(answer: Answer, name: string, i: number): unknown {
 export default function QueryView() {
   const { name, engine } = useAttachedGraph();
   const [sql, setSql] = useState("");
-  const [columns, setColumns] = useState<Column[]>([]);
-  const [schemaError, setSchemaError] = useState<string | undefined>(undefined);
   const [result, setResult] = useState<Result | undefined>(undefined);
   const [error, setError] = useState<string | undefined>(undefined);
   const [running, setRunning] = useState(false);
   const running$ = useRef<AbortController | null>(null);
+  // The table list's width, set by dragging (or the arrow keys on) the bar at its right edge.
+  const [asideWidth, setAsideWidth] = useState(320);
+  const widthWithin = (w: number) => Math.min(Math.max(w, 192), 800);
 
-  // The graph's tables and their columns, read once from DuckDB's catalog. The graph is attached
-  // under `name`, so its tables are the ones whose database or schema carries that name.
-  useEffect(() => {
-    const controller = new AbortController();
-    const literal = name.replace(/'/g, "''");
-    engine
-      .query(
-        `SELECT table_name, column_name, data_type FROM duckdb_columns() ` +
-          `WHERE database_name = '${literal}' OR schema_name = '${literal}' ` +
-          `ORDER BY table_name, column_index`,
-        { signal: controller.signal },
-      )
-      .then((answer) => {
-        const read: Column[] = [];
-        for (let i = 0; i < answer.numRows; i++) {
-          read.push({
-            table: `${quote(name)}.${quote(String(cell(answer, "table_name", i)))}`,
-            column: String(cell(answer, "column_name", i)),
-            type: String(cell(answer, "data_type", i)),
-          });
-        }
-        setColumns(read);
-      })
-      .catch((err: unknown) => {
-        if (!controller.signal.aborted) setSchemaError(err instanceof Error ? err.message : String(err));
-      });
-    return () => controller.abort();
-  }, [engine, name]);
+  function startResize(down: React.PointerEvent) {
+    down.preventDefault();
+    const [x, start] = [down.clientX, asideWidth];
+    const move = (e: PointerEvent) => setAsideWidth(widthWithin(start + e.clientX - x));
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  }
 
-  const tables = useMemo(() => {
-    const byTable = new Map<string, Column[]>();
-    for (const c of columns) byTable.set(c.table, [...(byTable.get(c.table) ?? []), c]);
-    return [...byTable.entries()];
-  }, [columns]);
+  // The graph's schema as the page already holds it: its vertex types and its edges.
+  const joins = useJoinGraph();
+  const nodes = useMemo(() => joins.types.filter((t) => t.of === undefined), [joins]);
+  const relations = joins.edges;
+  const tableOf = (table: string) => `${quote(name)}.${quote(table)}`;
+
+  /**
+   * Writes the query that follows a relation: its source type, the relation's table and its
+   * destination type, joined. GraphAr numbers each vertex within its type (`_graphArVertexIndex`) and
+   * an edge table points at its two ends by those numbers, so the edge's columns are read first to
+   * find which of them hold the source and the destination.
+   */
+  async function queryRelation(e: (typeof relations)[number]) {
+    try {
+      const described = await engine.query(`DESCRIBE ${tableOf(e.name)}`, { signal: new AbortController().signal });
+      const names = Array.from({ length: described.numRows }, (_, i) => String(cell(described, "column_name", i)));
+      const src = names.find((n) => /src/i.test(n));
+      const dst = names.find((n) => /dst/i.test(n));
+      if (!src || !dst) {
+        setSql(`SELECT * FROM ${tableOf(e.name)} LIMIT 100`);
+        return;
+      }
+      // A readable column of each end: its name when the type has one, its IRI otherwise.
+      const shown = (type: string) =>
+        nodes.find((n) => n.name === type)?.columns.some((c) => c.name === "name") ? "name" : "subject";
+      const to = e.destination === e.source ? `${e.destination} (to)` : e.destination;
+      setSql(
+        [
+          `SELECT o.${quote(shown(e.source))} AS ${quote(e.source)}, d.${quote(shown(e.destination))} AS ${quote(to)}`,
+          `FROM ${tableOf(e.source)} o`,
+          `JOIN ${tableOf(e.name)} r ON r.${quote(src)} = o."_graphArVertexIndex"`,
+          `JOIN ${tableOf(e.destination)} d ON d."_graphArVertexIndex" = r.${quote(dst)}`,
+          "LIMIT 100",
+        ].join("\n"),
+      );
+    } catch (err: unknown) {
+      setResult(undefined);
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  }
 
   // A run still out when the view is left is given up.
   useEffect(() => () => running$.current?.abort(), []);
@@ -145,32 +158,80 @@ export default function QueryView() {
 
   return (
     <div className="flex size-full min-h-0">
-      <aside aria-label="Tables" className="w-64 shrink-0 overflow-auto border-e p-2 text-xs">
-        <p className="mb-2 font-medium text-sm">Tables</p>
-        {schemaError && <p className="text-destructive">{schemaError}</p>}
-        {tables.map(([table, cols]) => (
-          <details className="mb-1" key={table}>
-            <summary className="cursor-pointer truncate" title={table}>
-              <TableIcon className="me-1 inline size-3" />
-              {table.slice(quote(name).length + 1).replace(/^"|"$/g, "")}
-            </summary>
-            <button
-              className="ms-4 text-muted-foreground underline"
-              onClick={() => setSql(`SELECT * FROM ${table} LIMIT 100`)}
-              type="button"
-            >
-              Query this table
-            </button>
-            <ul className="ms-4 mt-1">
-              {cols.map((c) => (
-                <li className="truncate" key={c.column} title={`${c.column} · ${c.type}`}>
-                  {c.column} <span className="text-muted-foreground">{c.type}</span>
-                </li>
-              ))}
-            </ul>
-          </details>
-        ))}
+      <aside aria-label="Tables" className="shrink-0 overflow-auto p-2 text-xs" style={{ width: asideWidth }}>
+        <details open>
+          <summary className="mb-1 cursor-pointer font-medium text-sm">Nodes ({nodes.length})</summary>
+          {nodes.map((t) => (
+            <details className="mb-1 ms-2" key={t.name}>
+              <summary className="cursor-pointer break-all" title={t.name}>
+                <TableIcon className="me-1 inline size-3" />
+                {t.name}
+                {t.rows !== undefined && <span className="ms-1 text-muted-foreground">{t.rows}</span>}
+              </summary>
+              <button
+                className="ms-4 text-muted-foreground underline"
+                onClick={() => setSql(`SELECT * FROM ${tableOf(t.name)} LIMIT 100`)}
+                type="button"
+              >
+                Query this table
+              </button>
+              <ul className="ms-4 mt-1">
+                {t.columns
+                  .filter((c) => c.role !== "address")
+                  .map((c) => (
+                    <li className="break-all" key={c.name} title={`${c.name} · ${c.type}`}>
+                      {c.name} <span className="text-muted-foreground">{c.type}</span>
+                    </li>
+                  ))}
+              </ul>
+            </details>
+          ))}
+        </details>
+        <details className="mt-2" open>
+          <summary className="mb-1 cursor-pointer font-medium text-sm">Relations ({relations.length})</summary>
+          {relations.map((e) => (
+            <div className="mb-1 ms-2" key={e.name}>
+              <p className="break-all" title={e.name}>
+                <ArrowRightLeftIcon className="me-1 inline size-3" />
+                <span className="font-medium">{e.label ?? e.name}</span>
+                {e.rows !== undefined && <span className="ms-1 text-muted-foreground">{e.rows}</span>}
+              </p>
+              <p className="ms-4 break-all text-muted-foreground" title={`${e.source} → ${e.destination}`}>
+                {e.source} → {e.destination}
+              </p>
+              <button
+                className="ms-4 text-muted-foreground underline"
+                onClick={() => void queryRelation(e)}
+                type="button"
+              >
+                Query this relation
+              </button>
+              <button
+                className="ms-2 text-muted-foreground underline"
+                onClick={() => setSql(`SELECT * FROM ${tableOf(e.name)} LIMIT 100`)}
+                type="button"
+              >
+                Table
+              </button>
+            </div>
+          ))}
+        </details>
       </aside>
+      <div
+        aria-label="Resize the table list"
+        aria-orientation="vertical"
+        aria-valuemax={800}
+        aria-valuemin={192}
+        aria-valuenow={asideWidth}
+        className="w-1 shrink-0 cursor-col-resize bg-border hover:bg-primary/50"
+        onKeyDown={(e) => {
+          if (e.key === "ArrowLeft") setAsideWidth((w) => widthWithin(w - 16));
+          if (e.key === "ArrowRight") setAsideWidth((w) => widthWithin(w + 16));
+        }}
+        onPointerDown={startResize}
+        role="separator"
+        tabIndex={0}
+      />
 
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex shrink-0 flex-col gap-2 border-b p-2">
@@ -184,7 +245,7 @@ export default function QueryView() {
                 void run();
               }
             }}
-            placeholder={`SELECT * FROM ${quote(name)}."CPIProject" LIMIT 20`}
+            placeholder={nodes[0] ? `SELECT * FROM ${tableOf(nodes[0].name)} LIMIT 20` : "SELECT …"}
             spellCheck={false}
             value={sql}
           />

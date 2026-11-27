@@ -377,7 +377,13 @@ fn objects_of(schema: &str) -> Result<Vec<(String, String)>, String> {
 
 /// Create the schema in an empty database, or check that a non-empty one holds
 /// exactly it. There are no migrations: a database of another schema is refused
-/// untouched, and created again empty.
+/// untouched, and created again empty — with one exception, a build that only
+/// adds. A database whose every table and index is this build's, word for word,
+/// and that lacks only tables and indexes this build adds, gets them, in one
+/// transaction, and keeps everything it holds: an update that adds a table
+/// (`ai_model`) does not cost a workspace its graphs. Anything else that differs
+/// — a table changed or gone, an object this build does not know — is refused as
+/// before.
 pub fn apply_schema(conn: &rusqlite::Connection) -> Result<(), String> {
     let existing = objects(conn).map_err(|e| format!("read schema: {e}"))?;
     if existing.is_empty() {
@@ -385,15 +391,55 @@ pub fn apply_schema(conn: &rusqlite::Connection) -> Result<(), String> {
             .execute_batch(&format!("BEGIN; {SCHEMA} COMMIT;"))
             .map_err(|e| format!("create schema: {e}"));
     }
-    if existing != objects_of(SCHEMA)? {
-        return Err(
-            "the database was created by a different schema than this build's. \
-             Schema changes are not migrated: delete the data volume (dev: \
-             `make clean`, or `docker compose down -v`) and start again"
-                .into(),
-        );
+    let expected = objects_of(SCHEMA)?;
+    if existing == expected {
+        return Ok(());
     }
+    let added = additions(&existing, &expected).ok_or_else(|| {
+        "the database was created by a different schema than this build's. \
+         Schema changes are not migrated: delete the data volume (dev: \
+         `make clean`, or `docker compose down -v`) and start again"
+            .to_string()
+    })?;
+    let tx = conn
+        .unchecked_transaction()
+        .map_err(|e| format!("add to schema: {e}"))?;
+    for (name, sql) in &added {
+        tx.execute_batch(sql)
+            .map_err(|e| format!("add {name} to schema: {e}"))?;
+    }
+    tx.commit().map_err(|e| format!("add to schema: {e}"))?;
+    let names: Vec<&str> = added.iter().map(|(name, _)| name.as_str()).collect();
+    tracing::info!(added = ?names, "schema: added this build's new tables and indexes");
     Ok(())
+}
+
+/// What `existing` lacks of `expected`, tables before indexes, when that is all
+/// that differs: every object it holds is one of `expected`'s, as written, and
+/// every one it lacks is a table or an index. `None` for any other difference.
+fn additions(
+    existing: &[(String, String)],
+    expected: &[(String, String)],
+) -> Option<Vec<(String, String)>> {
+    if !existing.iter().all(|object| expected.contains(object)) {
+        return None;
+    }
+    let kind = |sql: &str| {
+        let sql = sql.trim_start().to_ascii_uppercase();
+        if sql.starts_with("CREATE TABLE") {
+            Some(0)
+        } else if sql.starts_with("CREATE INDEX") || sql.starts_with("CREATE UNIQUE INDEX") {
+            Some(1)
+        } else {
+            None
+        }
+    };
+    let mut missing: Vec<(u8, (String, String))> = Vec::new();
+    for object in expected.iter().filter(|object| !existing.contains(object)) {
+        missing.push((kind(&object.1)?, object.clone()));
+    }
+    missing.sort_by_key(|(kind, _)| *kind);
+    Some(missing.into_iter().map(|(_, object)| object).collect())
 }
 
 /// Every table and index the database defines, with the SQL that created it.
@@ -442,6 +488,53 @@ mod tests {
         assert!(insert("[]").is_ok());
         assert!(insert("{}").is_err());
         assert!(insert("not json").is_err());
+    }
+
+    /// A workspace's database from before `ai_model`: the table is added, and
+    /// what the database holds stays.
+    #[test]
+    fn a_database_of_an_older_build_gains_the_new_table_and_keeps_its_rows() {
+        let conn = rusqlite::Connection::open_in_memory().unwrap();
+        apply_schema(&conn).unwrap();
+        conn.execute_batch(
+            "DROP TABLE ai_model;
+             INSERT INTO conversations (id, messages, owner, owner_name, created_by, created_by_name, created_at)
+                 VALUES ('c-1', '[]', 'u-1', 'Ana', 'u-1', 'Ana', 't');",
+        )
+        .unwrap();
+
+        apply_schema(&conn).unwrap();
+        assert_eq!(objects(&conn).unwrap(), objects_of(SCHEMA).unwrap());
+        let kept: i64 = conn
+            .query_row("SELECT count(*) FROM conversations", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(kept, 1, "the conversation is still there");
+        apply_schema(&conn).unwrap();
+    }
+
+    /// Only adding is taken: a table this build has, written otherwise, is
+    /// refused, and nothing is added on the way out.
+    #[test]
+    fn a_table_changed_is_refused_even_beside_a_missing_one() {
+        let conn = rusqlite::Connection::open_in_memory().unwrap();
+        apply_schema(&conn).unwrap();
+        conn.execute_batch(
+            "DROP TABLE ai_model;
+             DROP TABLE rules;
+             CREATE TABLE rules (graph_id TEXT PRIMARY KEY);",
+        )
+        .unwrap();
+
+        let err = apply_schema(&conn).unwrap_err();
+        assert!(err.contains("delete the data volume"), "{err}");
+        let added: i64 = conn
+            .query_row(
+                "SELECT count(*) FROM sqlite_master WHERE name = 'ai_model'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(added, 0, "a refused database is left as it was");
     }
 
     #[test]

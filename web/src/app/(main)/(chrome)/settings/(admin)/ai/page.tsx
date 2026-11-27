@@ -31,6 +31,7 @@ import {
 import { Boundary, Loading } from "@/components/boundary";
 import { $api, type Schemas } from "@/lib/api/client";
 import { settled } from "@/lib/api/settled";
+import { coded } from "@/lib/errors";
 
 // Which model every member's Ask and assistant run on: the one in the page, or an external
 // OpenAI-compatible API the server holds the key of. Stored, not yet called: until the relay is
@@ -95,19 +96,29 @@ function Form({ external }: { external?: External }) {
   const remove = $api.useMutation("delete", "/v1/ai/model", {
     meta: { ...META, success: "Ask and the assistant run in the browser again", failure: "The AI model was not removed" },
   });
+  // Nothing stored: only its answer, said here. A failure says the provider's own words (a wrong
+  // key, an unknown model), which are its detail: the code's title alone would not say which.
+  const test = $api.useMutation("post", "/v1/ai/model/test");
   const keyStored = external?.has_key === true && !removeKey;
 
-  const save = () =>
-    source === "external"
-      ? set.mutate({
-          body: {
-            base_url: baseUrl,
-            model,
-            // Left out, the stored key is kept; empty, it is removed.
-            ...(apiKey.trim() ? { api_key: apiKey } : removeKey ? { api_key: "" } : {}),
-          },
-        })
-      : remove.mutate({});
+  // Left out, the stored key is kept (and tried); empty, it is removed (and none is tried).
+  const body = () => ({
+    base_url: baseUrl,
+    model,
+    ...(apiKey.trim() ? { api_key: apiKey } : removeKey ? { api_key: "" } : {}),
+  });
+  const save = () => (source === "external" ? set.mutate({ body: body() }) : remove.mutate({}));
+  const tryIt = () =>
+    test.mutate(
+      { body: body() },
+      {
+        onSuccess: ({ latency_ms }) => toast.create({ title: "The model answered", description: `In ${latency_ms} ms.`, type: "success" }),
+        onError: (error) => {
+          const problem = coded(error);
+          toast.create({ title: "The model did not answer", description: problem.detail ?? problem.message, type: "error" });
+        },
+      },
+    );
 
   return (
     <SectionRoot>
@@ -197,7 +208,7 @@ function Form({ external }: { external?: External }) {
                   <Input
                     className="font-mono"
                     onChange={(event) => setModel(event.target.value)}
-                    placeholder="gpt-4o-mini"
+                    placeholder="gpt-4.1-mini"
                     value={model}
                   />
                   <FieldDescription>The name the provider gives it.</FieldDescription>
@@ -219,7 +230,9 @@ function Form({ external }: { external?: External }) {
         <SectionFooter className="justify-end gap-2">
           {source === "external" && (
             <Button
-              onClick={() => toast.create({ title: "Not connected yet", description: "Testing comes with the relay." })}
+              disabled={!baseUrl.trim() || !model.trim()}
+              isLoading={test.isPending}
+              onClick={tryIt}
               size="sm"
               variant="outline"
             >

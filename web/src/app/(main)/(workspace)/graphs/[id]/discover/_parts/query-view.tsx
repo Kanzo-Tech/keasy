@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowRightLeftIcon, PlayIcon, SquareIcon, TableIcon } from "lucide-react";
-import { Button } from "@kanzo-tech/ui";
-import { useAttachedGraph, useJoinGraph } from "@/lib/fossil/graph";
+import { ArrowRightLeftIcon, NetworkIcon, PlayIcon, SquareIcon, TableIcon } from "lucide-react";
+import { Button, ToggleGroup, ToggleGroupItem } from "@kanzo-tech/ui";
+import { GraphCanvas, GraphLegend, GraphToolbar, useGraphContext, useGraphState, usePick } from "@kanzo-tech/graph";
+import { numbers } from "@kanzo-tech/mosaic";
+import { column, isIn, literal, Query } from "@uwdata/mosaic-sql";
+import { useAttachedGraph, useGraphKey, useJoinGraph, useVertices } from "@/lib/fossil/graph";
 
 /**
  * The Query view: SQL typed by the reader, run on the page's one DuckDB over the graph that is already
@@ -11,6 +14,12 @@ import { useAttachedGraph, useJoinGraph } from "@/lib/fossil/graph";
  * the browser and nothing is written: a query is one read-only statement, and its answer is drawn as a
  * table of at most `MAX_ROWS` rows. The aside lists the graph's tables and columns, and a table pressed
  * there starts a query over it.
+ *
+ * An answer that names vertices of the graph — any IRI in it that is some vertex's `subject` — can also
+ * be seen as a graph: the page's own canvas, under the page's one root, while the root filters by the
+ * Query view's own crossfilter (`page.tsx`), so the graph is read once and what Query shows never
+ * reaches Graph or Dashboard. The answer's vertices are picked into it, in full colour among the rest
+ * greyed out, and framed.
  */
 
 type Engine = ReturnType<typeof useAttachedGraph>["engine"];
@@ -18,6 +27,9 @@ type Answer = Awaited<ReturnType<Engine["query"]>>;
 
 /** How many rows of an answer are drawn: a larger answer is counted, not drawn. */
 const MAX_ROWS = 1000;
+
+/** How many of an answer's IRIs are looked up as vertices: the graph of a larger answer is its first ones. */
+const MAX_NODES = 5000;
 
 /** The statements a query may start with: every one of them only reads. */
 const READ_ONLY = /^\s*(select|with|from|describe|show|summarize|explain)\b/i;
@@ -50,13 +62,50 @@ function cell(answer: Answer, name: string, i: number): unknown {
   return answer.getChild(name)?.get(i);
 }
 
-export default function QueryView() {
+/**
+ * The answer's vertices on the page's graph: the canvas the Graph view draws, under the same root, which
+ * filters by the Query view's crossfilter while Query is the view. The vertices are picked into it
+ * once the graph is read (before, there is no key to pick by), and framed once the filter keeps them.
+ */
+function QueryGraph({ ids }: { ids: readonly number[] }) {
+  const graph = useGraphContext();
+  const pick = usePick("query");
+  const loaded = useGraphState((s) => s.status === "idle");
+  const matching = useGraphState((s) => s.matching);
+  const framed = useRef<readonly number[] | null>(null);
+
+  useEffect(() => {
+    if (loaded) pick.pick(ids.length > 0 ? ids : null, `Query: ${ids.length} ${ids.length === 1 ? "node" : "nodes"}`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the pick follows the answer's ids, not the place's identity
+  }, [loaded, ids]);
+
+  useEffect(() => {
+    if (loaded && matching !== null && framed.current !== ids) {
+      framed.current = ids;
+      graph.frame();
+    }
+  }, [loaded, matching, ids, graph]);
+
+  return (
+    <GraphCanvas className="absolute inset-0">
+      <GraphToolbar className="absolute end-2 top-2 z-10" />
+      <GraphLegend className="absolute start-2 bottom-2 z-10" />
+    </GraphCanvas>
+  );
+}
+
+export default function QueryView({ active }: { active: boolean }) {
   const { name, engine } = useAttachedGraph();
   const [sql, setSql] = useState("");
   const [result, setResult] = useState<Result | undefined>(undefined);
   const [error, setError] = useState<string | undefined>(undefined);
   const [running, setRunning] = useState(false);
   const running$ = useRef<AbortController | null>(null);
+  // How the answer is seen, and the graph's vertices it names (their global ids).
+  const [mode, setMode] = useState<"table" | "graph">("table");
+  const [ids, setIds] = useState<readonly number[]>([]);
+  const vertices = useVertices();
+  const key = useGraphKey();
   // The table list's width, set by dragging (or the arrow keys on) the bar at its right edge.
   const [asideWidth, setAsideWidth] = useState(320);
   const widthWithin = (w: number) => Math.min(Math.max(w, 192), 800);
@@ -78,6 +127,10 @@ export default function QueryView() {
   const nodes = useMemo(() => joins.types.filter((t) => t.of === undefined), [joins]);
   const relations = joins.edges;
   const tableOf = (table: string) => `${quote(name)}.${quote(table)}`;
+  // How many nodes and edges the graph holds: each type's rows, summed — the counts the Graph view shows.
+  const count = new Intl.NumberFormat("en");
+  const nodeTotal = nodes.reduce((n, t) => n + (t.rows ?? 0), 0);
+  const edgeTotal = relations.reduce((n, e) => n + (e.rows ?? 0), 0);
 
   /**
    * Writes the query that follows a relation: its source type, the relation's table and its
@@ -101,7 +154,9 @@ export default function QueryView() {
       const to = e.destination === e.source ? `${e.destination} (to)` : e.destination;
       setSql(
         [
-          `SELECT o.${quote(shown(e.source))} AS ${quote(e.source)}, d.${quote(shown(e.destination))} AS ${quote(to)}`,
+          `SELECT o.${quote(shown(e.source))} AS ${quote(e.source)}, d.${quote(shown(e.destination))} AS ${quote(to)},`,
+          // The two ends' IRIs, so the answer can be seen as a graph.
+          `  o."subject" AS ${quote(`${e.source} IRI`)}, d."subject" AS ${quote(`${to} IRI`)}`,
           `FROM ${tableOf(e.source)} o`,
           `JOIN ${tableOf(e.name)} r ON r.${quote(src)} = o."_graphArVertexIndex"`,
           `JOIN ${tableOf(e.destination)} d ON d."_graphArVertexIndex" = r.${quote(dst)}`,
@@ -112,6 +167,23 @@ export default function QueryView() {
       setResult(undefined);
       setError(err instanceof Error ? err.message : String(err));
     }
+  }
+
+  /** The graph's vertices an answer names: every IRI in it that is some vertex's `subject`. */
+  async function verticesIn(answer: Answer, signal: AbortSignal): Promise<number[]> {
+    const iris = new Set<string>();
+    for (const field of answer.schema.fields) {
+      for (let i = 0; i < answer.numRows && iris.size < MAX_NODES; i++) {
+        const value = cell(answer, field.name, i);
+        if (typeof value === "string" && /^https?:\/\//.test(value)) iris.add(value);
+      }
+    }
+    if (iris.size === 0) return [];
+    const where = isIn(
+      column("subject"),
+      [...iris].map((iri) => literal(iri)),
+    );
+    return numbers(await engine.query(String(Query.from(vertices).select(key).where(where)), { signal }), key);
   }
 
   // A run still out when the view is left is given up.
@@ -137,9 +209,15 @@ export default function QueryView() {
       const shown = Math.min(answer.numRows, MAX_ROWS);
       const rows = Array.from({ length: shown }, (_, i) => names.map((n) => format(cell(answer, n, i))));
       setResult({ names, rows, total: answer.numRows, ms: performance.now() - started });
+      // An answer whose vertices cannot be looked up is still a table: only its Graph option is off.
+      const found = await verticesIn(answer, controller.signal).catch(() => [] as number[]);
+      setIds(found);
+      if (found.length === 0) setMode("table");
     } catch (err: unknown) {
       if (!controller.signal.aborted) {
         setResult(undefined);
+        setIds([]);
+        setMode("table");
         setError(err instanceof Error ? err.message : String(err));
       }
     } finally {
@@ -160,7 +238,7 @@ export default function QueryView() {
     <div className="flex size-full min-h-0">
       <aside aria-label="Tables" className="shrink-0 overflow-auto p-2 text-xs" style={{ width: asideWidth }}>
         <details open>
-          <summary className="mb-1 cursor-pointer font-medium text-sm">Nodes ({nodes.length})</summary>
+          <summary className="mb-1 cursor-pointer font-medium text-sm">Node types ({nodes.length}) · {count.format(nodeTotal)} nodes</summary>
           {nodes.map((t) => (
             <details className="mb-1 ms-2" key={t.name}>
               <summary className="cursor-pointer break-all" title={t.name}>
@@ -188,7 +266,7 @@ export default function QueryView() {
           ))}
         </details>
         <details className="mt-2" open>
-          <summary className="mb-1 cursor-pointer font-medium text-sm">Relations ({relations.length})</summary>
+          <summary className="mb-1 cursor-pointer font-medium text-sm">Relation types ({relations.length}) · {count.format(edgeTotal)} edges</summary>
           {relations.map((e) => (
             <div className="mb-1 ms-2" key={e.name}>
               <p className="break-all" title={e.name}>
@@ -265,9 +343,39 @@ export default function QueryView() {
                 `${result.total} ${result.total === 1 ? "row" : "rows"}${result.total > MAX_ROWS ? `, first ${MAX_ROWS} shown` : ""} · ${Math.round(result.ms)} ms`}
               {!result && !running && "Ctrl/Cmd + Enter to run"}
             </span>
+            {result && !error && (
+              <div className="ms-auto flex items-center gap-2">
+                {ids.length === 0 && <span className="text-muted-foreground text-xs">No graph nodes in this answer</span>}
+                <ToggleGroup
+                  aria-label="See the answer as"
+                  multiple={false}
+                  onValueChange={(d) => {
+                    const next = d.value[0];
+                    if (next === "table" || next === "graph") setMode(next);
+                  }}
+                  size="sm"
+                  value={[mode]}
+                >
+                  <ToggleGroupItem value="table">
+                    <TableIcon />
+                    Table
+                  </ToggleGroupItem>
+                  <ToggleGroupItem disabled={ids.length === 0} value="graph">
+                    <NetworkIcon />
+                    {ids.length > 0 ? `Graph (${ids.length})` : "Graph"}
+                  </ToggleGroupItem>
+                </ToggleGroup>
+              </div>
+            )}
           </div>
         </div>
 
+        {/* The canvas is mounted only while Query is the view: one canvas at a time draws the page's graph. */}
+        {active && mode === "graph" && ids.length > 0 && result && !error ? (
+          <div className="relative min-h-0 flex-1">
+            <QueryGraph ids={ids} />
+          </div>
+        ) : (
         <div className="min-h-0 flex-1 overflow-auto">
           {error && <pre className="whitespace-pre-wrap p-3 text-destructive text-xs">{error}</pre>}
           {result && !error && (
@@ -295,6 +403,7 @@ export default function QueryView() {
             </table>
           )}
         </div>
+        )}
       </div>
     </div>
   );

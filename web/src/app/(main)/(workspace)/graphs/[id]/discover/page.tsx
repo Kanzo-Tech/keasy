@@ -22,6 +22,7 @@ import {
   useGraphState,
 } from "@kanzo-tech/graph";
 import type { Relation } from "@kanzo-tech/relations";
+import { Selection } from "@kanzo-tech/mosaic";
 import {
   ChartTimeline,
   FilterBar,
@@ -189,6 +190,10 @@ function Workspace() {
   // The Timeline offers a year stored as a number (`xsd:gYear` over an `int32`) by its datatype here.
   const mapping = useMappingModel();
   const { engine, selection } = useMosaic();
+  // The Query view's own crossfilter: while Query is the view the graph filters by it instead of the
+  // page's, so what Query picks never reaches Graph or Dashboard, and their filters never reach Query.
+  // Changing `filterBy` re-reads no graph: the root only follows the other crossfilter.
+  const [querySelection] = useState(() => Selection.crossfilter());
   const { look, sim, placement, timeline } = useGraphPrefs();
   const graph = useJoinGraph();
   const [relation, setRelation] = useState<Relation>(() => ({ root: graph.types[0]?.name ?? "", path: [] }));
@@ -219,7 +224,7 @@ function Workspace() {
     >
     <GraphRoot
       engine={engine}
-      filterBy={selection}
+      filterBy={view === "query" ? querySelection : selection}
       from={name}
       look={look}
       mapping={mapping}
@@ -259,16 +264,20 @@ function Workspace() {
       {/* The dashboard's filters stay in the bar to change in either view: the dashboard filters the
           graph while it is hidden. Its readout is the page's one count, of what the view shows: the
           vertices in the Graph view, the dashboard's relation in the Dashboard view. */}
-      <FilterBar
-        className="shrink-0 border-b px-3 py-0.5"
-        relation={view === "graph" ? "vertices" : relation}
-        rowNoun={view === "graph" ? "nodes" : "rows"}
-      >
-        {/* The rules' tally, after the filters: read in either view, its findings in its popover. */}
-        <Boundary fallback={<Skeleton className="h-5 w-24" />}>
-          <RulesBadge />
-        </Boundary>
-      </FilterBar>
+      {/* Hidden, not unmounted, in Query view: Query neither reads nor writes the page's filters, and
+          the bar and the rules' badge come back as they were in Graph and Dashboard. */}
+      <div className="shrink-0" hidden={view === "query"}>
+        <FilterBar
+          className="shrink-0 border-b px-3 py-0.5"
+          relation={view === "graph" ? "vertices" : relation}
+          rowNoun={view === "graph" ? "nodes" : "rows"}
+        >
+          {/* The rules' tally, after the filters: read in either view, its findings in its popover. */}
+          <Boundary fallback={<Skeleton className="h-5 w-24" />}>
+            <RulesBadge />
+          </Boundary>
+        </FilterBar>
+      </div>
 
       <ShellBody className="min-w-0">
         <Resizable
@@ -288,7 +297,7 @@ function Workspace() {
                 {view === "graph" && <GraphRegion />}
                 {queryOpened && (
                   <div className="size-full min-h-0" hidden={view !== "query"}>
-                    <QueryView />
+                    <QueryView active={view === "query"} />
                   </div>
                 )}
                 {/* Hidden, not unmounted, in Graph view: its filters keep filtering the page and stay
